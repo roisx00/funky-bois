@@ -50,7 +50,7 @@ export default function Nav({ currentPage, onNavigate }) {
         {/* Logo */}
         <div className="nav-logo" onClick={() => go('home')}>
           <img
-            src="/logo.png"
+            src="/logo.svg"
             alt="Funky Bois"
             style={{ height: 30, display: 'block' }}
             onError={(e) => {
