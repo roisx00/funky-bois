@@ -220,14 +220,15 @@ export default function MintPage({ onNavigate }) {
       <h2 style={{ fontFamily: 'var(--font-sketch)', fontSize: 28, marginBottom: 20 }}>
         Recently Completed
       </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+      <div className="gallery-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
         {allRecent.map((item, i) => (
           <div key={i} className="gallery-card">
             <div className="gallery-card-art">
-              <NFTCanvas elements={item.elements} size={180} />
+              <NFTCanvas elements={item.elements} size={160} />
             </div>
             <div className="gallery-card-info">
-              <div className="gallery-username">{item.username}</div>
+              <div className="gallery-maker-label">MADE BY</div>
+              <div className="gallery-username">@{item.username}</div>
               <div className="gallery-timestamp">{timeAgo(item.ts)}</div>
             </div>
           </div>

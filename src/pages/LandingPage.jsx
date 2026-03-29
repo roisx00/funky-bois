@@ -70,29 +70,7 @@ export default function LandingPage({ onNavigate }) {
         </div>
       </section>
 
-      {/* ── Stats strip ── */}
-      <div className="stats-strip">
-        <div className="stat-item">
-          <div className="stat-number">7</div>
-          <div className="stat-label">Element Types</div>
-        </div>
-        <div className="stat-item">
-          <div className="stat-number">20</div>
-          <div className="stat-label">Slots / Drop</div>
-        </div>
-        <div className="stat-item">
-          <div className="stat-number">{nftCount.toLocaleString()}</div>
-          <div className="stat-label">Funky Bois Built</div>
-        </div>
-        <div className="stat-item">
-          <div className="stat-number">2222</div>
-          <div className="stat-label">Total Supply</div>
-        </div>
-        <div className="stat-item">
-          <div className="stat-number">{progressCount}/7</div>
-          <div className="stat-label">Your Progress</div>
-        </div>
-      </div>
+
 
       {/* ── Mint progress teaser ── */}
       <section style={{ borderBottom: 'var(--border)', background: 'var(--surface)', color: 'var(--text)', padding: '64px 0', position: 'relative', overflow: 'hidden' }}>

@@ -10,7 +10,7 @@ export default function NFTCanvas({ elements = {}, size = 300 }) {
   return (
     <div
       className="nft-canvas-wrap"
-      style={{ width: size, height }}
+      style={{ width: '100%', maxWidth: size, height: 'auto', aspectRatio: '300/380' }}
       dangerouslySetInnerHTML={{ __html: svgString }}
     />
   );

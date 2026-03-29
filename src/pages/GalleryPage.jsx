@@ -94,7 +94,8 @@ function GalleryCard({ nft }) {
       </div>
 
       <div className="gallery-card-info">
-        <div className="gallery-username">{nft.username}</div>
+        <div className="gallery-maker-label">MADE BY</div>
+        <div className="gallery-username">@{nft.username}</div>
         <div className="gallery-timestamp">{timeAgo(nft.createdAt)}</div>
 
         <div className="gallery-traits">

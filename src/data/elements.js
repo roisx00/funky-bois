@@ -774,5 +774,5 @@ export function buildNFTSVG(elements = {}) {
   if (acc      !== null && accSVG[acc])            parts.push(accSVG[acc]);
   if (stickers !== null && stickersSVG[stickers])  parts.push(stickersSVG[stickers]);
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380" width="300" height="380">${parts.join('\n')}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380" style="width:100%; height:auto; display:block;">${parts.join('\n')}</svg>`;
 }
