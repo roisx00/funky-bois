@@ -27,7 +27,7 @@ export async function startXLogin(onUser) {
   const code_challenge = await sha256B64(code_verifier);
   const state          = randomB64();
 
-  sessionStorage.setItem('x_pkce', JSON.stringify({ code_verifier, state }));
+  localStorage.setItem('x_pkce', JSON.stringify({ code_verifier, state }));
 
   const params = new URLSearchParams({
     response_type: 'code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI,
@@ -44,7 +44,7 @@ export async function handleXCallback() {
   const state = url.searchParams.get('state');
   if (!code || !state) return null;
 
-  const raw = sessionStorage.getItem('x_pkce');
+  const raw = localStorage.getItem('x_pkce');
   if (!raw) return null;
 
   let stored;
@@ -52,7 +52,7 @@ export async function handleXCallback() {
   if (stored.state !== state) return null;
 
   // Remove pkce + clean URL before any async work
-  sessionStorage.removeItem('x_pkce');
+  localStorage.removeItem('x_pkce');
   window.history.replaceState({}, '', window.location.pathname);
 
   // Exchange code → access token via server proxy ONLY
