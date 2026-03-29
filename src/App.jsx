@@ -15,21 +15,33 @@ import './App.css';
 
 function AppInner() {
   const [page, setPage] = useState('home');
+  const [xAuthPending, setXAuthPending] = useState(
+    () => window.location.search.includes('code=')
+  );
   const { loginWithX } = useGame();
 
   // Handle X OAuth callback on mount
   useEffect(() => {
-    if (window.location.search.includes('code=')) {
-      handleXCallback().then((user) => {
-        if (user) loginWithX(user);
-      });
-    }
+    if (!window.location.search.includes('code=')) return;
+    handleXCallback().then((user) => {
+      if (user) loginWithX(user);
+      else console.warn('[App] X login failed — check browser console for details');
+      setXAuthPending(false);
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const navigate = (to) => {
     setPage(to);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  if (xAuthPending) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'var(--font-sketch)', fontSize: 24 }}>
+        Logging in with X...
+      </div>
+    );
+  }
 
   return (
     <>
