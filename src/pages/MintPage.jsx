@@ -45,8 +45,8 @@ export default function MintPage({ onNavigate }) {
       <div
         className="mint-hero"
         style={{
-          background: mintOpen ? '#000' : '#fff',
-          color: mintOpen ? '#fff' : '#000',
+          background: 'var(--surface)',
+          color: 'var(--text)',
         }}
       >
         <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.5, marginBottom: 8 }}>
@@ -69,8 +69,8 @@ export default function MintPage({ onNavigate }) {
         {/* Progress bar */}
         <div
           style={{
-            background: mintOpen ? '#333' : '#f3f3f3',
-            border: `2px solid ${mintOpen ? '#555' : '#000'}`,
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border-color-med)',
             borderRadius: 2,
             height: 20,
             overflow: 'hidden',
@@ -82,7 +82,7 @@ export default function MintPage({ onNavigate }) {
             style={{
               width: `${mintPct}%`,
               height: '100%',
-              background: mintOpen ? '#fff' : '#000',
+              background: mintOpen ? 'var(--accent)' : 'var(--text)',
               transition: 'width 1s ease',
             }}
           />
@@ -98,7 +98,7 @@ export default function MintPage({ onNavigate }) {
         {mintOpen ? (
           <div style={{ marginTop: 8 }}>
             <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 32, marginBottom: 4 }}>
-              MINT OPEN — 0.05 ETH per NFT
+              MINT OPEN
             </div>
             <div style={{ fontSize: 14, opacity: 0.7, marginBottom: 20 }}>
               Whitelist holders can now mint their Funky Boi.
@@ -106,7 +106,7 @@ export default function MintPage({ onNavigate }) {
             {isWhitelisted ? (
               <button
                 className="btn"
-                style={{ background: '#fff', color: '#000', fontSize: 18, padding: '14px 40px' }}
+                style={{ fontSize: 16, padding: '14px 40px' }}
                 onClick={() => onNavigate('whitelist')}
               >
                 You're Whitelisted — Mint Now →
@@ -131,8 +131,8 @@ export default function MintPage({ onNavigate }) {
             <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 28, marginBottom: 4 }}>
               MINT SOON
             </div>
-            <div style={{ fontSize: 14, opacity: 0.55, marginBottom: 20 }}>
-              Price: TBA
+            <div style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 20 }}>
+              Price: TBA · Supply: 2,222
             </div>
             <div style={{ marginTop: 8, display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               {isWhitelisted ? (
@@ -160,7 +160,7 @@ export default function MintPage({ onNavigate }) {
           { label: 'Total Supply',    value: '2,222'                                       },
           { label: 'Mint Status',     value: mintOpen ? 'OPEN' : 'MINT SOON'               },
           { label: 'Earn WL',         value: 'Complete NFT + Share on X'                   },
-          { label: 'Price',           value: mintOpen ? '0.05 ETH' : 'TBA'                 },
+          { label: 'Price',           value: 'TBA'                                         },
         ].map((item) => (
           <div key={item.label} className="sidebar-box">
             <div className="sidebar-box-title">{item.label}</div>

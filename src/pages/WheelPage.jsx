@@ -17,11 +17,10 @@ const MOCK_LEADERS = [
 
 // ── Wheel geometry ────────────────────────────────────────────────────────────
 const R      = 148;   // spoke radius
-const R_HUB  = 24;    // center hub radius
-const R_BEAD = 20;    // outer number bubble radius
-const CX = 180;
-const CY = 180;
-const SIZE = 360;
+const R_HUB  = 22;    // center hub radius
+const CX = 200;
+const CY = 200;
+const SIZE = 400;
 
 const toRad = (deg) => (deg * Math.PI) / 180;
 
@@ -34,10 +33,6 @@ function wedgePath(startDeg, endDeg) {
   return `M ${CX} ${CY} L ${x1} ${y1} A ${R} ${R} 0 ${large} 1 ${x2} ${y2} Z`;
 }
 
-function midPoint(startDeg, endDeg, r) {
-  const mid = toRad((startDeg + endDeg) / 2);
-  return { x: CX + r * Math.cos(mid), y: CY + r * Math.sin(mid) };
-}
 
 function formatMs(ms) {
   const h = Math.floor(ms / 3600000);
@@ -118,7 +113,7 @@ export default function WheelPage({ onNavigate }) {
   return (
     <div className="page">
       <h1 className="page-title">Daily FUNKY Spin</h1>
-      <p style={{ color: '#666', fontSize: 15, marginBottom: 36, maxWidth: 480 }}>
+      <p style={{ color: 'var(--text-2)', fontSize: 15, marginBottom: 36, maxWidth: 480 }}>
         One free spin every 24 hours. Land on a prize, add it to your FUNKY balance.
       </p>
 
@@ -137,19 +132,18 @@ export default function WheelPage({ onNavigate }) {
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 10,
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+              filter: 'drop-shadow(0 0 6px rgba(0,255,178,0.8))',
             }}>
-              <svg width="32" height="40" viewBox="0 0 32 40">
-                <polygon points="16,40 0,0 32,0" fill="#000" />
-                <polygon points="16,38 2,2 30,2" fill="#fff" />
-                <polygon points="16,36 4,4 28,4" fill="#000" />
+              <svg width="28" height="34" viewBox="0 0 28 34">
+                <polygon points="14,34 0,0 28,0" fill="#00FFB2" />
+                <polygon points="14,30 3,4 25,4" fill="#0A0A0A" />
               </svg>
             </div>
 
             {/* Wheel SVG */}
             <div style={{
               borderRadius: '50%',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25), 0 0 0 6px #000, 0 0 0 10px #fff, 0 0 0 13px #000',
+              boxShadow: '0 0 0 3px #00FFB2, 0 0 40px rgba(0,255,178,0.25), 0 8px 48px rgba(0,0,0,0.6)',
               overflow: 'hidden',
               display: 'inline-block',
             }}>
@@ -175,41 +169,47 @@ export default function WheelPage({ onNavigate }) {
                 ))}
 
                 {/* Outer ring */}
-                <circle cx={CX} cy={CY} r={R} fill="none" stroke="#000" strokeWidth="5" />
+                <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="3" />
 
-                {/* Number bubbles at outer rim */}
+                {/* Radial labels — never upside-down */}
                 {SEGS.map((seg, i) => {
-                  const pos = midPoint(seg.start, seg.end, R * 0.78);
+                  const midAngle = (seg.start + seg.end) / 2;
+                  const sweep = seg.end - seg.start;
+                  const labelR = R * 0.64;
+                  const rad = toRad(midAngle);
+                  const tx = CX + labelR * Math.cos(rad);
+                  const ty = CY + labelR * Math.sin(rad);
+                  // Flip bottom-half text so it's never upside-down
+                  const rot = (midAngle > 90 && midAngle <= 270) ? midAngle - 180 : midAngle;
+                  const sz = sweep < 12 ? 7 : sweep < 22 ? 9 : sweep < 40 ? 11 : 14;
                   return (
-                    <g key={`b${i}`}>
-                      <circle
-                        cx={pos.x} cy={pos.y} r={R_BEAD}
-                        fill="#fff" stroke="#000" strokeWidth="2.5"
-                      />
-                      <text
-                        x={pos.x} y={pos.y}
-                        textAnchor="middle" dominantBaseline="middle"
-                        fill={seg.amount === 0 ? '#888' : seg.bg}
-                        fontSize={seg.amount >= 100 ? 11 : 13}
-                        fontWeight="800"
-                        fontFamily="'Space Grotesk', sans-serif"
-                        style={{ userSelect: 'none' }}
-                      >
-                        {seg.amount === 0 ? '—' : seg.label}
-                      </text>
-                    </g>
+                    <text
+                      key={`lbl${i}`}
+                      x={tx}
+                      y={ty}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill={seg.fg || '#fff'}
+                      fontSize={sz}
+                      fontWeight="900"
+                      fontFamily="'Space Grotesk', sans-serif"
+                      transform={`rotate(${rot}, ${tx}, ${ty})`}
+                      style={{ userSelect: 'none' }}
+                    >
+                      {seg.amount === 0 ? 'NOPE' : seg.label}
+                    </text>
                   );
                 })}
 
                 {/* Center hub */}
-                <circle cx={CX} cy={CY} r={R_HUB + 6} fill="#000" />
-                <circle cx={CX} cy={CY} r={R_HUB} fill="#fff" stroke="#000" strokeWidth="2" />
+                <circle cx={CX} cy={CY} r={R_HUB + 5} fill="#0A0A0A" />
+                <circle cx={CX} cy={CY} r={R_HUB} fill="#00FFB2" stroke="#0A0A0A" strokeWidth="2" />
                 <text
                   x={CX} y={CY}
                   textAnchor="middle" dominantBaseline="middle"
-                  fontSize="16" fontWeight="900"
+                  fontSize="13" fontWeight="900"
                   fontFamily="'Space Grotesk', sans-serif"
-                  fill="#000"
+                  fill="#0A0A0A"
                 >
                   ✦
                 </text>
@@ -223,25 +223,24 @@ export default function WheelPage({ onNavigate }) {
               onClick={handleSpin}
               disabled={spinning}
               style={{
-                background: spinning ? '#555' : '#000',
-                color: '#fff',
-                border: '3px solid #000',
+                background: spinning ? 'var(--surface-2)' : '#00FFB2',
+                color: spinning ? 'var(--text-2)' : '#0A0A0A',
+                border: `3px solid ${spinning ? 'var(--border-color-med)' : '#00FFB2'}`,
                 borderRadius: 4,
                 fontSize: 22,
                 fontWeight: 900,
                 fontFamily: "'Permanent Marker', cursive",
                 padding: '16px 56px',
                 cursor: spinning ? 'not-allowed' : 'pointer',
-                boxShadow: spinning ? '2px 2px 0 #000' : '6px 6px 0 #555',
-                transition: 'transform 0.08s, box-shadow 0.08s',
+                boxShadow: spinning ? 'none' : '0 0 28px rgba(0,255,178,0.45)',
+                transition: 'transform 0.08s, box-shadow 0.08s, background 0.2s',
                 letterSpacing: 2,
-                transform: spinning ? 'translate(4px,4px)' : undefined,
               }}
             >
               {spinning ? 'spinning...' : 'SPIN!'}
             </button>
           ) : (
-            <div style={{ textAlign: 'center', padding: '16px 24px', border: '3px solid #000', borderRadius: 4, background: '#f3f3f3', boxShadow: '4px 4px 0 #000' }}>
+            <div style={{ textAlign: 'center', padding: '16px 24px', border: '1px solid var(--border-color-med)', borderRadius: 6, background: 'var(--surface-2)' }}>
               <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: '#888', marginBottom: 6 }}>
                 Next spin available in
               </div>
@@ -254,13 +253,13 @@ export default function WheelPage({ onNavigate }) {
           {/* Result */}
           {result && !spinning && (
             <div style={{
-              border: '3px solid #000',
-              borderRadius: 4,
+              border: result.amount === 0 ? '1px solid var(--border-color-med)' : `1px solid ${result.bg}`,
+              borderRadius: 8,
               padding: '24px 40px',
               textAlign: 'center',
-              background: result.amount === 0 ? '#f3f3f3' : result.bg,
-              color: result.amount === 0 ? '#000' : result.fg,
-              boxShadow: '6px 6px 0 #000',
+              background: result.amount === 0 ? 'var(--surface-2)' : `${result.bg}22`,
+              color: result.amount === 0 ? 'var(--text)' : result.bg,
+              boxShadow: result.amount === 0 ? 'none' : `0 0 24px ${result.bg}44`,
               minWidth: 260,
               animation: 'popIn 0.35s cubic-bezier(0.34,1.56,0.64,1)',
             }}>
@@ -287,20 +286,19 @@ export default function WheelPage({ onNavigate }) {
 
           {/* Balance card */}
           <div style={{
-            border: '3px solid #000', borderRadius: 4, overflow: 'hidden',
-            boxShadow: '5px 5px 0 #000',
+            border: '1px solid var(--border-color-med)', borderRadius: 8, overflow: 'hidden',
           }}>
-            <div style={{ background: '#000', color: '#fff', padding: '10px 16px', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+            <div style={{ background: 'var(--surface-2)', color: 'var(--text-2)', padding: '10px 16px', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', borderBottom: '1px solid var(--border-color)' }}>
               Your FUNKY Balance
             </div>
-            <div style={{ padding: '20px 16px', background: '#fff' }}>
-              <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 48, lineHeight: 1, color: '#f59e0b' }}>
+            <div style={{ padding: '20px 16px', background: 'var(--surface)' }}>
+              <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 48, lineHeight: 1, color: 'var(--gold)', textShadow: '0 0 20px rgba(245,158,11,0.4)' }}>
                 {funkyBalance.toLocaleString()} ✦
               </div>
-              <p style={{ fontSize: 13, color: '#777', marginTop: 10 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 10 }}>
                 Spend FUNKY to buy rare elements in the{' '}
                 <span
-                  style={{ textDecoration: 'underline', cursor: 'pointer', color: '#000', fontWeight: 700 }}
+                  style={{ textDecoration: 'underline', cursor: 'pointer', color: 'var(--accent)', fontWeight: 700 }}
                   onClick={() => onNavigate('marketplace')}
                 >
                   Marketplace →
@@ -310,8 +308,8 @@ export default function WheelPage({ onNavigate }) {
           </div>
 
           {/* Prize table */}
-          <div style={{ border: '3px solid #000', borderRadius: 4, overflow: 'hidden', boxShadow: '4px 4px 0 #000' }}>
-            <div style={{ background: '#000', color: '#fff', padding: '10px 16px', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          <div style={{ border: '1px solid var(--border-color-med)', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--surface-2)', color: 'var(--text-2)', padding: '10px 16px', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', borderBottom: '1px solid var(--border-color)' }}>
               Prize Table
             </div>
             <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -319,17 +317,18 @@ export default function WheelPage({ onNavigate }) {
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{
-                      display: 'inline-block', width: 20, height: 20, borderRadius: '50%',
-                      background: seg.bg, border: '2px solid #000', flexShrink: 0,
+                      display: 'inline-block', width: 16, height: 16, borderRadius: '50%',
+                      background: seg.bg, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0,
+                      boxShadow: `0 0 8px ${seg.bg}88`,
                     }} />
-                    <span style={{ fontWeight: 700, fontSize: 14 }}>
+                    <span style={{ fontWeight: 700, fontSize: 13 }}>
                       {seg.amount === 0 ? 'No prize' : `${seg.amount} FUNKY`}
                     </span>
                   </div>
                   <span style={{
-                    fontSize: 11, fontWeight: 700, color: '#888',
-                    background: '#f3f3f3', padding: '2px 8px', borderRadius: 20,
-                    border: '1.5px solid #ddd',
+                    fontSize: 11, fontWeight: 700, color: 'var(--text-3)',
+                    background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 20,
+                    border: '1px solid var(--border-color)',
                   }}>
                     {((seg.weight / TOTAL_WEIGHT) * 100).toFixed(0)}%
                   </span>
@@ -340,8 +339,8 @@ export default function WheelPage({ onNavigate }) {
 
           {/* Spin history */}
           {funkyHistory.length > 0 && (
-            <div style={{ border: '3px solid #000', borderRadius: 4, overflow: 'hidden', boxShadow: '4px 4px 0 #000' }}>
-              <div style={{ background: '#000', color: '#fff', padding: '10px 16px', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+            <div style={{ border: '1px solid var(--border-color-med)', borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ background: 'var(--surface-2)', color: 'var(--text-2)', padding: '10px 16px', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', borderBottom: '1px solid var(--border-color)' }}>
                 Recent Earnings
               </div>
               <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -349,10 +348,10 @@ export default function WheelPage({ onNavigate }) {
                   <div key={i} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     fontSize: 13, paddingBottom: i < 7 ? 8 : 0,
-                    borderBottom: i < Math.min(funkyHistory.length - 1, 7) ? '1px solid #eee' : 'none',
+                    borderBottom: i < Math.min(funkyHistory.length - 1, 7) ? '1px solid var(--border-color)' : 'none',
                   }}>
-                    <span style={{ color: '#555' }}>{h.reason}</span>
-                    <span style={{ fontWeight: 800, color: '#f59e0b' }}>+{h.amount} ✦</span>
+                    <span style={{ color: 'var(--text-2)' }}>{h.reason}</span>
+                    <span style={{ fontWeight: 800, color: 'var(--gold)' }}>+{h.amount} ✦</span>
                   </div>
                 ))}
               </div>
@@ -364,16 +363,16 @@ export default function WheelPage({ onNavigate }) {
       {/* ── FUNKY Leaderboard ── */}
       <div style={{ marginTop: 56 }}>
         <h2 style={{ fontFamily: 'var(--font-sketch)', fontSize: 32, marginBottom: 8 }}>FUNKY Leaderboard</h2>
-        <p style={{ color: '#555', fontSize: 14, marginBottom: 24 }}>Top holders ranked by FUNKY balance.</p>
+        <p style={{ color: 'var(--text-2)', fontSize: 14, marginBottom: 24 }}>Top holders ranked by FUNKY balance.</p>
 
         {/* User rank card */}
         {(() => {
           const myEntry = allPlayers.find((p) => p.isMe);
           return myEntry ? (
             <div style={{
-              border: '2px solid #000', borderRadius: 4, boxShadow: '4px 4px 0 #000',
+              border: '1px solid var(--accent)', borderRadius: 8,
               padding: '20px 24px', marginBottom: 24,
-              background: '#000', color: '#fff',
+              background: 'rgba(0,255,178,0.05)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16,
             }}>
               <div>
@@ -393,11 +392,12 @@ export default function WheelPage({ onNavigate }) {
         })()}
 
         {/* Table */}
-        <div style={{ border: 'var(--border)', borderRadius: 4, overflow: 'hidden', boxShadow: '4px 4px 0 #000' }}>
+        <div style={{ border: 'var(--border)', borderRadius: 8, overflow: 'hidden' }}>
           <div style={{
             display: 'grid', gridTemplateColumns: '56px 1fr 140px 80px 80px',
-            padding: '10px 16px', background: '#000', color: '#fff',
-            fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
+            padding: '10px 16px', background: 'var(--surface-2)',
+            fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-3)',
+            borderBottom: '1px solid var(--border-color)',
           }}>
             <span>#</span><span>Player</span>
             <span style={{ textAlign: 'right' }}>FUNKY ✦</span>
@@ -410,25 +410,25 @@ export default function WheelPage({ onNavigate }) {
               style={{
                 display: 'grid', gridTemplateColumns: '56px 1fr 140px 80px 80px',
                 padding: '12px 16px',
-                background: player.isMe ? '#f3f3f3' : i % 2 === 0 ? '#fff' : '#fafafa',
-                borderTop: 'var(--border)',
+                background: player.isMe ? 'rgba(0,255,178,0.05)' : 'var(--surface)',
+                borderTop: i === 0 ? 'none' : '1px solid var(--border-color)',
                 fontWeight: player.isMe ? 700 : 400,
               }}
             >
-              <span style={{ fontFamily: 'var(--font-sketch)', fontSize: 20, color: player.rank <= 3 ? '#000' : '#aaa' }}>
+              <span style={{ fontFamily: 'var(--font-sketch)', fontSize: 20, color: player.rank <= 3 ? 'var(--accent)' : 'var(--text-3)' }}>
                 {player.rank}
               </span>
               <span style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
                 {player.username}
                 {player.isMe && (
-                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: '2px 6px', background: '#000', color: '#fff', borderRadius: 2 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: '2px 6px', background: 'var(--accent)', color: '#0A0A0A', borderRadius: 2 }}>
                     YOU
                   </span>
                 )}
               </span>
-              <span style={{ textAlign: 'right', fontFamily: 'var(--font-sketch)', fontSize: 18 }}>{player.funky.toLocaleString()}</span>
-              <span style={{ textAlign: 'right', fontSize: 14, color: '#555' }}>{player.nfts}</span>
-              <span style={{ textAlign: 'right', fontSize: 14, color: '#555' }}>{player.drops}</span>
+              <span style={{ textAlign: 'right', fontFamily: 'var(--font-sketch)', fontSize: 18, color: 'var(--gold)' }}>{player.funky.toLocaleString()}</span>
+              <span style={{ textAlign: 'right', fontSize: 14, color: 'var(--text-2)' }}>{player.nfts}</span>
+              <span style={{ textAlign: 'right', fontSize: 14, color: 'var(--text-2)' }}>{player.drops}</span>
             </div>
           ))}
         </div>

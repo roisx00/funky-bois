@@ -116,6 +116,9 @@ function makeInitialState() {
     claimedSessions:      {},
     marketplace:          makeSeedListings(),
     offers:               [],  // [{ id, listingId, elementName, elementType, variant, sellerUserId, sellerUsername, offerAmount, offererUserId, offererUsername, status, createdAt }]
+    referralCode:         null,
+    referredBy:           null,
+    referralCount:        0,
   };
 }
 
@@ -144,6 +147,31 @@ function reducer(state, action) {
 
     case 'DISCONNECT_WALLET':
       return { ...state, walletAddress: null, walletUsername: null, isWalletConnected: false };
+
+    case 'SET_REFERRAL_CODE':
+      if (state.referralCode) return state;
+      return { ...state, referralCode: action.code };
+
+    case 'SET_REFERRED_BY': {
+      if (state.referredBy) return state; // only first referral counts
+      const refEntry = { amount: 50, reason: 'Referral join bonus', ts: Date.now() };
+      return {
+        ...state,
+        referredBy: action.code,
+        funkyBalance: state.funkyBalance + 50,
+        funkyHistory: [refEntry, ...state.funkyHistory.slice(0, 49)],
+      };
+    }
+
+    case 'EARN_REFERRAL_BONUS': {
+      const refBonus = { amount: 50, reason: `Referral: someone joined with your link`, ts: Date.now() };
+      return {
+        ...state,
+        referralCount: (state.referralCount || 0) + 1,
+        funkyBalance: state.funkyBalance + 50,
+        funkyHistory: [refBonus, ...state.funkyHistory.slice(0, 49)],
+      };
+    }
 
     case 'ADD_ELEMENT': {
       const el       = action.element;
@@ -463,16 +491,45 @@ export function GameProvider({ children }) {
 
   const loginWithX = useCallback((user) => {
     dispatch({ type: 'SET_X_USER', user });
+    dispatch({ type: 'SET_REFERRAL_CODE', code: user.username });
   }, []);
 
   const logoutX = useCallback(() => {
     dispatch({ type: 'CLEAR_X_USER' });
   }, []);
 
+  const setReferralCode = useCallback((code) => {
+    dispatch({ type: 'SET_REFERRAL_CODE', code });
+  }, []);
+
+  const setReferredBy = useCallback((code) => {
+    dispatch({ type: 'SET_REFERRED_BY', code });
+  }, []);
+
   const connectWallet = useCallback(async () => {
     if (window.ethereum) {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        // Switch to Sepolia testnet
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0xaa36a7' }],
+          });
+        } catch (switchErr) {
+          if (switchErr.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0xaa36a7',
+                chainName: 'Sepolia Test Network',
+                nativeCurrency: { name: 'SepoliaETH', symbol: 'ETH', decimals: 18 },
+                rpcUrls: ['https://rpc.sepolia.org'],
+                blockExplorerUrls: ['https://sepolia.etherscan.io'],
+              }],
+            });
+          }
+        }
         dispatch({ type: 'CONNECT_WALLET', address: accounts[0] });
         return { ok: true, address: accounts[0] };
       } catch (e) {
@@ -527,14 +584,6 @@ export function GameProvider({ children }) {
     return { ok: true, element, position };
   }, [canClaimThisSession, claimsThisSession]);
 
-  const demoClaimElement = useCallback(() => {
-    const ss       = getSessionStatus();
-    const element  = pickRandomElement();
-    const position = Math.floor(Math.random() * 15) + 1;
-    dispatch({ type: 'ADD_ELEMENT', element });
-    dispatch({ type: 'RECORD_SESSION_CLAIM', sessionId: ss.sessId, position, firstClaim: Date.now() });
-    return { ok: true, element, position };
-  }, []);
 
   // Consolation FUNKY when user missed/pool empty
   const claimConsolation = useCallback(() => {
@@ -625,8 +674,9 @@ export function GameProvider({ children }) {
     connectWallet,
     disconnectWallet,
     walletSign,
+    setReferralCode,
+    setReferredBy,
     claimElement,
-    demoClaimElement,
     claimConsolation,
     spinWheel,
     addFunky,

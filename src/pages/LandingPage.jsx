@@ -32,10 +32,6 @@ export default function LandingPage({ onNavigate }) {
         <div className="container">
           <div style={{ display: 'flex', gap: 40, alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-              <div className="hero-tag">
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', display: 'inline-block' }} />
-                NFT WHITELIST PROJECT · 2222 SUPPLY
-              </div>
 
               <h1 className="hero-title">BUILD IT.<br />SHARE IT.<br />GET IN.</h1>
 
@@ -99,42 +95,26 @@ export default function LandingPage({ onNavigate }) {
       </div>
 
       {/* ── Mint progress teaser ── */}
-      <section style={{ borderBottom: 'var(--border)', background: '#000', color: '#fff', padding: '40px 0' }}>
+      <section style={{ borderBottom: 'var(--border)', background: 'var(--surface)', color: 'var(--text)', padding: '64px 0', position: 'relative', overflow: 'hidden' }}>
         <div className="container">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.5, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 12 }}>
                 Community Mint Progress
               </div>
-              <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 48, lineHeight: 1, marginBottom: 6 }}>
+              <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 64, lineHeight: 1, marginBottom: 8, fontWeight: 900 }}>
                 {nftCount.toLocaleString()}{' '}
-                <span style={{ fontSize: 28, opacity: 0.4 }}>/ 2,222</span>
+                <span style={{ fontSize: 32, color: 'var(--text-4)' }}>/ 2,222</span>
               </div>
-              <div style={{ fontSize: 14, opacity: 0.7, marginBottom: 14 }}>
-                Mint opens when the community builds 2,222 Funky Bois
+              <p style={{ fontSize: 15, color: 'var(--text-2)', marginBottom: 24, fontWeight: 600 }}>
+                Mint opens when the community builds 2,222 Funky Bois.
+              </p>
+              <div style={{ background: 'var(--bg-2)', border: 'var(--border)', borderRadius: 10, height: 24, overflow: 'hidden', maxWidth: 600, boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ width: `${mintPct}%`, height: '100%', background: 'var(--accent)', borderRight: '2px solid #000', transition: 'width 1s cubic-bezier(0.34, 1.56, 0.64, 1)', borderRadius: 0 }} />
               </div>
-              <div style={{ background: '#333', border: '2px solid #555', borderRadius: 2, height: 14, overflow: 'hidden', maxWidth: 480 }}>
-                <div style={{ width: `${mintPct}%`, height: '100%', background: '#fff', transition: 'width 1s ease' }} />
-              </div>
-              <div style={{ fontSize: 12, opacity: 0.5, marginTop: 6 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 12, fontWeight: 700 }}>
                 {(2222 - nftCount).toLocaleString()} more needed to unlock mint
               </div>
-            </div>
-            <div style={{ flexShrink: 0 }}>
-              <div style={{ fontSize: 12, opacity: 0.5, marginBottom: 8, letterSpacing: 1, textTransform: 'uppercase' }}>Status</div>
-              {nftCount >= 2222 ? (
-                <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 28, color: '#fff', marginBottom: 12 }}>MINT OPEN</div>
-              ) : (
-                <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 28, opacity: 0.85, marginBottom: 4 }}>MINT SOON</div>
-              )}
-              <div style={{ fontSize: 13, opacity: 0.55, marginBottom: 12 }}>Price: TBA</div>
-              <button
-                className="btn btn-sm"
-                style={{ background: 'transparent', color: '#fff', borderColor: '#fff' }}
-                onClick={() => onNavigate('mint')}
-              >
-                View Mint Page →
-              </button>
             </div>
           </div>
         </div>
@@ -152,26 +132,26 @@ export default function LandingPage({ onNavigate }) {
       </div>
 
       {/* ── FUNKY Token section ── */}
-      <section className="funky-section">
+      <section className="funky-section" style={{ borderBottom: 'var(--border)', padding: '80px 0' }}>
         <div className="container">
-          <div style={{ display: 'flex', gap: 48, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 320px' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.5, marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 64, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 360px' }}>
+              <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 12 }}>
                 Onchain Points Token
               </div>
-              <h2 style={{ fontFamily: 'var(--font-sketch)', fontSize: 52, lineHeight: 1, marginBottom: 16 }}>
+              <h2 style={{ fontFamily: 'var(--font-sketch)', fontSize: 64, lineHeight: 1, marginBottom: 20 }}>
                 EARN FUNKY
               </h2>
-              <p style={{ fontSize: 16, opacity: 0.75, lineHeight: 1.6, marginBottom: 24, maxWidth: 440 }}>
+              <p style={{ fontSize: 18, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 32, maxWidth: 500, fontWeight: 500 }}>
                 FUNKY is the onchain points token for the Funky Bois ecosystem. Not tradeable yet —
                 but it's yours. Earn it from drops, daily spins, and consolation rewards.
                 Spend it on the marketplace for rare elements.
               </p>
-              <button className="btn" style={{ background: 'transparent', color: '#fff', borderColor: '#fff' }} onClick={() => onNavigate('wheel')}>
+              <button className="btn btn-purple btn-lg" onClick={() => onNavigate('wheel')}>
                 Spin the Daily Wheel →
               </button>
             </div>
-            <div style={{ flex: '1 1 280px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
+            <div style={{ flex: '1 1 280px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
               {[
                 { title: 'Daily Spin', desc: 'Spin once a day. Win 5–200 FUNKY per spin.' },
                 { title: 'Drop Rewards', desc: 'Every element claimed earns you bonus FUNKY.' },
@@ -181,15 +161,18 @@ export default function LandingPage({ onNavigate }) {
                 <div
                   key={item.title}
                   style={{
-                    border: '2px solid #333',
-                    borderRadius: 4,
-                    padding: '16px',
-                    background: '#111',
-                    boxShadow: '3px 3px 0 #333',
+                    border: 'var(--border-thin)',
+                    borderRadius: 12,
+                    padding: '24px',
+                    background: 'var(--white)',
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'all 0.1s',
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translate(-2px, -2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translate(0, 0)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>{item.title}</div>
-                  <div style={{ fontSize: 12, opacity: 0.6, lineHeight: 1.5 }}>{item.desc}</div>
+                  <div style={{ fontWeight: 900, fontSize: 16, marginBottom: 10, textTransform: 'uppercase' }}>{item.title}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.5, fontWeight: 500 }}>{item.desc}</div>
                 </div>
               ))}
             </div>
@@ -198,7 +181,7 @@ export default function LandingPage({ onNavigate }) {
       </section>
 
       {/* ── Elements + rarity ── */}
-      <section style={{ padding: '48px 0', borderBottom: 'var(--border)' }}>
+      <section style={{ padding: '48px 0', borderBottom: '1px solid var(--border-color)', background: 'var(--bg)' }}>
         <div className="container">
           <div style={{ display: 'flex', gap: 48, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div style={{ flex: '1 1 280px' }}>
@@ -215,15 +198,15 @@ export default function LandingPage({ onNavigate }) {
                       borderRadius: 4,
                       fontWeight: 700,
                       fontSize: 14,
-                      boxShadow: '3px 3px 0 #000',
-                      background: '#fff',
+                      boxShadow: 'none',
+                      background: 'var(--surface-2)',
                     }}
                   >
                     {label}
                   </div>
                 ))}
               </div>
-              <p style={{ color: '#555', fontSize: 14, lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--text-2)', fontSize: 14, lineHeight: 1.6 }}>
                 Collect one of each type. Each drop gives you a random element — duplicates can be traded or sold on the marketplace.
               </p>
             </div>
@@ -235,13 +218,13 @@ export default function LandingPage({ onNavigate }) {
               {RARITY_ROWS.map((r) => (
                 <div key={r.label} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 14 }}>
                   <div style={{ width: 80, fontWeight: 700, fontSize: 13 }}>{r.label}</div>
-                  <div style={{ flex: 1, background: '#f3f3f3', border: '2px solid #000', borderRadius: 2, height: 12, overflow: 'hidden' }}>
-                    <div style={{ width: r.pct, height: '100%', background: '#000' }} />
+                  <div style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border-color-med)', borderRadius: 4, height: 8, overflow: 'hidden' }}>
+                    <div style={{ width: r.pct, height: '100%', background: 'linear-gradient(90deg, var(--accent), var(--cyan))', borderRadius: 4 }} />
                   </div>
                   <div style={{ width: 36, fontWeight: 700, fontSize: 13, textAlign: 'right' }}>{r.pct}</div>
                 </div>
               ))}
-              <p style={{ color: '#555', fontSize: 13, marginTop: 12, lineHeight: 1.5 }}>
+              <p style={{ color: 'var(--text-2)', fontSize: 13, marginTop: 12, lineHeight: 1.5 }}>
                 Ultra Rare traits (3% drop rate) are the rarest of all. Grind drops or buy them on the marketplace.
               </p>
             </div>
@@ -250,14 +233,14 @@ export default function LandingPage({ onNavigate }) {
       </section>
 
       {/* ── Marketplace CTA ── */}
-      <section style={{ padding: '48px 0', borderBottom: 'var(--border)', background: 'var(--off-white)' }}>
+      <section style={{ padding: '48px 0', borderBottom: '1px solid var(--border-color)', background: 'var(--surface)' }}>
         <div className="container">
           <div style={{ display: 'flex', gap: 48, alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 300px' }}>
               <h2 style={{ fontFamily: 'var(--font-sketch)', fontSize: 32, marginBottom: 12 }}>
                 Missing Pieces? Trade or Buy.
               </h2>
-              <p style={{ fontSize: 15, color: '#555', lineHeight: 1.6, marginBottom: 20 }}>
+              <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 20 }}>
                 Got duplicates? List them on the marketplace. Need something specific? Browse listings from other players. Wallet-signed for safety.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>

@@ -117,7 +117,7 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
             </div>
 
             {/* Progress summary */}
-            <div style={{ marginTop: 24, border: 'var(--border)', borderRadius: 4, padding: '16px 20px', background: 'var(--off-white)' }}>
+            <div style={{ marginTop: 24, border: '1px solid var(--border-color-med)', borderRadius: 6, padding: '16px 20px', background: 'var(--surface-2)' }}>
               <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 14 }}>
                 Slots filled: {selectedCount}/{ELEMENT_TYPES.length}
               </div>
@@ -127,9 +127,9 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
                     key={type}
                     className={`tag`}
                     style={{
-                      background: selection[type] !== undefined ? '#000' : undefined,
-                      color: selection[type] !== undefined ? '#fff' : undefined,
-                      borderColor: selection[type] !== undefined ? '#000' : '#ccc',
+                      background: selection[type] !== undefined ? 'var(--accent-dim)' : undefined,
+                      color: selection[type] !== undefined ? 'var(--accent)' : undefined,
+                      borderColor: selection[type] !== undefined ? 'var(--accent)' : 'var(--border-color)',
                     }}
                   >
                     {ELEMENT_LABELS[type]}
@@ -174,7 +174,7 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
                 </p>
                 <button
                   className="btn"
-                  style={{ background: '#fff', color: '#000', width: '100%' }}
+                  style={{ width: '100%' }}
                   onClick={() => handleShare(latestNFT?.id)}
                 >
                   Share on X (Twitter) →

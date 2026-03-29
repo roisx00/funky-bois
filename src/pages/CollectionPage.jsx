@@ -67,7 +67,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'elements' }) 
               <p style={{ fontSize: 14, opacity: 0.85, marginBottom: 16 }}>
                 You have all 7 element types. Build your Funky Boi now.
               </p>
-              <button className="btn" style={{ background: '#fff', color: '#000' }} onClick={() => setTab('build')}>
+              <button className="btn" style={{ background: '#000', color: 'var(--accent)', border: '1px solid var(--accent)' }} onClick={() => setTab('build')}>
                 Build My NFT →
               </button>
             </div>

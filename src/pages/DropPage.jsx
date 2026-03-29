@@ -7,7 +7,7 @@ import { ELEMENT_LABELS, getElementSVG } from '../data/elements';
 const MIN_CLICK_GAP_MS = 120;
 
 export default function DropPage() {
-  const { sessionStatus, claimElement, demoClaimElement, progressCount, claimConsolation, funkyBalance, hasConsolation } = useGame();
+  const { sessionStatus, claimElement, progressCount, claimConsolation, funkyBalance, hasConsolation } = useGame();
 
   const [consolationResult, setConsolationResult] = useState(null);
 
@@ -19,9 +19,8 @@ export default function DropPage() {
   const {
     isActive, isPoolEmpty, msUntilNext, msUntilClose,
     claimsThisSession, canClaimThisSession, maxClaims,
-    poolRemaining, poolPct, totalPool,
+    poolPct,
     reactionTimeSec, bestPosition, claimPositions,
-    simClaimed,
   } = sessionStatus;
 
   const [revealed,      setRevealed]      = useState(null);
@@ -78,10 +77,6 @@ export default function DropPage() {
     setRevealed({ ...result.element, position: result.position });
   }, [claimElement]);
 
-  const handleDemoClaim = useCallback(() => {
-    const result = demoClaimElement();
-    if (result.ok) setRevealed({ ...result.element, position: result.position });
-  }, [demoClaimElement]);
 
   const urgency = !poolPct || poolPct > 0.5 ? 'normal' : poolPct > 0.2 ? 'low' : 'critical';
 
@@ -90,13 +85,14 @@ export default function DropPage() {
       {/* Critical urgency banner */}
       {isActive && urgency === 'critical' && (
         <div style={{
-          background: '#000', color: '#fff',
-          padding: '10px 20px', marginBottom: 24,
-          fontWeight: 700, fontSize: 14, letterSpacing: '1px',
-          textAlign: 'center', border: 'var(--border)', borderRadius: 4,
+          background: 'var(--accent)', color: '#000',
+          padding: '12px 24px', marginBottom: 24,
+          fontWeight: 900, fontSize: 13, letterSpacing: '2px',
+          textAlign: 'center', border: 'var(--border)', borderRadius: 10,
           animation: 'pulse-anim 1.4s ease-in-out infinite',
+          boxShadow: 'var(--shadow-sm)'
         }}>
-          ALMOST GONE — {poolRemaining} SLOTS REMAINING
+          ALMOST GONE — GRAB IT NOW
         </div>
       )}
 
@@ -113,31 +109,10 @@ export default function DropPage() {
                   DROP LIVE
                 </div>
 
-                {/* Pool counter */}
+                {/* Session active indicator */}
                 <div style={{ marginBottom: 28 }}>
-                  <div style={{
-                    fontFamily: 'var(--font-sketch)',
-                    fontSize: 62, lineHeight: 1, letterSpacing: -2, marginBottom: 4,
-                  }}>
-                    {poolRemaining}
-                    <span style={{ fontSize: 20, color: '#999', fontFamily: 'var(--font-body)', letterSpacing: 0 }}>
-                      /{totalPool}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#888', marginBottom: 10 }}>
-                    slots remaining · first come first served
-                  </div>
-                  <div style={{
-                    height: 14, background: '#e8e8e8',
-                    border: '2px solid #000', borderRadius: 2, overflow: 'hidden',
-                  }}>
-                    <div style={{
-                      height: '100%', width: `${(poolPct ?? 1) * 100}%`,
-                      background: '#000', transition: 'width 1s linear',
-                    }} />
-                  </div>
-                  <div style={{ fontSize: 11, color: '#aaa', marginTop: 5, fontWeight: 600 }}>
-                    {(simClaimed ?? 0) + claimsThisSession} total claimed across all users
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 6 }}>
+                    first come · first served
                   </div>
                 </div>
 
@@ -149,7 +124,12 @@ export default function DropPage() {
                     className="claim-btn"
                     onClick={handleClaim}
                     disabled={!canClaimThisSession || !!isPoolEmpty}
-                    style={{ boxShadow: urgency === 'critical' ? '8px 8px 0 #555, 0 0 0 4px #000' : '8px 8px 0 #555' }}
+                    style={{ 
+                      boxShadow: urgency === 'critical' ? 'var(--shadow-lg)' : 'var(--shadow-md)',
+                      border: 'var(--border)',
+                      background: isPoolEmpty ? 'var(--bg-3)' : 'var(--text)',
+                      transition: 'all 0.1s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                    }}
                   >
                     {isPoolEmpty ? 'GONE' : !canClaimThisSession ? 'DONE' : 'TAP!'}
                   </button>
@@ -175,21 +155,22 @@ export default function DropPage() {
 
                 {/* Position badges */}
                 {claimPositions && claimPositions.length > 0 && (
-                  <div style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                     {claimPositions.map((pos, i) => (
                       <div key={i} style={{
-                        border: '2px solid #000', borderRadius: 4, padding: '4px 10px',
-                        fontSize: 12, fontWeight: 700,
-                        background: pos <= 10 ? '#000' : '#f3f3f3',
-                        color: pos <= 10 ? '#fff' : '#000',
-                        boxShadow: '2px 2px 0 #000',
+                        border: 'var(--border-thin)', borderRadius: 6, padding: '6px 14px',
+                        fontSize: 12, fontWeight: 900,
+                        background: pos <= 10 ? 'var(--accent)' : 'var(--white)',
+                        color: '#000',
+                        boxShadow: 'var(--shadow-sm)',
+                        transform: 'translate(-2px, -2px)'
                       }}>
                         #{pos} {pos <= 10 ? 'FAST' : ''}
                       </div>
                     ))}
                     {reactionTimeSec && (
-                      <div style={{ fontSize: 12, color: '#888', fontWeight: 600, alignSelf: 'center' }}>
-                        first claim T+{reactionTimeSec}s
+                      <div style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 800, alignSelf: 'center', textTransform: 'uppercase' }}>
+                        T+{reactionTimeSec}s
                       </div>
                     )}
                   </div>
@@ -201,15 +182,15 @@ export default function DropPage() {
                 <h2 style={{ fontFamily: 'var(--font-sketch)', fontSize: 28, marginBottom: 8 }}>
                   {isPoolEmpty ? 'Pool Wiped Out' : 'Next Drop'}
                 </h2>
-                <p style={{ color: '#555', marginBottom: 28, fontSize: 15 }}>
+                <p style={{ color: 'var(--text-2)', marginBottom: 28, fontSize: 15 }}>
                   {isPoolEmpty
-                    ? 'All 20 slots claimed. Next session opens soon.'
-                    : 'Sessions open every hour. 20 slots, first come first served.'}
+                    ? 'All slots claimed. Next session opens soon.'
+                    : 'Sessions open every hour. Limited slots, first come first served.'}
                 </p>
                 <Timer ms={msUntilNext} label="Next drop opens in" />
 
                 {/* Consolation FUNKY */}
-                <div style={{ marginTop: 24, border: 'var(--border)', borderRadius: 4, padding: '16px 20px', background: '#f3f3f3' }}>
+                <div style={{ marginTop: 24, border: 'var(--border)', borderRadius: 4, padding: '16px 20px', background: 'var(--surface-2)' }}>
                   <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
                     ✦ Missed the drop? Claim consolation FUNKY
                   </div>
@@ -230,8 +211,8 @@ export default function DropPage() {
                 </div>
 
                 <div style={{
-                  marginTop: 16, border: '2px dashed #000', borderRadius: 4,
-                  padding: '14px 20px', fontSize: 13, lineHeight: 1.7, background: '#f3f3f3',
+                  marginTop: 16, border: '1px dashed var(--border-color-strong)', borderRadius: 4,
+                  padding: '14px 20px', fontSize: 13, lineHeight: 1.7, background: 'var(--surface-2)',
                 }}>
                   <strong>Network edge matters.</strong><br />
                   Users who hit the claim button within seconds of open get the lowest position numbers
@@ -241,13 +222,6 @@ export default function DropPage() {
             )}
           </div>
 
-          {/* Demo */}
-          <div style={{ marginTop: 20, border: '2px dashed #ccc', borderRadius: 4, padding: '14px 18px', fontSize: 13 }}>
-            <strong>Demo mode</strong> — claim anytime without waiting for the hourly window.
-            <div style={{ marginTop: 10 }}>
-              <button className="btn btn-sm" onClick={handleDemoClaim}>Demo Claim</button>
-            </div>
-          </div>
 
           {/* How it works */}
           <div style={{ marginTop: 24 }}>
@@ -255,7 +229,7 @@ export default function DropPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               {[
                 'Sessions open every hour — 5-minute window only',
-                '100 total slots per session, shared across all users',
+                'Limited slots per session, shared across all users',
                 'First to tap = best position number = bragging rights',
                 '60% common / 25% rare / 12% legendary / 3% ultra-rare',
                 'Max 3 claims per session per user',
@@ -274,21 +248,11 @@ export default function DropPage() {
           <div className="sidebar-box">
             <div className="sidebar-box-title">Pool Status</div>
             <div className="sidebar-box-body">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontWeight: 700, fontSize: 13 }}>Slots remaining</span>
-                <span style={{ fontFamily: 'var(--font-sketch)', fontSize: 26 }}>
-                  {isActive || isPoolEmpty ? poolRemaining : '—'}
-                </span>
+              <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 28, marginBottom: 6 }}>
+                {isPoolEmpty ? 'GONE' : isActive ? 'LIVE' : 'WAITING'}
               </div>
-              <div style={{ height: 10, background: '#eee', border: '2px solid #000', borderRadius: 2, overflow: 'hidden', marginBottom: 10 }}>
-                <div style={{
-                  height: '100%',
-                  width: isActive ? `${(poolPct ?? 1) * 100}%` : '100%',
-                  background: '#000', transition: 'width 1s linear',
-                }} />
-              </div>
-              <div style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>
-                {isActive ? `~${simClaimed} claimed by others so far`
+              <div style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600 }}>
+                {isActive ? 'Session open — tap now'
                   : isPoolEmpty ? 'Pool exhausted this session'
                   : 'Session not active'}
               </div>
@@ -377,20 +341,33 @@ export default function DropPage() {
 
             {revealed.position && (
               <div style={{
-                margin: '8px 0 16px', padding: '8px 14px',
-                border: '2px solid #000', borderRadius: 4,
-                background: revealed.position <= 10 ? '#000' : '#f3f3f3',
-                color:      revealed.position <= 10 ? '#fff' : '#000',
-                fontWeight: 700, fontSize: 14, boxShadow: '2px 2px 0 #000',
+                margin: '16px 0 24px', padding: '10px 18px',
+                border: 'var(--border)', borderRadius: 8,
+                background: revealed.position <= 10 ? 'var(--accent)' : 'var(--bg-2)',
+                color: '#000',
+                fontWeight: 900, fontSize: 15, boxShadow: 'var(--shadow-md)',
               }}>
-                Position #{revealed.position}{' '}
-                {revealed.position <= 10 ? 'Top 10!' : revealed.position <= 25 ? 'Fast!' : ''}
+                POSITION #{revealed.position}{' '}
+                {revealed.position <= 10 ? 'TOP 10!' : revealed.position <= 25 ? 'FAST!' : ''}
               </div>
             )}
 
-            <button className="btn btn-solid reveal-close" onClick={() => setRevealed(null)}>
-              Sweet! →
-            </button>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                className="btn btn-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#000', color: '#fff', border: '1px solid #333' }}
+                onClick={() => {
+                  const text = `Just claimed a ${revealed.rarity.toUpperCase()} ${revealed.name} element in @FunkyBoisNFT! 🎉 #FunkyBois`;
+                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg>
+                Share on X
+              </button>
+              <button className="btn btn-solid reveal-close" onClick={() => setRevealed(null)}>
+                Sweet! →
+              </button>
+            </div>
           </div>
         </div>
       )}

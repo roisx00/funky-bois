@@ -1,3 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 36" width="160" height="36">
-  <text x="4" y="27" font-family="Georgia, serif" font-size="26" font-weight="900" fill="#000" letter-spacing="-1">FUNKY BOIS</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 36" width="148" height="36">
+  <!-- Circle mark with neon ring -->
+  <circle cx="18" cy="18" r="14" fill="#00FFB2" fill-opacity="0.08"/>
+  <circle cx="18" cy="18" r="14" fill="none" stroke="#00FFB2" stroke-width="1.5"/>
+  <!-- Accent dot -->
+  <circle cx="27" cy="9" r="2.2" fill="#00FFB2"/>
+  <!-- FB letters -->
+  <text x="18" y="24" font-family="Georgia,serif" font-size="14" font-weight="900" fill="#00FFB2" text-anchor="middle">FB</text>
+
+  <!-- Divider line -->
+  <rect x="40" y="10" width="1" height="16" fill="#00FFB2" fill-opacity="0.3" rx="1"/>
+
+  <!-- FUNKY wordmark -->
+  <text x="50" y="17" font-family="Georgia,serif" font-size="11" font-weight="900" fill="#FFFFFF" letter-spacing="2">FUNKY</text>
+  <!-- BOIS sub-label -->
+  <text x="51" y="29" font-family="Arial,sans-serif" font-size="8" font-weight="700" fill="#00FFB2" letter-spacing="5">BOIS</text>
 </svg>

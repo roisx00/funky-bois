@@ -159,18 +159,18 @@ export function getElementSVG(type, variant) {
        <line x1="80"  y1="0"   x2="105" y2="25"  stroke="#000" stroke-width="1.5" opacity=".2"/>
        <line x1="-5"  y1="30"  x2="70"  y2="105" stroke="#000" stroke-width="1.5" opacity=".2"/>
        <line x1="-5"  y1="55"  x2="50"  y2="110" stroke="#000" stroke-width="1.5" opacity=".2"/>
-       <path d="M58,8 L42,52 L54,52 L36,92 L70,44 L56,44 L72,8 Z" fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"/>`,
+       <path d="M58,8 L42,52 L54,52 L36,92 L70,44 L56,44 L72,8 Z" fill="#F59E0B" stroke="#F59E0B" stroke-width="1.5" stroke-linejoin="round"/>`,
 
       // 4 Matrix: binary grid on black (ULTRA RARE)
       `<rect width="100" height="100" fill="#000"/>
-       <text x="6"  y="16" font-family="monospace" font-size="9" fill="#fff" opacity=".85">01001011</text>
-       <text x="10" y="30" font-family="monospace" font-size="9" fill="#fff" opacity=".6">10110100</text>
-       <text x="4"  y="44" font-family="monospace" font-size="9" fill="#fff" opacity=".8">00101101</text>
-       <text x="14" y="58" font-family="monospace" font-size="9" fill="#fff" opacity=".7">11001010</text>
-       <text x="6"  y="72" font-family="monospace" font-size="9" fill="#fff" opacity=".5">10110011</text>
-       <text x="8"  y="86" font-family="monospace" font-size="9" fill="#fff" opacity=".9">01101001</text>
-       <circle cx="50" cy="50" r="18" fill="#000" stroke="#fff" stroke-width="3"/>
-       <text x="50" y="55" text-anchor="middle" font-family="monospace" font-size="16" fill="#fff" font-weight="900">0</text>`,
+       <text x="6"  y="16" font-family="monospace" font-size="9" fill="#00FFB2" opacity=".85">01001011</text>
+       <text x="10" y="30" font-family="monospace" font-size="9" fill="#00FFB2" opacity=".6">10110100</text>
+       <text x="4"  y="44" font-family="monospace" font-size="9" fill="#00FFB2" opacity=".8">00101101</text>
+       <text x="14" y="58" font-family="monospace" font-size="9" fill="#00FFB2" opacity=".7">11001010</text>
+       <text x="6"  y="72" font-family="monospace" font-size="9" fill="#00FFB2" opacity=".5">10110011</text>
+       <text x="8"  y="86" font-family="monospace" font-size="9" fill="#00FFB2" opacity=".9">01101001</text>
+       <circle cx="50" cy="50" r="18" fill="#000" stroke="#00FFB2" stroke-width="3"/>
+       <text x="50" y="55" text-anchor="middle" font-family="monospace" font-size="16" fill="#00FFB2" font-weight="900">0</text>`,
     ],
 
     // ── HAIR ─────────────────────────────────────────────────────────────────
@@ -194,13 +194,13 @@ export function getElementSVG(type, variant) {
        <path d="M26,28 Q32,18 42,16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".4"/>`,
 
       // 3 Mohawk: tall fin + glow dots
-      `<path d="M36,8 Q38,4 50,2 Q62,4 64,8 L66,75 Q58,70 50,68 Q42,70 34,75 Z" fill="#000" stroke="#000" stroke-width="2"/>
-       <circle cx="50" cy="18" r="2.5" fill="#fff" opacity=".5"/>
-       <circle cx="50" cy="30" r="2.5" fill="#fff" opacity=".5"/>
-       <circle cx="50" cy="42" r="2.5" fill="#fff" opacity=".5"/>
-       <circle cx="50" cy="54" r="2.5" fill="#fff" opacity=".5"/>
-       <path d="M34,72 Q20,78 12,74 Q18,68 34,70 Z" fill="#000"/>
-       <path d="M66,72 Q80,78 88,74 Q82,68 66,70 Z" fill="#000"/>`,
+      `<path d="M36,8 Q38,4 50,2 Q62,4 64,8 L66,75 Q58,70 50,68 Q42,70 34,75 Z" fill="#7A5CFF" stroke="#5A3CDF" stroke-width="2"/>
+       <circle cx="50" cy="18" r="2.5" fill="#fff" opacity=".8"/>
+       <circle cx="50" cy="30" r="2.5" fill="#fff" opacity=".8"/>
+       <circle cx="50" cy="42" r="2.5" fill="#fff" opacity=".8"/>
+       <circle cx="50" cy="54" r="2.5" fill="#fff" opacity=".8"/>
+       <path d="M34,72 Q20,78 12,74 Q18,68 34,70 Z" fill="#5A3CDF"/>
+       <path d="M66,72 Q80,78 88,74 Q82,68 66,70 Z" fill="#5A3CDF"/>`,
 
       // 4 Bald: glare marks only
       `<ellipse cx="50" cy="50" rx="34" ry="38" fill="none" stroke="#000" stroke-width="4"/>
@@ -210,10 +210,10 @@ export function getElementSVG(type, variant) {
        <circle cx="40" cy="21" r="1.8" fill="#fff"/>`,
 
       // 5 Flame: fire hair (ULTRA RARE)
-      `<path d="M50,88 C30,72 16,48 24,28 C28,18 36,12 50,8 C64,12 72,18 76,28 C84,48 70,72 50,88 Z" fill="#000"/>
-       <path d="M50,88 C38,72 30,52 36,34 C40,24 46,18 50,14 C54,18 60,24 64,34 C70,52 62,72 50,88 Z" fill="#fff" opacity=".22"/>
-       <path d="M34,74 C22,56 18,34 28,18 C20,34 22,56 34,70 Z" fill="#fff" opacity=".14"/>
-       <path d="M66,74 C78,56 82,34 72,18 C80,34 78,56 66,70 Z" fill="#fff" opacity=".14"/>`,
+      `<path d="M50,88 C30,72 16,48 24,28 C28,18 36,12 50,8 C64,12 72,18 76,28 C84,48 70,72 50,88 Z" fill="#CC2200"/>
+       <path d="M50,88 C38,72 30,52 36,34 C40,24 46,18 50,14 C54,18 60,24 64,34 C70,52 62,72 50,88 Z" fill="#FF8C00" opacity=".9"/>
+       <path d="M34,74 C22,56 18,34 28,18 C20,34 22,56 34,70 Z" fill="#FFD700" opacity=".6"/>
+       <path d="M66,74 C78,56 82,34 72,18 C80,34 78,56 66,70 Z" fill="#FFD700" opacity=".6"/>`,
     ],
 
     // ── EYES ──────────────────────────────────────────────────────────────────
@@ -241,14 +241,14 @@ export function getElementSVG(type, variant) {
        <line x1="96" y1="20" x2="86" y2="34" stroke="#000" stroke-width="3" stroke-linecap="round"/>`,
 
       // 2 Stars
-      `<path d="M32,36 L34,45 L43,43 L37,50 L43,57 L34,55 L32,64 L30,55 L21,57 L27,50 L21,43 L30,45 Z" fill="#000"/>
+      `<path d="M32,36 L34,45 L43,43 L37,50 L43,57 L34,55 L32,64 L30,55 L21,57 L27,50 L21,43 L30,45 Z" fill="#F59E0B"/>
        <circle cx="32" cy="50" r="4" fill="#fff"/>
-       <path d="M68,36 L70,45 L79,43 L73,50 L79,57 L70,55 L68,64 L66,55 L57,57 L63,50 L57,43 L66,45 Z" fill="#000"/>
+       <path d="M68,36 L70,45 L79,43 L73,50 L79,57 L70,55 L68,64 L66,55 L57,57 L63,50 L57,43 L66,45 Z" fill="#F59E0B"/>
        <circle cx="68" cy="50" r="4" fill="#fff"/>
-       <line x1="32" y1="28" x2="32" y2="33" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
-       <line x1="68" y1="28" x2="68" y2="33" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
-       <line x1="18" y1="36" x2="22" y2="40" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
-       <line x1="82" y1="36" x2="78" y2="40" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>`,
+       <line x1="32" y1="28" x2="32" y2="33" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+       <line x1="68" y1="28" x2="68" y2="33" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+       <line x1="18" y1="36" x2="22" y2="40" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+       <line x1="82" y1="36" x2="78" y2="40" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>`,
 
       // 3 Dead X
       `<circle cx="32" cy="50" r="18" fill="#f3f3f3" stroke="#000" stroke-width="3"/>
@@ -261,14 +261,14 @@ export function getElementSVG(type, variant) {
       // 4 Laser: beams shooting from eyes (ULTRA RARE)
       `<ellipse cx="28" cy="50" rx="17" ry="11" fill="#fff" stroke="#000" stroke-width="3.5"/>
        <ellipse cx="72" cy="50" rx="17" ry="11" fill="#fff" stroke="#000" stroke-width="3.5"/>
-       <circle cx="28" cy="50" r="6" fill="#000"/>
-       <circle cx="72" cy="50" r="6" fill="#000"/>
+       <circle cx="28" cy="50" r="6" fill="#CC0000"/>
+       <circle cx="72" cy="50" r="6" fill="#CC0000"/>
        <circle cx="30" cy="48" r="2" fill="#fff"/>
        <circle cx="74" cy="48" r="2" fill="#fff"/>
-       <path d="M11,50 L0,50" stroke="#000" stroke-width="6" stroke-linecap="round"/>
-       <path d="M89,50 L100,50" stroke="#000" stroke-width="6" stroke-linecap="round"/>
-       <path d="M0,44 L10,50 L0,56" fill="#000"/>
-       <path d="M100,44 L90,50 L100,56" fill="#000"/>`,
+       <path d="M11,50 L0,50" stroke="#FF3333" stroke-width="6" stroke-linecap="round"/>
+       <path d="M89,50 L100,50" stroke="#FF3333" stroke-width="6" stroke-linecap="round"/>
+       <path d="M0,44 L10,50 L0,56" fill="#FF3333"/>
+       <path d="M100,44 L90,50 L100,56" fill="#FF3333"/>`,
     ],
 
     // ── GLASSES ────────────────────────────────────────────────────────────────
@@ -290,9 +290,9 @@ export function getElementSVG(type, variant) {
        <line x1="58" y1="42" x2="64" y2="48" stroke="#000" stroke-width="1.5" opacity=".25"/>`,
 
       // 2 Heart
-      `<path d="M27,44 C27,36 14,34 14,44 C14,54 27,62 27,62 C27,62 40,54 40,44 C40,34 27,36 27,44 Z" fill="none" stroke="#000" stroke-width="4.5"/>
-       <path d="M73,44 C73,36 60,34 60,44 C60,54 73,62 73,62 C73,62 86,54 86,44 C86,34 73,36 73,44 Z" fill="none" stroke="#000" stroke-width="4.5"/>
-       <path d="M40,50 Q50,46 60,50" fill="none" stroke="#000" stroke-width="3.5"/>
+      `<path d="M27,44 C27,36 14,34 14,44 C14,54 27,62 27,62 C27,62 40,54 40,44 C40,34 27,36 27,44 Z" fill="#FF69B4" stroke="#CC3377" stroke-width="4.5"/>
+       <path d="M73,44 C73,36 60,34 60,44 C60,54 73,62 73,62 C73,62 86,54 86,44 C86,34 73,36 73,44 Z" fill="#FF69B4" stroke="#CC3377" stroke-width="4.5"/>
+       <path d="M40,50 Q50,46 60,50" fill="none" stroke="#CC3377" stroke-width="3.5"/>
        <line x1="14" y1="46" x2="5"  y2="44" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
        <line x1="86" y1="46" x2="95" y2="44" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>`,
 
@@ -376,14 +376,14 @@ export function getElementSVG(type, variant) {
        <rect x="28" y="30" width="44" height="22" rx="2" fill="none" stroke="#fff" stroke-width="1.5" opacity=".3"/>`,
 
       // 1 Crown
-      `<path d="M12,60 L12,28 L30,48 L50,10 L70,48 L88,28 L88,60 Z" fill="#fff" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
-       <rect x="12" y="58" width="76" height="12" rx="2" fill="#000"/>
-       <circle cx="30" cy="44" r="5" fill="#000" stroke="#fff" stroke-width="1.5"/>
-       <circle cx="50" cy="15" r="6" fill="#000" stroke="#fff" stroke-width="1.5"/>
-       <circle cx="70" cy="44" r="5" fill="#000" stroke="#fff" stroke-width="1.5"/>
-       <circle cx="22" cy="64" r="2.5" fill="#fff"/>
-       <circle cx="50" cy="64" r="2.5" fill="#fff"/>
-       <circle cx="78" cy="64" r="2.5" fill="#fff"/>`,
+      `<path d="M12,60 L12,28 L30,48 L50,10 L70,48 L88,28 L88,60 Z" fill="#F59E0B" stroke="#C17F24" stroke-width="4" stroke-linejoin="round"/>
+       <rect x="12" y="58" width="76" height="12" rx="2" fill="#C17F24"/>
+       <circle cx="30" cy="44" r="5" fill="#CC0000" stroke="#F59E0B" stroke-width="1.5"/>
+       <circle cx="50" cy="15" r="6" fill="#CC0000" stroke="#F59E0B" stroke-width="1.5"/>
+       <circle cx="70" cy="44" r="5" fill="#CC0000" stroke="#F59E0B" stroke-width="1.5"/>
+       <circle cx="22" cy="64" r="2.5" fill="#FFE680"/>
+       <circle cx="50" cy="64" r="2.5" fill="#FFE680"/>
+       <circle cx="78" cy="64" r="2.5" fill="#FFE680"/>`,
 
       // 2 Headphones
       `<path d="M22,54 Q22,14 50,12 Q78,14 78,54" fill="none" stroke="#000" stroke-width="5"/>
@@ -405,12 +405,12 @@ export function getElementSVG(type, variant) {
        <ellipse cx="80" cy="50" rx="7"  ry="4" fill="#000"/>`,
 
       // 4 Halo: glowing ring (ULTRA RARE)
-      `<ellipse cx="50" cy="18" rx="32" ry="11" fill="none" stroke="#000" stroke-width="5.5"/>
-       <ellipse cx="50" cy="18" rx="25" ry="8" fill="none" stroke="#000" stroke-width="1.5" opacity=".35"/>
-       <line x1="28" y1="24" x2="24" y2="44" stroke="#000" stroke-width="1.5" stroke-dasharray="4,3" opacity=".5"/>
-       <line x1="72" y1="24" x2="76" y2="44" stroke="#000" stroke-width="1.5" stroke-dasharray="4,3" opacity=".5"/>
-       <path d="M18,18 Q14,10 18,4" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" opacity=".3"/>
-       <path d="M82,18 Q86,10 82,4" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" opacity=".3"/>`,
+      `<ellipse cx="50" cy="18" rx="32" ry="11" fill="none" stroke="#F59E0B" stroke-width="5.5"/>
+       <ellipse cx="50" cy="18" rx="25" ry="8" fill="none" stroke="#FFD700" stroke-width="1.5" opacity=".8"/>
+       <line x1="28" y1="24" x2="24" y2="44" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="4,3" opacity=".6"/>
+       <line x1="72" y1="24" x2="76" y2="44" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="4,3" opacity=".6"/>
+       <path d="M18,18 Q14,10 18,4" fill="none" stroke="#FFD700" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+       <path d="M82,18 Q86,10 82,4" fill="none" stroke="#FFD700" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>`,
     ],
 
     // ── STICKERS ─────────────────────────────────────────────────────────────
@@ -438,6 +438,8 @@ export function getElementSVG(type, variant) {
       `<circle cx="50" cy="42" r="28" fill="#000"/>
        <circle cx="40" cy="38" r="8"  fill="#fff"/>
        <circle cx="60" cy="38" r="8"  fill="#fff"/>
+       <circle cx="40" cy="38" r="4"  fill="#FF3333"/>
+       <circle cx="60" cy="38" r="4"  fill="#FF3333"/>
        <path d="M46,50 L50,54 L54,50" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
        <rect x="30" y="56" width="40" height="20" rx="4" fill="#000"/>
        <line x1="40" y1="56" x2="40" y2="76" stroke="#fff" stroke-width="3"/>
@@ -445,14 +447,14 @@ export function getElementSVG(type, variant) {
        <line x1="60" y1="56" x2="60" y2="76" stroke="#fff" stroke-width="3"/>`,
 
       // 4 Diamond: faceted gem (ULTRA RARE)
-      `<polygon points="50,6 84,40 50,94 16,40" fill="#000"/>
-       <polygon points="50,6 84,40 50,47 16,40" fill="#fff" opacity=".28"/>
-       <line x1="16" y1="40" x2="84" y2="40" stroke="#fff" stroke-width="1" opacity=".2"/>
-       <line x1="50" y1="6"  x2="16" y2="40" stroke="#fff" stroke-width="1" opacity=".15"/>
-       <line x1="50" y1="6"  x2="84" y2="40" stroke="#fff" stroke-width="1" opacity=".15"/>
-       <line x1="50" y1="47" x2="16" y2="40" stroke="#fff" stroke-width="1" opacity=".1"/>
-       <line x1="50" y1="47" x2="84" y2="40" stroke="#fff" stroke-width="1" opacity=".1"/>
-       <circle cx="50" cy="27" r="3" fill="#fff" opacity=".4"/>`,
+      `<polygon points="50,6 84,40 50,94 16,40" fill="#00E5FF"/>
+       <polygon points="50,6 84,40 50,47 16,40" fill="#fff" opacity=".5"/>
+       <line x1="16" y1="40" x2="84" y2="40" stroke="#fff" stroke-width="1.5" opacity=".5"/>
+       <line x1="50" y1="6"  x2="16" y2="40" stroke="#fff" stroke-width="1.5" opacity=".4"/>
+       <line x1="50" y1="6"  x2="84" y2="40" stroke="#fff" stroke-width="1.5" opacity=".4"/>
+       <line x1="50" y1="47" x2="16" y2="40" stroke="#0088AA" stroke-width="1" opacity=".6"/>
+       <line x1="50" y1="47" x2="84" y2="40" stroke="#0088AA" stroke-width="1" opacity=".6"/>
+       <circle cx="50" cy="27" r="3" fill="#fff" opacity=".8"/>`,
     ],
   };
 
@@ -502,14 +504,14 @@ export function buildNFTSVG(elements = {}) {
 
     // 4 Matrix bg (ULTRA RARE)
     `<rect width="300" height="380" fill="#000"/>
-     <text x="8"   y="28"  font-family="monospace" font-size="11" fill="#fff" opacity=".8">01001011 10110100 00101101</text>
-     <text x="14"  y="52"  font-family="monospace" font-size="11" fill="#fff" opacity=".55">11001010 01101001 10011010</text>
-     <text x="4"   y="76"  font-family="monospace" font-size="11" fill="#fff" opacity=".75">00110101 11010010 01011010</text>
-     <text x="20"  y="100" font-family="monospace" font-size="11" fill="#fff" opacity=".5">10100110 01001011 10110100</text>
-     <text x="8"   y="124" font-family="monospace" font-size="11" fill="#fff" opacity=".8">01101001 10011010 00110101</text>
-     <text x="4"   y="310" font-family="monospace" font-size="11" fill="#fff" opacity=".6">11010010 01011010 10100110</text>
-     <text x="14"  y="334" font-family="monospace" font-size="11" fill="#fff" opacity=".75">01001011 10110100 00101101</text>
-     <text x="8"   y="358" font-family="monospace" font-size="11" fill="#fff" opacity=".5">10011010 00110101 11010010</text>`,
+     <text x="8"   y="28"  font-family="monospace" font-size="11" fill="#00FFB2" opacity=".8">01001011 10110100 00101101</text>
+     <text x="14"  y="52"  font-family="monospace" font-size="11" fill="#00FFB2" opacity=".55">11001010 01101001 10011010</text>
+     <text x="4"   y="76"  font-family="monospace" font-size="11" fill="#00FFB2" opacity=".75">00110101 11010010 01011010</text>
+     <text x="20"  y="100" font-family="monospace" font-size="11" fill="#00FFB2" opacity=".5">10100110 01001011 10110100</text>
+     <text x="8"   y="124" font-family="monospace" font-size="11" fill="#00FFB2" opacity=".8">01101001 10011010 00110101</text>
+     <text x="4"   y="310" font-family="monospace" font-size="11" fill="#00FFB2" opacity=".6">11010010 01011010 10100110</text>
+     <text x="14"  y="334" font-family="monospace" font-size="11" fill="#00FFB2" opacity=".75">01001011 10110100 00101101</text>
+     <text x="8"   y="358" font-family="monospace" font-size="11" fill="#00FFB2" opacity=".5">10011010 00110101 11010010</text>`,
   ];
 
   // ── Outfit layers ─────────────────────────────────────────────────────────
@@ -574,13 +576,13 @@ export function buildNFTSVG(elements = {}) {
      <path d="M68,168 L76,180 L86,166 L96,180 L106,166 L116,180 L126,166 L136,180 L146,166 L156,180 L166,166 L176,180 L186,166 L196,180 L206,166 L216,180 L226,166 L232,168" fill="none" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
      <path d="M96,112 Q106,96 122,92" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".4"/>`,
     // 3 Mohawk
-    `<path d="M130,158 Q128,72 138,60 Q144,54 150,52 Q156,54 162,60 Q172,72 170,158 Z" fill="#000" stroke="#000" stroke-width="2"/>
-     <circle cx="150" cy="82" r="4" fill="#fff" opacity=".5"/>
-     <circle cx="150" cy="98" r="4" fill="#fff" opacity=".5"/>
-     <circle cx="150" cy="114" r="4" fill="#fff" opacity=".5"/>
-     <circle cx="150" cy="130" r="4" fill="#fff" opacity=".5"/>
-     <path d="M130,158 Q110,168 94,162 Q104,152 130,156 Z" fill="#000"/>
-     <path d="M170,158 Q190,168 206,162 Q196,152 170,156 Z" fill="#000"/>`,
+    `<path d="M130,158 Q128,72 138,60 Q144,54 150,52 Q156,54 162,60 Q172,72 170,158 Z" fill="#7A5CFF" stroke="#5A3CDF" stroke-width="2"/>
+     <circle cx="150" cy="82" r="4" fill="#fff" opacity=".8"/>
+     <circle cx="150" cy="98" r="4" fill="#fff" opacity=".8"/>
+     <circle cx="150" cy="114" r="4" fill="#fff" opacity=".8"/>
+     <circle cx="150" cy="130" r="4" fill="#fff" opacity=".8"/>
+     <path d="M130,158 Q110,168 94,162 Q104,152 130,156 Z" fill="#5A3CDF"/>
+     <path d="M170,158 Q190,168 206,162 Q196,152 170,156 Z" fill="#5A3CDF"/>`,
     // 4 Bald
     `<path d="M96,144 Q106,118 126,110" fill="none" stroke="#000" stroke-width="5.5" stroke-linecap="round"/>
      <path d="M100,158 Q112,130 136,122" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" opacity=".45"/>
@@ -588,10 +590,10 @@ export function buildNFTSVG(elements = {}) {
      <circle cx="110" cy="124" r="3" fill="#fff"/>`,
 
     // 5 Flame hair (ULTRA RARE)
-    `<path d="M150,162 C110,140 80,100 92,68 C100,48 120,36 150,28 C180,36 200,48 208,68 C220,100 190,140 150,162 Z" fill="#000"/>
-     <path d="M150,162 C132,140 122,106 130,76 C136,58 144,46 150,38 C156,46 164,58 170,76 C178,106 168,140 150,162 Z" fill="#fff" opacity=".2"/>
-     <path d="M106,150 C80,120 74,82 92,56 C78,82 78,118 102,146 Z" fill="#fff" opacity=".12"/>
-     <path d="M194,150 C220,120 226,82 208,56 C222,82 222,118 198,146 Z" fill="#fff" opacity=".12"/>`,
+    `<path d="M150,162 C110,140 80,100 92,68 C100,48 120,36 150,28 C180,36 200,48 208,68 C220,100 190,140 150,162 Z" fill="#CC2200"/>
+     <path d="M150,162 C132,140 122,106 130,76 C136,58 144,46 150,38 C156,46 164,58 170,76 C178,106 168,140 150,162 Z" fill="#FF8C00" opacity=".9"/>
+     <path d="M106,150 C80,120 74,82 92,56 C78,82 78,118 102,146 Z" fill="#FFD700" opacity=".5"/>
+     <path d="M194,150 C220,120 226,82 208,56 C222,82 222,118 198,146 Z" fill="#FFD700" opacity=".5"/>`,
   ];
 
   // ── Eyes layers ───────────────────────────────────────────────────────────
@@ -617,14 +619,14 @@ export function buildNFTSVG(elements = {}) {
      <line x1="82"  y1="156" x2="96"  y2="170" stroke="#000" stroke-width="4" stroke-linecap="round"/>
      <line x1="218" y1="156" x2="204" y2="170" stroke="#000" stroke-width="4" stroke-linecap="round"/>`,
     // 2 Stars
-    `<path d="M115,168 L118,180 L130,180 L121,187 L124,199 L115,192 L106,199 L109,187 L100,180 L112,180 Z" fill="#000"/>
+    `<path d="M115,168 L118,180 L130,180 L121,187 L124,199 L115,192 L106,199 L109,187 L100,180 L112,180 Z" fill="#F59E0B"/>
      <circle cx="115" cy="184" r="5" fill="#fff"/>
-     <path d="M185,168 L188,180 L200,180 L191,187 L194,199 L185,192 L176,199 L179,187 L170,180 L182,180 Z" fill="#000"/>
+     <path d="M185,168 L188,180 L200,180 L191,187 L194,199 L185,192 L176,199 L179,187 L170,180 L182,180 Z" fill="#F59E0B"/>
      <circle cx="185" cy="184" r="5" fill="#fff"/>
-     <line x1="115" y1="160" x2="115" y2="165" stroke="#000" stroke-width="3" stroke-linecap="round"/>
-     <line x1="185" y1="160" x2="185" y2="165" stroke="#000" stroke-width="3" stroke-linecap="round"/>
-     <line x1="97"  y1="168" x2="101" y2="173" stroke="#000" stroke-width="3" stroke-linecap="round"/>
-     <line x1="199" y1="173" x2="203" y2="168" stroke="#000" stroke-width="3" stroke-linecap="round"/>`,
+     <line x1="115" y1="160" x2="115" y2="165" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
+     <line x1="185" y1="160" x2="185" y2="165" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
+     <line x1="97"  y1="168" x2="101" y2="173" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
+     <line x1="199" y1="173" x2="203" y2="168" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>`,
     // 3 Dead X
     `<circle cx="115" cy="188" r="22" fill="#f3f3f3" stroke="#000" stroke-width="4"/>
      <line x1="96"  y1="169" x2="134" y2="207" stroke="#000" stroke-width="6" stroke-linecap="round"/>
@@ -636,14 +638,14 @@ export function buildNFTSVG(elements = {}) {
     // 4 Laser eyes (ULTRA RARE)
     `<ellipse cx="115" cy="188" rx="22" ry="14" fill="#fff" stroke="#000" stroke-width="4"/>
      <ellipse cx="185" cy="188" rx="22" ry="14" fill="#fff" stroke="#000" stroke-width="4"/>
-     <ellipse cx="115" cy="188" rx="8" ry="8" fill="#000"/>
-     <ellipse cx="185" cy="188" rx="8" ry="8" fill="#000"/>
+     <ellipse cx="115" cy="188" rx="8" ry="8" fill="#CC0000"/>
+     <ellipse cx="185" cy="188" rx="8" ry="8" fill="#CC0000"/>
      <circle cx="118" cy="185" r="3" fill="#fff"/>
      <circle cx="188" cy="185" r="3" fill="#fff"/>
-     <path d="M66,188 L0,188" stroke="#000" stroke-width="7" stroke-linecap="round"/>
-     <path d="M234,188 L300,188" stroke="#000" stroke-width="7" stroke-linecap="round"/>
-     <polygon points="0,181 14,188 0,195" fill="#000"/>
-     <polygon points="300,181 286,188 300,195" fill="#000"/>`,
+     <path d="M66,188 L0,188" stroke="#FF3333" stroke-width="7" stroke-linecap="round"/>
+     <path d="M234,188 L300,188" stroke="#FF3333" stroke-width="7" stroke-linecap="round"/>
+     <polygon points="0,181 14,188 0,195" fill="#FF3333"/>
+     <polygon points="300,181 286,188 300,195" fill="#FF3333"/>`,
   ];
 
   // ── Glasses layers ────────────────────────────────────────────────────────
@@ -658,9 +660,9 @@ export function buildNFTSVG(elements = {}) {
      <line x1="144" y1="190" x2="156" y2="190" stroke="#000" stroke-width="3.5"/>
      <line x1="86"  y1="184" x2="74"  y2="180" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
      <line x1="214" y1="184" x2="226" y2="180" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>`,
-    `<path d="M115,178 C115,169 100,167 100,178 C100,189 115,198 115,198 C115,198 130,189 130,178 C130,167 115,169 115,178 Z" fill="none" stroke="#000" stroke-width="4"/>
-     <path d="M185,178 C185,169 170,167 170,178 C170,189 185,198 185,198 C185,198 200,189 200,178 C200,167 185,169 185,178 Z" fill="none" stroke="#000" stroke-width="4"/>
-     <path d="M130,184 Q150,178 170,184" fill="none" stroke="#000" stroke-width="3.5"/>
+    `<path d="M115,178 C115,169 100,167 100,178 C100,189 115,198 115,198 C115,198 130,189 130,178 C130,167 115,169 115,178 Z" fill="#FF69B4" stroke="#CC3377" stroke-width="4"/>
+     <path d="M185,178 C185,169 170,167 170,178 C170,189 185,198 185,198 C185,198 200,189 200,178 C200,167 185,169 185,178 Z" fill="#FF69B4" stroke="#CC3377" stroke-width="4"/>
+     <path d="M130,184 Q150,178 170,184" fill="none" stroke="#CC3377" stroke-width="3.5"/>
      <line x1="100" y1="182" x2="88"  y2="179" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
      <line x1="200" y1="182" x2="212" y2="179" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>`,
     `<rect x="78" y="178" width="144" height="26" rx="8" fill="#000"/>
@@ -688,14 +690,14 @@ export function buildNFTSVG(elements = {}) {
      <line x1="90" y1="167" x2="210" y2="167" stroke="#fff" stroke-width="1.5" opacity=".3"/>
      <rect x="212" y="166" width="42" height="8" rx="3" fill="#000"/>
      <rect x="90" y="132" width="120" height="28" rx="2" fill="none" stroke="#fff" stroke-width="2" opacity=".2"/>`,
-    `<path d="M78,162 L78,122 L108,148 L130,106 L150,134 L170,106 L192,148 L222,122 L222,162 Z" fill="#fff" stroke="#000" stroke-width="4.5" stroke-linejoin="round"/>
-     <rect x="78" y="158" width="144" height="16" rx="2" fill="#000"/>
-     <circle cx="108" cy="144" r="8"  fill="#000" stroke="#fff" stroke-width="2"/>
-     <circle cx="150" cy="110" r="9"  fill="#000" stroke="#fff" stroke-width="2"/>
-     <circle cx="192" cy="144" r="8"  fill="#000" stroke="#fff" stroke-width="2"/>
-     <circle cx="90"  cy="162" r="4"  fill="#fff"/>
-     <circle cx="150" cy="162" r="4"  fill="#fff"/>
-     <circle cx="210" cy="162" r="4"  fill="#fff"/>`,
+    `<path d="M78,162 L78,122 L108,148 L130,106 L150,134 L170,106 L192,148 L222,122 L222,162 Z" fill="#F59E0B" stroke="#C17F24" stroke-width="4.5" stroke-linejoin="round"/>
+     <rect x="78" y="158" width="144" height="16" rx="2" fill="#C17F24"/>
+     <circle cx="108" cy="144" r="8"  fill="#CC0000" stroke="#F59E0B" stroke-width="2"/>
+     <circle cx="150" cy="110" r="9"  fill="#CC0000" stroke="#F59E0B" stroke-width="2"/>
+     <circle cx="192" cy="144" r="8"  fill="#CC0000" stroke="#F59E0B" stroke-width="2"/>
+     <circle cx="90"  cy="162" r="4"  fill="#FFE680"/>
+     <circle cx="150" cy="162" r="4"  fill="#FFE680"/>
+     <circle cx="210" cy="162" r="4"  fill="#FFE680"/>`,
     `<path d="M84,178 Q84,112 150,108 Q216,112 216,178" fill="none" stroke="#000" stroke-width="6"/>
      <rect x="68"  y="170" width="28" height="40" rx="8"  fill="#000"/>
      <rect x="204" y="170" width="28" height="40" rx="8"  fill="#000"/>
@@ -708,12 +710,12 @@ export function buildNFTSVG(elements = {}) {
      <path d="M143,270 L157,282 M157,270 L143,282" stroke="#000" stroke-width="3" stroke-linecap="round"/>`,
 
     // 4 Halo (ULTRA RARE)
-    `<ellipse cx="150" cy="92" rx="82" ry="26" fill="none" stroke="#000" stroke-width="6.5"/>
-     <ellipse cx="150" cy="92" rx="64" ry="20" fill="none" stroke="#000" stroke-width="1.5" opacity=".35"/>
-     <line x1="96"  y1="104" x2="88"  y2="132" stroke="#000" stroke-width="2" stroke-dasharray="5,4" opacity=".4"/>
-     <line x1="204" y1="104" x2="212" y2="132" stroke="#000" stroke-width="2" stroke-dasharray="5,4" opacity=".4"/>
-     <path d="M88,85  Q92,70  100,74"  fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" opacity=".35"/>
-     <path d="M200,74 Q208,70 212,85"  fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" opacity=".35"/>`,
+    `<ellipse cx="150" cy="92" rx="82" ry="26" fill="none" stroke="#F59E0B" stroke-width="6.5"/>
+     <ellipse cx="150" cy="92" rx="64" ry="20" fill="none" stroke="#FFD700" stroke-width="1.5" opacity=".8"/>
+     <line x1="96"  y1="104" x2="88"  y2="132" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5,4" opacity=".5"/>
+     <line x1="204" y1="104" x2="212" y2="132" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5,4" opacity=".5"/>
+     <path d="M88,85  Q92,70  100,74"  fill="none" stroke="#FFD700" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+     <path d="M200,74 Q208,70 212,85"  fill="none" stroke="#FFD700" stroke-width="3" stroke-linecap="round" opacity=".7"/>`,
   ];
 
   // ── Stickers layers ───────────────────────────────────────────────────────
@@ -730,6 +732,8 @@ export function buildNFTSVG(elements = {}) {
     `<circle cx="50" cy="44" r="28" fill="#000"/>
      <circle cx="40" cy="40" r="8"  fill="#fff"/>
      <circle cx="60" cy="40" r="8"  fill="#fff"/>
+     <circle cx="40" cy="40" r="4"  fill="#FF3333"/>
+     <circle cx="60" cy="40" r="4"  fill="#FF3333"/>
      <path d="M44,52 L50,57 L56,52" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
      <rect x="28" y="62" width="44" height="22" rx="4" fill="#000"/>
      <line x1="40" y1="62" x2="40" y2="84" stroke="#fff" stroke-width="3.5"/>
@@ -741,12 +745,12 @@ export function buildNFTSVG(elements = {}) {
      <line x1="220" y1="334" x2="240" y2="334" stroke="#fff" stroke-width="2.5"/>`,
 
     // 4 Diamond sticker (ULTRA RARE)
-    `<polygon points="258,20 298,64 258,116 218,64" fill="#000"/>
-     <polygon points="258,20 298,64 258,72 218,64" fill="#fff" opacity=".28"/>
-     <line x1="218" y1="64" x2="298" y2="64" stroke="#fff" stroke-width="1.5" opacity=".2"/>
-     <line x1="258" y1="20" x2="218" y2="64" stroke="#fff" stroke-width="1.5" opacity=".15"/>
-     <line x1="258" y1="20" x2="298" y2="64" stroke="#fff" stroke-width="1.5" opacity=".15"/>
-     <circle cx="258" cy="42" r="5" fill="#fff" opacity=".38"/>`,
+    `<polygon points="258,20 298,64 258,116 218,64" fill="#00E5FF"/>
+     <polygon points="258,20 298,64 258,72 218,64" fill="#fff" opacity=".5"/>
+     <line x1="218" y1="64" x2="298" y2="64" stroke="#fff" stroke-width="1.5" opacity=".5"/>
+     <line x1="258" y1="20" x2="218" y2="64" stroke="#fff" stroke-width="1.5" opacity=".4"/>
+     <line x1="258" y1="20" x2="298" y2="64" stroke="#fff" stroke-width="1.5" opacity=".4"/>
+     <circle cx="258" cy="42" r="5" fill="#fff" opacity=".8"/>`,
   ];
 
   // ── Funky base character (always rendered) ────────────────────────────────

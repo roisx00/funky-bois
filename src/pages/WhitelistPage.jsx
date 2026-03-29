@@ -27,14 +27,13 @@ export default function WhitelistPage({ onNavigate }) {
       {/* What happens next */}
       <div
         style={{
-          border: 'var(--border)',
-          borderRadius: 4,
+          border: '1px solid var(--border-color-med)',
+          borderRadius: 8,
           padding: '24px 32px',
-          background: 'var(--off-white)',
+          background: 'var(--surface)',
           maxWidth: 480,
           width: '100%',
           textAlign: 'left',
-          boxShadow: '4px 4px 0 #000',
           marginBottom: 32,
         }}
       >
