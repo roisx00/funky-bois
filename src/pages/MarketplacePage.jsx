@@ -202,7 +202,7 @@ export default function MarketplacePage({ onNavigate }) {
           {browsable.length === 0 ? (
             <div className="collection-empty">No listings match your filter.</div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
               {browsable.map((l) => (
                 <ListingCard
                   key={l.id}
@@ -387,13 +387,13 @@ function ListingCard({
   return (
     <div style={{
       border: 'var(--border)', borderRadius: 4, boxShadow: '4px 4px 0 #000',
-      overflow: 'hidden', background: '#fff', display: 'flex', flexDirection: 'column',
+      background: '#fff', display: 'flex', flexDirection: 'column',
     }}>
       {/* Art */}
       <div style={{
         background: '#f3f3f3', borderBottom: 'var(--border)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 16, height: 110,
+        padding: 16, height: 110, overflow: 'hidden', borderRadius: '4px 4px 0 0',
       }}>
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="80" height="80"
           dangerouslySetInnerHTML={{ __html: svg }} />
@@ -408,19 +408,20 @@ function ListingCard({
         <div><span className={`badge badge-${info?.rarity || 'common'}`}>{info?.rarity}</span></div>
         <div style={{ fontSize: 11, color: '#999' }}>by {listing.sellerUsername} · {timeAgo(listing.listedAt)}</div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-          <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 20, color: 'var(--funky-gold)' }}>
+        {/* Price row */}
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 20, color: 'var(--funky-gold)', marginBottom: 8 }}>
             {listing.price} FUNKY
           </div>
           {isMine ? (
-            <button className="btn btn-sm" onClick={onDelist}>Delist</button>
+            <button className="btn btn-sm" onClick={onDelist} style={{ width: '100%' }}>Delist</button>
           ) : canBuy ? (
             <div style={{ display: 'flex', gap: 6 }}>
               <button
                 className="btn btn-sm btn-solid"
                 onClick={onBuy}
                 disabled={buying || !canAfford}
-                style={{ opacity: !canAfford ? 0.4 : 1 }}
+                style={{ flex: 1, opacity: !canAfford ? 0.4 : 1 }}
                 title={!canAfford ? 'Not enough FUNKY' : ''}
               >
                 {buying ? '...' : 'Buy Now'}
@@ -428,41 +429,40 @@ function ListingCard({
               <button
                 className={`btn btn-sm${offerOpen ? ' btn-solid' : ''}`}
                 onClick={onOfferToggle}
-                style={{ background: offerOpen ? '#555' : undefined }}
-                title={hasExistingOffer ? 'You have an active offer' : 'Make an offer'}
+                style={{ flex: 1, background: offerOpen ? '#555' : undefined, color: offerOpen ? '#fff' : undefined }}
               >
-                {hasExistingOffer ? 'Offered' : 'Offer'}
+                {hasExistingOffer && !offerOpen ? 'Offered' : offerOpen ? 'Cancel' : 'Offer'}
               </button>
             </div>
           ) : null}
         </div>
 
-        {/* Offer input panel */}
+        {/* Offer input panel — stacked vertically, no overflow issues */}
         {offerOpen && (
           <div style={{ marginTop: 10, borderTop: 'var(--border)', paddingTop: 10 }}>
             <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Your offer (FUNKY)
             </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <input
-                type="number"
-                min="1"
-                placeholder={listing.price}
-                value={offerInput}
-                onChange={(e) => onOfferInputChange(e.target.value)}
-                style={{
-                  flex: 1, padding: '7px 10px', border: 'var(--border)',
-                  borderRadius: 4, fontSize: 14, fontWeight: 700,
-                }}
-              />
-              <button
-                className="btn btn-sm btn-solid"
-                onClick={onOfferSubmit}
-                disabled={submittingOffer || !offerInput}
-              >
-                {submittingOffer ? '...' : 'Submit'}
-              </button>
-            </div>
+            <input
+              type="number"
+              min="1"
+              placeholder={listing.price}
+              value={offerInput}
+              onChange={(e) => onOfferInputChange(e.target.value)}
+              style={{
+                width: '100%', padding: '8px 10px', border: 'var(--border)',
+                borderRadius: 4, fontSize: 14, fontWeight: 700,
+                boxSizing: 'border-box', marginBottom: 6,
+              }}
+            />
+            <button
+              className="btn btn-sm btn-solid"
+              onClick={onOfferSubmit}
+              disabled={submittingOffer || !offerInput}
+              style={{ width: '100%' }}
+            >
+              {submittingOffer ? 'Signing...' : 'Submit Offer'}
+            </button>
             <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
               List price: {listing.price} FUNKY
             </div>
