@@ -33,11 +33,16 @@
   padding: 0;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   background: #f3f3f3;
   background-image: radial-gradient(circle, #bbb 1px, transparent 1px);
   background-size: 22px 22px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 #root {
@@ -46,6 +51,7 @@ body {
   background: var(--white);
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4 {

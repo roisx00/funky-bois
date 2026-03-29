@@ -110,6 +110,7 @@
   flex: 1;
   padding: 0 32px 60px;
   max-width: 100%;
+  overflow-x: hidden;
 }
 
 .page-title {
@@ -488,6 +489,12 @@
 @media (max-width: 700px) {
   .hero-title { font-size: 52px; }
   .hero-section { padding: 32px 20px 40px; }
+  .hero-sub { font-size: 15px; }
+  .hero-nft-showcase { display: none; }
+}
+
+@media (max-width: 420px) {
+  .hero-title { font-size: 44px; letter-spacing: -1px; }
 }
 
 .hero-sub {
@@ -540,13 +547,13 @@
 }
 
 .stats-strip {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   border-bottom: var(--border);
 }
 
 .stat-item {
-  flex: 1;
-  padding: 20px 24px;
+  padding: 20px 12px;
   border-right: var(--border);
   text-align: center;
 }
@@ -566,6 +573,25 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--gray);
+}
+
+@media (max-width: 600px) {
+  .stats-strip {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .stats-strip .stat-item:nth-child(4),
+  .stats-strip .stat-item:nth-child(5) {
+    border-top: var(--border);
+  }
+  .stats-strip .stat-item:nth-child(3) {
+    border-right: none;
+  }
+  .stats-strip .stat-item:nth-child(4) {
+    border-left: none;
+  }
+  .stat-number { font-size: 28px; }
+  .stat-label { font-size: 10px; letter-spacing: 0.5px; }
+  .stat-item { padding: 14px 8px; }
 }
 
 /* ── Drop ── */

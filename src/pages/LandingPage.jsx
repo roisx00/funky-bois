@@ -30,8 +30,8 @@ export default function LandingPage({ onNavigate }) {
       {/* ── Hero ── */}
       <section className="hero-section">
         <div className="container">
-          <div style={{ display: 'flex', gap: 64, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 380px' }}>
+          <div style={{ display: 'flex', gap: 40, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 260px', minWidth: 0 }}>
               <div className="hero-tag">
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', display: 'inline-block' }} />
                 NFT WHITELIST PROJECT · 2222 SUPPLY
@@ -66,9 +66,9 @@ export default function LandingPage({ onNavigate }) {
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: 20, flex: '0 0 auto', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <NFTCanvas elements={SHOWCASE} size={220} />
-              <NFTCanvas elements={SHOWCASE_B} size={220} />
+            <div className="hero-nft-showcase" style={{ display: 'flex', gap: 20, flex: '0 0 auto', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <NFTCanvas elements={SHOWCASE} size={200} />
+              <NFTCanvas elements={SHOWCASE_B} size={200} />
             </div>
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function LandingPage({ onNavigate }) {
                 {(2222 - nftCount).toLocaleString()} more needed to unlock mint
               </div>
             </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ flexShrink: 0 }}>
               <div style={{ fontSize: 12, opacity: 0.5, marginBottom: 8, letterSpacing: 1, textTransform: 'uppercase' }}>Status</div>
               {nftCount >= 2222 ? (
                 <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 28, color: '#fff', marginBottom: 12 }}>MINT OPEN</div>
@@ -171,7 +171,7 @@ export default function LandingPage({ onNavigate }) {
                 Spin the Daily Wheel →
               </button>
             </div>
-            <div style={{ flex: '1 1 280px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ flex: '1 1 280px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
               {[
                 { title: 'Daily Spin', desc: 'Spin once a day. Win 5–200 FUNKY per spin.' },
                 { title: 'Drop Rewards', desc: 'Every element claimed earns you bonus FUNKY.' },
