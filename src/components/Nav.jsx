@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { ELEMENT_TYPES } from '../data/elements';
+import { startXLogin } from '../utils/xAuth';
 
 const PAGES = [
   { id: 'home',        label: 'Home'    },
@@ -13,25 +14,28 @@ const PAGES = [
   { id: 'wheel',       label: 'Spin'    },
 ];
 
+function XIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
+    </svg>
+  );
+}
+
 export default function Nav({ currentPage, onNavigate }) {
   const {
-    username, userId, progressCount, sessionStatus,
-    walletAddress, isWalletConnected, connectWallet, disconnectWallet,
+    xUser, logoutX, loginWithX,
+    userId, progressCount, sessionStatus,
     funkyBalance, canSpin,
   } = useGame();
 
-  const [connecting, setConnecting]   = useState(false);
-  const [mobileOpen, setMobileOpen]   = useState(false);
+  const [xLoading, setXLoading]     = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const displayName = username || `BOI#${userId.slice(0, 4).toUpperCase()}`;
-  const shortAddr   = walletAddress
-    ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`
-    : null;
-
-  const handleConnect = async () => {
-    setConnecting(true);
-    await connectWallet();
-    setConnecting(false);
+  const handleXLogin = async () => {
+    setXLoading(true);
+    await startXLogin(loginWithX);
+    setXLoading(false);
   };
 
   const go = (id) => {
@@ -39,10 +43,13 @@ export default function Nav({ currentPage, onNavigate }) {
     setMobileOpen(false);
   };
 
-  // treat builder/leaderboard as aliases
   const activePage = currentPage === 'builder' ? 'collection'
     : currentPage === 'leaderboard' ? 'wheel'
     : currentPage;
+
+  const displayName = xUser
+    ? `@${xUser.username}`
+    : `BOI#${userId.slice(0, 4).toUpperCase()}`;
 
   return (
     <>
@@ -85,7 +92,7 @@ export default function Nav({ currentPage, onNavigate }) {
           ))}
         </div>
 
-        {/* Right: wallet + balance */}
+        {/* Right: FUNKY balance + X auth */}
         <div className="nav-right">
           <span
             className="nav-funky"
@@ -96,25 +103,33 @@ export default function Nav({ currentPage, onNavigate }) {
           </span>
           <span className="nav-progress">{progressCount}/{ELEMENT_TYPES.length}</span>
 
-          {isWalletConnected ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="nav-username" title={walletAddress}>{displayName}</span>
+          {xUser ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {xUser.avatar && (
+                <img
+                  src={xUser.avatar}
+                  alt={xUser.username}
+                  style={{ width: 26, height: 26, borderRadius: '50%', border: '2px solid #000', objectFit: 'cover' }}
+                />
+              )}
+              <span className="nav-username">{displayName}</span>
               <span
-                style={{ fontSize: 11, fontWeight: 700, color: '#666', cursor: 'pointer', padding: '4px 8px', border: '1.5px solid #ccc', borderRadius: 3, whiteSpace: 'nowrap' }}
-                onClick={disconnectWallet}
-                title={shortAddr}
+                style={{ fontSize: 11, fontWeight: 700, color: '#666', cursor: 'pointer', padding: '4px 8px', border: '1.5px solid #ccc', borderRadius: 3 }}
+                onClick={logoutX}
+                title="Log out"
               >
-                {shortAddr} ✕
+                ✕
               </span>
             </div>
           ) : (
             <button
               className="btn btn-solid btn-sm"
-              onClick={handleConnect}
-              disabled={connecting}
-              style={{ whiteSpace: 'nowrap' }}
+              onClick={handleXLogin}
+              disabled={xLoading}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}
             >
-              {connecting ? '...' : 'Connect'}
+              <XIcon />
+              {xLoading ? '...' : 'Login'}
             </button>
           )}
         </div>
@@ -131,27 +146,33 @@ export default function Nav({ currentPage, onNavigate }) {
             {p.id === 'drop' && sessionStatus.isActive ? 'DROP (LIVE)' : p.label}
           </div>
         ))}
-        {/* Wallet info in mobile menu */}
+        {/* Auth row in mobile menu */}
         <div style={{ padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #eee' }}>
           <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--funky-gold)' }}>
             {funkyBalance.toLocaleString()} FUNKY ✦
           </span>
-          {isWalletConnected ? (
+          {xUser ? (
             <span
               style={{ fontSize: 12, fontWeight: 700, color: '#666', cursor: 'pointer', padding: '5px 10px', border: '1.5px solid #ccc', borderRadius: 3 }}
-              onClick={() => { disconnectWallet(); setMobileOpen(false); }}
+              onClick={() => { logoutX(); setMobileOpen(false); }}
             >
-              {shortAddr} ✕
+              {displayName} ✕
             </span>
           ) : (
-            <button className="btn btn-solid btn-sm" onClick={() => { handleConnect(); setMobileOpen(false); }}>
-              Connect Wallet
+            <button
+              className="btn btn-solid btn-sm"
+              onClick={() => { handleXLogin(); setMobileOpen(false); }}
+              disabled={xLoading}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <XIcon />
+              {xLoading ? '...' : 'Login with X'}
             </button>
           )}
         </div>
       </div>
 
-      {/* Backdrop to close mobile menu */}
+      {/* Backdrop */}
       {mobileOpen && (
         <div
           style={{ position: 'fixed', inset: 0, top: 52, zIndex: 98, background: 'rgba(0,0,0,0.2)' }}

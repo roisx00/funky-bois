@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { GameProvider } from './context/GameContext';
+import { useState, useEffect } from 'react';
+import { GameProvider, useGame } from './context/GameContext';
 import Nav from './components/Nav';
 import LandingPage     from './pages/LandingPage';
 import DropPage        from './pages/DropPage';
@@ -10,10 +10,21 @@ import MarketplacePage from './pages/MarketplacePage';
 import TradePage       from './pages/TradePage';
 import WhitelistPage   from './pages/WhitelistPage';
 import WheelPage       from './pages/WheelPage';
+import { handleXCallback } from './utils/xAuth';
 import './App.css';
 
 function AppInner() {
   const [page, setPage] = useState('home');
+  const { loginWithX } = useGame();
+
+  // Handle X OAuth callback on mount
+  useEffect(() => {
+    if (window.location.search.includes('code=')) {
+      handleXCallback().then((user) => {
+        if (user) loginWithX(user);
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const navigate = (to) => {
     setPage(to);
@@ -34,10 +45,8 @@ function AppInner() {
       {page === 'gallery'     && <GalleryPage     onNavigate={navigate} />}
       {page === 'marketplace' && <MarketplacePage onNavigate={navigate} />}
       {page === 'gift'        && <TradePage       onNavigate={navigate} />}
-      {/* trade alias kept for any internal onNavigate('trade') calls */}
       {page === 'trade'       && <TradePage       onNavigate={navigate} />}
       {page === 'whitelist'   && <WhitelistPage   onNavigate={navigate} />}
-      {/* wheel and leaderboard both render WheelPage */}
       {(page === 'wheel' || page === 'leaderboard') && <WheelPage onNavigate={navigate} />}
     </>
   );

@@ -102,6 +102,7 @@ function makeInitialState() {
   return {
     userId:               crypto.randomUUID(),
     username:             null,
+    xUser:                null, // { id, username, name, avatar } once X-logged in
     walletAddress:        null,
     walletUsername:       null,
     isWalletConnected:    false,
@@ -123,6 +124,12 @@ function reducer(state, action) {
 
     case 'SET_USERNAME':
       return { ...state, username: action.username };
+
+    case 'SET_X_USER':
+      return { ...state, xUser: action.user, username: action.user.username };
+
+    case 'CLEAR_X_USER':
+      return { ...state, xUser: null, username: state.walletUsername || null };
 
     case 'CONNECT_WALLET': {
       const uname = deriveWalletUsername(action.address);
@@ -454,6 +461,14 @@ export function GameProvider({ children }) {
     dispatch({ type: 'SET_USERNAME', username: name });
   }, []);
 
+  const loginWithX = useCallback((user) => {
+    dispatch({ type: 'SET_X_USER', user });
+  }, []);
+
+  const logoutX = useCallback(() => {
+    dispatch({ type: 'CLEAR_X_USER' });
+  }, []);
+
   const connectWallet = useCallback(async () => {
     if (window.ethereum) {
       try {
@@ -605,6 +620,8 @@ export function GameProvider({ children }) {
     msUntilNextSpin,
     hasConsolation,
     setUsername,
+    loginWithX,
+    logoutX,
     connectWallet,
     disconnectWallet,
     walletSign,
