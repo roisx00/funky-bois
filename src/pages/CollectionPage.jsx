@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
+import { useToast } from '../components/Toast';
 import ElementCard from '../components/ElementCard';
 import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
 import { MysteryBoxOpener } from '../components/MysteryBox';
@@ -243,7 +244,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
 
       {/* ─── Gift ─── */}
       {tab === 'gift' && (
-        <GiftSection inventory={inventory} pendingGifts={pendingGifts} xUser={xUser} sendGift={sendGift} claimGift={claimGift} addGiftedElement={useGame().addGiftedElement} />
+        <GiftSection inventory={inventory} pendingGifts={pendingGifts} xUser={xUser} sendGift={sendGift} claimGift={claimGift} />
       )}
 
       {/* ─── History ─── */}
@@ -276,16 +277,26 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
   );
 }
 
-function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, addGiftedElement }) {
+function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
+  const toast = useToast();
   const [toUsername, setToUsername] = useState('');
   const [selected, setSelected]     = useState(null);
-  const [status, setStatus]         = useState('');
-  const [confirmUnknown, setConfirmUnknown] = useState(null); // { username, element } or null
+  const [sendQty, setSendQty]       = useState(1);
+  const [sending, setSending]       = useState(false);
+  const [confirmUnknown, setConfirmUnknown] = useState(null);
 
-  const myInbox = pendingGifts.filter((g) => !g.claimed && g.toXUsername?.toLowerCase() === xUser?.username?.toLowerCase());
+  // Server already filters pending_gifts by the current user's handle +
+  // unclaimed-only. No additional filter needed here — the previous code
+  // filtered by a nonexistent `g.toXUsername` field and hid every gift.
+  const myInbox = pendingGifts.filter((g) => !g.claimed);
 
-  // Set of usernames we've seen on this device (proxy for "known to THE 1969"
-  // until the backend lands). Includes: self, gift senders, gift recipients.
+  const selectedInvRow = selected
+    ? inventory.find((i) => i.type === selected.type && i.variant === selected.variant)
+    : null;
+  const maxQty = selectedInvRow?.quantity || 1;
+
+  useEffect(() => { setSendQty(1); }, [selected?.type, selected?.variant]);
+
   const knownUsernames = useMemo(() => {
     const set = new Set();
     if (xUser?.username) set.add(xUser.username.toLowerCase());
@@ -293,7 +304,6 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, addG
       if (g.fromXUsername) set.add(g.fromXUsername.toLowerCase());
       if (g.toXUsername)   set.add(g.toXUsername.toLowerCase());
     });
-    // Known test accounts
     ['internxbt', 'the1969eth'].forEach((u) => set.add(u));
     return set;
   }, [xUser?.username, pendingGifts]);
@@ -303,35 +313,53 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, addG
     return knownUsernames.has(clean);
   };
 
-  const dispatchGift = (rawUsername, element) => {
-    const clean = rawUsername.trim().replace(/^@/, '');
-    sendGift(clean, element);
-    setStatus(`Gifted ${element.name} to @${clean}`);
+  const dispatchGift = async (rawUsername, element, qty) => {
+    const clean = rawUsername.trim().replace(/^@/, '').toLowerCase();
+    const count = Math.max(1, Math.min(qty, maxQty));
+    setSending(true);
+    let sent = 0;
+    let lastError = null;
+    for (let i = 0; i < count; i++) {
+      const r = await sendGift(clean, element);
+      if (r?.ok) sent++;
+      else { lastError = r?.reason || 'send failed'; break; }
+    }
+    setSending(false);
+    if (sent > 0) {
+      toast.success(`Sent ${sent}× ${element.name} to @${clean}`);
+    }
+    if (lastError) {
+      toast.error(`Only ${sent} of ${count} sent: ${lastError}`);
+    }
     setSelected(null);
+    setSendQty(1);
     setToUsername('');
-    setTimeout(() => setStatus(''), 4000);
   };
 
   const handleSend = () => {
     if (!selected || !toUsername.trim()) return;
     if (!isUserKnown(toUsername)) {
-      setConfirmUnknown({ username: toUsername.trim().replace(/^@/, ''), element: selected });
+      setConfirmUnknown({ username: toUsername.trim().replace(/^@/, '').toLowerCase(), element: selected, qty: sendQty });
       return;
     }
-    dispatchGift(toUsername, selected);
+    dispatchGift(toUsername, selected, sendQty);
   };
 
   const confirmSend = () => {
     if (!confirmUnknown) return;
-    dispatchGift(confirmUnknown.username, confirmUnknown.element);
+    dispatchGift(confirmUnknown.username, confirmUnknown.element, confirmUnknown.qty || 1);
     setConfirmUnknown(null);
   };
 
   const cancelConfirm = () => setConfirmUnknown(null);
 
-  const handleClaim = (gift) => {
-    addGiftedElement(gift.element);
-    claimGift(gift.id);
+  const handleClaim = async (gift) => {
+    const r = await claimGift(gift.id);
+    if (r?.ok) {
+      toast.success(`Claimed ${gift.elementName}`);
+    } else {
+      toast.error(r?.reason || 'Claim failed');
+    }
   };
 
   return (
@@ -389,19 +417,35 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, addG
             </div>
           </div>
 
-          <button
-            className="btn btn-solid btn-arrow"
-            disabled={!selected || !toUsername.trim()}
-            onClick={handleSend}
-          >
-            Send Gift
-          </button>
-
-          {status && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', color: 'var(--ink)', background: 'var(--accent-dim)', padding: '10px 14px', border: '1px solid var(--accent)' }}>
-              {status}
+          {selected && maxQty > 1 && (
+            <div className="gift-qty-row">
+              <label className="gift-qty-label">Quantity</label>
+              <div className="gift-qty-stepper">
+                <button
+                  type="button"
+                  className="gift-qty-btn"
+                  onClick={() => setSendQty((q) => Math.max(1, q - 1))}
+                  disabled={sendQty <= 1}
+                >−</button>
+                <span className="gift-qty-value">{sendQty}</span>
+                <button
+                  type="button"
+                  className="gift-qty-btn"
+                  onClick={() => setSendQty((q) => Math.min(maxQty, q + 1))}
+                  disabled={sendQty >= maxQty}
+                >+</button>
+                <span className="gift-qty-max">of {maxQty}</span>
+              </div>
             </div>
           )}
+
+          <button
+            className="btn btn-solid btn-arrow"
+            disabled={!selected || !toUsername.trim() || sending}
+            onClick={handleSend}
+          >
+            {sending ? 'Sending.' : sendQty > 1 ? `Send ${sendQty} gifts` : 'Send Gift'}
+          </button>
         </div>
       </div>
 
@@ -415,9 +459,20 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, addG
           ) : (
             myInbox.map((gift) => (
               <div key={gift.id} className="gift-row">
-                <div>
-                  <div className="gift-row-name">{gift.element.name}</div>
-                  <div className="gift-row-from">from @{gift.fromXUsername || 'anon'}</div>
+                <div className="gift-row-art">
+                  <svg
+                    viewBox="0 0 100 100"
+                    xmlns="http://www.w3.org/2000/svg"
+                    shapeRendering="crispEdges"
+                    dangerouslySetInnerHTML={{ __html: getElementSVG(gift.elementType, gift.variant) }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="gift-row-name">{gift.elementName}</div>
+                  <div className="gift-row-from">
+                    {(ELEMENT_LABELS[gift.elementType] || gift.elementType)}
+                    {' · from @'}{gift.fromXUsername || 'anon'}
+                  </div>
                 </div>
                 <button className="btn btn-solid btn-sm" onClick={() => handleClaim(gift)}>
                   Claim

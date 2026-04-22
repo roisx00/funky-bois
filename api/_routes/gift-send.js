@@ -17,9 +17,9 @@ export default async function handler(req, res) {
   if (!toXUsername || !elementType || !Number.isInteger(v) || v < 0) {
     return bad(res, 400, 'missing_fields');
   }
-  const recipient = String(toXUsername).trim().replace(/^@/, '');
+  const recipient = String(toXUsername).trim().replace(/^@/, '').toLowerCase();
   if (!recipient) return bad(res, 400, 'invalid_recipient');
-  if (recipient.toLowerCase() === user.x_username.toLowerCase()) {
+  if (recipient === user.x_username.toLowerCase()) {
     return bad(res, 400, 'cannot_gift_self');
   }
 

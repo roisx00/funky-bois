@@ -14,9 +14,12 @@ export default async function handler(req, res) {
     sql`SELECT element_type, variant, quantity, obtained_at FROM inventory WHERE user_id = ${user.id}`,
     sql`SELECT amount, reason, created_at FROM busts_ledger WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 50`,
     sql`SELECT id, elements, tweet_url, shared_to_x, created_at FROM completed_nfts WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 20`,
-    sql`SELECT id, element_type, variant, element_name, element_rarity, created_at, claimed
-        FROM pending_gifts
-        WHERE LOWER(to_x_username) = LOWER(${user.x_username}) AND claimed = false`,
+    sql`SELECT g.id, g.element_type, g.variant, g.element_name, g.element_rarity,
+               g.created_at, g.claimed, g.to_x_username,
+               u.x_username AS from_x_username
+          FROM pending_gifts g
+     LEFT JOIN users u ON u.id = g.from_user_id
+         WHERE LOWER(g.to_x_username) = LOWER(${user.x_username}) AND g.claimed = false`,
     sql`SELECT wallet_address, claimed_at FROM whitelist WHERE user_id = ${user.id}`,
   ]);
 
@@ -56,6 +59,8 @@ export default async function handler(req, res) {
       id: r.id, elementType: r.element_type, variant: r.variant,
       elementName: r.element_name, rarity: r.element_rarity,
       ts: new Date(r.created_at).getTime(), claimed: r.claimed,
+      fromXUsername: r.from_x_username,
+      toXUsername:   r.to_x_username,
     })),
     whitelistWallet: wl[0]?.wallet_address || null,
   });
