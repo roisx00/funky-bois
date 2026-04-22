@@ -412,9 +412,14 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
             </div>
           </div>
 
-          {selected && maxQty > 1 && (
+          {selected && (
             <div className="gift-qty-row">
-              <label className="gift-qty-label">Quantity</label>
+              <div>
+                <div className="gift-qty-label">How many to send</div>
+                <div className="gift-qty-sub">
+                  You own {maxQty}× {selected.name}. Choose how many copies to gift.
+                </div>
+              </div>
               <div className="gift-qty-stepper">
                 <button
                   type="button"
