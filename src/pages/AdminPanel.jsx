@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 
-function shortAddr(a) { return a ? `${a.slice(0, 6)}...${a.slice(-4)}` : '—'; }
-function timeAgoShort(ts) {
+function shortAddr(a) { return a ? `${a.slice(0, 6)}...${a.slice(-4)}` : '/'; }
+function timeAgo(ts) {
   const m = Math.floor((Date.now() - ts) / 60000);
   if (m < 1) return 'now';
   if (m < 60) return `${m}m`;
@@ -10,349 +10,281 @@ function timeAgoShort(ts) {
   if (h < 24) return `${h}h`;
   return `${Math.floor(h / 24)}d`;
 }
-function triggerDownload(filename, content, mime) {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+async function jget(path) {
+  const r = await fetch(path, { credentials: 'same-origin' });
+  const t = await r.text();
+  let d; try { d = t ? JSON.parse(t) : {}; } catch { d = { error: t }; }
+  return { ok: r.ok, status: r.status, ...d };
+}
+async function jpost(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const t = await r.text();
+  let d; try { d = t ? JSON.parse(t) : {}; } catch { d = { error: t }; }
+  return { ok: r.ok, status: r.status, ...d };
 }
 
 export default function AdminPanel({ onNavigate }) {
-  const { isAdmin, dropPoolSize, setAdmin, setDropPoolSize, whitelistRoster = [] } = useGame();
-  const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [newPoolSize, setNewPoolSize] = useState(dropPoolSize);
-  
-  // Simple admin password - in production, use proper backend auth
-  const ADMIN_PASSWORD = 'THE1969ADMIN';
+  const { isAdmin, hydrated, authenticated, xUser } = useGame();
 
-  const handleLogin = () => {
-    if (password === ADMIN_PASSWORD) {
-      setAdmin(true);
-      setPassword('');
-      setPasswordError('');
+  const [stats, setStats]       = useState(null);
+  const [users, setUsers]       = useState([]);
+  const [usersQ, setUsersQ]     = useState('');
+  const [wlEntries, setWl]      = useState([]);
+  const [creditUser, setCU]     = useState('');
+  const [creditAmt, setCA]      = useState('5000');
+  const [creditMsg, setCM]      = useState('');
+  const [loading, setLoading]   = useState(false);
+
+  const refreshAll = useCallback(async () => {
+    setLoading(true);
+    const [s, u, w] = await Promise.all([
+      jget('/api/admin/stats'),
+      jget(`/api/admin/users${usersQ ? `?q=${encodeURIComponent(usersQ)}` : ''}`),
+      jget('/api/admin/whitelist'),
+    ]);
+    if (s.ok) setStats(s);
+    if (u.ok) setUsers(u.users || []);
+    if (w.ok) setWl(w.entries || []);
+    setLoading(false);
+  }, [usersQ]);
+
+  useEffect(() => {
+    if (isAdmin) refreshAll();
+  }, [isAdmin, refreshAll]);
+
+  const handleCredit = async () => {
+    if (!creditUser.trim() || !creditAmt) return;
+    const r = await jpost('/api/admin/credit', {
+      xUsername: creditUser.trim(),
+      amount: Number(creditAmt),
+      reason: `Admin credit by @${xUser?.username || 'admin'}`,
+    });
+    if (r.ok) {
+      setCM(`+${r.delta} BUSTS to @${r.user} / new balance ${r.newBalance.toLocaleString()}`);
+      setCU('');
+      refreshAll();
     } else {
-      setPasswordError('Incorrect password');
-      setTimeout(() => setPasswordError(''), 3000);
-      setPassword('');
+      setCM(`Error: ${r.error || 'failed'}`);
     }
+    setTimeout(() => setCM(''), 5000);
   };
 
-  const handleLogout = () => {
-    setAdmin(false);
-    setPassword('');
-  };
+  if (!hydrated) {
+    return <div className="page"><h1 className="page-title">Loading.</h1></div>;
+  }
 
-  const handlePoolSizeChange = (newSize) => {
-    setNewPoolSize(newSize);
-    setDropPoolSize(newSize);
-  };
+  if (!authenticated) {
+    return (
+      <div className="page" style={{ textAlign: 'center', paddingTop: 120 }}>
+        <h1 className="page-title" style={{ borderBottom: 'none' }}>Admin locked</h1>
+        <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>Sign in with X first.</p>
+      </div>
+    );
+  }
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') handleLogin();
-  };
+  if (!isAdmin) {
+    return (
+      <div className="page" style={{ textAlign: 'center', paddingTop: 120 }}>
+        <h1 className="page-title" style={{ borderBottom: 'none' }}>Forbidden</h1>
+        <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>
+          Your X account is not in <code>ADMIN_X_USERNAMES</code>.
+        </p>
+        <button className="btn btn-ghost" onClick={() => onNavigate('home')}>Back to home</button>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
-      <h1 className="page-title">Admin Panel</h1>
+      {/* Header */}
+      <div className="dash-head" style={{ marginBottom: 32 }}>
+        <div>
+          <div className="dash-head-kicker">
+            <span style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--accent)', border: '1px solid var(--ink)', borderRadius: '50%', marginRight: 10, verticalAlign: 'middle' }} />
+            Signed in as @{xUser?.username} / Admin
+          </div>
+          <h1 className="dash-head-title">
+            Admin <em>panel.</em>
+          </h1>
+        </div>
+        <div className="dash-head-stats">
+          <div className="dash-head-stat">
+            <div className="dash-head-stat-label">Users</div>
+            <div className="dash-head-stat-value">{stats?.totalUsers ?? '/'}</div>
+          </div>
+          <div className="dash-head-stat">
+            <div className="dash-head-stat-label">Portraits</div>
+            <div className="dash-head-stat-value">{stats?.totalPortraits ?? '/'}</div>
+          </div>
+          <div className="dash-head-stat">
+            <div className="dash-head-stat-label">WL secured</div>
+            <div className="dash-head-stat-value">{stats?.totalWhitelist ?? '/'}</div>
+          </div>
+        </div>
+      </div>
 
-      {!isAdmin ? (
-        // Login form
-        <div style={{
-          maxWidth: 400,
-          margin: '40px auto',
-          padding: 24,
-          background: 'var(--surface)',
-          border: 'var(--border)',
-          borderRadius: 10,
-          boxShadow: 'var(--shadow-sm)',
-        }}>
-          <h2 style={{ fontSize: 18, marginBottom: 20, textAlign: 'center' }}>Admin Login</h2>
-          
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 600 }}>
-              Password
-            </label>
+      {/* Quick actions row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 32 }}>
+        <StatCard label="Drop claims"  value={stats?.totalDropClaims} />
+        <StatCard label="Box opens"    value={stats?.totalBoxOpens} />
+        <StatCard label="Pending gifts" value={stats?.pendingGifts} />
+        <StatCard label="" value="" cta={
+          <button className="btn btn-ghost btn-sm" onClick={refreshAll} disabled={loading}>
+            {loading ? 'Refreshing...' : 'Refresh all'}
+          </button>
+        } />
+      </div>
+
+      {/* Credit form */}
+      <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+        <div className="admin-roster-head">
+          <div>
+            <div className="admin-roster-title">Top up BUSTS</div>
+            <div className="admin-roster-meta">Award BUSTS to any X user. Negative numbers debit.</div>
+          </div>
+        </div>
+        <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: '1fr 140px auto', gap: 12, alignItems: 'end' }}>
+          <div>
+            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>X username</label>
             <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Enter admin password"
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: '2px solid var(--border-color)',
-                borderRadius: 6,
-                background: 'var(--bg)',
-                color: 'var(--text)',
-                fontSize: 14,
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-              }}
+              type="text"
+              value={creditUser}
+              onChange={(e) => setCU(e.target.value)}
+              placeholder="@internxbt"
+              style={{ width: '100%' }}
             />
           </div>
-
-          {passwordError && (
-            <div style={{
-              marginBottom: 16,
-              padding: 12,
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid #ef4444',
-              borderRadius: 6,
-              color: '#ef4444',
-              fontSize: 13,
-              textAlign: 'center',
-            }}>
-              {passwordError}
-            </div>
-          )}
-
-          <button
-            onClick={handleLogin}
-            className="btn btn-solid"
-            style={{ width: '100%' }}
-          >
-            Login
+          <div>
+            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>BUSTS amount</label>
+            <input
+              type="number"
+              value={creditAmt}
+              onChange={(e) => setCA(e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <button className="btn btn-solid btn-arrow" onClick={handleCredit} disabled={!creditUser.trim() || !creditAmt}>
+            Credit
           </button>
         </div>
-      ) : (
-        // Admin dashboard
-        <div style={{ padding: '20px 0' }}>
-          <div style={{
-            padding: 24,
-            background: 'var(--surface)',
-            border: '2px solid var(--accent)',
-            borderRadius: 10,
-            marginBottom: 24,
-            boxShadow: 'var(--shadow-sm)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700 }}>Welcome, Admin</h2>
-              <button
-                onClick={handleLogout}
-                className="btn btn-outline"
-                style={{ fontSize: 12 }}
-              >
-                Logout
-              </button>
-            </div>
-
-            <div style={{ borderBottom: 'var(--border)', paddingBottom: 24, marginBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <div style={{
-                  width: 12,
-                  height: 12,
-                  background: 'var(--accent)',
-                  borderRadius: '50%',
-                  animation: 'pulse-anim 1.5s ease-in-out infinite',
-                }} />
-                <span style={{ fontSize: 13, color: 'var(--text-2)' }}>
-                  System Online • Admin Access Granted
-                </span>
-              </div>
-            </div>
-
-            {/* Element Drop Pool Size Control */}
-            <div style={{ marginBottom: 32 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
-                Element Drop Settings
-              </h3>
-
-              <div style={{
-                padding: 20,
-                background: 'var(--bg)',
-                border: 'var(--border)',
-                borderRadius: 8,
-                marginBottom: 16,
-              }}>
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <label style={{ fontSize: 14, fontWeight: 500 }}>
-                      Hourly Element Pool Size
-                    </label>
-                    <div style={{
-                      fontSize: 24,
-                      fontWeight: 700,
-                      color: 'var(--accent)',
-                      fontFamily: 'var(--font-sketch)',
-                      textShadow: 'var(--accent-glow-sm)',
-                    }}>
-                      {newPoolSize}
-                    </div>
-                  </div>
-
-                  <input
-                    type="range"
-                    min="1"
-                    max="100"
-                    value={newPoolSize}
-                    onChange={(e) => handlePoolSizeChange(parseInt(e.target.value))}
-                    style={{
-                      width: '100%',
-                      height: 8,
-                      borderRadius: 4,
-                      background: 'var(--border-color)',
-                      outline: 'none',
-                      cursor: 'pointer',
-                    }}
-                  />
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  gap: 8,
-                  fontSize: 12,
-                  color: 'var(--text-3)',
-                  justifyContent: 'space-between',
-                }}>
-                  <span>Min: 1</span>
-                  <span>Max: 100</span>
-                </div>
-              </div>
-
-              <div style={{
-                padding: 16,
-                background: 'rgba(34, 197, 94, 0.1)',
-                border: '1px solid #22c55e',
-                borderRadius: 6,
-                fontSize: 13,
-              }}>
-                <div style={{ fontWeight: 600, color: '#22c55e', marginBottom: 4 }}>ℹ️ Current Setting</div>
-                <p style={{ margin: 0, color: 'var(--text-2)' }}>
-                  Players can claim up to <strong>{newPoolSize} elements</strong> per hourly session during the 5-minute drop window.
-                </p>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: 12,
-            }}>
-              <div style={{
-                padding: 16,
-                background: 'var(--bg)',
-                border: 'var(--border)',
-                borderRadius: 8,
-              }}>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8 }}>Session Interval</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>1 Hour</div>
-              </div>
-
-              <div style={{
-                padding: 16,
-                background: 'var(--bg)',
-                border: 'var(--border)',
-                borderRadius: 8,
-              }}>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8 }}>Drop Window</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>5 Min</div>
-              </div>
-
-              <div style={{
-                padding: 16,
-                background: 'var(--bg)',
-                border: 'var(--border)',
-                borderRadius: 8,
-              }}>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8 }}>Claims/Session</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>3 Max</div>
-              </div>
-            </div>
+        {creditMsg && (
+          <div style={{ padding: '12px 24px', background: creditMsg.startsWith('Error') ? 'rgba(204,58,42,0.08)' : 'var(--accent-dim)', borderTop: '1px solid var(--hairline)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+            {creditMsg}
           </div>
+        )}
+      </section>
 
-          {/* WL Roster */}
-          <div className="admin-roster">
-            <div className="admin-roster-head">
+      {/* WL roster */}
+      <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+        <div className="admin-roster-head">
+          <div>
+            <div className="admin-roster-title">Whitelist roster</div>
+            <div className="admin-roster-meta">{wlEntries.length} secured / source: live DB</div>
+          </div>
+          <div className="admin-roster-actions">
+            <a
+              className="btn btn-ghost btn-sm"
+              href="/api/admin/whitelist?format=json-file"
+              target="_blank"
+              rel="noreferrer"
+            >Download JSON</a>
+            <a
+              className="btn btn-solid btn-sm"
+              href="/api/admin/whitelist?format=csv"
+              target="_blank"
+              rel="noreferrer"
+            >Download CSV</a>
+          </div>
+        </div>
+        {wlEntries.length === 0 ? (
+          <div className="admin-roster-empty">
+            No whitelisted wallets yet. Entries appear after a user submits a portrait, shares on X, and connects their wallet.
+          </div>
+        ) : (
+          wlEntries.map((r) => (
+            <div key={`${r.xUsername}-${r.walletAddress}`} className="admin-roster-row">
               <div>
-                <div className="admin-roster-title">Whitelist roster</div>
-                <div className="admin-roster-meta">
-                  {whitelistRoster.length} secured · device-local until backend
-                </div>
+                <div className="admin-roster-user">@{r.xUsername || 'anon'}</div>
+                <div className="admin-roster-wallet">{shortAddr(r.walletAddress)}</div>
               </div>
-              <div className="admin-roster-actions">
-                <button
-                  className="btn btn-ghost btn-sm"
-                  disabled={whitelistRoster.length === 0}
-                  onClick={() => {
-                    const payload = {
-                      exportedAt: new Date().toISOString(),
-                      totalCount: whitelistRoster.length,
-                      entries: whitelistRoster,
-                    };
-                    triggerDownload(
-                      `the1969-whitelist-${Date.now()}.json`,
-                      JSON.stringify(payload, null, 2),
-                      'application/json'
-                    );
-                  }}
-                >
-                  Download JSON
-                </button>
-                <button
-                  className="btn btn-solid btn-sm"
-                  disabled={whitelistRoster.length === 0}
-                  onClick={() => {
-                    const header = 'x_username,wallet_address,portrait_id,claimed_at_iso';
-                    const rows = whitelistRoster.map((r) => [
-                      r.xUsername || '',
-                      r.walletAddress || '',
-                      r.portraitId || '',
-                      new Date(r.claimedAt).toISOString(),
-                    ].map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','));
-                    triggerDownload(
-                      `the1969-whitelist-${Date.now()}.csv`,
-                      [header, ...rows].join('\n'),
-                      'text/csv'
-                    );
-                  }}
-                >
-                  Download CSV
-                </button>
+              <div className="admin-roster-wallet" style={{ fontFamily: 'var(--font-mono)' }}>
+                {r.walletAddress}
               </div>
+              <div className="admin-roster-time">{timeAgo(r.claimedAt)}</div>
             </div>
+          ))
+        )}
+      </section>
 
-            {whitelistRoster.length === 0 ? (
-              <div className="admin-roster-empty">
-                No whitelisted wallets yet. Entries appear after a user submits a portrait,
-                shares on X, and connects their wallet.
-              </div>
-            ) : (
-              whitelistRoster
-                .slice()
-                .sort((a, b) => b.claimedAt - a.claimedAt)
-                .map((r) => (
-                  <div key={`${r.xUsername}-${r.walletAddress}`} className="admin-roster-row">
-                    <div>
-                      <div className="admin-roster-user">@{r.xUsername || 'anon'}</div>
-                      <div className="admin-roster-wallet">{shortAddr(r.walletAddress)}</div>
-                    </div>
-                    <div className="admin-roster-wallet" style={{ fontFamily: 'var(--font-mono)' }}>
-                      {r.walletAddress}
-                    </div>
-                    <div className="admin-roster-time">{timeAgoShort(r.claimedAt)}</div>
-                  </div>
-                ))
-            )}
+      {/* Users table */}
+      <section className="admin-roster">
+        <div className="admin-roster-head">
+          <div>
+            <div className="admin-roster-title">All users</div>
+            <div className="admin-roster-meta">{users.length} shown / sorted newest first</div>
           </div>
+          <input
+            type="text"
+            value={usersQ}
+            onChange={(e) => setUsersQ(e.target.value)}
+            placeholder="Search @username"
+            style={{ width: 220 }}
+          />
+        </div>
+        {users.length === 0 ? (
+          <div className="admin-roster-empty">No users yet.</div>
+        ) : (
+          users.map((u) => (
+            <div key={u.id} className="admin-roster-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr auto' }}>
+              <div>
+                <div className="admin-roster-user">@{u.xUsername}</div>
+                <div className="admin-roster-wallet">{u.walletAddress ? shortAddr(u.walletAddress) : 'no wallet'}</div>
+              </div>
+              <div className="admin-roster-wallet" style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)', fontWeight: 500 }}>
+                {u.bustsBalance.toLocaleString()} <span style={{ fontSize: 10, color: 'var(--text-4)' }}>BUSTS</span>
+              </div>
+              <div className="admin-roster-time">
+                {u.isWhitelisted ? <span style={{ color: 'var(--ink)', fontWeight: 600 }}>WL</span> : '/'}
+              </div>
+              <div className="admin-roster-time">{timeAgo(u.createdAt)}</div>
+            </div>
+          ))
+        )}
+      </section>
 
-          {/* Back button */}
-          <button
-            onClick={() => onNavigate('home')}
-            className="btn btn-ghost"
-            style={{ width: '100%', marginTop: 32 }}
-          >
-            Back to Home
-          </button>
+      <button onClick={() => onNavigate('home')} className="btn btn-ghost" style={{ width: '100%', marginTop: 32 }}>
+        Back to home
+      </button>
+    </div>
+  );
+}
+
+function StatCard({ label, value, cta }) {
+  return (
+    <div style={{
+      padding: '18px 20px',
+      background: 'var(--surface)',
+      border: '1px solid var(--hairline)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
+    }}>
+      {label && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-4)', textTransform: 'uppercase' }}>
+          {label}
         </div>
       )}
+      {value !== '' && (
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 500, letterSpacing: '-0.02em' }}>
+          {value ?? '/'}
+        </div>
+      )}
+      {cta}
     </div>
   );
 }

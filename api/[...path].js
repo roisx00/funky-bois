@@ -15,6 +15,9 @@ import portraitSubmit      from './_routes/portrait-submit.js';
 import portraitShare       from './_routes/portrait-share.js';
 import whitelistRecord     from './_routes/whitelist-record.js';
 import adminWhitelist      from './_routes/admin-whitelist.js';
+import adminCredit         from './_routes/admin-credit.js';
+import adminUsers          from './_routes/admin-users.js';
+import adminStats          from './_routes/admin-stats.js';
 
 const ROUTES = {
   'me':                meHandler,
@@ -31,6 +34,9 @@ const ROUTES = {
   'portrait/share':    portraitShare,
   'whitelist/record':  whitelistRecord,
   'admin/whitelist':   adminWhitelist,
+  'admin/credit':      adminCredit,
+  'admin/users':       adminUsers,
+  'admin/stats':       adminStats,
 };
 
 function extractPath(req) {
