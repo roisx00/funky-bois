@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>THE 1969 — Brand asset export</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" />
+<style>
+  :root {
+    --paper: #F9F6F0;
+    --ink:   #0E0E0E;
+    --lime:  #D7FF3A;
+    --grey:  #BBBBBB;
+  }
+  html, body {
+    margin: 0; padding: 0;
+    background: #2a2a2a;
+    color: #fff;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+  }
+  header {
+    padding: 24px 32px;
+    border-bottom: 1px solid #444;
+  }
+  h1 {
+    margin: 0 0 6px;
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 28px;
+    color: var(--lime);
+  }
+  p { margin: 4px 0; opacity: 0.85; line-height: 1.55; }
+  ol { margin: 12px 0 0 18px; padding: 0; }
+  ol li { margin: 4px 0; }
+  main {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  section {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 24px;
+  }
+  h2 {
+    margin: 0 0 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .meta {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 16px;
+    letter-spacing: 0.04em;
+  }
+  .canvas-wrap {
+    background: repeating-conic-gradient(#202020 0 25%, #1a1a1a 0 50%) 50% / 16px 16px;
+    padding: 14px;
+    overflow: auto;
+  }
+  canvas {
+    display: block;
+    image-rendering: -webkit-optimize-contrast;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .col { display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+  button {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    padding: 10px 16px;
+    background: var(--lime);
+    color: var(--ink);
+    border: 1px solid var(--ink);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  button:hover { background: #fff; }
+  .hint {
+    font-size: 10px;
+    color: #888;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>THE 1969 — brand asset export</h1>
+  <p>X / Twitter–ready PNGs. Click <strong>Download PNG</strong> below each canvas, or right-click the canvas → <em>Save image as…</em></p>
+  <ol>
+    <li><strong>Logo (X profile photo)</strong> — 400×400, displayed as circle on x.com</li>
+    <li><strong>Banner (X header)</strong> — 1500×500</li>
+    <li><strong>Share card (OG image)</strong> — 1200×630, for tweet previews</li>
+  </ol>
+  <p class="hint">Tip: wait ~1 second after page load so web fonts finish loading before downloading.</p>
+</header>
+
+<main>
+
+<section>
+  <h2>1 / Logo — X profile photo</h2>
+  <div class="meta">400 × 400 PNG · cream background · pixel bust · transparent-friendly cream paper</div>
+  <div class="row">
+    <div class="col">
+      <div class="canvas-wrap"><canvas id="logo-canvas" width="400" height="400" style="width:240px;height:240px;"></canvas></div>
+      <button onclick="dl('logo-canvas','the-1969-logo-400.png')">Download PNG</button>
+      <span class="hint">Will appear as a circle on X.</span>
+    </div>
+    <div class="col">
+      <div class="canvas-wrap"><canvas id="logo-canvas-1024" width="1024" height="1024" style="width:240px;height:240px;"></canvas></div>
+      <button onclick="dl('logo-canvas-1024','the-1969-logo-1024.png')">Download 1024 PNG</button>
+      <span class="hint">High-res version for non-X usage.</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>2 / Banner — X header</h2>
+  <div class="meta">1500 × 500 PNG · cream paper · serif italic wordmark · lime accent · monoline rules</div>
+  <div class="canvas-wrap"><canvas id="banner-canvas" width="1500" height="500" style="width:100%;max-width:1500px;height:auto;"></canvas></div>
+  <button onclick="dl('banner-canvas','the-1969-banner-1500x500.png')" style="margin-top:12px;">Download PNG</button>
+  <p class="hint" style="margin-top:8px;">X will crop the top/bottom slightly on some viewports — important content kept in the centre band.</p>
+</section>
+
+<section>
+  <h2>3 / Share card — OG / link preview</h2>
+  <div class="meta">1200 × 630 PNG · used when tweets link back to the 1969 site</div>
+  <div class="canvas-wrap"><canvas id="share-canvas" width="1200" height="630" style="width:100%;max-width:1200px;height:auto;"></canvas></div>
+  <button onclick="dl('share-canvas','the-1969-share-1200x630.png')" style="margin-top:12px;">Download PNG</button>
+</section>
+
+</main>
+
+<script>
+const PAPER = '#F9F6F0';
+const INK   = '#0E0E0E';
+const LIME  = '#D7FF3A';
+const GREY  = '#BBBBBB';
+
+function dl(canvasId, filename) {
+  const c = document.getElementById(canvasId);
+  c.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, 'image/png');
+}
+
+// ─── Pixel bust (mirrors src/components/BrandMark.jsx) ────────────────────
+function drawPixelBust(ctx, cx, cy, scale) {
+  // Coordinates are in the 80×80 logo grid; we translate so cx/cy are centre,
+  // then scale uniformly. The source bust occupies roughly y=29..66 of 80.
+  const px = (x, y, w, h, fill) => {
+    ctx.fillStyle = fill;
+    ctx.fillRect(cx + (x - 40) * scale, cy + (y - 40) * scale, w * scale, h * scale);
+  };
+  // hair / head top
+  px(31, 29, 18, 3, PAPER);
+  px(29, 31, 22, 3, PAPER);
+  // face
+  px(29, 34, 22, 12, GREY);
+  // eyes
+  px(33, 38, 3, 2, INK);
+  px(44, 38, 3, 2, INK);
+  // mouth
+  px(36, 43, 8, 1, INK);
+  // jaw taper
+  px(31, 46, 18, 2, GREY);
+  px(33, 48, 14, 2, GREY);
+  // shoulders / lime
+  px(28, 48, 24, 2, LIME);
+  px(24, 50, 32, 7, LIME);
+}
+
+// ─── 1) Logo (square cream → bust → 1969 badge) ──────────────────────────
+function drawLogo(canvasId) {
+  const c = document.getElementById(canvasId);
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  const W = c.width, H = c.height;
+
+  // Cream background (square — X will crop to circle automatically)
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 0, W, H);
+
+  // Outer ink ring (sits inside what becomes the circular crop)
+  const cx = W / 2, cy = H / 2;
+  const ringR = W * 0.46;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = Math.max(2, W * 0.012);
+  ctx.beginPath(); ctx.arc(cx, cy, ringR, 0, Math.PI * 2); ctx.stroke();
+
+  // Inner thin ring
+  ctx.strokeStyle = INK;
+  ctx.globalAlpha = 0.18;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, ringR - W * 0.04, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Tick marks at N/E/S/W
+  ctx.fillStyle = INK;
+  const tickL = W * 0.022;
+  const tickT = W * 0.008;
+  ctx.fillRect(cx - tickT / 2, cy - ringR - tickL * 0.6, tickT, tickL);
+  ctx.fillRect(cx - tickT / 2, cy + ringR - tickL * 0.4, tickT, tickL);
+  ctx.fillRect(cx - ringR - tickL * 0.6, cy - tickT / 2, tickL, tickT);
+  ctx.fillRect(cx + ringR - tickL * 0.4, cy - tickT / 2, tickL, tickT);
+
+  // Curved metadata text on the inner ring
+  const arcText = (text, radius, startAngle, color, fontSize) => {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = color;
+    ctx.font = `500 ${fontSize}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const charSpacing = (fontSize * 0.05);
+    ctx.rotate(startAngle);
+    for (const ch of text) {
+      const w = ctx.measureText(ch).width;
+      const angle = (w + charSpacing) / radius;
+      ctx.save();
+      ctx.translate(0, -radius);
+      ctx.fillText(ch, 0, 0);
+      ctx.restore();
+      ctx.rotate(angle);
+    }
+    ctx.restore();
+  };
+  arcText('THE · 1969 · ETHEREUM · MONOCHROME · ', ringR - W * 0.085, -Math.PI / 2, INK, W * 0.038);
+
+  // Central pixel bust — scale chosen so the 80-grid figure occupies ~38% width
+  const bustScale = (W * 0.42) / 32; // 32 = bust visual width in source grid
+  drawPixelBust(ctx, cx, cy - H * 0.02, bustScale);
+
+  // 1969 badge under the bust
+  const badgeW = W * 0.20, badgeH = W * 0.07;
+  ctx.fillStyle = INK;
+  ctx.fillRect(cx - badgeW / 2, cy + H * 0.18, badgeW, badgeH);
+  ctx.fillStyle = LIME;
+  ctx.font = `700 ${W * 0.05}px 'Space Grotesk', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('1969', cx, cy + H * 0.215);
+}
+
+// ─── 2) Banner (1500×500) ────────────────────────────────────────────────
+function drawBanner() {
+  const c = document.getElementById('banner-canvas');
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const W = c.width, H = c.height;
+
+  // Cream paper
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top + bottom hairlines
+  ctx.fillStyle = INK;
+  ctx.fillRect(0, 0, W, 2);
+  ctx.fillRect(0, H - 2, W, 2);
+
+  // Top kicker rule
+  ctx.font = "500 16px 'JetBrains Mono', monospace";
+  ctx.fillStyle = INK;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  // Lime dot
+  ctx.fillStyle = LIME;
+  ctx.beginPath(); ctx.arc(72, 56, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(72, 56, 7, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = INK;
+  ctx.fillText('A MONOCHROME PORTRAIT COLLECTIVE · ETHEREUM', 92, 50);
+
+  // Right kicker
+  ctx.textAlign = 'right';
+  ctx.fillText('SUPPLY 1,969 · WHITELIST OPEN', W - 64, 50);
+
+  // Centre wordmark — Space Grotesk display + Instrument Serif italic
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  // "THE" small caps style, then "1969" huge, then italic tagline
+  ctx.font = "500 36px 'Space Grotesk', sans-serif";
+  ctx.fillStyle = INK;
+  ctx.fillText('THE', 72, 200);
+
+  // "1969" — giant
+  ctx.font = "500 240px 'Space Grotesk', sans-serif";
+  // Slightly tighten letter-spacing by manual draw
+  let x = 64, y = 380;
+  const big = '1969';
+  ctx.fillStyle = INK;
+  for (const ch of big) {
+    ctx.fillText(ch, x, y);
+    x += ctx.measureText(ch).width - 8;
+  }
+
+  // Italic tag block on the right
+  ctx.font = "italic 64px 'Instrument Serif', serif";
+  ctx.fillStyle = INK;
+  ctx.textAlign = 'right';
+  ctx.fillText('busts that', W - 280, 220);
+  ctx.fillText('speak for', W - 280, 300);
+  ctx.fillText('themselves.', W - 280, 380);
+
+  // Pixel bust on the far right (same primitive as logo)
+  drawPixelBust(ctx, W - 130, 250, 5.5);
+
+  // Small monospace meta strip near bottom right
+  ctx.font = "500 14px 'JetBrains Mono', monospace";
+  ctx.textAlign = 'right';
+  ctx.fillStyle = INK;
+  ctx.fillText('@the1969eth · the-1969 · build · drop · gallery', W - 64, H - 30);
+
+  // Bottom-left index ticker
+  ctx.textAlign = 'left';
+  ctx.fillStyle = INK;
+  ctx.fillText('INDEX 001 / SERIES A', 72, H - 30);
+
+  // Vertical hairlines defining a center band
+  ctx.fillStyle = INK;
+  ctx.globalAlpha = 0.18;
+  ctx.fillRect(W / 2 - 0.5, 80, 1, H - 160);
+  ctx.globalAlpha = 1;
+}
+
+// ─── 3) Share card / OG image (1200×630) ─────────────────────────────────
+function drawShare() {
+  const c = document.getElementById('share-canvas');
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const W = c.width, H = c.height;
+
+  // Paper
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 0, W, H);
+
+  // Border
+  ctx.strokeStyle = INK; ctx.lineWidth = 4;
+  ctx.strokeRect(28, 28, W - 56, H - 56);
+
+  // Kicker
+  ctx.font = "500 18px 'JetBrains Mono', monospace";
+  ctx.fillStyle = INK;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = LIME;
+  ctx.beginPath(); ctx.arc(78, 86, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(78, 86, 8, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = INK;
+  ctx.fillText('THE 1969 · ETHEREUM · MONOCHROME PORTRAITS', 100, 80);
+
+  // Headline
+  ctx.font = "500 96px 'Space Grotesk', sans-serif";
+  ctx.fillStyle = INK;
+  ctx.fillText('Build a bust.', 64, 170);
+
+  ctx.font = "italic 96px 'Instrument Serif', serif";
+  ctx.fillText('Earn the whitelist.', 64, 290);
+
+  // Subhead
+  ctx.font = "400 22px 'Space Grotesk', sans-serif";
+  ctx.fillStyle = INK;
+  ctx.fillText('Pick 8 traits · Share on X · 1,969 spots, no presale.', 64, 380);
+
+  // Mono footer rule
+  ctx.font = "500 16px 'JetBrains Mono', monospace";
+  ctx.fillStyle = INK;
+  ctx.fillText('@the1969eth', 64, H - 80);
+  ctx.textAlign = 'right';
+  ctx.fillText('the-1969.xyz', W - 64, H - 80);
+
+  // Pixel bust on the right
+  drawPixelBust(ctx, W - 220, H / 2, 8);
+
+  // Tiny lime accent band
+  ctx.fillStyle = LIME;
+  ctx.fillRect(64, 420, 80, 6);
+}
+
+// Wait for fonts then render — fonts.ready fires when web fonts loaded.
+function renderAll() {
+  drawLogo('logo-canvas');
+  drawLogo('logo-canvas-1024');
+  drawBanner();
+  drawShare();
+}
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(renderAll);
+} else {
+  window.addEventListener('load', renderAll);
+}
+</script>
+</body>
+</html>
