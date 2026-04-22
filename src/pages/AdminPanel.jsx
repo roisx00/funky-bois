@@ -1,8 +1,29 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
 
+function shortAddr(a) { return a ? `${a.slice(0, 6)}...${a.slice(-4)}` : '—'; }
+function timeAgoShort(ts) {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+function triggerDownload(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export default function AdminPanel({ onNavigate }) {
-  const { isAdmin, dropPoolSize, setAdmin, setDropPoolSize } = useGame();
+  const { isAdmin, dropPoolSize, setAdmin, setDropPoolSize, whitelistRoster = [] } = useGame();
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [newPoolSize, setNewPoolSize] = useState(dropPoolSize);
@@ -247,11 +268,86 @@ export default function AdminPanel({ onNavigate }) {
             </div>
           </div>
 
+          {/* WL Roster */}
+          <div className="admin-roster">
+            <div className="admin-roster-head">
+              <div>
+                <div className="admin-roster-title">Whitelist roster</div>
+                <div className="admin-roster-meta">
+                  {whitelistRoster.length} secured · device-local until backend
+                </div>
+              </div>
+              <div className="admin-roster-actions">
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={whitelistRoster.length === 0}
+                  onClick={() => {
+                    const payload = {
+                      exportedAt: new Date().toISOString(),
+                      totalCount: whitelistRoster.length,
+                      entries: whitelistRoster,
+                    };
+                    triggerDownload(
+                      `the1969-whitelist-${Date.now()}.json`,
+                      JSON.stringify(payload, null, 2),
+                      'application/json'
+                    );
+                  }}
+                >
+                  Download JSON
+                </button>
+                <button
+                  className="btn btn-solid btn-sm"
+                  disabled={whitelistRoster.length === 0}
+                  onClick={() => {
+                    const header = 'x_username,wallet_address,portrait_id,claimed_at_iso';
+                    const rows = whitelistRoster.map((r) => [
+                      r.xUsername || '',
+                      r.walletAddress || '',
+                      r.portraitId || '',
+                      new Date(r.claimedAt).toISOString(),
+                    ].map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','));
+                    triggerDownload(
+                      `the1969-whitelist-${Date.now()}.csv`,
+                      [header, ...rows].join('\n'),
+                      'text/csv'
+                    );
+                  }}
+                >
+                  Download CSV
+                </button>
+              </div>
+            </div>
+
+            {whitelistRoster.length === 0 ? (
+              <div className="admin-roster-empty">
+                No whitelisted wallets yet. Entries appear after a user submits a portrait,
+                shares on X, and connects their wallet.
+              </div>
+            ) : (
+              whitelistRoster
+                .slice()
+                .sort((a, b) => b.claimedAt - a.claimedAt)
+                .map((r) => (
+                  <div key={`${r.xUsername}-${r.walletAddress}`} className="admin-roster-row">
+                    <div>
+                      <div className="admin-roster-user">@{r.xUsername || 'anon'}</div>
+                      <div className="admin-roster-wallet">{shortAddr(r.walletAddress)}</div>
+                    </div>
+                    <div className="admin-roster-wallet" style={{ fontFamily: 'var(--font-mono)' }}>
+                      {r.walletAddress}
+                    </div>
+                    <div className="admin-roster-time">{timeAgoShort(r.claimedAt)}</div>
+                  </div>
+                ))
+            )}
+          </div>
+
           {/* Back button */}
           <button
             onClick={() => onNavigate('home')}
-            className="btn btn-outline"
-            style={{ width: '100%', marginTop: 16 }}
+            className="btn btn-ghost"
+            style={{ width: '100%', marginTop: 32 }}
           >
             Back to Home
           </button>

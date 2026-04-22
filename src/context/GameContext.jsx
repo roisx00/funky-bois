@@ -97,6 +97,7 @@ function makeInitialState() {
     referralCount:       0,
     isAdmin:             false,
     dropPoolSize:        DEFAULT_SESSION_POOL_SIZE,
+    whitelistRoster:     [],          // [{ xUsername, xAvatar, walletAddress, portraitId, portraitElements, tweetUrl, claimedAt }]
   };
 }
 
@@ -296,12 +297,34 @@ function reducer(state, action) {
       return {
         ...state,
         completedNFTs: state.completedNFTs.map((n) =>
-          n.id === action.nftId ? { ...n, sharedToX: true } : n
+          n.id === action.nftId ? { ...n, sharedToX: true, tweetUrl: action.tweetUrl || n.tweetUrl } : n
         ),
         isWhitelisted: true,
         bustsBalance: state.bustsBalance + SHARE_NFT_BUSTS,
         bustsHistory: [entry, ...state.bustsHistory.slice(0, 49)],
       };
+    }
+
+    case 'RECORD_WHITELIST': {
+      const { xUsername, xAvatar, walletAddress, portraitId, portraitElements, tweetUrl } = action;
+      // Dedupe by walletAddress OR xUsername
+      const existing = state.whitelistRoster.find(
+        (r) => r.walletAddress?.toLowerCase() === walletAddress?.toLowerCase() ||
+               r.xUsername?.toLowerCase() === xUsername?.toLowerCase()
+      );
+      const entry = {
+        xUsername,
+        xAvatar,
+        walletAddress,
+        portraitId,
+        portraitElements,
+        tweetUrl,
+        claimedAt: Date.now(),
+      };
+      const roster = existing
+        ? state.whitelistRoster.map((r) => (r === existing ? { ...r, ...entry } : r))
+        : [...state.whitelistRoster, entry];
+      return { ...state, whitelistRoster: roster, isWhitelisted: true };
     }
 
     case 'SEND_GIFT': {
@@ -478,7 +501,8 @@ export function GameProvider({ children }) {
   const addBusts     = useCallback((amount, reason) => dispatch({ type: 'ADD_BUSTS', amount, reason }), []);
   const spendBusts   = useCallback((amount, reason) => dispatch({ type: 'SPEND_BUSTS', amount, reason }), []);
   const completeNFT  = useCallback((elements) => dispatch({ type: 'COMPLETE_NFT', elements }), []);
-  const markShared   = useCallback((nftId) => dispatch({ type: 'MARK_SHARED', nftId }), []);
+  const markShared   = useCallback((nftId, tweetUrl) => dispatch({ type: 'MARK_SHARED', nftId, tweetUrl }), []);
+  const recordWhitelist = useCallback((payload) => dispatch({ type: 'RECORD_WHITELIST', ...payload }), []);
   const removeElement = useCallback((elementType, variant) => dispatch({ type: 'REMOVE_ELEMENT', elementType, variant }), []);
   const addGiftedElement = useCallback((element) => dispatch({ type: 'ADD_ELEMENT', element }), []);
   const sendGift = useCallback((toXUsername, element) => {
@@ -525,6 +549,7 @@ export function GameProvider({ children }) {
     spendBusts,
     completeNFT,
     markShared,
+    recordWhitelist,
     removeElement,
     addGiftedElement,
     sendGift,
