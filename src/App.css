@@ -5107,3 +5107,8 @@ section { background: var(--bg); }
 @media (max-width: 640px) {
   .toast-stack { top: 12px; right: 12px; left: 12px; max-width: none; }
 }
+
+@keyframes skeletonShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

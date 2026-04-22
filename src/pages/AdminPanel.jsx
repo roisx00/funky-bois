@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
+import Skeleton from '../components/Skeleton';
 
 function shortAddr(a) { return a ? `${a.slice(0, 6)}...${a.slice(-4)}` : '/'; }
 function timeAgo(ts) {
@@ -115,15 +116,21 @@ export default function AdminPanel({ onNavigate }) {
         <div className="dash-head-stats">
           <div className="dash-head-stat">
             <div className="dash-head-stat-label">Users</div>
-            <div className="dash-head-stat-value">{stats?.totalUsers ?? '/'}</div>
+            <div className="dash-head-stat-value">
+              {stats ? stats.totalUsers : <Skeleton width={56} height={24} />}
+            </div>
           </div>
           <div className="dash-head-stat">
             <div className="dash-head-stat-label">Portraits</div>
-            <div className="dash-head-stat-value">{stats?.totalPortraits ?? '/'}</div>
+            <div className="dash-head-stat-value">
+              {stats ? stats.totalPortraits : <Skeleton width={56} height={24} />}
+            </div>
           </div>
           <div className="dash-head-stat">
             <div className="dash-head-stat-label">WL secured</div>
-            <div className="dash-head-stat-value">{stats?.totalWhitelist ?? '/'}</div>
+            <div className="dash-head-stat-value">
+              {stats ? stats.totalWhitelist : <Skeleton width={56} height={24} />}
+            </div>
           </div>
         </div>
       </div>
@@ -237,7 +244,21 @@ export default function AdminPanel({ onNavigate }) {
           />
         </div>
         {users.length === 0 ? (
-          <div className="admin-roster-empty">No users yet.</div>
+          loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="admin-roster-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr auto' }}>
+                <div>
+                  <div className="admin-roster-user"><Skeleton width={120} height={14} /></div>
+                  <div className="admin-roster-wallet"><Skeleton width={90} height={10} style={{ marginTop: 4 }} /></div>
+                </div>
+                <div><Skeleton width={80} height={18} /></div>
+                <div><Skeleton width={30} height={10} /></div>
+                <div><Skeleton width={24} height={10} /></div>
+              </div>
+            ))
+          ) : (
+            <div className="admin-roster-empty">No users yet.</div>
+          )
         ) : (
           users.map((u) => (
             <div key={u.id} className="admin-roster-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr auto' }}>
@@ -432,6 +453,7 @@ function AdminTasksPanel() {
 }
 
 function StatCard({ label, value, cta }) {
+  const isLoading = value === undefined || value === null;
   return (
     <div style={{
       padding: '18px 20px',
@@ -448,7 +470,7 @@ function StatCard({ label, value, cta }) {
       )}
       {value !== '' && (
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 500, letterSpacing: '-0.02em' }}>
-          {value ?? '/'}
+          {isLoading ? <Skeleton width={72} height={24} /> : value}
         </div>
       )}
       {cta}
