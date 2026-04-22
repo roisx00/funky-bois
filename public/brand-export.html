@@ -192,77 +192,68 @@ function drawPixelBust(ctx, cx, cy, scale) {
   px(24, 50, 32, 7, LIME);
 }
 
-// ─── 1) Logo (square cream → bust → 1969 badge) ──────────────────────────
+// ─── 1) Logo — black wordmark mark, refined for the X profile circle ─────
 function drawLogo(canvasId) {
   const c = document.getElementById(canvasId);
   const ctx = c.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = true;
 
   const W = c.width, H = c.height;
+  const cx = W / 2, cy = H / 2;
 
-  // Cream background (square — X will crop to circle automatically)
-  ctx.fillStyle = PAPER;
+  // 1) Solid ink fill — looks great on X's circular crop
+  ctx.fillStyle = INK;
   ctx.fillRect(0, 0, W, H);
 
-  // Outer ink ring (sits inside what becomes the circular crop)
-  const cx = W / 2, cy = H / 2;
-  const ringR = W * 0.46;
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = Math.max(2, W * 0.012);
-  ctx.beginPath(); ctx.arc(cx, cy, ringR, 0, Math.PI * 2); ctx.stroke();
-
-  // Inner thin ring
-  ctx.strokeStyle = INK;
-  ctx.globalAlpha = 0.18;
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(cx, cy, ringR - W * 0.04, 0, Math.PI * 2); ctx.stroke();
+  // 2) Subtle inner ring inside the safe circle (stays 18px from the crop edge)
+  const safeR = W * 0.46;
+  ctx.strokeStyle = PAPER;
+  ctx.globalAlpha = 0.10;
+  ctx.lineWidth = Math.max(1, W * 0.004);
+  ctx.beginPath(); ctx.arc(cx, cy, safeR - W * 0.02, 0, Math.PI * 2); ctx.stroke();
   ctx.globalAlpha = 1;
 
-  // Tick marks at N/E/S/W
-  ctx.fillStyle = INK;
-  const tickL = W * 0.022;
-  const tickT = W * 0.008;
-  ctx.fillRect(cx - tickT / 2, cy - ringR - tickL * 0.6, tickT, tickL);
-  ctx.fillRect(cx - tickT / 2, cy + ringR - tickL * 0.4, tickT, tickL);
-  ctx.fillRect(cx - ringR - tickL * 0.6, cy - tickT / 2, tickL, tickT);
-  ctx.fillRect(cx + ringR - tickL * 0.4, cy - tickT / 2, tickL, tickT);
-
-  // Curved metadata text on the inner ring
-  const arcText = (text, radius, startAngle, color, fontSize) => {
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.fillStyle = color;
-    ctx.font = `500 ${fontSize}px 'JetBrains Mono', monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const charSpacing = (fontSize * 0.05);
-    ctx.rotate(startAngle);
-    for (const ch of text) {
-      const w = ctx.measureText(ch).width;
-      const angle = (w + charSpacing) / radius;
-      ctx.save();
-      ctx.translate(0, -radius);
-      ctx.fillText(ch, 0, 0);
-      ctx.restore();
-      ctx.rotate(angle);
-    }
-    ctx.restore();
-  };
-  arcText('THE · 1969 · ETHEREUM · MONOCHROME · ', ringR - W * 0.085, -Math.PI / 2, INK, W * 0.038);
-
-  // Central pixel bust — scale chosen so the 80-grid figure occupies ~38% width
-  const bustScale = (W * 0.42) / 32; // 32 = bust visual width in source grid
-  drawPixelBust(ctx, cx, cy - H * 0.02, bustScale);
-
-  // 1969 badge under the bust
-  const badgeW = W * 0.20, badgeH = W * 0.07;
-  ctx.fillStyle = INK;
-  ctx.fillRect(cx - badgeW / 2, cy + H * 0.18, badgeW, badgeH);
+  // 3) Top eyebrow: small mono kicker with a lime dot
+  const dotR = W * 0.012;
   ctx.fillStyle = LIME;
-  ctx.font = `700 ${W * 0.05}px 'Space Grotesk', sans-serif`;
+  ctx.beginPath(); ctx.arc(cx - W * 0.13, cy - H * 0.30, dotR, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = PAPER;
+  ctx.font = `500 ${W * 0.038}px 'JetBrains Mono', monospace`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('THE · ETHEREUM', cx - W * 0.105, cy - H * 0.30);
+
+  // 4) Massive "1969" wordmark — Space Grotesk display, slightly tracked tight
+  ctx.fillStyle = PAPER;
+  ctx.font = `500 ${W * 0.42}px 'Space Grotesk', sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('1969', cx, cy + H * 0.215);
+  // measure to center precisely
+  const big = '1969';
+  const tracking = -W * 0.012; // negative letter spacing for tightness
+  let total = 0;
+  for (const ch of big) total += ctx.measureText(ch).width + tracking;
+  total -= tracking; // last gap doesn't count
+  let x = cx - total / 2;
+  for (const ch of big) {
+    const w = ctx.measureText(ch).width;
+    ctx.fillText(ch, x + w / 2, cy + H * 0.01);
+    x += w + tracking;
+  }
+
+  // 5) Lime underline accent under the wordmark
+  const accentY = cy + H * 0.22;
+  ctx.fillStyle = LIME;
+  ctx.fillRect(cx - W * 0.04, accentY, W * 0.08, Math.max(2, W * 0.008));
+
+  // 6) Bottom hairline metadata
+  ctx.fillStyle = PAPER;
+  ctx.globalAlpha = 0.55;
+  ctx.font = `500 ${W * 0.034}px 'JetBrains Mono', monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('MONOCHROME · BUSTS', cx, cy + H * 0.30);
+  ctx.globalAlpha = 1;
 }
 
 // ─── 2) Banner (1500×500) ────────────────────────────────────────────────
@@ -329,13 +320,8 @@ function drawBanner() {
   // Pixel bust on the far right (same primitive as logo)
   drawPixelBust(ctx, W - 130, 250, 5.5);
 
-  // Small monospace meta strip near bottom right
-  ctx.font = "500 14px 'JetBrains Mono', monospace";
-  ctx.textAlign = 'right';
-  ctx.fillStyle = INK;
-  ctx.fillText('@the1969eth · the-1969 · build · drop · gallery', W - 64, H - 30);
-
   // Bottom-left index ticker
+  ctx.font = "500 14px 'JetBrains Mono', monospace";
   ctx.textAlign = 'left';
   ctx.fillStyle = INK;
   ctx.fillText('INDEX 001 / SERIES A', 72, H - 30);
