@@ -99,7 +99,7 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
                   </span>
                 </div>
               ) : (
-                <div className="collection-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+                <div className="builder-trait-grid">
                   {ownedByType[activeTab].map((item) => (
                     <ElementCard
                       key={item.id}
@@ -144,14 +144,16 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
 
             {/* Save button */}
             {!saved ? (
-              <div style={{ marginTop: 24 }}>
+              <div className="builder-save">
                 <button
                   className={`btn btn-lg ${isComplete ? 'btn-solid' : ''}`}
                   onClick={handleSave}
                   disabled={!isComplete}
-                  style={{ opacity: isComplete ? 1 : 0.5 }}
+                  style={{ opacity: isComplete ? 1 : 0.5, width: '100%' }}
                 >
-                  {isComplete ? 'Lock In This Portrait' : `Select all ${ELEMENT_TYPES.length} traits (${selectedCount}/${ELEMENT_TYPES.length})`}
+                  {isComplete
+                    ? 'Lock In Portrait'
+                    : `${selectedCount}/${ELEMENT_TYPES.length} traits selected`}
                 </button>
               </div>
             ) : (

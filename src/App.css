@@ -1636,8 +1636,20 @@
   gap: 56px;
   align-items: start;
 }
-@media (max-width: 800px) { .builder-layout { grid-template-columns: 1fr; } }
+@media (max-width: 800px) {
+  .builder-layout { grid-template-columns: 1fr; gap: 24px; }
+  /* Preview goes first on mobile so users see their portrait while picking */
+  .builder-layout > .builder-preview-wrap { order: -1; }
+}
 .builder-preview-wrap { position: sticky; top: 110px; text-align: center; }
+@media (max-width: 800px) {
+  .builder-preview-wrap {
+    position: static;
+    padding: 20px;
+    border: 1px solid var(--hairline);
+    background: var(--paper-2);
+  }
+}
 
 .builder-type-tabs {
   display: flex;
@@ -1673,6 +1685,31 @@
 }
 .builder-tab.filled { color: var(--ink); }
 .builder-tab.filled.active { color: var(--ink); }
+
+.builder-type-tabs {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.builder-type-tabs::-webkit-scrollbar { display: none; }
+@media (max-width: 600px) {
+  .builder-tab { min-width: 72px; padding: 12px 8px; font-size: 9px; letter-spacing: 0.08em; }
+}
+
+/* Trait grid inside builder */
+.builder-trait-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+@media (max-width: 600px) {
+  .builder-trait-grid { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 10px; }
+}
+@media (max-width: 380px) {
+  .builder-trait-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.builder-save { margin-top: 24px; }
+.builder-save .btn { border-radius: 999px; }
 
 .complete-set-banner {
   background: var(--accent);
