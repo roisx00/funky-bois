@@ -1,13 +1,25 @@
 // Lightweight tweet engagement scraper using public Nitter mirrors.
 // Returns { likes:Set<string>, retweets:Set<string>, replies:Set<string> }
-// of lowercase X usernames. Plain HTTP fetch + cheerio, no headless browser.
-import * as cheerio from 'cheerio';
+// of lowercase X usernames. Plain HTTP fetch + cheerio.
+//
+// cheerio is loaded lazily inside the scrape functions so a broken/missing
+// install can't crash the dispatcher cold-start.
 
 const NITTER_HOSTS = (process.env.NITTER_HOSTS ||
   'nitter.net,nitter.privacydev.net,nitter.poast.org'
 ).split(',').map((h) => h.trim()).filter(Boolean);
 
 const UA = 'Mozilla/5.0 (compatible; THE1969-engagement-bot/1.0)';
+
+async function loadCheerio() {
+  try {
+    const mod = await import('cheerio');
+    return mod;
+  } catch (e) {
+    console.warn('[nitter] cheerio not available:', e?.message);
+    return null;
+  }
+}
 
 async function tryFetch(url) {
   try {
@@ -24,12 +36,10 @@ async function tryFetch(url) {
 
 function extractHandles($) {
   const out = new Set();
-  // Nitter renders user lists with .username links
   $('.username').each((_, el) => {
     const txt = $(el).text().trim().replace(/^@/, '').toLowerCase();
     if (txt && /^[a-z0-9_]{1,16}$/i.test(txt)) out.add(txt);
   });
-  // Reply page has .tweet-name a inside .reply
   $('.tweet-name a, a.username').each((_, el) => {
     const href = $(el).attr('href') || '';
     const m = href.match(/^\/([A-Za-z0-9_]{1,16})/);
@@ -38,32 +48,26 @@ function extractHandles($) {
   return out;
 }
 
-async function scrapeOne(host, tweetId, suffix) {
+async function scrapeOne(cheerio, host, tweetId, suffix) {
   const html = await tryFetch(`https://${host}/i/status/${tweetId}${suffix}`);
   if (!html) return null;
   const $ = cheerio.load(html);
   return extractHandles($);
 }
 
-/**
- * Scrape a tweet for engagement. Tries each Nitter mirror in order until one
- * works. Returns null for any list we couldn't fetch (caller can decide).
- */
 export async function scrapeTweetEngagement(tweetId) {
+  const cheerio = await loadCheerio();
   const out = { likes: null, retweets: null, replies: null };
+  if (!cheerio) return out;
   for (const host of NITTER_HOSTS) {
-    if (out.likes === null)    out.likes    = await scrapeOne(host, tweetId, '/favorites');
-    if (out.retweets === null) out.retweets = await scrapeOne(host, tweetId, '/retweets');
-    if (out.replies === null)  out.replies  = await scrapeOne(host, tweetId, '');
+    if (out.likes === null)    out.likes    = await scrapeOne(cheerio, host, tweetId, '/favorites');
+    if (out.retweets === null) out.retweets = await scrapeOne(cheerio, host, tweetId, '/retweets');
+    if (out.replies === null)  out.replies  = await scrapeOne(cheerio, host, tweetId, '');
     if (out.likes && out.retweets && out.replies) break;
   }
   return out;
 }
 
-/**
- * Fetch the tweet body HTML and check it contains a given share-hash string.
- * Used for share-to-X verification (server confirms the tweet exists + has hash).
- */
 export async function tweetContainsHash(tweetId, hash) {
   if (!tweetId || !hash) return false;
   for (const host of NITTER_HOSTS) {
@@ -74,9 +78,6 @@ export async function tweetContainsHash(tweetId, hash) {
   return false;
 }
 
-/**
- * Best-effort tweet-id extractor from common URL forms.
- */
 export function parseTweetId(input) {
   if (!input) return null;
   const m = String(input).match(/(?:status|statuses)\/(\d{6,})/i);
