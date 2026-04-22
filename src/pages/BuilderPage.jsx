@@ -4,10 +4,10 @@ import ElementCard from '../components/ElementCard';
 import NFTCanvas from '../components/NFTCanvas';
 import { ELEMENT_TYPES, ELEMENT_LABELS, ELEMENT_VARIANTS } from '../data/elements';
 
-const X_HANDLE = '@FunkyBoisNFT'; // replace with real handle
+const X_HANDLE = '@the1969eth';
 
 export default function BuilderPage({ onNavigate, noWrapper = false }) {
-  const { inventory, username, userId, completeNFT, markShared, completedNFTs } = useGame();
+  const { inventory, completeNFT, markShared, completedNFTs } = useGame();
 
   // Current selection: { type -> variantIdx }
   const [selection, setSelection] = useState({});
@@ -45,26 +45,25 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
   };
 
   const handleShare = (nftId) => {
-    const displayName = username || `FunkyBoi#${userId.slice(0, 4).toUpperCase()}`;
-    const tweet = `Just built my Funky Boi NFT! ${selectedCount}/7 elements collected. Get yours → [link] ${X_HANDLE} #FunkyBois #NFT`;
+    const tweet = `Just built my portrait on THE 1969. ${selectedCount}/8 traits locked in. Mint unlocks at 1,969 ${X_HANDLE} #THE1969`;
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`,
       '_blank'
     );
     markShared(nftId);
-    setTimeout(() => onNavigate('whitelist'), 500);
+    setTimeout(() => onNavigate('gallery'), 500);
   };
 
   const latestNFT = completedNFTs[completedNFTs.length - 1];
 
   const inner = (
     <>
-      {!noWrapper && <h1 className="page-title">NFT Builder</h1>}
+      {!noWrapper && <h1 className="page-title">Portrait Builder</h1>}
 
       {inventory.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 40, marginBottom: 16, color: '#ccc' }}>No Elements</div>
-          <p style={{ color: '#777', marginBottom: 24 }}>Collect elements from the drop first.</p>
+          <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 40, marginBottom: 16, color: '#ccc' }}>No Traits</div>
+          <p style={{ color: '#777', marginBottom: 24 }}>Claim your first trait from the drop.</p>
           <button className="btn btn-solid" onClick={() => onNavigate('drop')}>Go to Drop</button>
         </div>
       ) : (
@@ -91,7 +90,7 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
               </h3>
               {ownedByType[activeTab].length === 0 ? (
                 <div className="collection-empty">
-                  You don't own any {ELEMENT_LABELS[activeTab].toLowerCase()} elements yet.{' '}
+                  You don't own any {ELEMENT_LABELS[activeTab].toLowerCase()} traits yet.{' '}
                   <span
                     style={{ textDecoration: 'underline', cursor: 'pointer' }}
                     onClick={() => onNavigate('drop')}
@@ -152,7 +151,7 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
                   disabled={!isComplete}
                   style={{ opacity: isComplete ? 1 : 0.5 }}
                 >
-                  {isComplete ? 'Lock In This NFT' : `Select all 7 elements (${selectedCount}/7)`}
+                  {isComplete ? 'Lock In This Portrait' : `Select all ${ELEMENT_TYPES.length} traits (${selectedCount}/${ELEMENT_TYPES.length})`}
                 </button>
               </div>
             ) : (
@@ -167,10 +166,10 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
                 }}
               >
                 <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 22, marginBottom: 10 }}>
-                  NFT Created!
+                  Portrait Locked In
                 </div>
                 <p style={{ fontSize: 14, opacity: 0.85, marginBottom: 16 }}>
-                  Share it on X to get whitelisted. Tag {X_HANDLE} in your post.
+                  Share it on X to earn your whitelist spot + 200 BUSTS. Tag {X_HANDLE} in your post.
                 </p>
                 <button
                   className="btn"
@@ -197,7 +196,7 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
                   <span style={{ fontWeight: 700, color: selection[type] !== undefined ? '#000' : '#ccc' }}>
                     {selection[type] !== undefined
                       ? ELEMENT_VARIANTS[type][selection[type]]?.name
-                      : '—'}
+                      : '/'}
                   </span>
                 </div>
               ))}

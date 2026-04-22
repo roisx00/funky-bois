@@ -1,5 +1,5 @@
 // X OAuth 2.0 PKCE helpers
-const CLIENT_ID    = import.meta.env.VITE_X_CLIENT_ID || '';
+const CLIENT_ID    = process.env.X_CLIENT_ID || process.env.VITE_X_CLIENT_ID || '';
 const REDIRECT_URI = typeof window !== 'undefined' ? window.location.origin + '/' : '';
 
 // ── PKCE helpers ──────────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ async function sha256B64(str) {
 // ── startXLogin ───────────────────────────────────────────────────────────────
 export async function startXLogin(onUser) {
   if (!CLIENT_ID) {
-    const raw = window.prompt('Dev mode — enter your X @username:');
+    const raw = window.prompt('Dev mode / enter your X @username:');
     if (!raw) return;
     const username = raw.replace(/^@/, '').trim();
     if (username) onUser({ id: `dev-${username}`, username, name: username, avatar: null, mock: true });
@@ -56,7 +56,7 @@ export async function handleXCallback() {
   window.history.replaceState({}, '', window.location.pathname);
 
   // Exchange code → access token via server proxy ONLY
-  // (direct browser call must be avoided — X processes the request server-side
+  // (direct browser call must be avoided / X processes the request server-side
   //  even when CORS blocks the response, consuming the one-time code)
   let access_token = null;
   try {

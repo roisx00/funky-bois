@@ -4,8 +4,6 @@ import { buildNFTSVG } from '../data/elements';
 // Missing types are rendered as "empty slot" (no layer for that type).
 export default function NFTCanvas({ elements = {}, size = 300 }) {
   const svgString = buildNFTSVG(elements);
-  const scale = size / 300;
-  const height = Math.round(380 * scale);
 
   return (
     <div

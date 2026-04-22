@@ -1,89 +1,103 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&family=Red+Hat+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE 1969 / Design Tokens (cream editorial, agency-grade)
+═══════════════════════════════════════════════════════════════════════════ */
 :root {
-  /* ── High Contrast Backgrounds ── */
-  --bg:        #FDFDFC;
-  --bg-2:      #F7F7F7;
-  --bg-3:      #F0F0F0;
-  --surface:   #FFFFFF;
-  --surface-2: #FDFDFC;
-  --surface-3: #F5F5F5;
+  /* ── Warm neutral spine (light) ── */
+  --paper-0:  #FFFFFF;
+  --paper-1:  #F9F6F0;   /* primary canvas, warm cream */
+  --paper-2:  #F2EEE6;   /* raised surface */
+  --paper-3:  #E9E3D6;   /* card alt */
+  --paper-4:  #DDD7CB;   /* hairline */
+  --paper-5:  #C6BEAD;
+  --paper-6:  #9A927F;
+  --paper-7:  #6C6457;
+  --paper-8:  #3B3630;
+  --paper-9:  #1F1C17;
+  --paper-10: #0E0E0E;   /* primary ink */
+  --paper-11: #000000;
 
-  /* ── Neobrutalist Borders ── */
-  --border-color:        #000000;
-  --border-color-med:    #000000;
-  --border-color-strong: #000000;
-  --border:       2.5px solid var(--border-color-strong);
-  --border-thin:  1.5px solid var(--border-color-strong);
+  /* ── Accent / acid lime ── */
+  --accent:      #D7FF3A;
+  --accent-warm: #F0E14A;
+  --accent-dim:  rgba(215,255,58,0.18);
+  --accent-line: rgba(215,255,58,0.55);
 
-  /* ── Core Text ── */
-  --text:   #000000;
-  --text-2: #222222;
-  --text-3: #555555;
-  --text-4: #888888;
+  /* ── Semantic (light-first) ── */
+  --bg:        var(--paper-1);
+  --bg-alt:    var(--paper-2);
+  --surface:   var(--paper-0);
+  --surface-2: var(--paper-2);
+  --hairline:  var(--paper-4);
+  --rule:      var(--paper-5);
+  --ink:       var(--paper-10);
+  --text:      var(--paper-10);
+  --text-2:    var(--paper-8);
+  --text-3:    var(--paper-7);
+  --text-4:    var(--paper-6);
 
-  /* ── REMEKO Accent Palette ── */
-  --accent:        #FF80BF; /* Pink */
-  --accent-dim:    rgba(255,128,191,0.12);
-  --accent-glow:   4px 4px 0px #000000; 
-  --accent-glow-sm:2px 2px 0px #000000;
+  /* Legacy compat shims so older classes don't break */
+  --border-color:        var(--hairline);
+  --border-color-med:    var(--rule);
+  --border-color-strong: var(--paper-10);
+  --border:      1px solid var(--paper-10);
+  --border-thin: 1px solid var(--hairline);
+  --radius:    0px;
+  --radius-lg: 0px;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --white:       var(--paper-0);
+  --black:       var(--paper-10);
+  --gold:        var(--paper-10);
+  --gold-dim:    rgba(14,14,14,0.08);
+  --funky-gold:  var(--paper-10);
+  --purple:      var(--paper-7);
+  --purple-dim:  var(--paper-3);
+  --cyan:        var(--paper-8);
+  --cyan-dim:    var(--paper-3);
+  --red:         #CC3A2A;
+  --green:       var(--paper-10);
+  --off-white:   var(--paper-1);
+  --light-gray:  var(--paper-4);
+  --surface-3:   var(--paper-2);
+  --bg-2:        var(--paper-2);
+  --bg-3:        var(--paper-3);
+  --accent-glow:    none;
+  --accent-glow-sm: none;
 
-  --purple:        #FB7E96;
-  --purple-dim:    rgba(251,126,150,0.12);
-
-  --cyan:          #00D09B; /* Teal from "CONNECTED" */
-  --cyan-dim:      rgba(0,208,155,0.10);
-
-  --gold:          #FFB800;
-  --gold-dim:      rgba(255,184,0,0.12);
-
-  --red:           #FF4D4D;
-  --green:         #00D09B;
-
-  /* ── Legacy compat ── */
-  --black:       #000000;
-  --white:       #FFFFFF;
-  --off-white:   #F9F9F9;
-  --gray:        #555555;
-  --light-gray:  #DDDDDD;
-
-  /* ── Radius ── */
-  --radius:    12px;
-  --radius-lg: 20px;
-
-  /* ── Hard Shadows (Premium Neobrutalist) ── */
-  --shadow-sm:  2.5px 2.5px 0px #000000;
-  --shadow-md:  4.5px 4.5px 0px #000000;
-  --shadow-lg:  9px 9px 0px #000000;
-
-  /* ── Fonts (Clean Bold) ── */
-  --font-sketch: 'Space Grotesk', sans-serif;
-  --font-body:   'Space Grotesk', system-ui, sans-serif;
-  --font-mono:   'Red Hat Mono', monospace;
+  /* ── Typography ── */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Space Grotesk', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+  --font-serif:   'Instrument Serif', Georgia, serif;
+  --font-sketch:  var(--font-display);
 
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 15px;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11", "ss03";
+  text-rendering: geometricPrecision;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
   overflow-x: hidden;
   scroll-behavior: smooth;
+  background: var(--bg);
 }
 
 body {
   background: var(--bg);
+  color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
+  line-height: 1.5;
 }
 
 #root {
@@ -96,34 +110,46 @@ body {
 }
 
 h1, h2, h3, h4 {
-  font-family: var(--font-sketch);
+  font-family: var(--font-display);
   color: var(--text);
-  line-height: 1.0;
-  letter-spacing: -0.02em;
-  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 500;
 }
 
-p { margin: 0; }
+p { margin: 0; color: var(--text-2); }
 
 button {
   cursor: pointer;
   font-family: var(--font-body);
-  font-weight: 700;
+  font-weight: 500;
+  color: inherit;
+  background: none;
+  border: none;
 }
 
 a { color: inherit; text-decoration: none; }
 
 input, select, textarea {
-  font-family: var(--font-body);
+  font-family: var(--font-mono);
   color: var(--text);
-  border: var(--border-thin);
-  border-radius: 8px;
-  padding: 8px 12px;
-  background: var(--white);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  padding: 12px 14px;
+  font-size: 13px;
+  outline: none;
+  border-radius: 0;
+  transition: border-color .15s;
 }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--ink);
+}
+input::placeholder { color: var(--text-4); }
 
-/* Scrollbar (High Contrast) */
+/* Scrollbar / thin + warm */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-2); }
-::-webkit-scrollbar-thumb { background: var(--text); border: 2px solid var(--bg-2); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+::-webkit-scrollbar-track { background: var(--paper-2); }
+::-webkit-scrollbar-thumb { background: var(--paper-5); }
+::-webkit-scrollbar-thumb:hover { background: var(--paper-7); }
+
+::selection { background: var(--ink); color: var(--accent); }

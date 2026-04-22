@@ -1,67 +1,85 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import NFTCanvas from '../components/NFTCanvas';
 import { MOCK_GALLERY, timeAgo } from '../data/gallery';
-import { ELEMENT_LABELS, ELEMENT_VARIANTS } from '../data/elements';
 
 export default function GalleryPage() {
-  const { completedNFTs, username, userId } = useGame();
-  const [filter, setFilter] = useState('all'); // 'all' | 'mine'
+  const { completedNFTs, userId } = useGame();
+  const [filter, setFilter] = useState('all');
+  const [sort, setSort]     = useState('recent');
 
-  // Merge mock data + real user NFTs
   const myNFTs = completedNFTs.map((n) => ({
     ...n,
     isMine: true,
-    username: n.username || `FunkyBoi#${userId.slice(0, 4).toUpperCase()}`,
+    username: n.username || `Boi#${userId.slice(0, 4).toUpperCase()}`,
   }));
 
-  const allEntries = [
-    ...myNFTs,
-    ...MOCK_GALLERY.map((n) => ({ ...n, isMine: false })),
-  ].sort((a, b) => b.createdAt - a.createdAt);
+  const all = useMemo(() => {
+    const merged = [...myNFTs, ...MOCK_GALLERY.map((n) => ({ ...n, isMine: false }))];
+    if (sort === 'recent')   merged.sort((a, b) => b.createdAt - a.createdAt);
+    if (sort === 'oldest')   merged.sort((a, b) => a.createdAt - b.createdAt);
+    return merged;
+  }, [myNFTs, sort]);
 
-  const displayed = filter === 'mine'
-    ? allEntries.filter((n) => n.isMine)
-    : allEntries;
-
-  const totalCount = allEntries.length;
+  const displayed = filter === 'mine' ? all.filter((n) => n.isMine) : all;
+  const totalCount = all.length;
 
   return (
-    <div className="page">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <h1 className="page-title" style={{ borderBottom: 'none', marginBottom: 0 }}>Live Gallery</h1>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#777' }}>{totalCount} completed</span>
-          <button
-            className={`btn btn-sm ${filter === 'all' ? 'btn-solid' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            All
+    <div className="page gallery-page">
+      <div className="gallery-hero">
+        <div className="gallery-hero-copy">
+          <div className="gallery-hero-kicker">
+            <span className="hero-eyebrow-dot" style={{ background: 'var(--accent)', border: '1px solid var(--ink)', display: 'inline-block', width: 8, height: 8, borderRadius: '50%', marginRight: 10, verticalAlign: 'middle' }} />
+            Live portrait feed
+          </div>
+          <h1 className="gallery-hero-title">
+            The portraits <em>speak for themselves.</em>
+          </h1>
+        </div>
+
+        <div className="gallery-hero-meta">
+          <strong>{totalCount}</strong>
+          <span>Portraits on display</span>
+        </div>
+      </div>
+
+      <div className="gallery-filter-bar">
+        <div className="gallery-filter-group">
+          <button className={`gallery-filter-btn${filter === 'all' ? ' active' : ''}`} onClick={() => setFilter('all')}>
+            All · {all.length}
           </button>
-          <button
-            className={`btn btn-sm ${filter === 'mine' ? 'btn-solid' : ''}`}
-            onClick={() => setFilter('mine')}
-          >
-            Mine
+          <button className={`gallery-filter-btn${filter === 'mine' ? ' active' : ''}`} onClick={() => setFilter('mine')}>
+            Mine · {myNFTs.length}
+          </button>
+        </div>
+
+        <div className="gallery-filter-group">
+          <button className={`gallery-filter-btn${sort === 'recent' ? ' active' : ''}`} onClick={() => setSort('recent')}>
+            Newest
+          </button>
+          <button className={`gallery-filter-btn${sort === 'oldest' ? ' active' : ''}`} onClick={() => setSort('oldest')}>
+            Oldest
           </button>
         </div>
       </div>
 
-      <p style={{ marginTop: 8, marginBottom: 28, fontSize: 14, color: '#777', borderBottom: 'var(--border)', paddingBottom: 20 }}>
-        Real-time feed of completed Funky Bois. Every unique NFT. No two alike.
-      </p>
-
       {displayed.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 40, marginBottom: 16, color: '#ccc' }}>Nothing Here</div>
-          <p style={{ color: '#777' }}>
-            {filter === 'mine' ? "You haven't completed an NFT yet." : 'Gallery is empty.'}
+        <div style={{
+          textAlign: 'center', padding: '120px 20px',
+          border: '1px dashed var(--rule)', background: 'var(--paper-2)',
+          maxWidth: 640, margin: '0 auto',
+        }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 500, letterSpacing: '-0.035em', marginBottom: 14, color: 'var(--text-3)' }}>
+            Nothing here.
+          </div>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-4)' }}>
+            {filter === 'mine' ? 'You have not completed a portrait yet.' : 'Gallery is empty.'}
           </p>
         </div>
       ) : (
-        <div className="gallery-grid">
+        <div className="gallery-grid-premium">
           {displayed.map((nft) => (
-            <GalleryCard key={nft.id} nft={nft} />
+            <GalleryTile key={nft.id} nft={nft} />
           ))}
         </div>
       )}
@@ -69,47 +87,17 @@ export default function GalleryPage() {
   );
 }
 
-function GalleryCard({ nft }) {
-  const traitCount = Object.keys(nft.elements).length;
-
+function GalleryTile({ nft }) {
   return (
-    <div className="gallery-card">
-      {nft.isMine && (
-        <div style={{
-          background: '#000',
-          color: '#fff',
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: 1,
-          textAlign: 'center',
-          padding: '4px 0',
-          textTransform: 'uppercase',
-        }}>
-          YOURS
-        </div>
-      )}
-
-      <div className="gallery-card-art">
-        <NFTCanvas elements={nft.elements} size={200} />
+    <article className={`gallery-tile${nft.isMine ? ' mine' : ''}`}>
+      <div className="gallery-tile-art">
+        <NFTCanvas elements={nft.elements} size={280} />
       </div>
-
-      <div className="gallery-card-info">
-        <div className="gallery-maker-label">MADE BY</div>
-        <div className="gallery-username">@{nft.username}</div>
-        <div className="gallery-timestamp">{timeAgo(nft.createdAt)}</div>
-
-        <div className="gallery-traits">
-          {Object.entries(nft.elements).map(([type, variant]) => {
-            const info = ELEMENT_VARIANTS[type]?.[variant];
-            if (!info) return null;
-            return (
-              <span key={type} className="tag" style={{ fontSize: 10, padding: '2px 6px' }}>
-                {info.name}
-              </span>
-            );
-          })}
-        </div>
+      <div className="gallery-tile-info">
+        <span className="gallery-tile-id">#{String(nft.id).slice(-6).toUpperCase()}</span>
+        <span className="gallery-tile-name">@{nft.username}</span>
+        <span className="gallery-tile-time">{timeAgo(nft.createdAt)}</span>
       </div>
-    </div>
+    </article>
   );
 }

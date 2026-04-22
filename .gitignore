@@ -27,3 +27,8 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Hardhat
+artifacts/
+cache/
+metadata/

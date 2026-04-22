@@ -8,7 +8,7 @@ export const MOCK_GALLERY = [
   },
   {
     id: 'mock-002',
-    username: 'xX_FUNKY_Xx',
+    username: 'shadowbust',
     elements: { background: 0, hair: 0, eyes: 1, glasses: 0, outfit: 0, accessories: 0, stickers: 0 },
     createdAt: Date.now() - 1000 * 60 * 28,
   },
@@ -38,7 +38,7 @@ export const MOCK_GALLERY = [
   },
   {
     id: 'mock-007',
-    username: 'FUNKY7777',
+    username: 'ink1969',
     elements: { background: 1, hair: 1, eyes: 2, glasses: 0, outfit: 3, accessories: 2, stickers: 1 },
     createdAt: Date.now() - 1000 * 60 * 180,
   },

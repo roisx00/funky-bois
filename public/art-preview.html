@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Funky Bois — Rounded Silhouette v4</title>
+<style>
+  body { margin:0; padding:32px; background:#FDFDFC; font-family:'Space Grotesk',system-ui,sans-serif; color:#000; }
+  h1 { font-size:40px; margin:0 0 4px; letter-spacing:-2px; }
+  h2 { font-size:22px; margin:40px 0 14px 0; border-bottom:3px solid #000; padding-bottom:8px; letter-spacing:-0.5px; }
+  p.lead { color:#333; max-width:760px; margin:0 0 20px; font-size:15px; line-height:1.5; }
+  .cmp { display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:900px; margin-bottom:40px; }
+  .cmp-side { border:2.5px solid #000; border-radius:12px; background:#fff; overflow:hidden; }
+  .cmp-label { background:#000; color:#fff; font-weight:800; font-size:12px; letter-spacing:1.5px; padding:8px 14px; text-transform:uppercase; }
+  .cmp-label.good { background:#0A0A0A; }
+  .cmp-tile { aspect-ratio:1; }
+  .cmp-tile svg { width:100%; height:100%; display:block; image-rendering:pixelated; image-rendering:crisp-edges; }
+  .grid-chars { display:grid; grid-template-columns:repeat(3, 1fr); gap:0; max-width:900px; border:3px solid #000; background:#000; }
+  .tile { aspect-ratio:1; display:block; overflow:hidden; border:1px solid #000; }
+  .tile svg { width:100%; height:100%; display:block; image-rendering:pixelated; image-rendering:crisp-edges; }
+  .note { margin-top:8px; padding:14px 18px; background:#f3f3f3; border:2px dashed #000; border-radius:8px; font-size:13px; line-height:1.6; }
+  .note strong { display:block; margin-bottom:6px; font-size:14px; }
+  ul.fixes { margin:6px 0 0 18px; padding:0; }
+  ul.fixes li { margin-bottom:3px; }
+</style>
+</head>
+<body>
+
+<h1>ROUNDED SILHOUETTE COMPARISON</h1>
+<p class="lead">
+  You asked why heads and shoulders are square. Here's a side-by-side of my previous <strong>cube-head</strong> output versus
+  a <strong>properly shaped silhouette</strong> with pixel knockouts, jaw taper, sloped shoulders, and cheek shading.
+  The right-side characters use the same 5-shade grayscale but with anatomical pixel work.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     COMPARISON 1: Bald Old Man
+═══════════════════════════════════════════════════════════════════════════ -->
+<h2>1. Old Commander (bald + white beard)</h2>
+<div class="cmp">
+
+  <div class="cmp-side">
+    <div class="cmp-label">Before (square)</div>
+    <div class="cmp-tile">
+      <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+        <rect width="96" height="96" fill="#333"/>
+        <rect x="12" y="76" width="72" height="20" fill="#777"/>
+        <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+        <rect x="28" y="24" width="40" height="44" fill="#bbb"/>
+        <rect x="26" y="26" width="2" height="40" fill="#0A0A0A"/>
+        <rect x="68" y="26" width="2" height="40" fill="#0A0A0A"/>
+        <rect x="28" y="22" width="40" height="2" fill="#0A0A0A"/>
+        <rect x="28" y="66" width="40" height="2" fill="#0A0A0A"/>
+        <rect x="32" y="38" width="10" height="4" fill="#777"/>
+        <rect x="54" y="38" width="10" height="4" fill="#777"/>
+        <rect x="36" y="40" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="58" y="40" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="34" y="52" width="28" height="4" fill="#eee"/>
+        <rect x="30" y="56" width="36" height="12" fill="#eee"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="cmp-side">
+    <div class="cmp-label good">After (rounded)</div>
+    <div class="cmp-tile">
+      <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+        <rect width="96" height="96" fill="#333"/>
+        <rect x="0" y="0" width="96" height="2" fill="#2a2a2a"/>
+        <rect x="0" y="94" width="96" height="2" fill="#2a2a2a"/>
+
+        <!-- SLOPED SHOULDERS (staircase) -->
+        <rect x="14" y="80" width="68" height="16" fill="#777"/>
+        <rect x="18" y="76" width="60" height="4" fill="#777"/>
+        <rect x="22" y="72" width="52" height="4" fill="#777"/>
+        <rect x="14" y="80" width="68" height="2" fill="#555"/>
+        <rect x="18" y="78" width="60" height="2" fill="#555"/>
+        <rect x="22" y="74" width="52" height="2" fill="#555"/>
+        <!-- collar dip -->
+        <rect x="38" y="72" width="20" height="4" fill="#333"/>
+        <rect x="40" y="70" width="16" height="2" fill="#333"/>
+
+        <!-- NECK with taper + shadow -->
+        <rect x="40" y="64" width="16" height="8" fill="#bbb"/>
+        <rect x="40" y="64" width="16" height="2" fill="#777"/>
+        <rect x="40" y="70" width="16" height="2" fill="#555"/>
+
+        <!-- HEAD with rounded corners (2px knockouts) -->
+        <!-- row 1: narrow top -->
+        <rect x="32" y="22" width="32" height="2" fill="#bbb"/>
+        <!-- row 2 -->
+        <rect x="30" y="24" width="36" height="2" fill="#bbb"/>
+        <!-- main head block -->
+        <rect x="28" y="26" width="40" height="30" fill="#bbb"/>
+        <!-- jaw taper -->
+        <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+        <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+        <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+
+        <!-- OUTLINE (follows rounded shape) -->
+        <rect x="30" y="22" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="64" y="22" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="28" y="24" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="66" y="24" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="26" y="26" width="2" height="30" fill="#0A0A0A"/>
+        <rect x="68" y="26" width="2" height="30" fill="#0A0A0A"/>
+        <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+        <rect x="32" y="22" width="32" height="2" fill="#0A0A0A" opacity=".3"/>
+
+        <!-- CHEEK GRADIENT (right side darker, 3 steps) -->
+        <rect x="60" y="28" width="8" height="28" fill="#999" opacity=".4"/>
+        <rect x="64" y="30" width="4" height="24" fill="#777" opacity=".4"/>
+
+        <!-- EARS (nubs mid-face) -->
+        <rect x="24" y="40" width="4" height="8" fill="#999"/>
+        <rect x="22" y="42" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="68" y="40" width="4" height="8" fill="#777"/>
+        <rect x="72" y="42" width="2" height="4" fill="#0A0A0A"/>
+
+        <!-- BALD SHINE (forehead highlight) -->
+        <rect x="36" y="26" width="14" height="2" fill="#eee"/>
+        <rect x="40" y="28" width="6" height="2" fill="#eee"/>
+
+        <!-- EYE SOCKETS (set in) -->
+        <rect x="32" y="36" width="10" height="5" fill="#777"/>
+        <rect x="54" y="36" width="10" height="5" fill="#777"/>
+        <rect x="34" y="38" width="6" height="2" fill="#333"/>
+        <rect x="56" y="38" width="6" height="2" fill="#333"/>
+        <rect x="36" y="38" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="58" y="38" width="2" height="2" fill="#0A0A0A"/>
+        <!-- under-eye bags -->
+        <rect x="32" y="42" width="10" height="2" fill="#888" opacity=".5"/>
+        <rect x="54" y="42" width="10" height="2" fill="#888" opacity=".5"/>
+        <!-- wrinkle lines -->
+        <rect x="30" y="32" width="6" height="1" fill="#888" opacity=".5"/>
+        <rect x="60" y="32" width="6" height="1" fill="#888" opacity=".5"/>
+
+        <!-- NOSE (shaded) -->
+        <rect x="46" y="40" width="4" height="8" fill="#999"/>
+        <rect x="46" y="40" width="2" height="8" fill="#bbb"/>
+        <rect x="50" y="40" width="2" height="8" fill="#777"/>
+        <rect x="44" y="48" width="8" height="2" fill="#555"/>
+        <rect x="46" y="50" width="4" height="1" fill="#777"/>
+
+        <!-- MUSTACHE (white) -->
+        <rect x="34" y="50" width="28" height="4" fill="#eee"/>
+        <rect x="32" y="52" width="4" height="2" fill="#eee"/>
+        <rect x="60" y="52" width="4" height="2" fill="#eee"/>
+        <rect x="38" y="54" width="20" height="1" fill="#bbb"/>
+
+        <!-- MOUTH hint -->
+        <rect x="42" y="55" width="12" height="1" fill="#555"/>
+
+        <!-- BEARD (follows jaw curve) -->
+        <rect x="32" y="54" width="2" height="6" fill="#eee"/>
+        <rect x="62" y="54" width="2" height="6" fill="#eee"/>
+        <rect x="30" y="56" width="4" height="4" fill="#eee"/>
+        <rect x="62" y="56" width="4" height="4" fill="#eee"/>
+        <rect x="32" y="58" width="32" height="6" fill="#eee"/>
+        <rect x="34" y="60" width="28" height="2" fill="#ddd"/>
+        <rect x="36" y="62" width="24" height="2" fill="#bbb"/>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     COMPARISON 2: Nurse
+═══════════════════════════════════════════════════════════════════════════ -->
+<h2>2. Nurse (wide eyes, scrubs)</h2>
+<div class="cmp">
+
+  <div class="cmp-side">
+    <div class="cmp-label">Before (square)</div>
+    <div class="cmp-tile">
+      <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+        <rect width="96" height="96" fill="#c8c8c8"/>
+        <rect x="10" y="72" width="76" height="24" fill="#eee"/>
+        <rect x="40" y="64" width="16" height="10" fill="#bbb"/>
+        <rect x="28" y="24" width="40" height="42" fill="#bbb"/>
+        <rect x="26" y="26" width="2" height="38" fill="#0A0A0A"/>
+        <rect x="68" y="26" width="2" height="38" fill="#0A0A0A"/>
+        <rect x="28" y="24" width="40" height="2" fill="#0A0A0A"/>
+        <rect x="28" y="64" width="40" height="2" fill="#0A0A0A"/>
+        <rect x="28" y="14" width="40" height="10" fill="#eee"/>
+        <rect x="44" y="16" width="8" height="8" fill="#0A0A0A"/>
+        <rect x="46" y="16" width="4" height="8" fill="#eee"/>
+        <rect x="44" y="18" width="8" height="4" fill="#eee"/>
+        <rect x="46" y="18" width="4" height="4" fill="#0A0A0A"/>
+        <rect x="32" y="38" width="10" height="6" fill="#eee"/>
+        <rect x="54" y="38" width="10" height="6" fill="#eee"/>
+        <rect x="32" y="38" width="10" height="2" fill="#0A0A0A"/>
+        <rect x="54" y="38" width="10" height="2" fill="#0A0A0A"/>
+        <rect x="36" y="40" width="4" height="2" fill="#0A0A0A"/>
+        <rect x="58" y="40" width="4" height="2" fill="#0A0A0A"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="cmp-side">
+    <div class="cmp-label good">After (rounded)</div>
+    <div class="cmp-tile">
+      <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+        <rect width="96" height="96" fill="#c8c8c8"/>
+        <rect x="0" y="60" width="96" height="36" fill="#bababa"/>
+
+        <!-- SLOPED SHOULDERS (white scrubs) -->
+        <rect x="12" y="82" width="72" height="14" fill="#eee"/>
+        <rect x="18" y="78" width="60" height="4" fill="#eee"/>
+        <rect x="24" y="74" width="48" height="4" fill="#eee"/>
+        <rect x="12" y="82" width="72" height="2" fill="#aaa"/>
+        <rect x="18" y="80" width="60" height="2" fill="#ccc"/>
+        <!-- v-neck collar -->
+        <rect x="40" y="74" width="16" height="8" fill="#c8c8c8"/>
+        <rect x="42" y="76" width="12" height="6" fill="#bbb"/>
+        <rect x="46" y="82" width="4" height="4" fill="#bbb"/>
+
+        <!-- NECK tapered -->
+        <rect x="40" y="66" width="16" height="8" fill="#bbb"/>
+        <rect x="40" y="66" width="16" height="2" fill="#777"/>
+
+        <!-- ROUNDED HEAD -->
+        <rect x="32" y="22" width="32" height="2" fill="#bbb"/>
+        <rect x="30" y="24" width="36" height="2" fill="#bbb"/>
+        <rect x="28" y="26" width="40" height="30" fill="#bbb"/>
+        <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+        <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+        <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+
+        <!-- OUTLINE rounded -->
+        <rect x="30" y="22" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="64" y="22" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="28" y="24" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="66" y="24" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="26" y="26" width="2" height="30" fill="#0A0A0A"/>
+        <rect x="68" y="26" width="2" height="30" fill="#0A0A0A"/>
+        <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+
+        <!-- CHEEK GRADIENT -->
+        <rect x="60" y="28" width="8" height="28" fill="#999" opacity=".4"/>
+        <rect x="64" y="30" width="4" height="24" fill="#777" opacity=".35"/>
+
+        <!-- EARS -->
+        <rect x="24" y="40" width="4" height="8" fill="#999"/>
+        <rect x="22" y="42" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="68" y="40" width="4" height="8" fill="#777"/>
+        <rect x="72" y="42" width="2" height="4" fill="#0A0A0A"/>
+
+        <!-- NURSE HAT (sits on hair) -->
+        <rect x="28" y="14" width="40" height="8" fill="#eee"/>
+        <rect x="30" y="12" width="36" height="2" fill="#eee"/>
+        <rect x="26" y="16" width="2" height="6" fill="#0A0A0A"/>
+        <rect x="68" y="16" width="2" height="6" fill="#0A0A0A"/>
+        <rect x="28" y="12" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="66" y="12" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="30" y="10" width="36" height="2" fill="#0A0A0A"/>
+        <!-- red cross -->
+        <rect x="44" y="14" width="8" height="8" fill="#0A0A0A"/>
+        <rect x="46" y="14" width="4" height="8" fill="#eee"/>
+        <rect x="44" y="16" width="8" height="4" fill="#eee"/>
+        <rect x="46" y="16" width="4" height="4" fill="#0A0A0A"/>
+
+        <!-- hair peek (brown) -->
+        <rect x="28" y="22" width="40" height="4" fill="#444"/>
+        <rect x="30" y="22" width="4" height="2" fill="#444"/>
+        <rect x="62" y="22" width="4" height="2" fill="#444"/>
+
+        <!-- WIDE EYES -->
+        <rect x="32" y="36" width="10" height="6" fill="#eee"/>
+        <rect x="54" y="36" width="10" height="6" fill="#eee"/>
+        <rect x="32" y="36" width="10" height="1" fill="#0A0A0A"/>
+        <rect x="54" y="36" width="10" height="1" fill="#0A0A0A"/>
+        <rect x="32" y="41" width="10" height="1" fill="#0A0A0A"/>
+        <rect x="54" y="41" width="10" height="1" fill="#0A0A0A"/>
+        <rect x="32" y="37" width="1" height="4" fill="#0A0A0A"/>
+        <rect x="41" y="37" width="1" height="4" fill="#0A0A0A"/>
+        <rect x="54" y="37" width="1" height="4" fill="#0A0A0A"/>
+        <rect x="63" y="37" width="1" height="4" fill="#0A0A0A"/>
+        <rect x="36" y="38" width="4" height="3" fill="#0A0A0A"/>
+        <rect x="58" y="38" width="4" height="3" fill="#0A0A0A"/>
+        <rect x="37" y="38" width="1" height="1" fill="#eee"/>
+        <rect x="59" y="38" width="1" height="1" fill="#eee"/>
+
+        <!-- NOSE -->
+        <rect x="46" y="42" width="4" height="8" fill="#999"/>
+        <rect x="46" y="42" width="2" height="8" fill="#bbb"/>
+        <rect x="50" y="42" width="2" height="8" fill="#777"/>
+        <rect x="44" y="50" width="8" height="2" fill="#555"/>
+
+        <!-- small smile -->
+        <rect x="40" y="56" width="16" height="1" fill="#555"/>
+        <rect x="38" y="57" width="4" height="1" fill="#555"/>
+        <rect x="54" y="57" width="4" height="1" fill="#555"/>
+
+        <!-- rosy cheeks hint -->
+        <rect x="33" y="46" width="5" height="2" fill="#999" opacity=".45"/>
+        <rect x="58" y="46" width="5" height="2" fill="#888" opacity=".45"/>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     COMPARISON 3: Bearded Traveler
+═══════════════════════════════════════════════════════════════════════════ -->
+<h2>3. Bearded Traveler (cap + full beard)</h2>
+<div class="cmp">
+
+  <div class="cmp-side">
+    <div class="cmp-label">Before (square)</div>
+    <div class="cmp-tile">
+      <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+        <rect width="96" height="96" fill="#9a9a9a"/>
+        <rect x="10" y="72" width="76" height="24" fill="#222"/>
+        <rect x="40" y="66" width="16" height="8" fill="#bbb"/>
+        <rect x="28" y="30" width="40" height="38" fill="#bbb"/>
+        <rect x="26" y="32" width="2" height="34" fill="#0A0A0A"/>
+        <rect x="68" y="32" width="2" height="34" fill="#0A0A0A"/>
+        <rect x="28" y="66" width="40" height="2" fill="#0A0A0A"/>
+        <rect x="26" y="22" width="44" height="10" fill="#222"/>
+        <rect x="24" y="32" width="48" height="4" fill="#0A0A0A"/>
+        <rect x="32" y="42" width="10" height="4" fill="#0A0A0A"/>
+        <rect x="54" y="42" width="10" height="4" fill="#0A0A0A"/>
+        <rect x="28" y="54" width="40" height="14" fill="#333"/>
+        <rect x="46" y="46" width="4" height="8" fill="#777"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="cmp-side">
+    <div class="cmp-label good">After (rounded)</div>
+    <div class="cmp-tile">
+      <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+        <rect width="96" height="96" fill="#9a9a9a"/>
+        <rect x="0" y="60" width="96" height="36" fill="#8a8a8a"/>
+
+        <!-- JACKET w/ sloped shoulders -->
+        <rect x="12" y="82" width="72" height="14" fill="#222"/>
+        <rect x="18" y="78" width="60" height="4" fill="#222"/>
+        <rect x="24" y="74" width="48" height="4" fill="#222"/>
+        <rect x="12" y="82" width="72" height="2" fill="#0A0A0A"/>
+        <!-- collar lapels -->
+        <rect x="30" y="74" width="12" height="10" fill="#333"/>
+        <rect x="54" y="74" width="12" height="10" fill="#333"/>
+        <rect x="42" y="78" width="12" height="6" fill="#444"/>
+
+        <!-- NECK -->
+        <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+        <rect x="40" y="66" width="16" height="2" fill="#777"/>
+
+        <!-- ROUNDED HEAD -->
+        <rect x="32" y="30" width="32" height="2" fill="#bbb"/>
+        <rect x="30" y="32" width="36" height="2" fill="#bbb"/>
+        <rect x="28" y="34" width="40" height="22" fill="#bbb"/>
+        <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+        <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+        <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+
+        <!-- OUTLINE -->
+        <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+        <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+        <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+        <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+
+        <!-- CHEEK GRADIENT -->
+        <rect x="60" y="34" width="8" height="22" fill="#999" opacity=".4"/>
+        <rect x="64" y="36" width="4" height="18" fill="#777" opacity=".35"/>
+
+        <!-- EARS -->
+        <rect x="24" y="42" width="4" height="8" fill="#999"/>
+        <rect x="22" y="44" width="2" height="4" fill="#0A0A0A"/>
+        <rect x="68" y="42" width="4" height="8" fill="#777"/>
+        <rect x="72" y="44" width="2" height="4" fill="#0A0A0A"/>
+
+        <!-- CAP with curve + brim -->
+        <rect x="28" y="22" width="40" height="10" fill="#222"/>
+        <rect x="30" y="20" width="36" height="2" fill="#222"/>
+        <rect x="32" y="18" width="32" height="2" fill="#222"/>
+        <rect x="22" y="32" width="52" height="4" fill="#0A0A0A"/>
+        <rect x="18" y="34" width="60" height="2" fill="#0A0A0A"/>
+        <rect x="28" y="22" width="40" height="2" fill="#333"/>
+        <!-- cap shadow on forehead -->
+        <rect x="28" y="36" width="40" height="3" fill="#777" opacity=".55"/>
+        <rect x="30" y="39" width="36" height="1" fill="#999" opacity=".4"/>
+
+        <!-- TIRED EYES -->
+        <rect x="32" y="42" width="10" height="4" fill="#0A0A0A"/>
+        <rect x="54" y="42" width="10" height="4" fill="#0A0A0A"/>
+        <rect x="34" y="43" width="6" height="2" fill="#333"/>
+        <rect x="56" y="43" width="6" height="2" fill="#333"/>
+        <rect x="36" y="43" width="2" height="2" fill="#eee"/>
+        <rect x="58" y="43" width="2" height="2" fill="#eee"/>
+        <!-- eye bags -->
+        <rect x="32" y="46" width="10" height="1" fill="#888"/>
+        <rect x="54" y="46" width="10" height="1" fill="#888"/>
+
+        <!-- NOSE with shape -->
+        <rect x="46" y="46" width="4" height="8" fill="#999"/>
+        <rect x="46" y="46" width="2" height="8" fill="#bbb"/>
+        <rect x="50" y="46" width="2" height="8" fill="#777"/>
+        <rect x="44" y="54" width="8" height="2" fill="#555"/>
+
+        <!-- FULL BEARD follows jaw curve -->
+        <rect x="34" y="54" width="28" height="4" fill="#333"/>
+        <rect x="32" y="56" width="32" height="4" fill="#333"/>
+        <rect x="30" y="58" width="36" height="4" fill="#333"/>
+        <rect x="32" y="62" width="32" height="2" fill="#333"/>
+        <rect x="34" y="64" width="28" height="2" fill="#222"/>
+        <rect x="30" y="58" width="4" height="2" fill="#2a2a2a"/>
+        <rect x="62" y="58" width="4" height="2" fill="#2a2a2a"/>
+        <!-- mouth gap in beard -->
+        <rect x="42" y="56" width="12" height="1" fill="#555"/>
+        <!-- beard texture -->
+        <rect x="36" y="58" width="1" height="2" fill="#555"/>
+        <rect x="42" y="60" width="1" height="2" fill="#555"/>
+        <rect x="52" y="58" width="1" height="2" fill="#555"/>
+        <rect x="58" y="60" width="1" height="2" fill="#555"/>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     FULL 3x3 GRID — all rounded
+═══════════════════════════════════════════════════════════════════════════ -->
+<h2>Full 9-character grid — all with rounded silhouettes</h2>
+<p class="lead">
+  Every character now uses rounded head corners (2×2 pixel knockouts top/bottom), jaw taper (3 stepped rows at chin),
+  sloped shoulders (staircase collar), cheek shading gradient, protruding ears, and shaped noses with highlight/shadow.
+</p>
+
+<div class="grid-chars">
+
+  <!-- 01: Old Commander -->
+  <div class="tile">
+    <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+      <rect width="96" height="96" fill="#333"/>
+      <rect x="14" y="80" width="68" height="16" fill="#777"/>
+      <rect x="18" y="76" width="60" height="4" fill="#777"/>
+      <rect x="22" y="72" width="52" height="4" fill="#777"/>
+      <rect x="14" y="80" width="68" height="2" fill="#555"/>
+      <rect x="38" y="72" width="20" height="4" fill="#333"/>
+      <rect x="40" y="70" width="16" height="2" fill="#333"/>
+      <rect x="40" y="64" width="16" height="8" fill="#bbb"/>
+      <rect x="40" y="64" width="16" height="2" fill="#777"/>
+      <rect x="32" y="22" width="32" height="2" fill="#bbb"/>
+      <rect x="30" y="24" width="36" height="2" fill="#bbb"/>
+      <rect x="28" y="26" width="40" height="30" fill="#bbb"/>
+      <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+      <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+      <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+      <rect x="30" y="22" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="22" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="24" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="24" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="26" width="2" height="30" fill="#0A0A0A"/>
+      <rect x="68" y="26" width="2" height="30" fill="#0A0A0A"/>
+      <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+      <rect x="60" y="28" width="8" height="28" fill="#999" opacity=".4"/>
+      <rect x="24" y="40" width="4" height="8" fill="#999"/>
+      <rect x="68" y="40" width="4" height="8" fill="#777"/>
+      <rect x="36" y="26" width="14" height="2" fill="#eee"/>
+      <rect x="32" y="36" width="10" height="5" fill="#777"/>
+      <rect x="54" y="36" width="10" height="5" fill="#777"/>
+      <rect x="34" y="38" width="6" height="2" fill="#333"/>
+      <rect x="56" y="38" width="6" height="2" fill="#333"/>
+      <rect x="36" y="38" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="58" y="38" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="46" y="40" width="4" height="8" fill="#999"/>
+      <rect x="44" y="48" width="8" height="2" fill="#555"/>
+      <rect x="34" y="50" width="28" height="4" fill="#eee"/>
+      <rect x="30" y="56" width="4" height="4" fill="#eee"/>
+      <rect x="62" y="56" width="4" height="4" fill="#eee"/>
+      <rect x="32" y="58" width="32" height="6" fill="#eee"/>
+      <rect x="34" y="60" width="28" height="2" fill="#ddd"/>
+    </svg>
+  </div>
+
+  <!-- 02: Bandana Bandit -->
+  <div class="tile">
+    <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+      <rect width="96" height="96" fill="#eaeaea"/>
+      <rect x="0" y="60" width="96" height="36" fill="#d8d8d8"/>
+      <rect x="14" y="82" width="68" height="14" fill="#333"/>
+      <rect x="18" y="78" width="60" height="4" fill="#333"/>
+      <rect x="24" y="74" width="48" height="4" fill="#333"/>
+      <rect x="22" y="78" width="52" height="4" fill="#222"/>
+      <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+      <rect x="40" y="66" width="16" height="2" fill="#777"/>
+      <rect x="32" y="30" width="32" height="2" fill="#bbb"/>
+      <rect x="30" y="32" width="36" height="2" fill="#bbb"/>
+      <rect x="28" y="34" width="40" height="22" fill="#bbb"/>
+      <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+      <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+      <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+      <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+      <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+      <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+      <rect x="60" y="36" width="8" height="20" fill="#999" opacity=".4"/>
+      <rect x="24" y="42" width="4" height="8" fill="#999"/>
+      <rect x="68" y="42" width="4" height="8" fill="#777"/>
+      <!-- bandana -->
+      <rect x="30" y="22" width="36" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="24" width="40" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="26" width="44" height="10" fill="#0A0A0A"/>
+      <rect x="70" y="30" width="10" height="8" fill="#0A0A0A"/>
+      <rect x="78" y="34" width="6" height="4" fill="#0A0A0A"/>
+      <rect x="34" y="28" width="2" height="2" fill="#bbb"/>
+      <rect x="42" y="30" width="2" height="2" fill="#bbb"/>
+      <rect x="50" y="28" width="2" height="2" fill="#bbb"/>
+      <rect x="58" y="30" width="2" height="2" fill="#bbb"/>
+      <!-- eyes narrow -->
+      <rect x="32" y="40" width="10" height="4" fill="#0A0A0A"/>
+      <rect x="54" y="40" width="10" height="4" fill="#0A0A0A"/>
+      <rect x="36" y="41" width="2" height="2" fill="#eee"/>
+      <rect x="58" y="41" width="2" height="2" fill="#eee"/>
+      <!-- nose -->
+      <rect x="46" y="44" width="4" height="8" fill="#999"/>
+      <rect x="46" y="44" width="2" height="8" fill="#bbb"/>
+      <rect x="50" y="44" width="2" height="8" fill="#777"/>
+      <rect x="44" y="52" width="8" height="2" fill="#555"/>
+      <!-- goatee -->
+      <rect x="36" y="54" width="24" height="2" fill="#0A0A0A"/>
+      <rect x="34" y="56" width="28" height="2" fill="#0A0A0A"/>
+      <rect x="42" y="58" width="12" height="6" fill="#0A0A0A"/>
+      <rect x="44" y="64" width="8" height="2" fill="#0A0A0A"/>
+      <rect x="40" y="56" width="16" height="1" fill="#333"/>
+    </svg>
+  </div>
+
+  <!-- 03: Graveyard Ghoul -->
+  <div class="tile">
+    <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+      <rect width="96" height="96" fill="#0A0A0A"/>
+      <g fill="#333">
+        <rect x="6" y="22" width="2" height="12"/>
+        <rect x="2" y="26" width="10" height="2"/>
+        <rect x="84" y="18" width="2" height="14"/>
+        <rect x="80" y="22" width="10" height="2"/>
+        <rect x="82" y="48" width="2" height="12"/>
+        <rect x="78" y="52" width="10" height="2"/>
+      </g>
+      <!-- hooded cloak -->
+      <rect x="12" y="78" width="72" height="18" fill="#222"/>
+      <rect x="16" y="74" width="64" height="4" fill="#222"/>
+      <rect x="20" y="70" width="56" height="4" fill="#222"/>
+      <rect x="22" y="66" width="52" height="4" fill="#222"/>
+      <!-- hood crest -->
+      <rect x="24" y="26" width="48" height="8" fill="#222"/>
+      <rect x="22" y="30" width="52" height="4" fill="#222"/>
+      <rect x="20" y="34" width="2" height="32" fill="#222"/>
+      <rect x="74" y="34" width="2" height="32" fill="#222"/>
+      <!-- hood inner shadow over forehead -->
+      <rect x="26" y="32" width="44" height="8" fill="#0A0A0A" opacity=".6"/>
+      <rect x="40" y="66" width="16" height="8" fill="#777"/>
+      <!-- rounded head (darker skin for horror mood) -->
+      <rect x="32" y="30" width="32" height="2" fill="#777"/>
+      <rect x="30" y="32" width="36" height="2" fill="#777"/>
+      <rect x="28" y="34" width="40" height="22" fill="#777"/>
+      <rect x="30" y="56" width="36" height="2" fill="#777"/>
+      <rect x="32" y="58" width="32" height="2" fill="#777"/>
+      <rect x="34" y="60" width="28" height="4" fill="#777"/>
+      <!-- outline -->
+      <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+      <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+      <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+      <rect x="60" y="36" width="8" height="20" fill="#555" opacity=".5"/>
+      <!-- sunken eyes with glow -->
+      <rect x="32" y="42" width="10" height="5" fill="#0A0A0A"/>
+      <rect x="54" y="42" width="10" height="5" fill="#0A0A0A"/>
+      <rect x="34" y="43" width="6" height="3" fill="#555"/>
+      <rect x="56" y="43" width="6" height="3" fill="#555"/>
+      <rect x="36" y="44" width="2" height="2" fill="#eee"/>
+      <rect x="58" y="44" width="2" height="2" fill="#eee"/>
+      <rect x="32" y="47" width="10" height="1" fill="#0A0A0A" opacity=".7"/>
+      <rect x="54" y="47" width="10" height="1" fill="#0A0A0A" opacity=".7"/>
+      <!-- nose -->
+      <rect x="46" y="46" width="4" height="8" fill="#555"/>
+      <rect x="46" y="46" width="2" height="8" fill="#777"/>
+      <rect x="50" y="46" width="2" height="8" fill="#333"/>
+      <rect x="44" y="54" width="8" height="2" fill="#333"/>
+      <!-- stubble -->
+      <rect x="32" y="56" width="32" height="6" fill="#333"/>
+      <rect x="34" y="58" width="28" height="4" fill="#222" opacity=".6"/>
+      <rect x="40" y="58" width="16" height="1" fill="#0A0A0A"/>
+    </svg>
+  </div>
+
+  <!-- 04: Nurse (already designed above) -->
+  <div class="tile">
+    <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+      <rect width="96" height="96" fill="#c8c8c8"/>
+      <rect x="0" y="60" width="96" height="36" fill="#bababa"/>
+      <rect x="12" y="82" width="72" height="14" fill="#eee"/>
+      <rect x="18" y="78" width="60" height="4" fill="#eee"/>
+      <rect x="24" y="74" width="48" height="4" fill="#eee"/>
+      <rect x="40" y="74" width="16" height="8" fill="#c8c8c8"/>
+      <rect x="42" y="76" width="12" height="6" fill="#bbb"/>
+      <rect x="40" y="66" width="16" height="8" fill="#bbb"/>
+      <rect x="40" y="66" width="16" height="2" fill="#777"/>
+      <rect x="32" y="22" width="32" height="2" fill="#bbb"/>
+      <rect x="30" y="24" width="36" height="2" fill="#bbb"/>
+      <rect x="28" y="26" width="40" height="30" fill="#bbb"/>
+      <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+      <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+      <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+      <rect x="30" y="22" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="22" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="24" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="24" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="26" width="2" height="30" fill="#0A0A0A"/>
+      <rect x="68" y="26" width="2" height="30" fill="#0A0A0A"/>
+      <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+      <rect x="60" y="28" width="8" height="28" fill="#999" opacity=".4"/>
+      <rect x="24" y="40" width="4" height="8" fill="#999"/>
+      <rect x="68" y="40" width="4" height="8" fill="#777"/>
+      <rect x="28" y="14" width="40" height="8" fill="#eee"/>
+      <rect x="30" y="12" width="36" height="2" fill="#eee"/>
+      <rect x="26" y="16" width="2" height="6" fill="#0A0A0A"/>
+      <rect x="68" y="16" width="2" height="6" fill="#0A0A0A"/>
+      <rect x="44" y="14" width="8" height="8" fill="#0A0A0A"/>
+      <rect x="46" y="14" width="4" height="8" fill="#eee"/>
+      <rect x="44" y="16" width="8" height="4" fill="#eee"/>
+      <rect x="46" y="16" width="4" height="4" fill="#0A0A0A"/>
+      <rect x="28" y="22" width="40" height="4" fill="#444"/>
+      <rect x="32" y="36" width="10" height="6" fill="#eee"/>
+      <rect x="54" y="36" width="10" height="6" fill="#eee"/>
+      <rect x="32" y="36" width="10" height="1" fill="#0A0A0A"/>
+      <rect x="54" y="36" width="10" height="1" fill="#0A0A0A"/>
+      <rect x="32" y="41" width="10" height="1" fill="#0A0A0A"/>
+      <rect x="54" y="41" width="10" height="1" fill="#0A0A0A"/>
+      <rect x="36" y="38" width="4" height="3" fill="#0A0A0A"/>
+      <rect x="58" y="38" width="4" height="3" fill="#0A0A0A"/>
+      <rect x="46" y="42" width="4" height="8" fill="#999"/>
+      <rect x="44" y="50" width="8" height="2" fill="#555"/>
+      <rect x="40" y="56" width="16" height="1" fill="#555"/>
+      <rect x="33" y="46" width="5" height="2" fill="#999" opacity=".45"/>
+      <rect x="58" y="46" width="5" height="2" fill="#888" opacity=".45"/>
+    </svg>
+  </div>
+
+  <!-- 05: Bearded Traveler -->
+  <div class="tile">
+    <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+      <rect width="96" height="96" fill="#9a9a9a"/>
+      <rect x="0" y="60" width="96" height="36" fill="#8a8a8a"/>
+      <rect x="12" y="82" width="72" height="14" fill="#222"/>
+      <rect x="18" y="78" width="60" height="4" fill="#222"/>
+      <rect x="24" y="74" width="48" height="4" fill="#222"/>
+      <rect x="30" y="74" width="12" height="10" fill="#333"/>
+      <rect x="54" y="74" width="12" height="10" fill="#333"/>
+      <rect x="42" y="78" width="12" height="6" fill="#444"/>
+      <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+      <rect x="40" y="66" width="16" height="2" fill="#777"/>
+      <rect x="32" y="30" width="32" height="2" fill="#bbb"/>
+      <rect x="30" y="32" width="36" height="2" fill="#bbb"/>
+      <rect x="28" y="34" width="40" height="22" fill="#bbb"/>
+      <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+      <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+      <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+      <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+      <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+      <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+      <rect x="60" y="34" width="8" height="22" fill="#999" opacity=".4"/>
+      <rect x="24" y="42" width="4" height="8" fill="#999"/>
+      <rect x="68" y="42" width="4" height="8" fill="#777"/>
+      <rect x="28" y="22" width="40" height="10" fill="#222"/>
+      <rect x="30" y="20" width="36" height="2" fill="#222"/>
+      <rect x="32" y="18" width="32" height="2" fill="#222"/>
+      <rect x="22" y="32" width="52" height="4" fill="#0A0A0A"/>
+      <rect x="28" y="36" width="40" height="3" fill="#777" opacity=".55"/>
+      <rect x="32" y="42" width="10" height="4" fill="#0A0A0A"/>
+      <rect x="54" y="42" width="10" height="4" fill="#0A0A0A"/>
+      <rect x="36" y="43" width="2" height="2" fill="#eee"/>
+      <rect x="58" y="43" width="2" height="2" fill="#eee"/>
+      <rect x="46" y="46" width="4" height="8" fill="#999"/>
+      <rect x="46" y="46" width="2" height="8" fill="#bbb"/>
+      <rect x="50" y="46" width="2" height="8" fill="#777"/>
+      <rect x="34" y="54" width="28" height="4" fill="#333"/>
+      <rect x="32" y="56" width="32" height="4" fill="#333"/>
+      <rect x="30" y="58" width="36" height="4" fill="#333"/>
+      <rect x="32" y="62" width="32" height="2" fill="#333"/>
+      <rect x="34" y="64" width="28" height="2" fill="#222"/>
+      <rect x="42" y="56" width="12" height="1" fill="#555"/>
+    </svg>
+  </div>
+
+  <!-- 06: Flat Cap Gent -->
+  <div class="tile">
+    <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+      <rect width="96" height="96" fill="#f0f0f0"/>
+      <rect x="0" y="60" width="96" height="36" fill="#e0e0e0"/>
+      <rect x="12" y="82" width="72" height="14" fill="#222"/>
+      <rect x="18" y="78" width="60" height="4" fill="#222"/>
+      <rect x="24" y="74" width="48" height="4" fill="#222"/>
+      <rect x="30" y="74" width="12" height="12" fill="#444"/>
+      <rect x="54" y="74" width="12" height="12" fill="#444"/>
+      <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+      <rect x="40" y="66" width="16" height="2" fill="#777"/>
+      <rect x="32" y="28" width="32" height="2" fill="#bbb"/>
+      <rect x="30" y="30" width="36" height="2" fill="#bbb"/>
+      <rect x="28" y="32" width="40" height="24" fill="#bbb"/>
+      <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+      <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+      <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+      <rect x="30" y="28" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="28" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="32" width="2" height="24" fill="#0A0A0A"/>
+      <rect x="68" y="32" width="2" height="24" fill="#0A0A0A"/>
+      <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+      <rect x="60" y="32" width="8" height="24" fill="#999" opacity=".35"/>
+      <rect x="24" y="42" width="4" height="8" fill="#999"/>
+      <rect x="68" y="42" width="4" height="8" fill="#777"/>
+      <rect x="22" y="18" width="52" height="10" fill="#0A0A0A"/>
+      <rect x="26" y="16" width="42" height="2" fill="#0A0A0A"/>
+      <rect x="18" y="28" width="60" height="4" fill="#0A0A0A"/>
+      <rect x="40" y="22" width="16" height="2" fill="#222"/>
+      <rect x="28" y="32" width="40" height="3" fill="#777" opacity=".5"/>
+      <rect x="32" y="40" width="10" height="4" fill="#0A0A0A"/>
+      <rect x="54" y="40" width="10" height="4" fill="#0A0A0A"/>
+      <rect x="36" y="41" width="2" height="2" fill="#eee"/>
+      <rect x="58" y="41" width="2" height="2" fill="#eee"/>
+      <rect x="46" y="44" width="4" height="8" fill="#999"/>
+      <rect x="46" y="44" width="2" height="8" fill="#bbb"/>
+      <rect x="50" y="44" width="2" height="8" fill="#777"/>
+      <rect x="44" y="52" width="8" height="2" fill="#555"/>
+      <rect x="38" y="54" width="20" height="2" fill="#0A0A0A"/>
+      <rect x="40" y="56" width="16" height="1" fill="#333"/>
+      <rect x="40" y="58" width="16" height="1" fill="#555"/>
+    </svg>
+  </div>
+
+  <!-- 07: Beanie Brute -->
+  <div class="tile">
+    <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+      <rect width="96" height="96" fill="#c4c4c4"/>
+      <rect x="0" y="60" width="96" height="36" fill="#b0b0b0"/>
+      <rect x="12" y="82" width="72" height="14" fill="#333"/>
+      <rect x="18" y="78" width="60" height="4" fill="#333"/>
+      <rect x="24" y="74" width="48" height="4" fill="#333"/>
+      <rect x="30" y="74" width="36" height="10" fill="#222"/>
+      <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+      <rect x="40" y="66" width="16" height="2" fill="#777"/>
+      <rect x="32" y="28" width="32" height="2" fill="#bbb"/>
+      <rect x="30" y="30" width="36" height="2" fill="#bbb"/>
+      <rect x="28" y="32" width="40" height="24" fill="#bbb"/>
+      <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+      <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+      <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+      <rect x="30" y="28" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="28" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="32" width="2" height="24" fill="#0A0A0A"/>
+      <rect x="68" y="32" width="2" height="24" fill="#0A0A0A"/>
+      <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+      <rect x="60" y="32" width="8" height="24" fill="#999" opacity=".4"/>
+      <rect x="24" y="42" width="4" height="8" fill="#999"/>
+      <rect x="68" y="42" width="4" height="8" fill="#777"/>
+      <!-- beanie shaped -->
+      <rect x="30" y="16" width="36" height="2" fill="#555"/>
+      <rect x="28" y="18" width="40" height="2" fill="#555"/>
+      <rect x="26" y="20" width="44" height="12" fill="#555"/>
+      <rect x="28" y="22" width="40" height="2" fill="#333"/>
+      <rect x="28" y="26" width="40" height="2" fill="#333"/>
+      <rect x="26" y="30" width="44" height="2" fill="#0A0A0A"/>
+      <!-- angry eyes -->
+      <rect x="30" y="38" width="6" height="2" fill="#0A0A0A"/>
+      <rect x="60" y="38" width="6" height="2" fill="#0A0A0A"/>
+      <rect x="32" y="40" width="10" height="4" fill="#0A0A0A"/>
+      <rect x="54" y="40" width="10" height="4" fill="#0A0A0A"/>
+      <rect x="36" y="41" width="2" height="2" fill="#333"/>
+      <rect x="58" y="41" width="2" height="2" fill="#333"/>
+      <!-- scar across right eye -->
+      <rect x="52" y="36" width="2" height="14" fill="#0A0A0A"/>
+      <rect x="54" y="38" width="2" height="2" fill="#888"/>
+      <rect x="46" y="44" width="4" height="8" fill="#999"/>
+      <rect x="46" y="44" width="2" height="8" fill="#bbb"/>
+      <rect x="50" y="44" width="2" height="8" fill="#777"/>
+      <rect x="44" y="52" width="8" height="2" fill="#555"/>
+      <!-- stubble -->
+      <rect x="32" y="56" width="32" height="6" fill="#777" opacity=".4"/>
+      <rect x="34" y="58" width="2" height="2" fill="#333"/>
+      <rect x="40" y="58" width="2" height="2" fill="#333"/>
+      <rect x="52" y="58" width="2" height="2" fill="#333"/>
+      <rect x="60" y="58" width="2" height="2" fill="#333"/>
+      <!-- frown -->
+      <rect x="38" y="60" width="20" height="1" fill="#0A0A0A"/>
+      <rect x="36" y="61" width="4" height="2" fill="#0A0A0A"/>
+      <rect x="56" y="61" width="4" height="2" fill="#0A0A0A"/>
+    </svg>
+  </div>
+
+  <!-- 08: Bowler Hat -->
+  <div class="tile">
+    <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+      <rect width="96" height="96" fill="#8a8a8a"/>
+      <rect x="0" y="62" width="96" height="34" fill="#7a7a7a"/>
+      <rect x="12" y="82" width="72" height="14" fill="#0A0A0A"/>
+      <rect x="18" y="78" width="60" height="4" fill="#0A0A0A"/>
+      <rect x="24" y="74" width="48" height="4" fill="#0A0A0A"/>
+      <rect x="26" y="74" width="14" height="12" fill="#333"/>
+      <rect x="56" y="74" width="14" height="12" fill="#333"/>
+      <rect x="38" y="74" width="20" height="22" fill="#eee"/>
+      <rect x="44" y="74" width="8" height="8" fill="#0A0A0A"/>
+      <rect x="46" y="82" width="4" height="14" fill="#0A0A0A"/>
+      <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+      <rect x="40" y="66" width="16" height="2" fill="#777"/>
+      <rect x="32" y="30" width="32" height="2" fill="#bbb"/>
+      <rect x="30" y="32" width="36" height="2" fill="#bbb"/>
+      <rect x="28" y="34" width="40" height="22" fill="#bbb"/>
+      <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+      <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+      <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+      <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+      <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+      <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+      <rect x="60" y="34" width="8" height="22" fill="#999" opacity=".35"/>
+      <rect x="24" y="42" width="4" height="8" fill="#999"/>
+      <rect x="68" y="42" width="4" height="8" fill="#777"/>
+      <!-- bowler -->
+      <rect x="30" y="14" width="36" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="16" width="40" height="14" fill="#0A0A0A"/>
+      <rect x="22" y="30" width="52" height="4" fill="#0A0A0A"/>
+      <rect x="28" y="26" width="40" height="2" fill="#555"/>
+      <rect x="28" y="34" width="40" height="3" fill="#777" opacity=".55"/>
+      <rect x="34" y="40" width="6" height="4" fill="#0A0A0A"/>
+      <rect x="56" y="40" width="6" height="4" fill="#0A0A0A"/>
+      <rect x="46" y="44" width="4" height="8" fill="#999"/>
+      <rect x="46" y="44" width="2" height="8" fill="#bbb"/>
+      <rect x="50" y="44" width="2" height="8" fill="#777"/>
+      <!-- handlebar mustache curling up -->
+      <rect x="30" y="54" width="36" height="4" fill="#0A0A0A"/>
+      <rect x="28" y="52" width="4" height="6" fill="#0A0A0A"/>
+      <rect x="64" y="52" width="4" height="6" fill="#0A0A0A"/>
+      <rect x="26" y="54" width="4" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="54" width="4" height="2" fill="#0A0A0A"/>
+      <rect x="42" y="60" width="12" height="1" fill="#555"/>
+    </svg>
+  </div>
+
+  <!-- 09: Cop Uniform -->
+  <div class="tile">
+    <svg viewBox="0 0 96 96" shape-rendering="crispEdges">
+      <rect width="96" height="96" fill="#5a5a5a"/>
+      <rect x="0" y="60" width="96" height="36" fill="#4a4a4a"/>
+      <rect x="12" y="82" width="72" height="14" fill="#333"/>
+      <rect x="18" y="78" width="60" height="4" fill="#333"/>
+      <rect x="24" y="74" width="48" height="4" fill="#333"/>
+      <rect x="38" y="74" width="20" height="22" fill="#eee"/>
+      <rect x="44" y="74" width="8" height="22" fill="#0A0A0A"/>
+      <rect x="28" y="78" width="2" height="2" fill="#eee"/>
+      <rect x="28" y="84" width="2" height="2" fill="#eee"/>
+      <rect x="28" y="90" width="2" height="2" fill="#eee"/>
+      <rect x="66" y="78" width="2" height="2" fill="#eee"/>
+      <rect x="66" y="84" width="2" height="2" fill="#eee"/>
+      <rect x="66" y="90" width="2" height="2" fill="#eee"/>
+      <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+      <rect x="40" y="66" width="16" height="2" fill="#777"/>
+      <rect x="32" y="30" width="32" height="2" fill="#bbb"/>
+      <rect x="30" y="32" width="36" height="2" fill="#bbb"/>
+      <rect x="28" y="34" width="40" height="22" fill="#bbb"/>
+      <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+      <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+      <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+      <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+      <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+      <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+      <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+      <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+      <rect x="60" y="34" width="8" height="22" fill="#999" opacity=".4"/>
+      <rect x="24" y="42" width="4" height="8" fill="#999"/>
+      <rect x="68" y="42" width="4" height="8" fill="#777"/>
+      <!-- police cap -->
+      <rect x="26" y="22" width="44" height="8" fill="#0A0A0A"/>
+      <rect x="24" y="30" width="48" height="4" fill="#0A0A0A"/>
+      <rect x="20" y="34" width="56" height="2" fill="#0A0A0A"/>
+      <rect x="26" y="26" width="44" height="2" fill="#555"/>
+      <rect x="44" y="22" width="8" height="4" fill="#eee"/>
+      <rect x="46" y="22" width="4" height="4" fill="#0A0A0A"/>
+      <rect x="28" y="36" width="40" height="3" fill="#777" opacity=".6"/>
+      <rect x="32" y="42" width="10" height="4" fill="#0A0A0A"/>
+      <rect x="54" y="42" width="10" height="4" fill="#0A0A0A"/>
+      <rect x="36" y="43" width="2" height="2" fill="#eee"/>
+      <rect x="58" y="43" width="2" height="2" fill="#eee"/>
+      <rect x="46" y="46" width="4" height="8" fill="#999"/>
+      <rect x="46" y="46" width="2" height="8" fill="#bbb"/>
+      <rect x="50" y="46" width="2" height="8" fill="#777"/>
+      <rect x="44" y="54" width="8" height="2" fill="#555"/>
+      <rect x="38" y="56" width="20" height="2" fill="#333"/>
+      <rect x="40" y="60" width="16" height="1" fill="#0A0A0A"/>
+    </svg>
+  </div>
+
+</div>
+
+<div class="note" style="margin-top:32px;">
+  <strong>What changed:</strong>
+  <ul class="fixes">
+    <li><strong>Head corners knocked out</strong> — 2×2 pixel cutouts on all 4 corners make the silhouette read as a rounded skull instead of a cube</li>
+    <li><strong>Jaw taper</strong> — bottom 6 rows narrow from 40px wide to 28px wide in 3 pixel steps, giving chin shape</li>
+    <li><strong>Sloped shoulders</strong> — staircase of 3 rows (72→60→48 px) creates a natural V-shape from shoulder to neck</li>
+    <li><strong>Collar dip</strong> — outfit notches down 2 px at center to show the neck connecting properly</li>
+    <li><strong>Nose shape</strong> — 3-tone pixel column (bbb/999/777) gives 3D form instead of flat square</li>
+    <li><strong>Cheek gradient</strong> — 2 overlapping opacity layers on right side (not a hard 50% split) = soft side-lighting</li>
+    <li><strong>Ear nubs</strong> — 2×8 pixel protrusions at mid-face level with 2px outline — stops head from looking like a floating box</li>
+    <li><strong>Facial hair follows jaw</strong> — beard pixels now match the tapered chin silhouette instead of being a flat rectangle</li>
+    <li><strong>Hat/cap curves</strong> — crown has 2-step rounded top, brim is wider at sides to wrap around skull</li>
+  </ul>
+  <p style="margin-top:10px;font-size:13px;">Approve this shaping and I'll rewrite <code>src/data/elements.js</code> with the anatomical pixel work across all ~60 SVG strings.</p>
+</div>
+
+</body>
+</html>
