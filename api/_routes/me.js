@@ -1,6 +1,6 @@
-import { sql } from './_lib/db.js';
-import { getSessionUser, isAdminUser } from './_lib/auth.js';
-import { ok } from './_lib/json.js';
+import { sql } from '../_lib/db.js';
+import { getSessionUser, isAdminUser } from '../_lib/auth.js';
+import { ok } from '../_lib/json.js';
 
 export default async function handler(req, res) {
   const user = await getSessionUser(req);

@@ -1,9 +1,9 @@
 // Server-authoritative mystery box open. Spends BUSTS atomically, picks
 // trait via tier odds, writes inventory + ledger + box_opens.
-import { sql, one } from './_lib/db.js';
-import { requireUser } from './_lib/auth.js';
-import { readBody, ok, bad } from './_lib/json.js';
-import { BOX_TIERS, pickFromBox } from './_lib/elements.js';
+import { sql, one } from '../_lib/db.js';
+import { requireUser } from '../_lib/auth.js';
+import { readBody, ok, bad } from '../_lib/json.js';
+import { BOX_TIERS, pickFromBox } from '../_lib/elements.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');

@@ -1,13 +1,13 @@
 // Server-authoritative drop claim.
 // Validates session is active, decrements the global pool atomically,
 // awards trait + BUSTS, applies daily-claim bonus on first of the day.
-import { sql, one } from './_lib/db.js';
-import { requireUser } from './_lib/auth.js';
-import { ok, bad } from './_lib/json.js';
+import { sql, one } from '../_lib/db.js';
+import { requireUser } from '../_lib/auth.js';
+import { ok, bad } from '../_lib/json.js';
 import {
   pickRandomElement, DROP_BUSTS_REWARD, DAILY_CLAIM_BONUS,
   getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION, DEFAULT_POOL_SIZE, todayKey,
-} from './_lib/elements.js';
+} from '../_lib/elements.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');

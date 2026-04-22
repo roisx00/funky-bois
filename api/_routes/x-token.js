@@ -4,9 +4,9 @@
 //   GET  /2/users/me       (current signed-in user's own profile)
 // Then upserts the user into our Neon DB, awards referral bonuses,
 // and issues an HttpOnly session JWT cookie.
-import { sql, one } from './_lib/db.js';
-import { signSessionToken, buildSessionCookie } from './_lib/jwt.js';
-import { readBody, ok, bad } from './_lib/json.js';
+import { sql, one } from '../_lib/db.js';
+import { signSessionToken, buildSessionCookie } from '../_lib/jwt.js';
+import { readBody, ok, bad } from '../_lib/json.js';
 
 const REFERRAL_BUSTS = 50;
 

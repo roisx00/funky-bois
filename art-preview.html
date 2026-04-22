@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Funky Bois — Pixel Art Samples</title>
+<style>
+  body { margin:0; padding:32px; background:#FDFDFC; font-family:'Space Grotesk',system-ui,sans-serif; color:#000; }
+  h1 { font-size:32px; margin:0 0 8px; letter-spacing:-1px; }
+  p.lead { color:#555; max-width:560px; margin:0 0 32px; font-size:14px; line-height:1.5; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; max-width:1200px; }
+  .card { border:2.5px solid #000; border-radius:12px; background:#fff; overflow:hidden; box-shadow:4.5px 4.5px 0 #000; }
+  .art { background:#f3f3f3; aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-bottom:2px solid #000; padding:12px; }
+  .art svg { width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges; }
+  .info { padding:10px 14px; }
+  .type { font-size:9px; font-weight:800; letter-spacing:1.5px; color:#555; text-transform:uppercase; }
+  .name { font-weight:800; font-size:15px; margin-top:2px; }
+  .rarity { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-top:6px; padding:2px 8px; display:inline-block; border:1px solid #000; border-radius:3px; background:#f3f3f3; }
+  .rarity.rare { background:#ddd; }
+  .rarity.legendary { background:#888; color:#fff; }
+  .rarity.ultra_rare { background:#000; color:#fff; }
+  .section-title { font-size:20px; margin:32px 0 12px; border-bottom:2px solid #000; padding-bottom:8px; }
+</style>
+</head>
+<body>
+
+<h1>FUNKY BOIS — PIXEL ART SAMPLES</h1>
+<p class="lead">Proposed black &amp; white pixel redesign. 4×4 block grid inside 100×100 viewBox. Pure monochrome (black / white / one mid-gray). Includes a new <strong>hands</strong> element type.</p>
+
+<h2 class="section-title">HAIR</h2>
+<div class="grid">
+
+  <!-- Spiky pixel -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- spikes row -->
+        <rect x="16" y="20" width="8" height="8" fill="#000"/>
+        <rect x="20" y="28" width="8" height="8" fill="#000"/>
+        <rect x="24" y="36" width="8" height="8" fill="#000"/>
+        <rect x="28" y="16" width="8" height="12" fill="#000"/>
+        <rect x="32" y="28" width="8" height="8" fill="#000"/>
+        <rect x="36" y="36" width="8" height="8" fill="#000"/>
+        <rect x="44" y="8"  width="12" height="28" fill="#000"/>
+        <rect x="56" y="28" width="8" height="8" fill="#000"/>
+        <rect x="60" y="36" width="8" height="8" fill="#000"/>
+        <rect x="64" y="16" width="8" height="12" fill="#000"/>
+        <rect x="68" y="28" width="8" height="8" fill="#000"/>
+        <rect x="72" y="36" width="8" height="8" fill="#000"/>
+        <rect x="76" y="20" width="8" height="8" fill="#000"/>
+        <rect x="16" y="44" width="68" height="20" fill="#000"/>
+        <!-- gleam -->
+        <rect x="48" y="16" width="4" height="16" fill="#fff" opacity=".4"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Hair</div>
+      <div class="name">Spiky</div>
+      <span class="rarity">Common</span>
+    </div>
+  </div>
+
+  <!-- Afro pixel -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <rect x="20" y="20" width="60" height="60" fill="#000"/>
+        <rect x="12" y="28" width="8" height="40" fill="#000"/>
+        <rect x="80" y="28" width="8" height="40" fill="#000"/>
+        <rect x="16" y="24" width="8" height="8" fill="#000"/>
+        <rect x="76" y="24" width="8" height="8" fill="#000"/>
+        <rect x="28" y="12" width="8" height="12" fill="#000"/>
+        <rect x="64" y="12" width="8" height="12" fill="#000"/>
+        <rect x="36" y="8"  width="28" height="12" fill="#000"/>
+        <!-- curls (gray dots) -->
+        <rect x="28" y="28" width="4" height="4" fill="#888"/>
+        <rect x="44" y="24" width="4" height="4" fill="#888"/>
+        <rect x="60" y="28" width="4" height="4" fill="#888"/>
+        <rect x="36" y="40" width="4" height="4" fill="#888"/>
+        <rect x="56" y="40" width="4" height="4" fill="#888"/>
+        <rect x="28" y="52" width="4" height="4" fill="#888"/>
+        <rect x="64" y="52" width="4" height="4" fill="#888"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Hair</div>
+      <div class="name">Afro</div>
+      <span class="rarity">Common</span>
+    </div>
+  </div>
+
+  <!-- Flame (ultra rare, monochrome) -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <rect x="44" y="8"  width="12" height="8" fill="#000"/>
+        <rect x="36" y="16" width="28" height="8" fill="#000"/>
+        <rect x="28" y="24" width="44" height="8" fill="#000"/>
+        <rect x="24" y="32" width="52" height="8" fill="#000"/>
+        <rect x="20" y="40" width="60" height="20" fill="#000"/>
+        <rect x="24" y="60" width="52" height="8" fill="#000"/>
+        <!-- inner flame shading -->
+        <rect x="40" y="24" width="20" height="8"  fill="#888"/>
+        <rect x="36" y="32" width="28" height="12" fill="#888"/>
+        <rect x="40" y="44" width="20" height="8"  fill="#fff"/>
+        <rect x="48" y="12" width="4"  height="4"  fill="#fff"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Hair</div>
+      <div class="name">Flame</div>
+      <span class="rarity ultra_rare">Ultra Rare</span>
+    </div>
+  </div>
+
+</div>
+
+<h2 class="section-title">EYES</h2>
+<div class="grid">
+
+  <!-- Big googly pixel -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- left eye -->
+        <rect x="16" y="40" width="24" height="24" fill="#000"/>
+        <rect x="20" y="36" width="16" height="4"  fill="#000"/>
+        <rect x="20" y="64" width="16" height="4"  fill="#000"/>
+        <rect x="20" y="44" width="16" height="16" fill="#fff"/>
+        <rect x="24" y="48" width="8"  height="8"  fill="#000"/>
+        <rect x="26" y="48" width="2"  height="2"  fill="#fff"/>
+        <!-- right eye -->
+        <rect x="60" y="40" width="24" height="24" fill="#000"/>
+        <rect x="64" y="36" width="16" height="4"  fill="#000"/>
+        <rect x="64" y="64" width="16" height="4"  fill="#000"/>
+        <rect x="64" y="44" width="16" height="16" fill="#fff"/>
+        <rect x="68" y="48" width="8"  height="8"  fill="#000"/>
+        <rect x="70" y="48" width="2"  height="2"  fill="#fff"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Eyes</div>
+      <div class="name">Big Googly</div>
+      <span class="rarity">Common</span>
+    </div>
+  </div>
+
+  <!-- Laser (ultra rare, monochrome stripes) -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- left eye with laser -->
+        <rect x="12" y="44" width="28" height="12" fill="#000"/>
+        <rect x="16" y="48" width="20" height="4"  fill="#fff"/>
+        <rect x="22" y="48" width="4"  height="4"  fill="#000"/>
+        <rect x="0"  y="48" width="12" height="4"  fill="#000"/>
+        <rect x="0"  y="52" width="8"  height="4"  fill="#888"/>
+        <!-- right eye with laser -->
+        <rect x="60" y="44" width="28" height="12" fill="#000"/>
+        <rect x="64" y="48" width="20" height="4"  fill="#fff"/>
+        <rect x="74" y="48" width="4"  height="4"  fill="#000"/>
+        <rect x="88" y="48" width="12" height="4"  fill="#000"/>
+        <rect x="92" y="52" width="8"  height="4"  fill="#888"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Eyes</div>
+      <div class="name">Laser</div>
+      <span class="rarity ultra_rare">Ultra Rare</span>
+    </div>
+  </div>
+
+</div>
+
+<h2 class="section-title">HANDS (new type)</h2>
+<div class="grid">
+
+  <!-- Peace sign -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- two fingers up -->
+        <rect x="36" y="16" width="8" height="28" fill="#000"/>
+        <rect x="56" y="16" width="8" height="28" fill="#000"/>
+        <!-- palm -->
+        <rect x="32" y="44" width="36" height="24" fill="#000"/>
+        <!-- palm inner highlight -->
+        <rect x="40" y="52" width="20" height="8"  fill="#888"/>
+        <!-- cuff/wrist band -->
+        <rect x="28" y="68" width="44" height="8"  fill="#000"/>
+        <rect x="32" y="72" width="36" height="4"  fill="#fff"/>
+        <!-- arm stump -->
+        <rect x="36" y="76" width="28" height="16" fill="#000"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Hands</div>
+      <div class="name">Peace Sign</div>
+      <span class="rarity">Common</span>
+    </div>
+  </div>
+
+  <!-- Holding mic -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- mic head -->
+        <rect x="40" y="8"  width="20" height="20" fill="#000"/>
+        <rect x="44" y="12" width="12" height="12" fill="#888"/>
+        <rect x="48" y="16" width="4"  height="4"  fill="#fff"/>
+        <!-- mic stem -->
+        <rect x="46" y="28" width="8"  height="12" fill="#000"/>
+        <!-- fist -->
+        <rect x="32" y="40" width="36" height="24" fill="#000"/>
+        <rect x="36" y="48" width="28" height="4"  fill="#888"/>
+        <rect x="36" y="56" width="28" height="4"  fill="#888"/>
+        <!-- arm -->
+        <rect x="36" y="64" width="28" height="28" fill="#000"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Hands</div>
+      <div class="name">Mic Drop</div>
+      <span class="rarity rare">Rare</span>
+    </div>
+  </div>
+
+  <!-- Thumbs up -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- thumb -->
+        <rect x="40" y="20" width="12" height="16" fill="#000"/>
+        <rect x="44" y="24" width="4"  height="8"  fill="#888"/>
+        <!-- fist -->
+        <rect x="24" y="36" width="48" height="28" fill="#000"/>
+        <!-- knuckle lines -->
+        <rect x="32" y="44" width="4" height="4" fill="#fff"/>
+        <rect x="44" y="44" width="4" height="4" fill="#fff"/>
+        <rect x="56" y="44" width="4" height="4" fill="#fff"/>
+        <rect x="32" y="52" width="4" height="4" fill="#fff"/>
+        <rect x="44" y="52" width="4" height="4" fill="#fff"/>
+        <rect x="56" y="52" width="4" height="4" fill="#fff"/>
+        <!-- cuff -->
+        <rect x="20" y="64" width="56" height="8" fill="#888"/>
+        <!-- arm -->
+        <rect x="28" y="72" width="40" height="20" fill="#000"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Hands</div>
+      <div class="name">Thumbs Up</div>
+      <span class="rarity">Common</span>
+    </div>
+  </div>
+
+</div>
+
+<h2 class="section-title">OUTFIT</h2>
+<div class="grid">
+
+  <!-- Hoodie pixel -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- hood outer -->
+        <rect x="20" y="28" width="60" height="16" fill="#000"/>
+        <rect x="16" y="36" width="68" height="8" fill="#000"/>
+        <!-- hood inner -->
+        <rect x="28" y="36" width="44" height="8" fill="#888"/>
+        <!-- body -->
+        <rect x="8"  y="44" width="84" height="52" fill="#000"/>
+        <!-- kangaroo pocket -->
+        <rect x="28" y="60" width="44" height="20" fill="#888"/>
+        <rect x="32" y="64" width="36" height="4"  fill="#fff"/>
+        <!-- drawstrings -->
+        <rect x="44" y="44" width="4" height="16" fill="#fff"/>
+        <rect x="52" y="44" width="4" height="16" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Outfit</div>
+      <div class="name">Hoodie</div>
+      <span class="rarity">Common</span>
+    </div>
+  </div>
+
+  <!-- Chains outfit (legendary) -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- shirt -->
+        <rect x="8" y="36" width="84" height="60" fill="#000"/>
+        <!-- chain 1 -->
+        <rect x="12" y="44" width="4" height="4" fill="#888"/>
+        <rect x="20" y="48" width="4" height="4" fill="#888"/>
+        <rect x="28" y="52" width="4" height="4" fill="#888"/>
+        <rect x="36" y="56" width="4" height="4" fill="#888"/>
+        <rect x="44" y="60" width="4" height="4" fill="#888"/>
+        <rect x="52" y="56" width="4" height="4" fill="#888"/>
+        <rect x="60" y="52" width="4" height="4" fill="#888"/>
+        <rect x="68" y="48" width="4" height="4" fill="#888"/>
+        <rect x="76" y="44" width="4" height="4" fill="#888"/>
+        <rect x="84" y="40" width="4" height="4" fill="#888"/>
+        <!-- pendant -->
+        <rect x="40" y="64" width="16" height="12" fill="#fff"/>
+        <rect x="44" y="68" width="8"  height="4"  fill="#000"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Outfit</div>
+      <div class="name">Chains</div>
+      <span class="rarity legendary">Legendary</span>
+    </div>
+  </div>
+
+</div>
+
+<h2 class="section-title">STICKERS</h2>
+<div class="grid">
+
+  <!-- Skull pixel -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <rect x="20" y="8"  width="60" height="8" fill="#000"/>
+        <rect x="16" y="16" width="68" height="8" fill="#000"/>
+        <rect x="12" y="24" width="76" height="24" fill="#000"/>
+        <!-- eyes -->
+        <rect x="24" y="32" width="16" height="12" fill="#fff"/>
+        <rect x="60" y="32" width="16" height="12" fill="#fff"/>
+        <rect x="28" y="36" width="8"  height="8"  fill="#000"/>
+        <rect x="64" y="36" width="8"  height="8"  fill="#000"/>
+        <!-- nose -->
+        <rect x="44" y="48" width="12" height="8" fill="#fff"/>
+        <!-- jaw -->
+        <rect x="20" y="48" width="60" height="16" fill="#000"/>
+        <rect x="24" y="64" width="52" height="8" fill="#000"/>
+        <!-- teeth -->
+        <rect x="28" y="64" width="4" height="8" fill="#fff"/>
+        <rect x="36" y="64" width="4" height="8" fill="#fff"/>
+        <rect x="44" y="64" width="4" height="8" fill="#fff"/>
+        <rect x="52" y="64" width="4" height="8" fill="#fff"/>
+        <rect x="60" y="64" width="4" height="8" fill="#fff"/>
+        <rect x="68" y="64" width="4" height="8" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Sticker</div>
+      <div class="name">Skull</div>
+      <span class="rarity">Common</span>
+    </div>
+  </div>
+
+  <!-- Bolt pixel -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <rect x="48" y="8"  width="20" height="8"  fill="#000"/>
+        <rect x="40" y="16" width="24" height="8"  fill="#000"/>
+        <rect x="32" y="24" width="28" height="8"  fill="#000"/>
+        <rect x="28" y="32" width="28" height="8"  fill="#000"/>
+        <rect x="32" y="40" width="36" height="8"  fill="#000"/>
+        <rect x="44" y="48" width="32" height="8"  fill="#000"/>
+        <rect x="52" y="56" width="24" height="8"  fill="#000"/>
+        <rect x="60" y="64" width="16" height="8"  fill="#000"/>
+        <rect x="68" y="72" width="8"  height="16" fill="#000"/>
+        <!-- highlight stripe -->
+        <rect x="52" y="16" width="4" height="24" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Sticker</div>
+      <div class="name">Bolt</div>
+      <span class="rarity">Common</span>
+    </div>
+  </div>
+
+</div>
+
+<h2 class="section-title">BACKGROUND</h2>
+<div class="grid">
+
+  <!-- Grid pixel -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <rect x="0"  y="24" width="100" height="4" fill="#000"/>
+        <rect x="0"  y="52" width="100" height="4" fill="#000"/>
+        <rect x="0"  y="80" width="100" height="4" fill="#000"/>
+        <rect x="24" y="0"  width="4" height="100" fill="#000"/>
+        <rect x="52" y="0"  width="4" height="100" fill="#000"/>
+        <rect x="80" y="0"  width="4" height="100" fill="#000"/>
+        <!-- dots -->
+        <rect x="12" y="12" width="4" height="4" fill="#000"/>
+        <rect x="40" y="40" width="4" height="4" fill="#000"/>
+        <rect x="68" y="68" width="4" height="4" fill="#000"/>
+        <rect x="88" y="12" width="4" height="4" fill="#000"/>
+        <rect x="12" y="88" width="4" height="4" fill="#000"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Background</div>
+      <div class="name">Grid</div>
+      <span class="rarity">Common</span>
+    </div>
+  </div>
+
+  <!-- Matrix pixel (ultra rare, inverted) -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#000"/>
+        <!-- scanline columns of 0/1 -->
+        <rect x="8"  y="8"  width="4" height="4" fill="#fff"/>
+        <rect x="8"  y="20" width="4" height="4" fill="#fff"/>
+        <rect x="8"  y="44" width="4" height="4" fill="#fff"/>
+        <rect x="8"  y="68" width="4" height="4" fill="#fff"/>
+        <rect x="20" y="12" width="4" height="4" fill="#fff"/>
+        <rect x="20" y="32" width="4" height="4" fill="#fff"/>
+        <rect x="20" y="52" width="4" height="4" fill="#fff"/>
+        <rect x="20" y="76" width="4" height="4" fill="#fff"/>
+        <rect x="32" y="8"  width="4" height="4" fill="#fff"/>
+        <rect x="32" y="28" width="4" height="4" fill="#fff"/>
+        <rect x="32" y="60" width="4" height="4" fill="#fff"/>
+        <rect x="32" y="84" width="4" height="4" fill="#fff"/>
+        <rect x="68" y="12" width="4" height="4" fill="#fff"/>
+        <rect x="68" y="36" width="4" height="4" fill="#fff"/>
+        <rect x="68" y="56" width="4" height="4" fill="#fff"/>
+        <rect x="68" y="80" width="4" height="4" fill="#fff"/>
+        <rect x="80" y="20" width="4" height="4" fill="#fff"/>
+        <rect x="80" y="40" width="4" height="4" fill="#fff"/>
+        <rect x="80" y="68" width="4" height="4" fill="#fff"/>
+        <rect x="88" y="8"  width="4" height="4" fill="#fff"/>
+        <rect x="88" y="48" width="4" height="4" fill="#fff"/>
+        <rect x="88" y="72" width="4" height="4" fill="#fff"/>
+        <!-- central zero -->
+        <rect x="40" y="36" width="20" height="28" fill="#000"/>
+        <rect x="40" y="36" width="20" height="4"  fill="#fff"/>
+        <rect x="40" y="60" width="20" height="4"  fill="#fff"/>
+        <rect x="40" y="36" width="4"  height="28" fill="#fff"/>
+        <rect x="56" y="36" width="4"  height="28" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Background</div>
+      <div class="name">Matrix</div>
+      <span class="rarity ultra_rare">Ultra Rare</span>
+    </div>
+  </div>
+
+</div>
+
+<h2 class="section-title">GLASSES</h2>
+<div class="grid">
+
+  <!-- Shades pixel -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <rect x="4"  y="36" width="92" height="24" fill="#000"/>
+        <rect x="12" y="44" width="28" height="8" fill="#888"/>
+        <rect x="60" y="44" width="28" height="8" fill="#888"/>
+        <!-- shine -->
+        <rect x="16" y="44" width="4" height="4" fill="#fff"/>
+        <rect x="64" y="44" width="4" height="4" fill="#fff"/>
+        <!-- bridge gap -->
+        <rect x="44" y="40" width="12" height="4" fill="#fff"/>
+        <!-- temples -->
+        <rect x="0"  y="40" width="4"  height="4" fill="#000"/>
+        <rect x="96" y="40" width="4"  height="4" fill="#000"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Glasses</div>
+      <div class="name">Shades</div>
+      <span class="rarity">Common</span>
+    </div>
+  </div>
+
+  <!-- Pixel specs (rare) -->
+  <div class="card">
+    <div class="art">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- left frame -->
+        <rect x="8"  y="36" width="32" height="24" fill="#000"/>
+        <rect x="12" y="40" width="24" height="16" fill="#fff"/>
+        <rect x="16" y="44" width="4"  height="4"  fill="#000"/>
+        <rect x="24" y="44" width="4"  height="4"  fill="#000"/>
+        <rect x="20" y="48" width="4"  height="4"  fill="#000"/>
+        <!-- right frame -->
+        <rect x="60" y="36" width="32" height="24" fill="#000"/>
+        <rect x="64" y="40" width="24" height="16" fill="#fff"/>
+        <rect x="68" y="44" width="4"  height="4"  fill="#000"/>
+        <rect x="76" y="44" width="4"  height="4"  fill="#000"/>
+        <rect x="72" y="48" width="4"  height="4"  fill="#000"/>
+        <!-- bridge -->
+        <rect x="40" y="44" width="20" height="4"  fill="#000"/>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="type">Glasses</div>
+      <div class="name">Pixel</div>
+      <span class="rarity rare">Rare</span>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:48px;padding:20px;border:2.5px dashed #000;border-radius:12px;background:#f3f3f3;max-width:900px;">
+  <strong>Style rules applied to all samples:</strong>
+  <ul style="margin:8px 0 0 20px;font-size:13px;line-height:1.8;">
+    <li>Every shape is a 4×4 pixel block (or multiple aligned blocks)</li>
+    <li>Only 3 colors: <code>#000</code>, <code>#fff</code>, <code>#888</code> (mid-gray for shading)</li>
+    <li><code>shape-rendering="crispEdges"</code> ensures no anti-aliasing</li>
+    <li>No curves, no gradients, no opacity tricks — pure blocks</li>
+    <li>Rarity tiers distinguished by detail density &amp; inversion (ultra rare = black background)</li>
+  </ul>
+</div>
+
+</body>
+</html>
