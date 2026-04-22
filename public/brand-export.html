@@ -168,92 +168,107 @@ function dl(canvasId, filename) {
 
 // ─── Pixel bust (mirrors src/components/BrandMark.jsx) ────────────────────
 function drawPixelBust(ctx, cx, cy, scale) {
-  // Coordinates are in the 80×80 logo grid; we translate so cx/cy are centre,
-  // then scale uniformly. The source bust occupies roughly y=29..66 of 80.
   const px = (x, y, w, h, fill) => {
     ctx.fillStyle = fill;
     ctx.fillRect(cx + (x - 40) * scale, cy + (y - 40) * scale, w * scale, h * scale);
   };
-  // hair / head top
   px(31, 29, 18, 3, PAPER);
   px(29, 31, 22, 3, PAPER);
-  // face
   px(29, 34, 22, 12, GREY);
-  // eyes
   px(33, 38, 3, 2, INK);
   px(44, 38, 3, 2, INK);
-  // mouth
   px(36, 43, 8, 1, INK);
-  // jaw taper
   px(31, 46, 18, 2, GREY);
   px(33, 48, 14, 2, GREY);
-  // shoulders / lime
   px(28, 48, 24, 2, LIME);
   px(24, 50, 32, 7, LIME);
 }
 
-// ─── 1) Logo — black wordmark mark, refined for the X profile circle ─────
+// ─── Refined hero bust used by the LOGO. Designed on a 24w × 24h grid,
+//     centred on cx/cy, scaled by `s`. Takes about 24*s of width.
+function drawHeroBust(ctx, cx, cy, s) {
+  const px = (gx, gy, w, h, fill) => {
+    ctx.fillStyle = fill;
+    ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, w * s, h * s);
+  };
+
+  // Hair (cream block with subtle taper)
+  px(5,  2, 14, 1, PAPER);
+  px(4,  3, 16, 1, PAPER);
+  px(4,  4, 16, 1, PAPER);
+  px(3,  5, 18, 1, PAPER);
+  px(3,  6, 18, 1, PAPER);
+
+  // Hair undercut shadow (1px ink line under the hair brim)
+  px(3,  7, 18, 1, INK);
+
+  // Face — mid grey
+  px(4,  8, 16, 1, GREY);
+  px(4,  9, 16, 1, GREY);
+  px(4, 10, 16, 1, GREY);
+  px(4, 11, 16, 1, GREY);
+  px(4, 12, 16, 1, GREY);
+  px(4, 13, 16, 1, GREY);
+  px(4, 14, 16, 1, GREY);
+  px(5, 15, 14, 1, GREY); // jaw taper
+  px(6, 16, 12, 1, GREY); // chin
+
+  // Eyes — sharp ink rectangles
+  px(7,  10, 3, 2, INK);
+  px(14, 10, 3, 2, INK);
+
+  // Cheek shadow (subtle 1px)
+  px(5, 13, 1, 1, INK);
+  px(18, 13, 1, 1, INK);
+
+  // Mouth — single ink line
+  px(9, 14, 6, 1, INK);
+
+  // Neck (narrow centred column)
+  px(10, 17, 4, 1, GREY);
+  px(10, 18, 4, 1, GREY);
+
+  // Lime collar — wider, sits on the shoulders
+  px(6, 19, 12, 1, LIME);
+  px(4, 20, 16, 1, LIME);
+  px(2, 21, 20, 1, LIME);
+  px(2, 22, 20, 1, LIME);
+
+  // Shoulders ink shadow under the collar
+  px(2, 23, 20, 1, INK);
+}
+
+// ─── 1) Logo — hero pixel bust on black. The portrait IS the brand. ──────
 function drawLogo(canvasId) {
   const c = document.getElementById(canvasId);
   const ctx = c.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = false;
 
   const W = c.width, H = c.height;
   const cx = W / 2, cy = H / 2;
 
-  // 1) Solid ink fill — looks great on X's circular crop
+  // Solid ink — high-contrast circle on X
   ctx.fillStyle = INK;
   ctx.fillRect(0, 0, W, H);
 
-  // 2) Subtle inner ring inside the safe circle (stays 18px from the crop edge)
-  const safeR = W * 0.46;
-  ctx.strokeStyle = PAPER;
-  ctx.globalAlpha = 0.10;
-  ctx.lineWidth = Math.max(1, W * 0.004);
-  ctx.beginPath(); ctx.arc(cx, cy, safeR - W * 0.02, 0, Math.PI * 2); ctx.stroke();
-  ctx.globalAlpha = 1;
+  // Hero bust takes ~70% of the canvas width.
+  // Bust grid is 24 wide → scale = (W * 0.7) / 24
+  const s = (W * 0.72) / 24;
+  drawHeroBust(ctx, cx, cy - H * 0.04, s);
 
-  // 3) Top eyebrow: small mono kicker with a lime dot
-  const dotR = W * 0.012;
-  ctx.fillStyle = LIME;
-  ctx.beginPath(); ctx.arc(cx - W * 0.13, cy - H * 0.30, dotR, 0, Math.PI * 2); ctx.fill();
-
+  // Tiny "1969" badge in the lower band — minimal, doesn't compete
+  ctx.imageSmoothingEnabled = true;
   ctx.fillStyle = PAPER;
-  ctx.font = `500 ${W * 0.038}px 'JetBrains Mono', monospace`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('THE · ETHEREUM', cx - W * 0.105, cy - H * 0.30);
-
-  // 4) Massive "1969" wordmark — Space Grotesk display, slightly tracked tight
-  ctx.fillStyle = PAPER;
-  ctx.font = `500 ${W * 0.42}px 'Space Grotesk', sans-serif`;
+  ctx.font = `500 ${W * 0.07}px 'Space Grotesk', sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  // measure to center precisely
-  const big = '1969';
-  const tracking = -W * 0.012; // negative letter spacing for tightness
-  let total = 0;
-  for (const ch of big) total += ctx.measureText(ch).width + tracking;
-  total -= tracking; // last gap doesn't count
-  let x = cx - total / 2;
-  for (const ch of big) {
-    const w = ctx.measureText(ch).width;
-    ctx.fillText(ch, x + w / 2, cy + H * 0.01);
-    x += w + tracking;
-  }
+  ctx.fillText('1969', cx, cy + H * 0.40);
 
-  // 5) Lime underline accent under the wordmark
-  const accentY = cy + H * 0.22;
+  // Single lime tick to the left of the badge
   ctx.fillStyle = LIME;
-  ctx.fillRect(cx - W * 0.04, accentY, W * 0.08, Math.max(2, W * 0.008));
-
-  // 6) Bottom hairline metadata
-  ctx.fillStyle = PAPER;
-  ctx.globalAlpha = 0.55;
-  ctx.font = `500 ${W * 0.034}px 'JetBrains Mono', monospace`;
-  ctx.textAlign = 'center';
-  ctx.fillText('MONOCHROME · BUSTS', cx, cy + H * 0.30);
-  ctx.globalAlpha = 1;
+  const tickW = W * 0.025, tickH = Math.max(2, W * 0.008);
+  ctx.fillRect(cx - W * 0.10, cy + H * 0.40 - tickH / 2, tickW, tickH);
+  ctx.fillRect(cx + W * 0.075, cy + H * 0.40 - tickH / 2, tickW, tickH);
 }
 
 // ─── 2) Banner (1500×500) ────────────────────────────────────────────────
