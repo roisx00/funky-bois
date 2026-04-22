@@ -1,6 +1,24 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import NFTCanvas from '../components/NFTCanvas';
+import { ELEMENT_TYPES, ELEMENT_LABELS, ELEMENT_VARIANTS } from '../data/elements';
+
+const RARITY_RANK = { common: 0, rare: 1, legendary: 2, ultra_rare: 3 };
+
+function topRarityTraits(elements, n = 3) {
+  if (!elements) return [];
+  const items = [];
+  for (const type of ELEMENT_TYPES) {
+    const v = elements[type];
+    if (v == null) continue;
+    const info = ELEMENT_VARIANTS[type]?.[v];
+    if (!info) continue;
+    items.push({ type, label: ELEMENT_LABELS[type], name: info.name, rarity: info.rarity });
+  }
+  // Sort by rarity descending, then take top n
+  items.sort((a, b) => (RARITY_RANK[b.rarity] || 0) - (RARITY_RANK[a.rarity] || 0));
+  return items.slice(0, n);
+}
 
 function timeAgo(ts) {
   const mins = Math.floor((Date.now() - ts) / 60000);
@@ -122,6 +140,7 @@ export default function GalleryPage() {
 }
 
 function GalleryTile({ nft, isMine }) {
+  const topTraits = topRarityTraits(nft.elements, 3);
   return (
     <article className={`gallery-tile${isMine ? ' mine' : ''}`}>
       <div className="gallery-tile-art">
@@ -131,6 +150,16 @@ function GalleryTile({ nft, isMine }) {
         <span className="gallery-tile-id">#{String(nft.id).slice(-6).toUpperCase()}</span>
         <span className="gallery-tile-name">@{nft.xUsername}</span>
         <span className="gallery-tile-time">{timeAgo(nft.createdAt)}</span>
+        {topTraits.length > 0 && (
+          <div className="gallery-tile-traits">
+            {topTraits.map((t) => (
+              <span key={t.type} className={`gallery-trait-chip rarity-${t.rarity}`}>
+                <span className="gallery-trait-name">{t.name}</span>
+                <span className="gallery-trait-type">{t.label}</span>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </article>
   );
