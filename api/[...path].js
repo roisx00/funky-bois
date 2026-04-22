@@ -27,7 +27,10 @@ import adminApprove        from './_routes/admin-approve.js';
 import adminScan           from './_routes/admin-scan.js';
 import galleryHandler      from './_routes/gallery.js';
 
+// Routes accept BOTH slash and hyphen forms so client URLs work
+// regardless of Vercel's catch-all behaviour for nested segments.
 const ROUTES = {
+  // hyphen form (preferred — single segment, always matched by catch-all)
   'me':                  meHandler,
   'x-token':             xTokenHandler,
   'x-me':                xMeHandler,
@@ -35,6 +38,26 @@ const ROUTES = {
   'drop-claim':          dropClaimHandler,
   'drop-status':         dropStatusHandler,
   'box-open':            boxOpenHandler,
+  'gift-send':           giftSendHandler,
+  'gift-claim':          giftClaimHandler,
+  'users-exists':        usersExistsHandler,
+  'portrait-submit':     portraitSubmit,
+  'portrait-share':      portraitShare,
+  'whitelist-record':    whitelistRecord,
+  'admin-whitelist':     adminWhitelist,
+  'admin-credit':        adminCredit,
+  'admin-users':         adminUsers,
+  'admin-stats':         adminStats,
+  'tasks-active':        tasksActive,
+  'tasks-submit':        tasksSubmit,
+  'admin-tasks-create':  tasksCreate,
+  'admin-tasks-close':   tasksClose,
+  'admin-verifications': adminVerifications,
+  'admin-approve':       adminApprove,
+  'admin-scan':          adminScan,
+  'gallery':             galleryHandler,
+
+  // slash aliases (backward compat — keep until all callers migrated)
   'gift/send':           giftSendHandler,
   'gift/claim':          giftClaimHandler,
   'users/exists':        usersExistsHandler,
@@ -52,7 +75,6 @@ const ROUTES = {
   'admin/verifications': adminVerifications,
   'admin/approve':       adminApprove,
   'admin/scan':          adminScan,
-  'gallery':             galleryHandler,
 };
 
 function extractPath(req) {

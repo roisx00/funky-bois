@@ -315,7 +315,7 @@ export function GameProvider({ children }) {
   }, [state.authenticated, state.bustsBalance]);
 
   const sendGift = useCallback(async (toXUsername, element) => {
-    const r = await jpost('/api/gift/send', { toXUsername, elementType: element.type, variant: element.variant });
+    const r = await jpost('/api/gift-send', { toXUsername, elementType: element.type, variant: element.variant });
     if (!r.ok) {
       console.error('[sendGift] server rejected:', r);
       return { ok: false, reason: r.error || r.message || `HTTP ${r.status || '?'}`, status: r.status, raw: r };
@@ -325,7 +325,7 @@ export function GameProvider({ children }) {
   }, []);
 
   const claimGift = useCallback(async (giftId) => {
-    const r = await jpost('/api/gift/claim', { giftId });
+    const r = await jpost('/api/gift-claim', { giftId });
     if (!r.ok) return { ok: false, reason: r.error || 'Claim failed' };
     dispatch({ type: 'ADD_INVENTORY', element: r.element });
     dispatch({ type: 'REMOVE_INBOX_GIFT', giftId });
@@ -333,13 +333,13 @@ export function GameProvider({ children }) {
   }, []);
 
   const checkUserExists = useCallback(async (username) => {
-    const r = await jget(`/api/users/exists?username=${encodeURIComponent(username)}`);
+    const r = await jget(`/api/users-exists?username=${encodeURIComponent(username)}`);
     if (!r.ok) return false;
     return !!r.exists;
   }, []);
 
   const submitPortrait = useCallback(async (elements) => {
-    const r = await jpost('/api/portrait/submit', { elements });
+    const r = await jpost('/api/portrait-submit', { elements });
     if (!r.ok) return { ok: false, reason: r.error || 'Submit failed' };
     dispatch({
       type: 'ADD_COMPLETED',
@@ -349,7 +349,7 @@ export function GameProvider({ children }) {
   }, []);
 
   const sharePortrait = useCallback(async (portraitId, tweetUrl) => {
-    const r = await jpost('/api/portrait/share', { portraitId, tweetUrl });
+    const r = await jpost('/api/portrait-share', { portraitId, tweetUrl });
     if (r.ok && r.credited) {
       dispatch({ type: 'MARK_NFT_SHARED', nftId: portraitId, tweetUrl });
       dispatch({ type: 'BUMP_BALANCE', amount: 200, reason: 'Shared portrait on X' });
@@ -358,7 +358,7 @@ export function GameProvider({ children }) {
   }, []);
 
   const recordWhitelist = useCallback(async ({ walletAddress, portraitId }) => {
-    const r = await jpost('/api/whitelist/record', { walletAddress, portraitId });
+    const r = await jpost('/api/whitelist-record', { walletAddress, portraitId });
     if (r.ok) {
       dispatch({ type: 'SET_WALLET', address: walletAddress });
       refreshMe();

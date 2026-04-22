@@ -37,7 +37,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
   const [taskCount, setTaskCount] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/tasks/active', { credentials: 'same-origin' })
+    fetch('/api/tasks-active', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json() : { tasks: [] }))
       .then((d) => { if (!cancelled) setTaskCount((d.tasks || []).length); })
       .catch(() => {});
@@ -497,7 +497,7 @@ function TasksTab() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const r = await fetch('/api/tasks/active', { credentials: 'same-origin' });
+    const r = await fetch('/api/tasks-active', { credentials: 'same-origin' });
     const d = r.ok ? await r.json() : { tasks: [] };
     setTasks(d.tasks || []);
     setLoading(false);
@@ -507,7 +507,7 @@ function TasksTab() {
 
   const submit = async (task, action) => {
     setBusy(`${task.id}:${action}`);
-    const r = await fetch('/api/tasks/submit', {
+    const r = await fetch('/api/tasks-submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',

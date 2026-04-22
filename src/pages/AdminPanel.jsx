@@ -44,9 +44,9 @@ export default function AdminPanel({ onNavigate }) {
   const refreshAll = useCallback(async () => {
     setLoading(true);
     const [s, u, w] = await Promise.all([
-      jget('/api/admin/stats'),
-      jget(`/api/admin/users${usersQ ? `?q=${encodeURIComponent(usersQ)}` : ''}`),
-      jget('/api/admin/whitelist'),
+      jget('/api/admin-stats'),
+      jget(`/api/admin-users${usersQ ? `?q=${encodeURIComponent(usersQ)}` : ''}`),
+      jget('/api/admin-whitelist'),
     ]);
     if (s.ok) setStats(s);
     if (u.ok) setUsers(u.users || []);
@@ -60,7 +60,7 @@ export default function AdminPanel({ onNavigate }) {
 
   const handleCredit = async () => {
     if (!creditUser.trim() || !creditAmt) return;
-    const r = await jpost('/api/admin/credit', {
+    const r = await jpost('/api/admin-credit', {
       xUsername: creditUser.trim(),
       amount: Number(creditAmt),
       reason: `Admin credit by @${xUser?.username || 'admin'}`,
@@ -196,13 +196,13 @@ export default function AdminPanel({ onNavigate }) {
           <div className="admin-roster-actions">
             <a
               className="btn btn-ghost btn-sm"
-              href="/api/admin/whitelist?format=json-file"
+              href="/api/admin-whitelist?format=json-file"
               target="_blank"
               rel="noreferrer"
             >Download JSON</a>
             <a
               className="btn btn-solid btn-sm"
-              href="/api/admin/whitelist?format=csv"
+              href="/api/admin-whitelist?format=csv"
               target="_blank"
               rel="noreferrer"
             >Download CSV</a>
@@ -299,8 +299,8 @@ function AdminTasksPanel() {
 
   const refresh = useCallback(async () => {
     const [t, v] = await Promise.all([
-      jget('/api/tasks/active'),
-      jget('/api/admin/verifications'),
+      jget('/api/tasks-active'),
+      jget('/api/admin-verifications'),
     ]);
     if (t.ok) setTasks(t.tasks || []);
     if (v.ok) setVerifs(v.verifications || []);
@@ -311,7 +311,7 @@ function AdminTasksPanel() {
   const handleCreate = async () => {
     if (!tweetUrl.trim()) return;
     setBusy(true);
-    const r = await jpost('/api/admin/tasks/create', { tweetUrl: tweetUrl.trim(), description: desc.trim() || null });
+    const r = await jpost('/api/admin-tasks-create', { tweetUrl: tweetUrl.trim(), description: desc.trim() || null });
     setBusy(false);
     if (r.ok) {
       setToast(`Task created (id ${r.id})`);
@@ -325,14 +325,14 @@ function AdminTasksPanel() {
 
   const handleClose = async (taskId) => {
     if (!confirm('Close this task?')) return;
-    const r = await jpost('/api/admin/tasks/close', { taskId });
+    const r = await jpost('/api/admin-tasks-close', { taskId });
     if (r.ok) refresh();
   };
 
   const handleScan = async (taskId) => {
     setBusy(true);
     setScanResult(null);
-    const r = await jpost('/api/admin/scan', { taskId });
+    const r = await jpost('/api/admin-scan', { taskId });
     setBusy(false);
     if (r.ok) {
       setScanResult(r);
@@ -353,7 +353,7 @@ function AdminTasksPanel() {
 
   const handleBulk = async (action) => {
     if (selected.size === 0) return;
-    const r = await jpost('/api/admin/approve', { ids: Array.from(selected), action });
+    const r = await jpost('/api/admin-approve', { ids: Array.from(selected), action });
     if (r.ok) {
       setToast(`${action === 'approve' ? 'Approved' : 'Rejected'} ${r.processed}`);
       setSelected(new Set());
