@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
+import { useToast } from '../components/Toast';
 import Timer from '../components/Timer';
 import { ELEMENT_LABELS, getElementSVG } from '../data/elements';
 
@@ -7,6 +8,7 @@ const MIN_CLICK_GAP_MS = 120;
 
 export default function DropPage() {
   const { sessionStatus, claimElement, progressCount, claimConsolation, bustsBalance, hasConsolation } = useGame();
+  const toast = useToast();
   const [consolationResult, setConsolationResult] = useState(null);
 
   const handleConsolation = useCallback(() => {
@@ -34,7 +36,7 @@ export default function DropPage() {
   const lastClickRef   = useRef(0);
   const clickPositions = useRef([]);
 
-  const handleClaim = useCallback((e) => {
+  const handleClaim = useCallback(async (e) => {
     const now = Date.now();
     const gap = now - lastClickRef.current;
     const timingOk = lastClickRef.current === 0 || gap >= MIN_CLICK_GAP_MS;
@@ -62,9 +64,10 @@ export default function DropPage() {
       return;
     }
 
-    const result = claimElement({ timingOk, positionOk: !allSame });
+    const result = await claimElement({ timingOk, positionOk: !allSame });
     if (!result.ok) {
       setClaimFeedback(result.reason);
+      toast.error(result.reason || 'Claim failed');
       setTimeout(() => setClaimFeedback(''), 3000);
       return;
     }
@@ -72,7 +75,8 @@ export default function DropPage() {
     setBotWarning('');
     setClaimFeedback('');
     setRevealed({ ...result.element, position: result.position, bustsReward: result.bustsReward });
-  }, [claimElement]);
+    toast.success(`${result.element.name} · +${result.bustsReward} BUSTS`);
+  }, [claimElement, toast]);
 
   const urgency = !poolPct || poolPct > 0.5 ? 'normal' : poolPct > 0.2 ? 'low' : 'critical';
   const poolFillPct = Math.max(0, poolPct * 100);

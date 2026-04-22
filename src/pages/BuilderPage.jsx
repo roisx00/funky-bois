@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useGame } from '../context/GameContext';
+import { useToast } from '../components/Toast';
 import NFTCanvas from '../components/NFTCanvas';
 import { ELEMENT_TYPES, ELEMENT_LABELS, ELEMENT_VARIANTS, getElementSVG, buildNFTSVG } from '../data/elements';
 
@@ -12,6 +13,7 @@ export default function BuilderPage({ onNavigate }) {
   const completedNFTs = Array.isArray(game.completedNFTs) ? game.completedNFTs : [];
   const { completeNFT, markShared, recordWhitelist, xUser, walletAddress, isWalletConnected } = game;
   const { openConnectModal } = useConnectModal();
+  const toast = useToast();
 
   const [selection, setSelection] = useState({});
   const [activeType, setActiveType] = useState(ELEMENT_TYPES[0]);
@@ -45,11 +47,14 @@ export default function BuilderPage({ onNavigate }) {
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isComplete) return;
-    completeNFT(selection);
-    // completeNFT creates a new NFT in completedNFTs — capture its id after dispatch
-    // Use a tick to let state update, then grab the latest
+    const r = await completeNFT(selection);
+    if (r && r.ok === false) {
+      toast.error(r.reason || 'Portrait submit failed');
+      return;
+    }
+    toast.success('Portrait submitted. Share on X to earn +200 BUSTS.');
     setFlow('submitted');
   };
 
@@ -84,10 +89,14 @@ export default function BuilderPage({ onNavigate }) {
     setVerifying(false);
     if (r?.ok && r.credited) {
       setVerifyResult({ ok: true, verified: !!r.verified });
+      if (r.verified) toast.success('Tweet verified. +200 BUSTS credited.');
+      else toast.info('Marked shared. Server will re-check shortly.');
     } else if (r?.ok && r.alreadyShared) {
       setVerifyResult({ ok: true, verified: true, alreadyShared: true });
+      toast.info('Already credited for this portrait.');
     } else {
       setVerifyResult({ ok: false, reason: r?.error || 'Could not verify' });
+      toast.error(r?.error || 'Could not verify tweet');
     }
   };
 
