@@ -10,7 +10,10 @@ const BASE_PAGES = [
   { id: 'drop',    label: 'Drop' },
   { id: 'gallery', label: 'Gallery' },
 ];
-const DASHBOARD_PAGE = { id: 'dashboard', label: 'Dashboard', requiresX: true };
+const X_PAGES = [
+  { id: 'dashboard', label: 'Dashboard', requiresX: true },
+  { id: 'builder',   label: 'Build',     requiresX: true },
+];
 
 function XIcon({ size = 12 }) {
   return (
@@ -76,7 +79,7 @@ export default function Nav({ currentPage, onNavigate }) {
     ? `${window.location.origin}?ref=${encodeURIComponent(referralCode)}`
     : null;
 
-  const pages = xUser ? [...BASE_PAGES, DASHBOARD_PAGE] : BASE_PAGES;
+  const pages = xUser ? [...BASE_PAGES, ...X_PAGES] : BASE_PAGES;
 
   const [copied, setCopied] = useState(null);
   const copyText = (label, text) => {
