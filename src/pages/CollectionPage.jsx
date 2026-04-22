@@ -4,6 +4,7 @@ import { useToast } from '../components/Toast';
 import ElementCard from '../components/ElementCard';
 import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
 import { MysteryBoxOpener } from '../components/MysteryBox';
+import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
 
 const TABS = [
   { id: 'overview',  label: 'Overview' },
@@ -298,8 +299,12 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
 
   const handleSend = async () => {
     if (!selected || !toUsername.trim() || sending) return;
-    const clean = toUsername.trim().replace(/^@/, '').toLowerCase();
-    if (xUser?.username && clean === xUser.username.toLowerCase()) {
+    const clean = normalizeXHandle(toUsername);
+    if (!clean || !isValidXHandle(clean)) {
+      toast.error('Enter a valid X handle (letters, digits, underscore).');
+      return;
+    }
+    if (xUser?.username && clean === normalizeXHandle(xUser.username)) {
       toast.error('You cannot gift yourself.');
       return;
     }
@@ -366,6 +371,19 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
               placeholder="@vitalik"
               style={{ marginTop: 6, width: '100%' }}
             />
+            {toUsername.trim() && (() => {
+              const preview = normalizeXHandle(toUsername);
+              if (!preview) return null;
+              const valid = isValidXHandle(preview);
+              return (
+                <div style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6,
+                  color: valid ? 'var(--text-3)' : 'var(--red, #c4352b)',
+                }}>
+                  {valid ? `Will send to @${preview}` : 'Not a valid handle'}
+                </div>
+              );
+            })()}
           </div>
 
           <div>

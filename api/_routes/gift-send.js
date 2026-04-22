@@ -5,6 +5,7 @@ import { requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
 import { ELEMENT_VARIANTS } from '../_lib/elements.js';
+import { normalizeXHandle } from '../_lib/xHandle.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
@@ -17,9 +18,9 @@ export default async function handler(req, res) {
   if (!toXUsername || !elementType || !Number.isInteger(v) || v < 0) {
     return bad(res, 400, 'missing_fields');
   }
-  const recipient = String(toXUsername).trim().replace(/^@/, '').toLowerCase();
+  const recipient = normalizeXHandle(toXUsername);
   if (!recipient) return bad(res, 400, 'invalid_recipient');
-  if (recipient === user.x_username.toLowerCase()) {
+  if (recipient === normalizeXHandle(user.x_username)) {
     return bad(res, 400, 'cannot_gift_self');
   }
 
