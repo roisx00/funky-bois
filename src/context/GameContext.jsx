@@ -316,7 +316,10 @@ export function GameProvider({ children }) {
 
   const sendGift = useCallback(async (toXUsername, element) => {
     const r = await jpost('/api/gift/send', { toXUsername, elementType: element.type, variant: element.variant });
-    if (!r.ok) return { ok: false, reason: r.error || 'Gift failed' };
+    if (!r.ok) {
+      console.error('[sendGift] server rejected:', r);
+      return { ok: false, reason: r.error || r.message || `HTTP ${r.status || '?'}`, status: r.status, raw: r };
+    }
     dispatch({ type: 'REMOVE_INVENTORY', elementType: element.type, variant: element.variant });
     return { ok: true, giftId: r.giftId, recipient: r.recipient };
   }, []);

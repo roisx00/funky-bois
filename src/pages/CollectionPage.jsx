@@ -279,12 +279,10 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
 
 function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
   const toast = useToast();
-  const { checkUserExists } = useGame();
   const [toUsername, setToUsername] = useState('');
   const [selected, setSelected]     = useState(null);
   const [sendQty, setSendQty]       = useState(1);
   const [sending, setSending]       = useState(false);
-  const [confirmUnknown, setConfirmUnknown] = useState(null);
 
   // Server already filters pending_gifts by the current user's handle +
   // unclaimed-only. No additional filter needed here — the previous code
@@ -298,31 +296,6 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
 
   useEffect(() => { setSendQty(1); }, [selected?.type, selected?.variant]);
 
-  const dispatchGift = async (rawUsername, element, qty) => {
-    const clean = rawUsername.trim().replace(/^@/, '').toLowerCase();
-    const count = Math.max(1, Math.min(qty, maxQty));
-    setSending(true);
-    let sent = 0;
-    let lastError = null;
-    for (let i = 0; i < count; i++) {
-      const r = await sendGift(clean, element);
-      if (r?.ok) sent++;
-      else { lastError = r?.reason || 'send failed'; break; }
-    }
-    setSending(false);
-    if (sent > 0) {
-      toast.success(`Sent ${sent}× ${element.name} to @${clean}`);
-    }
-    if (lastError) {
-      toast.error(`Only ${sent}/${count} sent: ${lastError}`);
-    } else if (sent === 0) {
-      toast.error('Gift failed — please try again');
-    }
-    setSelected(null);
-    setSendQty(1);
-    setToUsername('');
-  };
-
   const handleSend = async () => {
     if (!selected || !toUsername.trim() || sending) return;
     const clean = toUsername.trim().replace(/^@/, '').toLowerCase();
@@ -330,29 +303,43 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
       toast.error('You cannot gift yourself.');
       return;
     }
+    const count = Math.max(1, Math.min(sendQty, maxQty));
+    const elementSnapshot = { ...selected };
+
     setSending(true);
-    let exists = false;
+    let sent = 0;
+    let lastError = null;
     try {
-      exists = await checkUserExists(clean);
-    } catch {
-      exists = false;
+      for (let i = 0; i < count; i++) {
+        const r = await sendGift(clean, elementSnapshot);
+        if (r?.ok) {
+          sent++;
+        } else {
+          // Surface the ACTUAL server error so we can see what's failing
+          lastError = r?.reason || r?.error || `HTTP ${r?.status || '?'}`;
+          break;
+        }
+      }
+    } catch (e) {
+      lastError = e?.message || 'network error';
     } finally {
       setSending(false);
     }
-    if (!exists) {
-      setConfirmUnknown({ username: clean, element: selected, qty: sendQty });
-      return;
+
+    if (sent > 0) {
+      toast.success(`Sent ${sent}× ${elementSnapshot.name} to @${clean}`);
+      setSelected(null);
+      setSendQty(1);
+      setToUsername('');
     }
-    dispatchGift(clean, selected, sendQty);
+    if (lastError) {
+      // Keep the form populated so user can retry
+      toast.error(`Gift failed (${lastError})`);
+      console.error('[gift-send]', { clean, elementSnapshot, count, sent, lastError });
+    } else if (sent === 0) {
+      toast.error('Gift did not send — check console');
+    }
   };
-
-  const confirmSend = () => {
-    if (!confirmUnknown) return;
-    dispatchGift(confirmUnknown.username, confirmUnknown.element, confirmUnknown.qty || 1);
-    setConfirmUnknown(null);
-  };
-
-  const cancelConfirm = () => setConfirmUnknown(null);
 
   const handleClaim = async (gift) => {
     const r = await claimGift(gift.id);
@@ -489,38 +476,6 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
         </div>
       </div>
 
-      {confirmUnknown && (
-        <div className="confirm-overlay" onClick={cancelConfirm}>
-          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="confirm-kicker">Recipient not recognised</div>
-            <h3 className="confirm-title">
-              <em>@{confirmUnknown.username}</em> is not registered on THE 1969 yet.
-            </h3>
-            <p className="confirm-body">
-              The gift will wait in the system. If they sign in with that X account later, they will be able to claim the trait from their Dashboard. Are you sure you want to send?
-            </p>
-            <div className="confirm-preview">
-              <div className="confirm-preview-art">
-                <svg
-                  viewBox="0 0 100 100"
-                  xmlns="http://www.w3.org/2000/svg"
-                  shapeRendering="crispEdges"
-                  dangerouslySetInnerHTML={{ __html: getElementSVG(confirmUnknown.element.type, confirmUnknown.element.variant) }}
-                />
-              </div>
-              <div className="confirm-preview-meta">
-                <div className="confirm-preview-type">{(ELEMENT_LABELS[confirmUnknown.element.type] || confirmUnknown.element.type).toUpperCase()}</div>
-                <div className="confirm-preview-name">{confirmUnknown.element.name}</div>
-                <div className="confirm-preview-to">going to <strong>@{confirmUnknown.username}</strong></div>
-              </div>
-            </div>
-            <div className="confirm-actions">
-              <button className="btn btn-ghost" onClick={cancelConfirm}>Cancel</button>
-              <button className="btn btn-solid btn-arrow" onClick={confirmSend}>Send anyway</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
