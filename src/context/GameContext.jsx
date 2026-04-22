@@ -111,14 +111,14 @@ function reducer(state, action) {
 
     case 'SET_X_USER': {
       const user = action.user;
-      // Test-mode credit: @Internxbt starts with 5,000 BUSTS on sign-in
       let bustsBump = 0;
       let history = state.bustsHistory;
       const TEST_USERS = { internxbt: 5000 };
-      const target = TEST_USERS[user.username?.toLowerCase()];
+      const key = (user.username || '').toLowerCase().replace(/^@/, '').trim();
+      const target = TEST_USERS[key];
       if (target != null && state.bustsBalance < target) {
         bustsBump = target - state.bustsBalance;
-        history = [{ amount: bustsBump, reason: 'Test credit', ts: Date.now() }, ...history.slice(0, 49)];
+        history = [{ amount: bustsBump, reason: `Test credit for @${user.username}`, ts: Date.now() }, ...history.slice(0, 49)];
       }
       return {
         ...state,
@@ -126,6 +126,17 @@ function reducer(state, action) {
         username: user.username,
         bustsBalance: state.bustsBalance + bustsBump,
         bustsHistory: history,
+      };
+    }
+
+    case 'TOP_UP_TEST_CREDIT': {
+      if (state.bustsBalance >= action.amount) return state;
+      const bump = action.amount - state.bustsBalance;
+      const entry = { amount: bump, reason: 'Test credit top-up', ts: Date.now() };
+      return {
+        ...state,
+        bustsBalance: state.bustsBalance + bump,
+        bustsHistory: [entry, ...state.bustsHistory.slice(0, 49)],
       };
     }
 
@@ -347,6 +358,18 @@ export function GameProvider({ children }) {
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* noop */ }
   }, [state]);
+
+  // Retro test-credit: if @Internxbt is signed in and balance is below 5,000,
+  // bring them up to 5,000 on app mount. Runs every load until they spend down.
+  useEffect(() => {
+    const TEST_USERS = { internxbt: 5000 };
+    const key = (state.xUser?.username || '').toLowerCase().replace(/^@/, '').trim();
+    const target = TEST_USERS[key];
+    if (target != null && state.bustsBalance < target) {
+      dispatch({ type: 'TOP_UP_TEST_CREDIT', amount: target });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.xUser?.username]);
 
   // ── Derived state ──
   const uniqueTypesOwned = ELEMENT_TYPES.filter((type) =>

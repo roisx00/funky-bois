@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import { ELEMENT_TYPES } from '../data/elements';
 import { startXLogin } from '../utils/xAuth';
 import BrandMark from './BrandMark';
+import ConnectModal from './ConnectModal';
 
 const BASE_PAGES = [
   { id: 'home',    label: 'Index' },
@@ -58,9 +59,10 @@ export default function Nav({ currentPage, onNavigate }) {
   };
 
   const handleConnectWallet = async () => {
-    await connectWallet();
+    const result = await connectWallet();
     setUserMenuOpen(false);
     setMobileOpen(false);
+    return result;
   };
 
   const go = (id) => {
@@ -82,9 +84,21 @@ export default function Nav({ currentPage, onNavigate }) {
 
   const pages = xUser ? [...BASE_PAGES, DASHBOARD_PAGE] : BASE_PAGES;
 
-  const copyReferral = () => {
-    if (referralLink) navigator.clipboard.writeText(referralLink).catch(() => {});
+  const [copied, setCopied] = useState(null);
+  const copyText = (label, text) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(label);
+      setTimeout(() => setCopied(null), 1400);
+    }).catch(() => {});
   };
+  const copyReferral = () => copyText('referral', referralLink);
+  const copyUsername = () => copyText('username', xUser?.username ? `@${xUser.username}` : '');
+  const copyWallet   = () => copyText('wallet', walletAddress);
+
+  const [connectOpen, setConnectOpen] = useState(false);
+  const openConnect = () => { setConnectOpen(true); setUserMenuOpen(false); };
+  const closeConnect = () => setConnectOpen(false);
 
   return (
     <>
@@ -159,29 +173,39 @@ export default function Nav({ currentPage, onNavigate }) {
                     {xUser.name ? <div className="nav-user-menu-subtitle">{xUser.name}</div> : null}
                   </div>
 
+                  <div className="nav-user-menu-row">
+                    <div className="nav-user-menu-row-label">X username</div>
+                    <div className="nav-user-menu-row-value">@{xUser.username}</div>
+                    <button className="nav-copy-btn" onClick={copyUsername}>
+                      {copied === 'username' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+
                   {isWalletConnected ? (
-                    <div className="nav-user-menu-item static">
-                      <div>
-                        <div className="nav-user-menu-kicker">Sepolia Wallet</div>
-                        <div className="nav-user-menu-text">{shortAddr}</div>
-                      </div>
+                    <div className="nav-user-menu-row">
+                      <div className="nav-user-menu-row-label">Wallet</div>
+                      <div className="nav-user-menu-row-value mono">{shortAddr}</div>
+                      <button className="nav-copy-btn" onClick={copyWallet}>
+                        {copied === 'wallet' ? 'Copied' : 'Copy'}
+                      </button>
                     </div>
                   ) : (
-                    <button className="nav-user-menu-item" onClick={handleConnectWallet}>
+                    <button className="nav-user-menu-item" onClick={openConnect}>
                       <div>
                         <div className="nav-user-menu-kicker">Wallet</div>
-                        <div className="nav-user-menu-text">Connect MetaMask</div>
+                        <div className="nav-user-menu-text">Connect a wallet</div>
                       </div>
+                      <span className="nav-user-menu-arrow">↗</span>
                     </button>
                   )}
 
                   {referralLink ? (
-                    <div className="nav-user-menu-item static referral">
-                      <div>
-                        <div className="nav-user-menu-kicker">Referral · {referralCount} joined</div>
-                        <div className="nav-user-menu-text">{referralLink.replace(/^https?:\/\//, '').slice(0, 34)}…</div>
-                      </div>
-                      <button className="btn btn-sm btn-ghost" onClick={copyReferral}>Copy</button>
+                    <div className="nav-user-menu-row">
+                      <div className="nav-user-menu-row-label">Referral · {referralCount} joined</div>
+                      <div className="nav-user-menu-row-value mono">{referralLink.replace(/^https?:\/\//, '').slice(0, 28)}…</div>
+                      <button className="nav-copy-btn" onClick={copyReferral}>
+                        {copied === 'referral' ? 'Copied' : 'Copy'}
+                      </button>
                     </div>
                   ) : null}
 
@@ -235,7 +259,7 @@ export default function Nav({ currentPage, onNavigate }) {
                 <div className="nav-mobile-user-meta">{isWalletConnected ? shortAddr : 'Wallet not connected'}</div>
               </div>
               {!isWalletConnected ? (
-                <button className="btn btn-ghost" onClick={handleConnectWallet}>
+                <button className="btn btn-ghost" onClick={() => { openConnect(); setMobileOpen(false); }}>
                   Connect Wallet
                 </button>
               ) : null}
@@ -255,6 +279,13 @@ export default function Nav({ currentPage, onNavigate }) {
       {(mobileOpen || userMenuOpen) && (
         <div className="nav-overlay" onClick={() => { setMobileOpen(false); setUserMenuOpen(false); }} />
       )}
+
+      <ConnectModal
+        open={connectOpen}
+        onClose={closeConnect}
+        onInjected={async () => { const r = await handleConnectWallet(); return r || { ok: true }; }}
+        onWalletConnect={async () => ({ ok: false, reason: 'WalletConnect support coming soon' })}
+      />
     </>
   );
 }
