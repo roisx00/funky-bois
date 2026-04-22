@@ -116,29 +116,25 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
             </div>
 
             {/* Progress summary */}
-            <div style={{ marginTop: 24, border: '1px solid var(--border-color-med)', borderRadius: 6, padding: '16px 20px', background: 'var(--surface-2)' }}>
-              <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 14 }}>
+            <div className="builder-progress">
+              <div className="builder-progress-head">
                 Slots filled: {selectedCount}/{ELEMENT_TYPES.length}
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {ELEMENT_TYPES.map((type) => (
-                  <span
-                    key={type}
-                    className={`tag`}
-                    style={{
-                      background: selection[type] !== undefined ? 'var(--accent-dim)' : undefined,
-                      color: selection[type] !== undefined ? 'var(--accent)' : undefined,
-                      borderColor: selection[type] !== undefined ? 'var(--accent)' : 'var(--border-color)',
-                    }}
-                  >
-                    {ELEMENT_LABELS[type]}
-                    {selection[type] !== undefined && (
-                      <span style={{ marginLeft: 4, opacity: 0.7 }}>
-                        : {ELEMENT_VARIANTS[type][selection[type]]?.name}
-                      </span>
-                    )}
-                  </span>
-                ))}
+              <div className="builder-progress-chips">
+                {ELEMENT_TYPES.map((type) => {
+                  const filled = selection[type] !== undefined;
+                  return (
+                    <span
+                      key={type}
+                      className={`builder-chip${filled ? ' filled' : ''}`}
+                    >
+                      <span className="builder-chip-label">{ELEMENT_LABELS[type]}</span>
+                      {filled && (
+                        <span className="builder-chip-val">{ELEMENT_VARIANTS[type][selection[type]]?.name}</span>
+                      )}
+                    </span>
+                  );
+                })}
               </div>
             </div>
 
