@@ -1,20 +1,17 @@
 import { useState, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
-import ElementCard from '../components/ElementCard';
 import NFTCanvas from '../components/NFTCanvas';
-import { ELEMENT_TYPES, ELEMENT_LABELS, ELEMENT_VARIANTS } from '../data/elements';
+import { ELEMENT_TYPES, ELEMENT_LABELS, ELEMENT_VARIANTS, getElementSVG } from '../data/elements';
 
 const X_HANDLE = '@the1969eth';
 
-export default function BuilderPage({ onNavigate, noWrapper = false }) {
+export default function BuilderPage({ onNavigate }) {
   const { inventory, completeNFT, markShared, completedNFTs } = useGame();
 
-  // Current selection: { type -> variantIdx }
   const [selection, setSelection] = useState({});
-  const [activeTab, setActiveTab] = useState(ELEMENT_TYPES[0]);
+  const [activeType, setActiveType] = useState(ELEMENT_TYPES[0]);
   const [saved, setSaved] = useState(false);
 
-  // Elements user owns, grouped by type
   const ownedByType = useMemo(() => {
     const map = {};
     for (const type of ELEMENT_TYPES) {
@@ -25,10 +22,10 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
 
   const selectedCount = Object.keys(selection).length;
   const isComplete = selectedCount === ELEMENT_TYPES.length;
+  const pct = (selectedCount / ELEMENT_TYPES.length) * 100;
 
-  const select = (type, variant) => {
+  const toggle = (type, variant) => {
     setSelection((prev) => {
-      // toggle off if already selected
       if (prev[type] === variant) {
         const next = { ...prev };
         delete next[type];
@@ -45,7 +42,7 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
   };
 
   const handleShare = (nftId) => {
-    const tweet = `Just built my portrait on THE 1969. ${selectedCount}/8 traits locked in. Mint unlocks at 1,969 ${X_HANDLE} #THE1969`;
+    const tweet = `Just built my portrait on THE 1969. ${selectedCount}/${ELEMENT_TYPES.length} traits locked in. Mint unlocks at 1,969 ${X_HANDLE} #THE1969`;
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`,
       '_blank'
@@ -56,161 +53,184 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
 
   const latestNFT = completedNFTs[completedNFTs.length - 1];
 
-  const inner = (
-    <>
-      {!noWrapper && <h1 className="page-title">Portrait Builder</h1>}
-
-      {inventory.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 40, marginBottom: 16, color: '#ccc' }}>No Traits</div>
-          <p style={{ color: '#777', marginBottom: 24 }}>Claim your first trait from the drop.</p>
-          <button className="btn btn-solid" onClick={() => onNavigate('drop')}>Go to Drop</button>
+  if (inventory.length === 0) {
+    return (
+      <div className="builder-page">
+        <div className="builder-empty">
+          <div className="builder-empty-kicker">
+            <span className="hero-eyebrow-dot" /> Builder
+          </div>
+          <h1 className="builder-empty-title">
+            No traits <em>yet.</em>
+          </h1>
+          <p className="builder-empty-sub">
+            Claim your first trait from the hourly drop and come back here to start assembling your portrait.
+          </p>
+          <button className="btn btn-solid btn-lg btn-arrow btn-lime-dot" onClick={() => onNavigate('drop')}>
+            Go to drop
+          </button>
         </div>
-      ) : (
-        <div className="builder-layout">
-          {/* ── Left: selector ── */}
-          <div>
-            {/* Type tabs */}
-            <div className="builder-type-tabs">
-              {ELEMENT_TYPES.map((type) => (
-                <div
-                  key={type}
-                  className={`builder-tab ${activeTab === type ? 'active' : ''} ${selection[type] !== undefined ? 'filled' : ''}`}
-                  onClick={() => setActiveTab(type)}
-                >
-                  {ELEMENT_LABELS[type]}
-                </div>
-              ))}
-            </div>
+      </div>
+    );
+  }
 
-            {/* Element grid for active type */}
-            <div style={{ marginBottom: 8 }}>
-              <h3 style={{ fontFamily: 'var(--font-sketch)', fontSize: 20, marginBottom: 4 }}>
-                {ELEMENT_LABELS[activeTab]}
-              </h3>
-              {ownedByType[activeTab].length === 0 ? (
-                <div className="collection-empty">
-                  You don't own any {ELEMENT_LABELS[activeTab].toLowerCase()} traits yet.{' '}
-                  <span
-                    style={{ textDecoration: 'underline', cursor: 'pointer' }}
-                    onClick={() => onNavigate('drop')}
-                  >
-                    Join a drop →
-                  </span>
-                </div>
-              ) : (
-                <div className="builder-trait-grid">
-                  {ownedByType[activeTab].map((item) => (
-                    <ElementCard
-                      key={item.id}
-                      type={item.type}
-                      variant={item.variant}
-                      quantity={item.quantity}
-                      selectable
-                      selected={selection[item.type] === item.variant}
-                      onClick={() => select(item.type, item.variant)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+  const activeOwned = ownedByType[activeType] || [];
 
-            {/* Progress summary */}
-            <div className="builder-progress">
-              <div className="builder-progress-head">
-                Slots filled: {selectedCount}/{ELEMENT_TYPES.length}
-              </div>
-              <div className="builder-progress-chips">
-                {ELEMENT_TYPES.map((type) => {
-                  const filled = selection[type] !== undefined;
-                  return (
-                    <span
-                      key={type}
-                      className={`builder-chip${filled ? ' filled' : ''}`}
-                    >
-                      <span className="builder-chip-label">{ELEMENT_LABELS[type]}</span>
-                      {filled && (
-                        <span className="builder-chip-val">{ELEMENT_VARIANTS[type][selection[type]]?.name}</span>
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
+  return (
+    <div className="builder-page">
+      {/* ── Sticky compact header on mobile, full header on desktop ── */}
+      <header className="builder-header">
+        <div className="builder-header-left">
+          <div className="builder-header-kicker">Build portrait</div>
+          <h1 className="builder-header-title">
+            Assemble your <em>bust.</em>
+          </h1>
+        </div>
 
-            {/* Save button */}
-            {!saved ? (
-              <div className="builder-save">
-                <button
-                  className={`btn btn-lg ${isComplete ? 'btn-solid' : ''}`}
-                  onClick={handleSave}
-                  disabled={!isComplete}
-                  style={{ opacity: isComplete ? 1 : 0.5, width: '100%' }}
-                >
-                  {isComplete
-                    ? 'Lock In Portrait'
-                    : `${selectedCount}/${ELEMENT_TYPES.length} traits selected`}
-                </button>
+        <div className="builder-header-right">
+          <div className="builder-header-art">
+            <NFTCanvas elements={selection} size={120} />
+          </div>
+          <div className="builder-header-meta">
+            <div className="builder-header-count">
+              {selectedCount}<span>/{ELEMENT_TYPES.length}</span>
+            </div>
+            <div className="builder-header-label">Slots filled</div>
+            <div className="builder-header-track">
+              <div className="builder-header-fill" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Live preview (desktop-only sidebar) ── */}
+      <aside className="builder-preview-desk">
+        <div className="builder-preview-desk-kicker">Live preview</div>
+        <div className="builder-preview-desk-art">
+          <NFTCanvas elements={selection} size={260} />
+        </div>
+
+        <div className="builder-preview-desk-rows">
+          {ELEMENT_TYPES.map((type) => {
+            const v = selection[type];
+            const filled = v !== undefined;
+            return (
+              <div key={type} className={`builder-preview-desk-row${filled ? ' filled' : ''}`}>
+                <span className="builder-preview-desk-label">{ELEMENT_LABELS[type]}</span>
+                <span className="builder-preview-desk-value">
+                  {filled ? ELEMENT_VARIANTS[type][v]?.name : ''}
+                </span>
               </div>
-            ) : (
-              <div
-                style={{
-                  marginTop: 24,
-                  border: 'var(--border)',
-                  borderRadius: 4,
-                  padding: '20px 24px',
-                  background: '#000',
-                  color: '#fff',
-                }}
+            );
+          })}
+        </div>
+
+        {!saved ? (
+          <button
+            className={`btn ${isComplete ? 'btn-solid' : 'btn-ghost'} btn-lg`}
+            disabled={!isComplete}
+            onClick={handleSave}
+            style={{ width: '100%', marginTop: 16, borderRadius: 999 }}
+          >
+            {isComplete ? 'Lock in portrait' : `${selectedCount}/${ELEMENT_TYPES.length} traits`}
+          </button>
+        ) : (
+          <div className="builder-saved">
+            <div className="builder-saved-kicker">Portrait locked in</div>
+            <p className="builder-saved-body">Share on X to earn your whitelist spot + 200 BUSTS. Tag {X_HANDLE}.</p>
+            <button className="btn btn-solid btn-lg btn-arrow" style={{ width: '100%' }} onClick={() => handleShare(latestNFT?.id)}>
+              Share on X
+            </button>
+          </div>
+        )}
+      </aside>
+
+      {/* ── Trait picker ── */}
+      <section className="builder-picker">
+        <div className="builder-type-nav">
+          {ELEMENT_TYPES.map((type) => {
+            const owned = (ownedByType[type] || []).length;
+            const filled = selection[type] !== undefined;
+            return (
+              <button
+                key={type}
+                type="button"
+                className={`builder-type-btn${activeType === type ? ' active' : ''}${filled ? ' filled' : ''}`}
+                onClick={() => setActiveType(type)}
               >
-                <div style={{ fontFamily: 'var(--font-sketch)', fontSize: 22, marginBottom: 10 }}>
-                  Portrait Locked In
-                </div>
-                <p style={{ fontSize: 14, opacity: 0.85, marginBottom: 16 }}>
-                  Share it on X to earn your whitelist spot + 200 BUSTS. Tag {X_HANDLE} in your post.
-                </p>
-                <button
-                  className="btn"
-                  style={{ width: '100%' }}
-                  onClick={() => handleShare(latestNFT?.id)}
-                >
-                  Share on X (Twitter) →
-                </button>
-              </div>
-            )}
+                <span className="builder-type-label">{ELEMENT_LABELS[type]}</span>
+                <span className="builder-type-count">{owned}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="builder-picker-body">
+          <div className="builder-picker-head">
+            <h2 className="builder-picker-title">{ELEMENT_LABELS[activeType]}</h2>
+            <span className="builder-picker-owned">
+              {activeOwned.length} owned
+            </span>
           </div>
 
-          {/* ── Right: live preview ── */}
-          <div className="builder-preview-wrap">
-            <div className="builder-preview-kicker">Live preview</div>
-            <div className="builder-preview-art">
-              <NFTCanvas elements={selection} size={260} />
+          {activeOwned.length === 0 ? (
+            <div className="builder-picker-empty">
+              You don't own any {ELEMENT_LABELS[activeType].toLowerCase()} traits yet.
+              <button className="btn btn-ghost btn-sm" style={{ marginTop: 14 }} onClick={() => onNavigate('drop')}>
+                Go to drop
+              </button>
             </div>
-
-            <div className="builder-preview-stats">
-              <span>Slots</span>
-              <strong>{selectedCount}/{ELEMENT_TYPES.length}</strong>
-            </div>
-
-            <div className="builder-preview-list">
-              {ELEMENT_TYPES.map((type) => {
-                const v = selection[type];
-                const filled = v !== undefined;
+          ) : (
+            <div className="builder-picker-grid">
+              {activeOwned.map((item) => {
+                const isSelected = selection[item.type] === item.variant;
                 return (
-                  <div key={type} className={`builder-preview-row${filled ? ' filled' : ''}`}>
-                    <span className="builder-preview-label">{ELEMENT_LABELS[type]}</span>
-                    <span className="builder-preview-value">
-                      {filled ? ELEMENT_VARIANTS[type][v]?.name : ''}
-                    </span>
-                  </div>
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`builder-trait${isSelected ? ' selected' : ''}`}
+                    onClick={() => toggle(item.type, item.variant)}
+                  >
+                    <div className="builder-trait-art">
+                      <svg
+                        viewBox="0 0 100 100"
+                        xmlns="http://www.w3.org/2000/svg"
+                        shapeRendering="crispEdges"
+                        dangerouslySetInnerHTML={{ __html: getElementSVG(item.type, item.variant) }}
+                      />
+                      {item.quantity > 1 && (
+                        <span className="builder-trait-qty">×{item.quantity}</span>
+                      )}
+                    </div>
+                    <div className="builder-trait-info">
+                      <div className="builder-trait-name">{item.name}</div>
+                      <span className={`badge badge-${item.rarity}`}>{item.rarity.replace('_', ' ')}</span>
+                    </div>
+                  </button>
                 );
               })}
             </div>
-          </div>
+          )}
         </div>
-      )}
-    </>
-  );
+      </section>
 
-  return noWrapper ? inner : <div className="page">{inner}</div>;
+      {/* ── Sticky mobile save bar ── */}
+      <div className="builder-stickybar">
+        {!saved ? (
+          <button
+            className={`btn ${isComplete ? 'btn-solid' : 'btn-ghost'} btn-lg`}
+            disabled={!isComplete}
+            onClick={handleSave}
+            style={{ width: '100%', borderRadius: 999 }}
+          >
+            {isComplete ? 'Lock in portrait' : `${selectedCount}/${ELEMENT_TYPES.length} traits selected`}
+          </button>
+        ) : (
+          <button className="btn btn-solid btn-lg btn-arrow" style={{ width: '100%' }} onClick={() => handleShare(latestNFT?.id)}>
+            Share on X · +200 BUSTS
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }

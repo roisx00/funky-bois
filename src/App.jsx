@@ -7,24 +7,42 @@ import DropPage from './pages/DropPage';
 import CollectionPage from './pages/CollectionPage';
 import GalleryPage from './pages/GalleryPage';
 import AdminPanel from './pages/AdminPanel';
+import BuilderPage from './pages/BuilderPage';
 import { handleXCallback, startXLogin } from './utils/xAuth';
 import './App.css';
 
-function DashboardGate({ navigate, page }) {
-  const { xUser, loginWithX } = useGame();
-  if (xUser) {
-    return <CollectionPage onNavigate={navigate} initialTab={page === 'builder' ? 'build' : 'elements'} />;
-  }
+function SignInGate({ title, children }) {
+  const { loginWithX } = useGame();
   return (
     <div className="page" style={{ textAlign: 'center', paddingTop: 160 }}>
-      <h1 className="page-title" style={{ borderBottom: 'none', marginBottom: 20 }}>Dashboard locked</h1>
+      <h1 className="page-title" style={{ borderBottom: 'none', marginBottom: 20 }}>{title}</h1>
       <p style={{ color: 'var(--text-3)', maxWidth: 460, margin: '0 auto 32px', fontSize: 16, lineHeight: 1.55 }}>
-        Sign in with your X account to access your BUSTS balance, trait inventory, portrait builder, and mystery boxes.
+        {children}
       </p>
       <button className="btn btn-solid btn-lg" onClick={() => startXLogin(loginWithX)}>
         Sign in with X
       </button>
     </div>
+  );
+}
+
+function DashboardGate({ navigate }) {
+  const { xUser } = useGame();
+  if (xUser) return <CollectionPage onNavigate={navigate} initialTab="elements" />;
+  return (
+    <SignInGate title="Dashboard locked">
+      Sign in with your X account to access your BUSTS balance, trait inventory, gifts, tasks, and mystery boxes.
+    </SignInGate>
+  );
+}
+
+function BuilderGate({ navigate }) {
+  const { xUser } = useGame();
+  if (xUser) return <BuilderPage onNavigate={navigate} />;
+  return (
+    <SignInGate title="Build locked">
+      Sign in with your X account to assemble your portrait and earn your whitelist spot.
+    </SignInGate>
   );
 }
 
@@ -98,8 +116,11 @@ function AppInner() {
 
       {page === 'home' && <LandingPage onNavigate={navigate} />}
       {page === 'drop' && <DropPage />}
-      {(page === 'dashboard' || page === 'collection' || page === 'builder') && (
-        <DashboardGate navigate={navigate} page={page} />
+      {(page === 'dashboard' || page === 'collection') && (
+        <DashboardGate navigate={navigate} />
+      )}
+      {page === 'builder' && (
+        <BuilderGate navigate={navigate} />
       )}
       {page === 'gallery' && <GalleryPage onNavigate={navigate} />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}

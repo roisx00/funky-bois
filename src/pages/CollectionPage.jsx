@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import ElementCard from '../components/ElementCard';
-import BuilderPage from './BuilderPage';
 import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
 import { MysteryBoxOpener } from '../components/MysteryBox';
 
@@ -9,7 +8,6 @@ const TABS = [
   { id: 'overview',  label: 'Overview' },
   { id: 'boxes',     label: 'Mystery Boxes' },
   { id: 'tasks',     label: 'Tasks' },
-  { id: 'build',     label: 'Build Portrait' },
   { id: 'inventory', label: 'Inventory' },
   { id: 'gift',      label: 'Gift' },
   { id: 'history',   label: 'History' },
@@ -128,7 +126,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
               <button className="btn btn-solid btn-sm btn-arrow" onClick={() => onNavigate('drop')}>Go to drop</button>
-              {hasAllTypes && <button className="btn btn-accent btn-sm" onClick={() => setTab('build')}>Build portrait</button>}
+              {hasAllTypes && <button className="btn btn-accent btn-sm" onClick={() => onNavigate('builder')}>Build portrait</button>}
             </div>
           </div>
 
@@ -211,8 +209,6 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
         </div>
       )}
 
-      {/* ─── Build Portrait ─── */}
-      {tab === 'build' && <BuilderPage onNavigate={onNavigate} noWrapper />}
 
       {/* ─── Inventory ─── */}
       {tab === 'inventory' && (
@@ -237,7 +233,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
             <div className="complete-set-banner">
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 500, letterSpacing: '-0.025em', marginBottom: 10 }}>Set complete.</div>
               <p style={{ fontSize: 14, marginBottom: 18 }}>You have one of every trait type. Assemble your portrait.</p>
-              <button className="btn btn-solid btn-sm btn-arrow" onClick={() => setTab('build')}>Build portrait</button>
+              <button className="btn btn-solid btn-sm btn-arrow" onClick={() => onNavigate('builder')}>Build portrait</button>
             </div>
           )}
 
