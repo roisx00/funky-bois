@@ -155,7 +155,7 @@ export default function AdminPanel({ onNavigate }) {
             <div className="admin-roster-meta">Award BUSTS to any X user. Negative numbers debit.</div>
           </div>
         </div>
-        <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: '1fr 140px auto', gap: 12, alignItems: 'end' }}>
+        <div className="admin-credit-form">
           <div>
             <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>X username</label>
             <input
@@ -246,7 +246,7 @@ export default function AdminPanel({ onNavigate }) {
         {users.length === 0 ? (
           loading ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="admin-roster-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr auto' }}>
+              <div key={i} className="admin-roster-row users-row">
                 <div>
                   <div className="admin-roster-user"><Skeleton width={120} height={14} /></div>
                   <div className="admin-roster-wallet"><Skeleton width={90} height={10} style={{ marginTop: 4 }} /></div>
@@ -261,7 +261,7 @@ export default function AdminPanel({ onNavigate }) {
           )
         ) : (
           users.map((u) => (
-            <div key={u.id} className="admin-roster-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr auto' }}>
+            <div key={u.id} className="admin-roster-row users-row">
               <div>
                 <div className="admin-roster-user">@{u.xUsername}</div>
                 <div className="admin-roster-wallet">{u.walletAddress ? shortAddr(u.walletAddress) : 'no wallet'}</div>
@@ -378,7 +378,7 @@ function AdminTasksPanel() {
             <div className="admin-roster-meta">{tasks.length} active</div>
           </div>
         </div>
-        <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, alignItems: 'end', borderBottom: '1px solid var(--hairline)' }}>
+        <div className="admin-task-form">
           <div>
             <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Tweet URL</label>
             <input type="text" value={tweetUrl} onChange={(e) => setTweetUrl(e.target.value)} placeholder="https://x.com/handle/status/123..." style={{ width: '100%' }} />
@@ -396,7 +396,7 @@ function AdminTasksPanel() {
           <div className="admin-roster-empty">No active tasks.</div>
         ) : (
           tasks.map((t, idx) => (
-            <div key={t.id} className="admin-roster-row" style={{ gridTemplateColumns: '40px 1fr auto auto auto' }}>
+            <div key={t.id} className="admin-roster-row tasks-row">
               <div className="admin-roster-time" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-4)' }}>#{idx + 1}</div>
               <div>
                 <div className="admin-roster-user">{t.description || `Tweet ${t.tweetId}`}</div>
@@ -433,7 +433,7 @@ function AdminTasksPanel() {
           <div className="admin-roster-empty">No pending verifications. Run a Scan above to fill the queue.</div>
         ) : (
           verifs.map((v) => (
-            <div key={v.id} className="admin-roster-row" style={{ gridTemplateColumns: '32px 1fr auto auto auto' }}>
+            <div key={v.id} className="admin-roster-row verifs-row">
               <div>
                 <input type="checkbox" checked={selected.has(v.id)} onChange={() => toggleSelect(v.id)} />
               </div>

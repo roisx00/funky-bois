@@ -1514,6 +1514,11 @@
 }
 .reveal-element-art svg { width: 82%; height: 82%; image-rendering: pixelated; image-rendering: crisp-edges; }
 .reveal-element-name { font-size: 32px; margin-bottom: 12px; color: var(--ink); font-weight: 500; letter-spacing: -0.025em; }
+@media (max-width: 600px) {
+  .reveal-card { padding: 28px 20px; width: 100%; max-width: 100%; }
+  .reveal-element-art { width: 140px; height: 140px; }
+  .reveal-element-name { font-size: 24px; }
+}
 
 /* Drop sidebar */
 .drop-sidebar { display: flex; flex-direction: column; gap: 16px; }
@@ -2440,12 +2445,31 @@
 }
 .admin-roster-row:last-child { border-bottom: none; }
 .admin-roster-row:hover { background: var(--paper-2); }
+.admin-roster-row.users-row    { grid-template-columns: 1.5fr 1fr 1fr auto; }
+.admin-roster-row.tasks-row    { grid-template-columns: 40px 1fr auto auto auto; }
+.admin-roster-row.verifs-row   { grid-template-columns: 32px 1fr auto auto auto; }
+.admin-credit-form             { display: grid; grid-template-columns: 1fr 140px auto; gap: 12px; align-items: end; padding: 20px 24px; }
+.admin-task-form               { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; padding: 20px 24px; border-bottom: 1px solid var(--hairline); }
+
 @media (max-width: 700px) {
-  .admin-roster-row {
+  .admin-roster-row,
+  .admin-roster-row.users-row,
+  .admin-roster-row.tasks-row,
+  .admin-roster-row.verifs-row {
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 8px;
     padding: 14px 16px;
   }
+  .admin-credit-form,
+  .admin-task-form {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 16px;
+  }
+  .admin-credit-form > button,
+  .admin-task-form > button { width: 100%; }
+  .admin-roster-actions { gap: 6px; }
+  .admin-roster-actions .btn { flex: 1 1 auto; }
 }
 .admin-roster-user {
   font-family: var(--font-display);
@@ -4747,6 +4771,18 @@ section { background: var(--bg); }
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-bottom: 10px;
+}
+
+@media (max-width: 700px) {
+  .task-card {
+    grid-template-columns: 1fr;
+    padding: 18px 18px;
+    gap: 14px;
+  }
+  .task-reward { text-align: left; }
+  .task-head { flex-wrap: wrap; }
+  .task-title { font-size: 16px; }
+  .task-desc { font-size: 12px; }
 }
 
 /* Gift */
