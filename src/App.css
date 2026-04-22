@@ -1641,14 +1641,135 @@
   /* Preview goes first on mobile so users see their portrait while picking */
   .builder-layout > .builder-preview-wrap { order: -1; }
 }
-.builder-preview-wrap { position: sticky; top: 110px; text-align: center; }
+
+/* Preview: sticky card on desktop */
+.builder-preview-wrap {
+  position: sticky;
+  top: 110px;
+  text-align: left;
+  padding: 20px;
+  border: 1px solid var(--hairline);
+  background: var(--paper-2);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.builder-preview-kicker {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--text-4);
+  text-transform: uppercase;
+}
+.builder-preview-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+}
+.builder-preview-art .nft-canvas-wrap {
+  max-width: 220px;
+  width: 100%;
+}
+.builder-preview-stats {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.builder-preview-stats strong {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-transform: none;
+}
+.builder-preview-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+.builder-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  font-size: 12px;
+  line-height: 1;
+}
+.builder-preview-row.filled {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+.builder-preview-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+.builder-preview-row.filled .builder-preview-label { color: var(--text-2); }
+.builder-preview-value {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+/* Mobile: side-by-side layout inside the preview card */
 @media (max-width: 800px) {
   .builder-preview-wrap {
     position: static;
-    padding: 20px;
-    border: 1px solid var(--hairline);
-    background: var(--paper-2);
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    grid-template-rows: auto auto auto;
+    column-gap: 14px;
+    row-gap: 10px;
+    align-items: start;
+    padding: 16px;
   }
+  .builder-preview-kicker { grid-column: 1 / -1; }
+  .builder-preview-art {
+    grid-column: 1 / 2;
+    grid-row: 2 / 4;
+    padding: 4px;
+    align-self: start;
+  }
+  .builder-preview-art .nft-canvas-wrap { max-width: 132px; }
+  .builder-preview-stats {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+    padding: 6px 10px;
+  }
+  .builder-preview-list {
+    grid-column: 2 / 3;
+    grid-row: 3 / 4;
+    gap: 3px;
+  }
+  .builder-preview-row { padding: 4px 8px; font-size: 11px; }
+  .builder-preview-label { font-size: 8px; }
+  .builder-preview-value { font-size: 11px; max-width: 70px; }
+}
+@media (max-width: 420px) {
+  .builder-preview-wrap { grid-template-columns: 120px 1fr; }
+  .builder-preview-art .nft-canvas-wrap { max-width: 112px; }
 }
 
 .builder-type-tabs {

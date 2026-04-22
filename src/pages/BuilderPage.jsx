@@ -186,22 +186,29 @@ export default function BuilderPage({ onNavigate, noWrapper = false }) {
 
           {/* ── Right: live preview ── */}
           <div className="builder-preview-wrap">
-            <p style={{ fontFamily: 'var(--font-sketch)', fontSize: 16, marginBottom: 12, color: '#777' }}>
-              Live Preview
-            </p>
-            <NFTCanvas elements={selection} size={260} />
+            <div className="builder-preview-kicker">Live preview</div>
+            <div className="builder-preview-art">
+              <NFTCanvas elements={selection} size={260} />
+            </div>
 
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {ELEMENT_TYPES.map((type) => (
-                <div key={type} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#777' }}>
-                  <span style={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>{ELEMENT_LABELS[type]}</span>
-                  <span style={{ fontWeight: 700, color: selection[type] !== undefined ? '#000' : '#ccc' }}>
-                    {selection[type] !== undefined
-                      ? ELEMENT_VARIANTS[type][selection[type]]?.name
-                      : '/'}
-                  </span>
-                </div>
-              ))}
+            <div className="builder-preview-stats">
+              <span>Slots</span>
+              <strong>{selectedCount}/{ELEMENT_TYPES.length}</strong>
+            </div>
+
+            <div className="builder-preview-list">
+              {ELEMENT_TYPES.map((type) => {
+                const v = selection[type];
+                const filled = v !== undefined;
+                return (
+                  <div key={type} className={`builder-preview-row${filled ? ' filled' : ''}`}>
+                    <span className="builder-preview-label">{ELEMENT_LABELS[type]}</span>
+                    <span className="builder-preview-value">
+                      {filled ? ELEMENT_VARIANTS[type][v]?.name : ''}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
