@@ -1,0 +1,13 @@
+{
+  "name": "THE 1969",
+  "short_name": "THE 1969",
+  "description": "1,969 portraits. One chain. No color.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9F6F0",
+  "theme_color": "#0E0E0E",
+  "icons": [
+    { "src": "/favicon.svg?v=2", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon-512.svg?v=2", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
