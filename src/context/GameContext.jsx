@@ -109,8 +109,25 @@ function reducer(state, action) {
     case 'SET_USERNAME':
       return { ...state, username: action.username };
 
-    case 'SET_X_USER':
-      return { ...state, xUser: action.user, username: action.user.username };
+    case 'SET_X_USER': {
+      const user = action.user;
+      // Test-mode credit: @Internxbt starts with 5,000 BUSTS on sign-in
+      let bustsBump = 0;
+      let history = state.bustsHistory;
+      const TEST_USERS = { internxbt: 5000 };
+      const target = TEST_USERS[user.username?.toLowerCase()];
+      if (target != null && state.bustsBalance < target) {
+        bustsBump = target - state.bustsBalance;
+        history = [{ amount: bustsBump, reason: 'Test credit', ts: Date.now() }, ...history.slice(0, 49)];
+      }
+      return {
+        ...state,
+        xUser: user,
+        username: user.username,
+        bustsBalance: state.bustsBalance + bustsBump,
+        bustsHistory: history,
+      };
+    }
 
     case 'CLEAR_X_USER':
       return { ...state, xUser: null, username: state.walletUsername || null };
@@ -141,6 +158,16 @@ function reducer(state, action) {
         referredBy: action.code,
         bustsBalance: state.bustsBalance + REFERRAL_BUSTS,
         bustsHistory: [refEntry, ...state.bustsHistory.slice(0, 49)],
+      };
+    }
+
+    case 'EARN_REFERRAL_BONUS': {
+      const entry = { amount: REFERRAL_BUSTS, reason: `Referral: @${action.referredUsername || 'someone'} joined via your link`, ts: Date.now() };
+      return {
+        ...state,
+        referralCount: (state.referralCount || 0) + 1,
+        bustsBalance: state.bustsBalance + REFERRAL_BUSTS,
+        bustsHistory: [entry, ...state.bustsHistory.slice(0, 49)],
       };
     }
 
@@ -467,6 +494,7 @@ export function GameProvider({ children }) {
     addGiftedElement,
     sendGift,
     claimGift,
+    earnReferralBonus,
     resetProgress,
     setAdmin: (isAdmin) => dispatch({ type: 'SET_ADMIN', isAdmin }),
     setDropPoolSize: (poolSize) => dispatch({ type: 'SET_DROP_POOL_SIZE', poolSize }),

@@ -201,6 +201,8 @@ export default function Nav({ currentPage, onNavigate }) {
       </nav>
 
       <div className={`nav-mobile-menu${mobileOpen ? ' open' : ''}`}>
+        <div className="nav-mobile-kicker">Navigate</div>
+
         {pages.map((p) => (
           <button
             key={p.id}
@@ -208,25 +210,41 @@ export default function Nav({ currentPage, onNavigate }) {
             className={`nav-mobile-link${activePage === p.id ? ' active' : ''}`}
             onClick={() => go(p.id)}
           >
-            {p.id === 'drop' && sessionStatus.isActive ? '● Live Drop' : p.label}
+            {p.id === 'drop' && sessionStatus.isActive ? 'Live Drop' : p.label}
           </button>
         ))}
+
+        {xUser ? (
+          <div className="nav-mobile-stats">
+            <div className="nav-mobile-stat">
+              <div className="nav-mobile-stat-label">BUSTS</div>
+              <div className="nav-mobile-stat-value">{bustsBalance?.toLocaleString() ?? 0}</div>
+            </div>
+            <div className="nav-mobile-stat">
+              <div className="nav-mobile-stat-label">Traits</div>
+              <div className="nav-mobile-stat-value">{progressCount}/{ELEMENT_TYPES.length}</div>
+            </div>
+          </div>
+        ) : null}
 
         <div className="nav-mobile-footer">
           {xUser ? (
             <>
               <div className="nav-mobile-user">
                 <div className="nav-mobile-user-name">@{xUser.username}</div>
-                <div className="nav-mobile-user-meta">{isWalletConnected ? shortAddr : 'No wallet connected'}</div>
+                <div className="nav-mobile-user-meta">{isWalletConnected ? shortAddr : 'Wallet not connected'}</div>
               </div>
               {!isWalletConnected ? (
-                <button className="btn btn-sm btn-ghost" onClick={handleConnectWallet}>
+                <button className="btn btn-ghost" onClick={handleConnectWallet}>
                   Connect Wallet
                 </button>
               ) : null}
+              <button className="nav-mobile-signout" onClick={() => { logoutX(); setMobileOpen(false); }}>
+                Sign out of X
+              </button>
             </>
           ) : (
-            <button className="btn btn-solid btn-sm" onClick={() => { void handleXLogin(); setMobileOpen(false); }} disabled={xLoading}>
+            <button className="btn btn-solid" onClick={() => { void handleXLogin(); setMobileOpen(false); }} disabled={xLoading}>
               <XIcon />
               {xLoading ? 'Loading' : 'Sign in with X'}
             </button>
