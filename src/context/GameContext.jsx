@@ -1,361 +1,194 @@
-import { createContext, useContext, useEffect, useReducer, useCallback, useState } from 'react';
-import { ELEMENT_TYPES, pickRandomElement } from '../data/elements';
+import { createContext, useContext, useEffect, useReducer, useCallback, useState, useRef } from 'react';
+import { ELEMENT_TYPES } from '../data/elements';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// THE 1969 / GameContext (off-chain, BUSTS economy)
+// THE 1969 — GameContext (server-backed, BUSTS economy)
 // ═══════════════════════════════════════════════════════════════════════════
 
-// ─── Session constants ──────────────────────────────────────────────────────
+// ─── Session constants (mirror server) ───────────────────────────────────────
 const SESSION_INTERVAL_MS    = 60 * 60 * 1000;
 const SESSION_WINDOW_MS      = 5 * 60 * 1000;
 const MAX_CLAIMS_PER_SESSION = 3;
 const DEFAULT_SESSION_POOL_SIZE = 20;
 
-function simulateOtherClaims(sessionStartMs) {
-  const elapsedSec = Math.max(0, (Date.now() - sessionStartMs) / 1000);
-  const t = Math.min(elapsedSec / (SESSION_WINDOW_MS / 1000), 1);
-  return Math.floor(Math.pow(t, 0.45) * 18);
-}
-
 function getCurrentSessionId() {
   return Math.floor(Date.now() / SESSION_INTERVAL_MS) * SESSION_INTERVAL_MS;
 }
 
-function getSessionStatus(poolSize = DEFAULT_SESSION_POOL_SIZE) {
-  const now     = Date.now();
-  const sessId  = getCurrentSessionId();
-  const elapsed = now - sessId;
-  const isActive      = elapsed < SESSION_WINDOW_MS;
-  const msUntilNext   = SESSION_INTERVAL_MS - elapsed;
-  const msUntilClose  = isActive ? SESSION_WINDOW_MS - elapsed : 0;
-  const simClaimed    = isActive ? simulateOtherClaims(sessId) : poolSize;
-  const poolRemaining = Math.max(0, poolSize - simClaimed);
-  const poolPct       = poolRemaining / poolSize;
-  const poolEmpty     = poolRemaining <= 0;
-
+function deriveSessionStatus(serverStatus, claimsThisSession) {
+  const sessId = serverStatus?.sessId ?? getCurrentSessionId();
+  const elapsed = Date.now() - sessId;
+  const totalPool       = serverStatus?.poolSize       ?? DEFAULT_SESSION_POOL_SIZE;
+  const poolClaimed     = serverStatus?.poolClaimed    ?? 0;
+  const poolRemaining   = serverStatus?.poolRemaining  ?? Math.max(0, totalPool - poolClaimed);
+  const isPoolEmpty     = poolRemaining <= 0;
+  const isActive        = (serverStatus?.isActive ?? (elapsed < SESSION_WINDOW_MS)) && !isPoolEmpty;
   return {
     sessId,
-    isActive: isActive && !poolEmpty,
-    isPoolEmpty: poolEmpty,
-    msUntilNext,
-    msUntilClose,
-    simClaimed,
+    isActive,
+    isPoolEmpty,
+    msUntilNext:  Math.max(0, SESSION_INTERVAL_MS - elapsed),
+    msUntilClose: Math.max(0, SESSION_WINDOW_MS - elapsed),
+    simClaimed:   poolClaimed,
     poolRemaining,
-    poolPct,
-    totalPool: poolSize,
+    poolPct:      poolRemaining / totalPool,
+    totalPool,
+    claimsThisSession,
+    canClaimThisSession: claimsThisSession < MAX_CLAIMS_PER_SESSION,
+    maxClaims: MAX_CLAIMS_PER_SESSION,
   };
 }
 
-// ─── Wallet username derivation ─────────────────────────────────────────────
-const ADJECTIVES = ['Shadow','Silent','Stoic','Grim','Vintage','Noble','Bleak','Raw','Iron','Marble','Obsidian','Paper','Ashen','Frost','Velvet'];
-const NOUNS      = ['Boi','Shade','Saint','Monk','Bust','Ghost','Warden','Patron','Rogue','Witness','Stranger','Prophet','Deacon','Muse','Heir'];
-
-function deriveWalletUsername(addr) {
-  const hex  = addr.replace('0x', '').toLowerCase().padEnd(8, '0');
-  const adj  = ADJECTIVES[parseInt(hex.slice(0, 2), 16) % ADJECTIVES.length];
-  const noun = NOUNS[parseInt(hex.slice(2, 4), 16) % NOUNS.length];
-  const num  = parseInt(hex.slice(4, 8), 16) % 10000;
-  return `${adj}${noun}${num.toString().padStart(4, '0')}`;
-}
-
-// ─── BUSTS reward table (drop claims) ────────────────────────────────────────
-const DROP_BUSTS_REWARD = { common: 5, rare: 15, legendary: 30, ultra_rare: 100 };
-const DAILY_CLAIM_BONUS = 25;
-const REFERRAL_BUSTS    = 50;
-const SHARE_NFT_BUSTS   = 200;
-
-// ─── NFT count simulation (toward 1,969 supply) ──────────────────────────────
 export function simulateNFTCount() {
-  const LAUNCH_MS = 1735689600000; // Jan 1 2026 UTC
+  const LAUNCH_MS = 1735689600000;
   const hours = Math.max(0, (Date.now() - LAUNCH_MS) / 3600000);
   return Math.min(1969, Math.floor(100 + hours * 0.45));
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// State + reducer
-// ═══════════════════════════════════════════════════════════════════════════
-
-function makeInitialState() {
+// ─── State shape (server-hydrated, with offline cache fallback) ─────────────
+function emptyState() {
   return {
-    userId:              crypto.randomUUID(),
-    username:            null,
-    xUser:               null,
-    walletAddress:       null,
-    walletUsername:      null,
-    isWalletConnected:   false,
-    bustsBalance:        50,
-    bustsHistory:        [],          // [{ amount, reason, ts }]
-    dailyClaimedOn:      null,        // YYYY-MM-DD string of last claim
-    claimedConsolations: {},
-    inventory:           [],
-    completedNFTs:       [],
-    isWhitelisted:       false,
-    claimedSessions:     {},
-    pendingGifts:        [],          // [{ id, from, toXUsername, element, ts, claimed }]
-    referralCode:        null,
-    referredBy:          null,
-    referralCount:       0,
-    isAdmin:             false,
-    dropPoolSize:        DEFAULT_SESSION_POOL_SIZE,
-    whitelistRoster:     [],          // [{ xUsername, xAvatar, walletAddress, portraitId, portraitElements, tweetUrl, claimedAt }]
+    hydrated:        false,
+    authenticated:   false,
+    userId:          null,
+    xUser:           null, // { id, username, name, avatar }
+    walletAddress:   null,
+    isWalletConnected: false,
+    bustsBalance:    0,
+    bustsHistory:    [],
+    inventory:       [],
+    completedNFTs:   [],
+    isWhitelisted:   false,
+    pendingGifts:    [],
+    pendingInbox:    [],
+    referralCode:    null,
+    referralCount:   0,
+    isAdmin:         false,
+    sessionStatus:   deriveSessionStatus(null, 0),
+    serverDropStatus: null,
+    mySessionClaims: 0,
   };
-}
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 function reducer(state, action) {
   switch (action.type) {
-    case 'SET_USERNAME':
-      return { ...state, username: action.username };
-
-    case 'SET_X_USER': {
-      const user = action.user;
-      let bustsBump = 0;
-      let history = state.bustsHistory;
-      const TEST_USERS = { internxbt: 5000 };
-      const key = (user.username || '').toLowerCase().replace(/^@/, '').trim();
-      const target = TEST_USERS[key];
-      if (target != null && state.bustsBalance < target) {
-        bustsBump = target - state.bustsBalance;
-        history = [{ amount: bustsBump, reason: `Test credit for @${user.username}`, ts: Date.now() }, ...history.slice(0, 49)];
+    case 'HYDRATE': {
+      const me = action.payload;
+      if (!me?.authenticated) {
+        return { ...emptyState(), hydrated: true, authenticated: false };
       }
       return {
         ...state,
-        xUser: user,
-        username: user.username,
-        bustsBalance: state.bustsBalance + bustsBump,
-        bustsHistory: history,
-      };
-    }
-
-    case 'TOP_UP_TEST_CREDIT': {
-      if (state.bustsBalance >= action.amount) return state;
-      const bump = action.amount - state.bustsBalance;
-      const entry = { amount: bump, reason: 'Test credit top-up', ts: Date.now() };
-      return {
-        ...state,
-        bustsBalance: state.bustsBalance + bump,
-        bustsHistory: [entry, ...state.bustsHistory.slice(0, 49)],
-      };
-    }
-
-    case 'CLEAR_X_USER':
-      return { ...state, xUser: null, username: state.walletUsername || null };
-
-    case 'CONNECT_WALLET': {
-      const uname = deriveWalletUsername(action.address);
-      return {
-        ...state,
-        walletAddress:     action.address,
-        walletUsername:    uname,
-        isWalletConnected: true,
-        username:          state.xUser?.username || uname,
-      };
-    }
-
-    case 'DISCONNECT_WALLET':
-      return { ...state, walletAddress: null, walletUsername: null, isWalletConnected: false };
-
-    case 'SET_REFERRAL_CODE':
-      if (state.referralCode) return state;
-      return { ...state, referralCode: action.code };
-
-    case 'SET_REFERRED_BY': {
-      if (state.referredBy) return state;
-      const refEntry = { amount: REFERRAL_BUSTS, reason: 'Referral join bonus', ts: Date.now() };
-      return {
-        ...state,
-        referredBy: action.code,
-        bustsBalance: state.bustsBalance + REFERRAL_BUSTS,
-        bustsHistory: [refEntry, ...state.bustsHistory.slice(0, 49)],
-      };
-    }
-
-    case 'EARN_REFERRAL_BONUS': {
-      const entry = { amount: REFERRAL_BUSTS, reason: `Referral: @${action.referredUsername || 'someone'} joined via your link`, ts: Date.now() };
-      return {
-        ...state,
-        referralCount: (state.referralCount || 0) + 1,
-        bustsBalance: state.bustsBalance + REFERRAL_BUSTS,
-        bustsHistory: [entry, ...state.bustsHistory.slice(0, 49)],
-      };
-    }
-
-    case 'ADD_ELEMENT': {
-      const el       = action.element;
-      const existing = state.inventory.find(
-        (i) => i.type === el.type && i.variant === el.variant
-      );
-      if (existing) {
-        return {
-          ...state,
-          inventory: state.inventory.map((i) =>
-            i === existing ? { ...i, quantity: (i.quantity || 1) + 1 } : i
-          ),
-        };
-      }
-      return {
-        ...state,
-        inventory: [
-          ...state.inventory,
-          { ...el, id: crypto.randomUUID(), quantity: 1, obtainedAt: Date.now() },
-        ],
-      };
-    }
-
-    case 'REMOVE_ELEMENT': {
-      const idx = state.inventory.findIndex(
-        (i) => i.type === action.elementType && i.variant === action.variant
-      );
-      if (idx === -1) return state;
-      const item = state.inventory[idx];
-      if ((item.quantity || 1) <= 1) {
-        return { ...state, inventory: state.inventory.filter((_, i) => i !== idx) };
-      }
-      return {
-        ...state,
-        inventory: state.inventory.map((i, index) =>
-          index === idx ? { ...i, quantity: i.quantity - 1 } : i
-        ),
-      };
-    }
-
-    case 'RECORD_SESSION_CLAIM': {
-      const { sessionId, position, firstClaim } = action;
-      const prev = state.claimedSessions[sessionId] || { count: 0, positions: [], firstClaimMs: null };
-      return {
-        ...state,
-        claimedSessions: {
-          ...state.claimedSessions,
-          [sessionId]: {
-            count:        prev.count + 1,
-            positions:    [...prev.positions, position],
-            firstClaimMs: prev.firstClaimMs ?? firstClaim,
-          },
+        hydrated: true,
+        authenticated: true,
+        userId: me.user.id,
+        xUser: {
+          id:       me.user.id,
+          username: me.user.xUsername,
+          name:     me.user.xName,
+          avatar:   me.user.xAvatar,
         },
+        walletAddress:    me.user.walletAddress || null,
+        isWalletConnected: !!me.user.walletAddress,
+        bustsBalance:     me.user.bustsBalance,
+        isWhitelisted:    me.user.isWhitelisted,
+        referralCode:     me.user.referralCode,
+        isAdmin:          me.user.isAdmin,
+        bustsHistory:     me.bustsHistory,
+        inventory:        me.inventory,
+        completedNFTs:    me.completedNFTs,
+        pendingInbox:     me.pendingGifts,
       };
     }
 
-    case 'ADD_BUSTS': {
+    case 'CLEAR_USER':
+      return { ...emptyState(), hydrated: true };
+
+    case 'SET_DROP_STATUS': {
+      const s = action.payload;
+      return {
+        ...state,
+        serverDropStatus: s,
+        mySessionClaims:  s?.mySessionClaims ?? state.mySessionClaims,
+        sessionStatus:    deriveSessionStatus(s, s?.mySessionClaims ?? state.mySessionClaims),
+      };
+    }
+
+    case 'BUMP_BALANCE': {
       const entry = { amount: action.amount, reason: action.reason || 'Reward', ts: Date.now() };
       return {
         ...state,
-        bustsBalance: state.bustsBalance + action.amount,
+        bustsBalance: Math.max(0, state.bustsBalance + action.amount),
         bustsHistory: [entry, ...state.bustsHistory.slice(0, 49)],
       };
     }
 
-    case 'SPEND_BUSTS': {
-      if (state.bustsBalance < action.amount) return state;
-      const entry = { amount: -action.amount, reason: action.reason || 'Spent', ts: Date.now() };
+    case 'ADD_INVENTORY': {
+      const el = action.element;
+      const existing = state.inventory.find((i) => i.type === el.type && i.variant === el.variant);
+      const inventory = existing
+        ? state.inventory.map((i) => (i === existing ? { ...i, quantity: (i.quantity || 1) + 1 } : i))
+        : [...state.inventory, { type: el.type, variant: el.variant, name: el.name, rarity: el.rarity, quantity: 1, obtainedAt: Date.now() }];
+      return { ...state, inventory };
+    }
+
+    case 'REMOVE_INVENTORY': {
+      const idx = state.inventory.findIndex((i) => i.type === action.elementType && i.variant === action.variant);
+      if (idx === -1) return state;
+      const item = state.inventory[idx];
+      const next = (item.quantity || 1) <= 1
+        ? state.inventory.filter((_, i) => i !== idx)
+        : state.inventory.map((i, k) => (k === idx ? { ...i, quantity: i.quantity - 1 } : i));
+      return { ...state, inventory: next };
+    }
+
+    case 'BUMP_SESSION_CLAIMS': {
+      const next = state.mySessionClaims + 1;
       return {
         ...state,
-        bustsBalance: state.bustsBalance - action.amount,
-        bustsHistory: [entry, ...state.bustsHistory.slice(0, 49)],
+        mySessionClaims: next,
+        sessionStatus: deriveSessionStatus(state.serverDropStatus, next),
       };
     }
 
-    case 'CLAIM_DAILY': {
-      const day = todayKey();
-      if (state.dailyClaimedOn === day) return state;
-      const entry = { amount: DAILY_CLAIM_BONUS, reason: 'Daily drop claim', ts: Date.now() };
-      return {
-        ...state,
-        dailyClaimedOn: day,
-        bustsBalance: state.bustsBalance + DAILY_CLAIM_BONUS,
-        bustsHistory: [entry, ...state.bustsHistory.slice(0, 49)],
-      };
+    case 'ADD_COMPLETED': {
+      return { ...state, completedNFTs: [action.nft, ...state.completedNFTs] };
     }
 
-    case 'CLAIM_CONSOLATION': {
-      const { sessionId, amount } = action;
-      if (state.claimedConsolations[sessionId]) return state;
-      const entry = { amount, reason: 'Drop consolation', ts: Date.now() };
-      return {
-        ...state,
-        bustsBalance: state.bustsBalance + amount,
-        claimedConsolations: { ...state.claimedConsolations, [sessionId]: true },
-        bustsHistory: [entry, ...state.bustsHistory.slice(0, 49)],
-      };
-    }
-
-    case 'COMPLETE_NFT': {
-      const nft = {
-        id:        crypto.randomUUID(),
-        elements:  action.elements,
-        username:  state.xUser?.username || state.walletUsername || state.username || `Boi#${state.userId.slice(0, 4).toUpperCase()}`,
-        createdAt: Date.now(),
-        sharedToX: false,
-      };
-      return { ...state, completedNFTs: [...state.completedNFTs, nft] };
-    }
-
-    case 'MARK_SHARED': {
-      const entry = { amount: SHARE_NFT_BUSTS, reason: 'Shared portrait on X', ts: Date.now() };
+    case 'MARK_NFT_SHARED': {
       return {
         ...state,
         completedNFTs: state.completedNFTs.map((n) =>
           n.id === action.nftId ? { ...n, sharedToX: true, tweetUrl: action.tweetUrl || n.tweetUrl } : n
         ),
         isWhitelisted: true,
-        bustsBalance: state.bustsBalance + SHARE_NFT_BUSTS,
-        bustsHistory: [entry, ...state.bustsHistory.slice(0, 49)],
       };
     }
 
-    case 'RECORD_WHITELIST': {
-      const { xUsername, xAvatar, walletAddress, portraitId, portraitElements, tweetUrl } = action;
-      // Dedupe by walletAddress OR xUsername
-      const existing = state.whitelistRoster.find(
-        (r) => r.walletAddress?.toLowerCase() === walletAddress?.toLowerCase() ||
-               r.xUsername?.toLowerCase() === xUsername?.toLowerCase()
-      );
-      const entry = {
-        xUsername,
-        xAvatar,
-        walletAddress,
-        portraitId,
-        portraitElements,
-        tweetUrl,
-        claimedAt: Date.now(),
-      };
-      const roster = existing
-        ? state.whitelistRoster.map((r) => (r === existing ? { ...r, ...entry } : r))
-        : [...state.whitelistRoster, entry];
-      return { ...state, whitelistRoster: roster, isWhitelisted: true };
-    }
+    case 'REMOVE_INBOX_GIFT':
+      return { ...state, pendingInbox: state.pendingInbox.filter((g) => g.id !== action.giftId) };
 
-    case 'SEND_GIFT': {
-      const gift = {
-        id: crypto.randomUUID(),
-        fromUserId: state.userId,
-        fromXUsername: state.xUser?.username || null,
-        toXUsername: action.toXUsername,
-        element: action.element,
-        ts: Date.now(),
-        claimed: false,
-      };
-      return { ...state, pendingGifts: [...state.pendingGifts, gift] };
-    }
+    case 'SET_WALLET':
+      return { ...state, walletAddress: action.address || null, isWalletConnected: !!action.address };
 
-    case 'CLAIM_GIFT': {
-      const gift = state.pendingGifts.find((g) => g.id === action.giftId);
-      if (!gift || gift.claimed) return state;
+    case 'SET_X_USER': {
+      // After successful sign-in callback
+      if (!action.user) return state;
       return {
         ...state,
-        pendingGifts: state.pendingGifts.map((g) =>
-          g.id === action.giftId ? { ...g, claimed: true } : g
-        ),
+        xUser: {
+          id: action.user.id,
+          username: action.user.xUsername,
+          name: action.user.xName,
+          avatar: action.user.xAvatar,
+        },
+        userId: action.user.id,
+        bustsBalance: action.user.bustsBalance ?? state.bustsBalance,
+        isWhitelisted: action.user.isWhitelisted ?? state.isWhitelisted,
+        authenticated: true,
+        hydrated: true,
       };
     }
-
-    case 'SET_ADMIN':
-      return { ...state, isAdmin: action.isAdmin };
-
-    case 'SET_DROP_POOL_SIZE':
-      return { ...state, dropPoolSize: Math.max(1, action.poolSize) };
 
     default:
       return state;
@@ -363,169 +196,207 @@ function reducer(state, action) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Context
+// Provider
 // ═══════════════════════════════════════════════════════════════════════════
 
 const GameContext = createContext(null);
-const STORAGE_KEY = 'the1969-v1';
+
+async function jpost(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await r.text();
+  let data; try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text }; }
+  if (!r.ok) return { ok: false, status: r.status, ...data };
+  return { ok: true, ...data };
+}
+
+async function jget(path) {
+  const r = await fetch(path, { credentials: 'same-origin' });
+  const text = await r.text();
+  let data; try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text }; }
+  if (!r.ok) return { ok: false, status: r.status, ...data };
+  return { ok: true, ...data };
+}
 
 export function GameProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, null, () => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return { ...makeInitialState(), ...JSON.parse(saved) };
-    } catch { /* localStorage unavailable */ }
-    return makeInitialState();
-  });
+  const [state, dispatch] = useReducer(reducer, null, emptyState);
+  const dropPollRef = useRef(null);
 
+  // Initial hydrate
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* noop */ }
-  }, [state]);
+    let cancelled = false;
+    (async () => {
+      const me = await jget('/api/me');
+      if (cancelled) return;
+      if (me.ok) dispatch({ type: 'HYDRATE', payload: me });
+      else        dispatch({ type: 'HYDRATE', payload: { authenticated: false } });
+      const ds = await jget('/api/drop-status');
+      if (!cancelled && ds.ok) dispatch({ type: 'SET_DROP_STATUS', payload: ds });
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
-  // Retro test-credit: if @Internxbt is signed in and balance is below 5,000,
-  // bring them up to 5,000 on app mount. Runs every load until they spend down.
+  // Poll drop status every 15s while page is open
   useEffect(() => {
-    const TEST_USERS = { internxbt: 5000 };
-    const key = (state.xUser?.username || '').toLowerCase().replace(/^@/, '').trim();
-    const target = TEST_USERS[key];
-    if (target != null && state.bustsBalance < target) {
-      dispatch({ type: 'TOP_UP_TEST_CREDIT', amount: target });
+    function tick() {
+      jget('/api/drop-status').then((ds) => {
+        if (ds.ok) dispatch({ type: 'SET_DROP_STATUS', payload: ds });
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.xUser?.username]);
+    dropPollRef.current = setInterval(tick, 15000);
+    return () => clearInterval(dropPollRef.current);
+  }, []);
 
-  // ── Derived state ──
-  const uniqueTypesOwned = ELEMENT_TYPES.filter((type) =>
-    state.inventory.some((i) => i.type === type)
-  );
+  // Re-render every second so timers update
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Recompute sessionStatus from server data + tick
+  const sessionStatus = deriveSessionStatus(state.serverDropStatus, state.mySessionClaims);
+
+  // ── Derived ──
+  const uniqueTypesOwned = ELEMENT_TYPES.filter((type) => state.inventory.some((i) => i.type === type));
   const progressCount = uniqueTypesOwned.length;
   const hasAllTypes   = progressCount === ELEMENT_TYPES.length;
 
-  const sessInfo   = getSessionStatus(state.dropPoolSize);
-  const sessRecord = state.claimedSessions[sessInfo.sessId] || { count: 0, positions: [], firstClaimMs: null };
-  const claimsThisSession   = sessRecord.count;
-  const canClaimThisSession = claimsThisSession < MAX_CLAIMS_PER_SESSION;
-
-  const reactionTimeSec = sessRecord.firstClaimMs != null
-    ? ((sessRecord.firstClaimMs - sessInfo.sessId) / 1000).toFixed(1)
-    : null;
-
-  const bestPosition = sessRecord.positions.length > 0
-    ? Math.min(...sessRecord.positions)
-    : null;
-
-  const sessionStatus = {
-    ...sessInfo,
-    claimsThisSession,
-    canClaimThisSession,
-    maxClaims: MAX_CLAIMS_PER_SESSION,
-    reactionTimeSec,
-    bestPosition,
-    claimPositions: sessRecord.positions,
-  };
-
-  const hasConsolation = !state.claimedConsolations?.[sessInfo.sessId];
-  const canClaimDaily  = state.dailyClaimedOn !== todayKey();
-
   // ── Actions ──
-  const setUsername = useCallback((name) => dispatch({ type: 'SET_USERNAME', username: name }), []);
+  const refreshMe = useCallback(async () => {
+    const me = await jget('/api/me');
+    if (me.ok) dispatch({ type: 'HYDRATE', payload: me });
+  }, []);
 
   const loginWithX = useCallback((user) => {
+    // Called from App.jsx after X OAuth callback succeeds.
     dispatch({ type: 'SET_X_USER', user });
-    dispatch({ type: 'SET_REFERRAL_CODE', code: user.username });
+    refreshMe();
+  }, [refreshMe]);
+
+  const logoutX = useCallback(async () => {
+    try { await fetch('/api/sign-out', { method: 'POST', credentials: 'same-origin' }); } catch { /* ignore */ }
+    dispatch({ type: 'CLEAR_USER' });
   }, []);
 
-  const logoutX = useCallback(() => dispatch({ type: 'CLEAR_X_USER' }), []);
-  const setReferralCode = useCallback((code) => dispatch({ type: 'SET_REFERRAL_CODE', code }), []);
-  const setReferredBy   = useCallback((code) => dispatch({ type: 'SET_REFERRED_BY', code }), []);
+  const claimElement = useCallback(async () => {
+    if (!state.authenticated) return { ok: false, reason: 'Sign in with X first' };
+    const r = await jpost('/api/drop-claim');
+    if (!r.ok) return { ok: false, reason: r.error || 'Drop claim failed' };
+    dispatch({ type: 'ADD_INVENTORY', element: r.element });
+    dispatch({ type: 'BUMP_BALANCE', amount: r.bustsReward, reason: `Drop reward: ${r.element.name}` });
+    if (r.dailyBonus) dispatch({ type: 'BUMP_BALANCE', amount: r.dailyBonus, reason: 'Daily drop claim' });
+    dispatch({ type: 'BUMP_SESSION_CLAIMS' });
+    // Re-pull status so pool counter is in sync
+    jget('/api/drop-status').then((ds) => ds.ok && dispatch({ type: 'SET_DROP_STATUS', payload: ds }));
+    return { ok: true, element: r.element, bustsReward: r.bustsReward, position: r.position };
+  }, [state.authenticated]);
 
-  const connectWallet = useCallback(async () => {
-    if (window.ethereum) {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        dispatch({ type: 'CONNECT_WALLET', address: accounts[0] });
-        return { ok: true, address: accounts[0] };
-      } catch (e) {
-        return { ok: false, reason: e.message };
-      }
-    }
-    let mockAddr = localStorage.getItem('the1969-mock-wallet');
-    if (!mockAddr) {
-      const bytes = crypto.getRandomValues(new Uint8Array(20));
-      mockAddr = '0x' + Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
-      localStorage.setItem('the1969-mock-wallet', mockAddr);
-    }
-    dispatch({ type: 'CONNECT_WALLET', address: mockAddr });
-    return { ok: true, address: mockAddr, mock: true };
+  const openMysteryBox = useCallback(async (tier) => {
+    if (!state.authenticated) return { ok: false, reason: 'Sign in with X first' };
+    const r = await jpost('/api/box-open', { tier });
+    if (!r.ok) return { ok: false, reason: r.error || 'Box open failed' };
+    dispatch({ type: 'ADD_INVENTORY', element: r.element });
+    dispatch({ type: 'BUMP_BALANCE', amount: -(state.bustsBalance - r.newBalance), reason: `Opened ${tier} box` });
+    return { ok: true, element: r.element, newBalance: r.newBalance };
+  }, [state.authenticated, state.bustsBalance]);
+
+  const sendGift = useCallback(async (toXUsername, element) => {
+    const r = await jpost('/api/gift/send', { toXUsername, elementType: element.type, variant: element.variant });
+    if (!r.ok) return { ok: false, reason: r.error || 'Gift failed' };
+    dispatch({ type: 'REMOVE_INVENTORY', elementType: element.type, variant: element.variant });
+    return { ok: true, giftId: r.giftId, recipient: r.recipient };
   }, []);
 
-  const disconnectWallet = useCallback(() => dispatch({ type: 'DISCONNECT_WALLET' }), []);
+  const claimGift = useCallback(async (giftId) => {
+    const r = await jpost('/api/gift/claim', { giftId });
+    if (!r.ok) return { ok: false, reason: r.error || 'Claim failed' };
+    dispatch({ type: 'ADD_INVENTORY', element: r.element });
+    dispatch({ type: 'REMOVE_INBOX_GIFT', giftId });
+    return { ok: true, element: r.element };
+  }, []);
 
-  // Bridge from RainbowKit/wagmi: the wallet was connected upstream by RainbowKit;
-  // we just record the address in our context state. No MetaMask prompt here.
+  const checkUserExists = useCallback(async (username) => {
+    const r = await jget(`/api/users/exists?username=${encodeURIComponent(username)}`);
+    if (!r.ok) return false;
+    return !!r.exists;
+  }, []);
+
+  const submitPortrait = useCallback(async (elements) => {
+    const r = await jpost('/api/portrait/submit', { elements });
+    if (!r.ok) return { ok: false, reason: r.error || 'Submit failed' };
+    dispatch({
+      type: 'ADD_COMPLETED',
+      nft: { id: r.id, elements, shareHash: r.shareHash, sharedToX: false, createdAt: Date.now() },
+    });
+    return { ok: true, id: r.id, shareHash: r.shareHash };
+  }, []);
+
+  const sharePortrait = useCallback(async (portraitId, tweetUrl) => {
+    const r = await jpost('/api/portrait/share', { portraitId, tweetUrl });
+    if (r.ok && r.credited) {
+      dispatch({ type: 'MARK_NFT_SHARED', nftId: portraitId, tweetUrl });
+      dispatch({ type: 'BUMP_BALANCE', amount: 200, reason: 'Shared portrait on X' });
+    }
+    return r;
+  }, []);
+
+  const recordWhitelist = useCallback(async ({ walletAddress, portraitId }) => {
+    const r = await jpost('/api/whitelist/record', { walletAddress, portraitId });
+    if (r.ok) {
+      dispatch({ type: 'SET_WALLET', address: walletAddress });
+      refreshMe();
+    }
+    return r;
+  }, [refreshMe]);
+
+  // Wallet bridge: WalletBridge dispatches address into context
   const bridgeWallet = useCallback((address) => {
-    if (!address) return;
-    dispatch({ type: 'CONNECT_WALLET', address });
+    dispatch({ type: 'SET_WALLET', address });
   }, []);
-
-  const claimElement = useCallback((antiBot = {}) => {
-    const { timingOk = true, positionOk = true } = antiBot;
-    const ss = getSessionStatus(state.dropPoolSize);
-    if (!ss.isActive)         return { ok: false, reason: 'No active session' };
-    if (ss.isPoolEmpty)       return { ok: false, reason: 'Pool exhausted' };
-    if (!canClaimThisSession) return { ok: false, reason: 'Max claims reached for this session' };
-    if (!timingOk)            return { ok: false, reason: 'Too fast. Suspected bot.' };
-    if (!positionOk)          return { ok: false, reason: 'Suspicious click pattern' };
-
-    const element = pickRandomElement();
-    const position = ss.simClaimed + claimsThisSession + 1;
-    const bustsReward = DROP_BUSTS_REWARD[element.rarity] || 5;
-    dispatch({ type: 'ADD_ELEMENT', element });
-    dispatch({ type: 'RECORD_SESSION_CLAIM', sessionId: ss.sessId, position, firstClaim: Date.now() });
-    dispatch({ type: 'ADD_BUSTS', amount: bustsReward, reason: `Drop reward: ${element.name}` });
-    // Daily claim bonus (first claim of the day)
-    if (state.dailyClaimedOn !== todayKey()) {
-      dispatch({ type: 'CLAIM_DAILY' });
-    }
-    return { ok: true, element, position, bustsReward };
-  }, [canClaimThisSession, claimsThisSession, state.dropPoolSize, state.dailyClaimedOn]);
-
-  const claimConsolation = useCallback(() => {
-    const ss = getSessionStatus(state.dropPoolSize);
-    if (state.claimedConsolations?.[ss.sessId]) return { ok: false, reason: 'Already claimed' };
-    const amount = Math.floor(Math.random() * 21) + 5;
-    dispatch({ type: 'CLAIM_CONSOLATION', sessionId: ss.sessId, amount });
-    return { ok: true, amount };
-  }, [state.claimedConsolations, state.dropPoolSize]);
-
-  const addBusts     = useCallback((amount, reason) => dispatch({ type: 'ADD_BUSTS', amount, reason }), []);
-  const spendBusts   = useCallback((amount, reason) => dispatch({ type: 'SPEND_BUSTS', amount, reason }), []);
-  const completeNFT  = useCallback((elements) => dispatch({ type: 'COMPLETE_NFT', elements }), []);
-  const markShared   = useCallback((nftId, tweetUrl) => dispatch({ type: 'MARK_SHARED', nftId, tweetUrl }), []);
-  const recordWhitelist = useCallback((payload) => dispatch({ type: 'RECORD_WHITELIST', ...payload }), []);
-  const removeElement = useCallback((elementType, variant) => dispatch({ type: 'REMOVE_ELEMENT', elementType, variant }), []);
-  const addGiftedElement = useCallback((element) => dispatch({ type: 'ADD_ELEMENT', element }), []);
-  const sendGift = useCallback((toXUsername, element) => {
-    dispatch({ type: 'REMOVE_ELEMENT', elementType: element.type, variant: element.variant });
-    dispatch({ type: 'SEND_GIFT', toXUsername, element });
+  const disconnectWallet = useCallback(() => {
+    dispatch({ type: 'SET_WALLET', address: null });
   }, []);
-  const claimGift = useCallback((giftId) => dispatch({ type: 'CLAIM_GIFT', giftId }), []);
+  // No-op: kept for backward-compat with old call sites
+  const connectWallet = useCallback(async () => ({ ok: false, reason: 'Use the Connect button (RainbowKit)' }), []);
 
-  const earnReferralBonus = useCallback((referredUsername) => {
-    dispatch({ type: 'EARN_REFERRAL_BONUS', referredUsername });
-  }, []);
+  // Compatibility shims for code that hasn't been updated yet
+  const completeNFT      = useCallback((elements) => submitPortrait(elements), [submitPortrait]);
+  const markShared       = useCallback((nftId, tweetUrl) => sharePortrait(nftId, tweetUrl), [sharePortrait]);
+  const addBusts         = useCallback(() => { /* server-driven now */ }, []);
+  const spendBusts       = useCallback(() => { /* server-driven now */ }, []);
+  const setReferredBy    = useCallback(() => { /* handled at OAuth callback time */ }, []);
+  const setUsername      = useCallback(() => { /* server-driven */ }, []);
+  const earnReferralBonus = useCallback(() => { /* server-driven via /api/x-token referral */ }, []);
+  const addGiftedElement = useCallback((element) => dispatch({ type: 'ADD_INVENTORY', element }), []);
+  const removeElement    = useCallback((elementType, variant) => dispatch({ type: 'REMOVE_INVENTORY', elementType, variant }), []);
+  const claimConsolation = useCallback(() => ({ ok: false, reason: 'Consolation moved to backend' }), []);
+  const setReferralCode  = useCallback(() => { /* code is the X username, set server-side */ }, []);
+  const setAdmin         = useCallback(() => { /* admin status is read from /api/me */ }, []);
+  const setDropPoolSize  = useCallback(() => { /* admin-only via separate endpoint, TBD */ }, []);
 
-  const resetProgress = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem('the1969-mock-wallet');
+  const resetProgress = useCallback(async () => {
+    await logoutX();
     window.location.reload();
-  }, []);
+  }, [logoutX]);
 
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  // Compatibility flags exposed to UI
+  const hasConsolation = false;
+  const canClaimDaily  = state.authenticated; // server tracks date
+
+  // Convenience: legacy whitelistRoster (now server-authoritative; admin pulls from API)
+  const whitelistRoster = state.completedNFTs.filter((n) => n.sharedToX).map((n) => ({
+    xUsername: state.xUser?.username,
+    walletAddress: state.walletAddress,
+    portraitId: n.id,
+    portraitElements: n.elements,
+    tweetUrl: n.tweetUrl,
+    claimedAt: n.createdAt,
+  }));
 
   const value = {
     ...state,
@@ -535,7 +406,8 @@ export function GameProvider({ children }) {
     uniqueTypesOwned,
     hasConsolation,
     canClaimDaily,
-    setUsername,
+    whitelistRoster,
+    refreshMe,
     loginWithX,
     logoutX,
     connectWallet,
@@ -544,20 +416,25 @@ export function GameProvider({ children }) {
     setReferralCode,
     setReferredBy,
     claimElement,
+    openMysteryBox,
     claimConsolation,
     addBusts,
     spendBusts,
     completeNFT,
+    submitPortrait,
     markShared,
+    sharePortrait,
     recordWhitelist,
     removeElement,
     addGiftedElement,
     sendGift,
     claimGift,
+    checkUserExists,
     earnReferralBonus,
     resetProgress,
-    setAdmin: (isAdmin) => dispatch({ type: 'SET_ADMIN', isAdmin }),
-    setDropPoolSize: (poolSize) => dispatch({ type: 'SET_DROP_POOL_SIZE', poolSize }),
+    setUsername,
+    setAdmin,
+    setDropPoolSize,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
