@@ -56,23 +56,28 @@ const ROUTES = {
 };
 
 function extractPath(req) {
-  // 1) Vercel passes wildcard segments via req.query.path on Pages-style routes
-  const q = req.query?.path;
-  if (Array.isArray(q) && q.length) return q.join('/');
-  if (typeof q === 'string' && q) return q;
-
-  // 2) Fall back to parsing req.url directly (vanilla Vercel functions)
+  // ALWAYS merge URL searchParams into req.query so handlers can read ?foo=bar
+  // regardless of which code path we use to resolve the route. Vercel's
+  // catch-all only populates req.query.path for vanilla Node functions — it
+  // does NOT auto-populate the query string, so /api/users/exists?username=x
+  // used to arrive with req.query = {path: ['users','exists']} and no username.
   try {
     const u = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-    let p = u.pathname;
-    p = p.replace(/^\/+/, '');           // strip leading slashes
-    p = p.replace(/^api\/?/, '');        // strip api/ prefix
-    p = p.replace(/\/+$/, '');           // strip trailing slash
-    // Re-attach req.query so handlers can still read query params
     if (!req.query || typeof req.query !== 'object') req.query = {};
     for (const [k, v] of u.searchParams.entries()) {
       if (req.query[k] === undefined) req.query[k] = v;
     }
+
+    // 1) Prefer req.query.path if Vercel populated it
+    const q = req.query.path;
+    if (Array.isArray(q) && q.length) return q.join('/');
+    if (typeof q === 'string' && q) return q;
+
+    // 2) Fall back to parsing the pathname
+    let p = u.pathname;
+    p = p.replace(/^\/+/, '');           // strip leading slashes
+    p = p.replace(/^api\/?/, '');        // strip api/ prefix
+    p = p.replace(/\/+$/, '');           // strip trailing slash
     return p;
   } catch {
     return '';

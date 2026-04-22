@@ -331,8 +331,14 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
       return;
     }
     setSending(true);
-    const exists = await checkUserExists(clean);
-    setSending(false);
+    let exists = false;
+    try {
+      exists = await checkUserExists(clean);
+    } catch {
+      exists = false;
+    } finally {
+      setSending(false);
+    }
     if (!exists) {
       setConfirmUnknown({ username: clean, element: selected, qty: sendQty });
       return;
