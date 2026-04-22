@@ -18,6 +18,9 @@ export default function BuilderPage({ onNavigate }) {
   // Flow states:  'picking' | 'submitted' | 'shared' | 'wl-secured'
   const [flow, setFlow] = useState('picking');
   const [builtId, setBuiltId] = useState(null);
+  const [tweetUrl, setTweetUrl] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState(null);
 
   const ownedByType = useMemo(() => {
     const map = {};
@@ -58,16 +61,34 @@ export default function BuilderPage({ onNavigate }) {
     }
   }, [flow, completedNFTs, builtId]);
 
+  const builtNFT = completedNFTs.find((n) => n.id === builtId);
+  const shareHash = builtNFT?.shareHash || '';
+
   const handleShare = () => {
     if (!builtId) return;
-    const tweet = `I just built my portrait on THE 1969. ${selectedCount}/${ELEMENT_TYPES.length} traits locked in. Mint unlocks at 1,969.\n\n${X_HANDLE} #THE1969`;
+    const hashLine = shareHash ? `\nid: ${shareHash}` : '';
+    const tweet = `I just built my portrait on THE 1969. ${selectedCount}/${ELEMENT_TYPES.length} traits locked in. Mint unlocks at 1,969.${hashLine}\n\n${X_HANDLE} #THE1969`;
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`,
       '_blank'
     );
-    // Optimistically mark shared. In production, backend would verify the tweet.
-    markShared(builtId);
     setFlow('shared');
+  };
+
+  const handleConfirmShared = async () => {
+    if (!builtId) return;
+    setVerifying(true);
+    setVerifyResult(null);
+    const url = tweetUrl.trim();
+    const r = await markShared(builtId, url || null);
+    setVerifying(false);
+    if (r?.ok && r.credited) {
+      setVerifyResult({ ok: true, verified: !!r.verified });
+    } else if (r?.ok && r.alreadyShared) {
+      setVerifyResult({ ok: true, verified: true, alreadyShared: true });
+    } else {
+      setVerifyResult({ ok: false, reason: r?.error || 'Could not verify' });
+    }
   };
 
   const handleConnectWallet = () => {
@@ -311,24 +332,58 @@ export default function BuilderPage({ onNavigate }) {
           {flow === 'shared' && (
             <div className="builder-confirm-panel">
               <div className="builder-confirm-kicker">Almost done</div>
-              <h3 className="builder-confirm-title">Connect a wallet to secure your whitelist.</h3>
+              <h3 className="builder-confirm-title">Paste your tweet URL to verify.</h3>
               <p className="builder-confirm-body">
-                Your tweet is out. Connect the Ethereum wallet you want whitelisted. The mint will send to this address
-                when the community reaches 1,969 completed portraits.
+                Copy the link to the tweet you just posted and paste it below. We verify it contains your portrait
+                id (<strong className="mono">{shareHash || '—'}</strong>) and then credit <strong>+200 BUSTS</strong>.
+                Then connect a wallet to secure your whitelist.
               </p>
-              <div className="builder-confirm-actions">
-                {isWalletConnected ? (
-                  <button className="btn btn-solid btn-lg btn-arrow btn-lime-dot" onClick={handleClaimWL}>
-                    Secure whitelist
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                <input
+                  type="url"
+                  value={tweetUrl}
+                  onChange={(e) => setTweetUrl(e.target.value)}
+                  placeholder="https://x.com/you/status/1234567890"
+                  style={{
+                    width: '100%', padding: '12px 14px',
+                    border: '1px solid var(--hairline)', background: 'var(--paper)',
+                    fontFamily: 'var(--font-mono)', fontSize: 12, borderRadius: 4,
+                  }}
+                />
+                <div className="builder-confirm-actions">
+                  <button
+                    className="btn btn-solid btn-lg btn-arrow btn-lime-dot"
+                    onClick={handleConfirmShared}
+                    disabled={verifying || !tweetUrl.trim()}
+                  >
+                    {verifying ? 'Verifying.' : 'Verify tweet'}
                   </button>
-                ) : (
-                  <button className="btn btn-solid btn-lg btn-arrow btn-lime-dot" onClick={handleConnectWallet}>
-                    Connect wallet
-                  </button>
+                  {isWalletConnected ? (
+                    <button className="btn btn-ghost btn-lg" onClick={handleClaimWL}>
+                      Secure whitelist
+                    </button>
+                  ) : (
+                    <button className="btn btn-ghost btn-lg" onClick={handleConnectWallet}>
+                      Connect wallet
+                    </button>
+                  )}
+                </div>
+                {verifyResult && (
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 11, padding: '8px 12px',
+                      border: '1px solid var(--hairline)', background: 'var(--paper-2)',
+                      color: verifyResult.ok ? 'var(--text-1)' : 'var(--danger, #c00)',
+                    }}
+                  >
+                    {verifyResult.ok
+                      ? verifyResult.verified
+                        ? 'Tweet verified. BUSTS credited.'
+                        : 'Marked shared. Server will re-check the tweet in the background.'
+                      : `Could not verify: ${verifyResult.reason}`}
+                  </div>
                 )}
-                <button className="btn btn-ghost btn-lg" onClick={handleDownloadPortrait}>
-                  Download SVG
-                </button>
               </div>
             </div>
           )}
