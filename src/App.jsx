@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { GameProvider, useGame } from './context/GameContext';
 import Nav from './components/Nav';
+import WalletBridge from './components/WalletBridge';
 import LandingPage from './pages/LandingPage';
 import DropPage from './pages/DropPage';
 import CollectionPage from './pages/CollectionPage';
@@ -66,6 +67,7 @@ function AppInner() {
 
   return (
     <>
+      <WalletBridge />
       <Nav currentPage={page} onNavigate={navigate} />
 
       {page === 'home' && <LandingPage onNavigate={navigate} />}

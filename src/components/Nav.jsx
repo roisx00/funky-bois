@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 import { ELEMENT_TYPES } from '../data/elements';
 import { startXLogin } from '../utils/xAuth';
 import BrandMark from './BrandMark';
-import ConnectModal from './ConnectModal';
+import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
 
 const BASE_PAGES = [
   { id: 'home',    label: 'Index' },
@@ -32,7 +32,7 @@ export default function Nav({ currentPage, onNavigate }) {
   const {
     xUser, logoutX, loginWithX,
     progressCount, sessionStatus,
-    isWalletConnected, walletAddress, connectWallet,
+    isWalletConnected, walletAddress,
     referralCode, referralCount,
     bustsBalance, isAdmin,
   } = useGame();
@@ -58,12 +58,6 @@ export default function Nav({ currentPage, onNavigate }) {
     setXLoading(false);
   };
 
-  const handleConnectWallet = async () => {
-    const result = await connectWallet();
-    setUserMenuOpen(false);
-    setMobileOpen(false);
-    return result;
-  };
 
   const go = (id) => {
     onNavigate(id);
@@ -96,9 +90,13 @@ export default function Nav({ currentPage, onNavigate }) {
   const copyUsername = () => copyText('username', xUser?.username ? `@${xUser.username}` : '');
   const copyWallet   = () => copyText('wallet', walletAddress);
 
-  const [connectOpen, setConnectOpen] = useState(false);
-  const openConnect = () => { setConnectOpen(true); setUserMenuOpen(false); };
-  const closeConnect = () => setConnectOpen(false);
+  const { openConnectModal } = useConnectModal();
+  const { openAccountModal } = useAccountModal();
+  const openConnect = () => {
+    setUserMenuOpen(false);
+    setMobileOpen(false);
+    openConnectModal?.();
+  };
 
   return (
     <>
@@ -182,13 +180,25 @@ export default function Nav({ currentPage, onNavigate }) {
                   </div>
 
                   {isWalletConnected ? (
-                    <div className="nav-user-menu-row">
-                      <div className="nav-user-menu-row-label">Wallet</div>
-                      <div className="nav-user-menu-row-value mono">{shortAddr}</div>
-                      <button className="nav-copy-btn" onClick={copyWallet}>
-                        {copied === 'wallet' ? 'Copied' : 'Copy'}
+                    <>
+                      <div className="nav-user-menu-row">
+                        <div className="nav-user-menu-row-label">Wallet</div>
+                        <div className="nav-user-menu-row-value mono">{shortAddr}</div>
+                        <button className="nav-copy-btn" onClick={copyWallet}>
+                          {copied === 'wallet' ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                      <button
+                        className="nav-user-menu-item"
+                        onClick={() => { openAccountModal?.(); setUserMenuOpen(false); }}
+                      >
+                        <div>
+                          <div className="nav-user-menu-kicker">Wallet</div>
+                          <div className="nav-user-menu-text">Manage wallet</div>
+                        </div>
+                        <span className="nav-user-menu-arrow">↗</span>
                       </button>
-                    </div>
+                    </>
                   ) : (
                     <button className="nav-user-menu-item" onClick={openConnect}>
                       <div>
@@ -280,12 +290,6 @@ export default function Nav({ currentPage, onNavigate }) {
         <div className="nav-overlay" onClick={() => { setMobileOpen(false); setUserMenuOpen(false); }} />
       )}
 
-      <ConnectModal
-        open={connectOpen}
-        onClose={closeConnect}
-        onInjected={async () => { const r = await handleConnectWallet(); return r || { ok: true }; }}
-        onWalletConnect={async () => ({ ok: false, reason: 'WalletConnect support coming soon' })}
-      />
     </>
   );
 }

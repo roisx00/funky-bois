@@ -111,11 +111,35 @@ async function buildApp() {
       '.js': 'jsx',
       '.jsx': 'jsx',
       '.css': 'css',
+      '.woff':  'file',
+      '.woff2': 'file',
+      '.ttf':   'file',
+      '.eot':   'file',
     },
-    define: defineEnv,
+    define: {
+      ...defineEnv,
+      // wagmi/rainbowkit polyfills
+      'process.env': '{}',
+      'global': 'globalThis',
+    },
+    // Optional wallet SDKs are dynamically imported by wagmi connectors.
+    // We only use RainbowKit's curated connectors, so mark the rest external.
+    external: [
+      '@base-org/account',
+      '@coinbase/wallet-sdk',
+      '@metamask/connect-evm',
+      '@metamask/sdk',
+      '@walletconnect/ethereum-provider',
+      '@walletconnect/modal',
+      'porto',
+      'porto/internal',
+      '@safe-global/safe-apps-provider',
+      '@safe-global/safe-apps-sdk',
+    ],
     minify: true,
     sourcemap: false,
     target: ['es2020'],
+    format: 'esm',
     publicPath: '/assets',
     logLevel: 'info',
   });

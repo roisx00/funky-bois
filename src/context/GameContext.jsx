@@ -438,6 +438,13 @@ export function GameProvider({ children }) {
 
   const disconnectWallet = useCallback(() => dispatch({ type: 'DISCONNECT_WALLET' }), []);
 
+  // Bridge from RainbowKit/wagmi: the wallet was connected upstream by RainbowKit;
+  // we just record the address in our context state. No MetaMask prompt here.
+  const bridgeWallet = useCallback((address) => {
+    if (!address) return;
+    dispatch({ type: 'CONNECT_WALLET', address });
+  }, []);
+
   const claimElement = useCallback((antiBot = {}) => {
     const { timingOk = true, positionOk = true } = antiBot;
     const ss = getSessionStatus(state.dropPoolSize);
@@ -508,6 +515,7 @@ export function GameProvider({ children }) {
     loginWithX,
     logoutX,
     connectWallet,
+    bridgeWallet,
     disconnectWallet,
     setReferralCode,
     setReferredBy,

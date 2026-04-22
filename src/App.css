@@ -3241,99 +3241,179 @@ section { background: var(--bg); }
 }
 @media (max-width: 900px) { .boxes-grid { grid-template-columns: 1fr; } }
 
+/* ── Box Cards ───────────────────────────────────────────────────────────── */
 .box-card {
   background: var(--surface);
   border: 1px solid var(--hairline);
-  padding: 36px 32px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  transition: transform .3s, border-color .3s, background .3s;
+  transition: transform .3s cubic-bezier(0.34, 1.56, 0.64, 1), border-color .3s, box-shadow .3s;
   position: relative;
   overflow: hidden;
 }
-.box-card:hover { transform: translateY(-6px); border-color: var(--ink); }
-.box-card.mystery { background: var(--ink); color: var(--paper-1); border-color: var(--ink); }
-.box-card.mystery:hover { background: var(--ink); }
-.box-card.mystery .box-tag { color: var(--accent); }
-.box-card.mystery .box-title { color: var(--paper-1); }
-.box-card.mystery .box-meta, .box-card.mystery .box-desc { color: var(--paper-5); }
-.box-card.mystery .box-odds-row { border-color: rgba(255,255,255,0.1); }
-.box-card.mystery .box-odds-row span { color: var(--paper-5); }
-.box-card.mystery .box-odds-row strong { color: var(--paper-1); }
+.box-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--ink);
+  box-shadow: 8px 8px 0 rgba(14,14,14,0.08);
+}
+.box-card-mystery {
+  background: var(--ink);
+  color: var(--paper-1);
+  border-color: var(--ink);
+}
+.box-card-mystery .box-tag { color: var(--accent); }
+.box-card-mystery .box-title,
+.box-card-mystery .box-price { color: var(--paper-1); }
+.box-card-mystery .box-price-label,
+.box-card-mystery .box-desc { color: var(--paper-5); }
+.box-card-mystery .box-odds { border-color: rgba(255,255,255,0.12); }
+.box-card-mystery .box-odds-row { border-color: rgba(255,255,255,0.08); }
+.box-card-mystery .box-odds-row span { color: var(--paper-5); }
+.box-card-mystery .box-odds-row strong { color: var(--paper-1); }
 
+/* Box SVG display area inside the card */
+.box-card-art {
+  background: var(--paper-2);
+  border-bottom: 1px solid var(--hairline);
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1.25;
+  overflow: hidden;
+  position: relative;
+  transition: background .25s;
+}
+.box-card-mystery .box-card-art {
+  background: #1A1A1A;
+  border-color: rgba(255,255,255,0.08);
+}
+.box-card:hover .box-card-art { background: var(--paper-3); }
+.box-card-mystery:hover .box-card-art { background: #232323; }
+
+.box-card-art .box-svg {
+  width: 70%;
+  height: 70%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transition: transform .4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.box-card:hover .box-card-art .box-svg { transform: translateY(-4px) rotate(-2deg); }
+
+.box-card-head {
+  padding: 24px 28px 12px;
+}
 .box-tag {
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.14em;
   color: var(--text-4);
   text-transform: uppercase;
+  margin-bottom: 10px;
 }
 .box-title {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 500;
   letter-spacing: -0.03em;
   color: var(--ink);
   line-height: 1;
 }
+
+.box-card-price {
+  padding: 0 28px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 20px;
+}
+.box-card-mystery .box-card-price { border-color: rgba(255,255,255,0.1); }
 .box-price {
   font-family: var(--font-display);
-  font-size: 40px;
+  font-size: 44px;
   font-weight: 500;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.045em;
   color: var(--ink);
   line-height: 1;
 }
-.box-card.mystery .box-price { color: var(--accent); }
-.box-meta {
+.box-card-mystery .box-price { color: var(--accent); }
+.box-price-label {
   font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-3);
-  letter-spacing: 0.04em;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--text-4);
+  text-transform: uppercase;
 }
+
 .box-desc {
+  padding: 16px 28px;
   font-size: 13px;
   line-height: 1.55;
   color: var(--text-2);
-  min-height: 60px;
+  min-height: 72px;
+  border-bottom: 1px solid var(--hairline);
 }
+.box-card-mystery .box-desc { border-color: rgba(255,255,255,0.1); }
+
 .box-odds {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--hairline);
-  margin-top: auto;
+  padding: 4px 28px 16px;
+  border-top: none;
 }
 .box-odds-row {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: 9px 0;
   border-bottom: 1px solid var(--hairline);
   font-family: var(--font-mono);
   font-size: 11px;
 }
 .box-odds-row:last-child { border-bottom: none; }
-.box-odds-row span { color: var(--text-3); letter-spacing: 0.04em; }
+.box-odds-row span { color: var(--text-3); letter-spacing: 0.04em; text-transform: capitalize; }
 .box-odds-row strong { color: var(--ink); font-weight: 500; letter-spacing: 0.02em; }
+
 .box-open-btn {
-  width: 100%;
-  padding: 14px;
+  margin: 0 20px 20px;
+  padding: 14px 20px;
   font-family: var(--font-display);
-  font-size: 14px;
-  letter-spacing: -0.01em;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
   background: var(--ink);
   color: var(--paper-1);
   border: 1px solid var(--ink);
   cursor: pointer;
   border-radius: 999px;
-  transition: background .2s, color .2s;
+  transition: background .2s, color .2s, transform .12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
-.box-open-btn:hover:not(:disabled) { background: var(--accent); color: var(--ink); }
-.box-open-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.box-card.mystery .box-open-btn { background: var(--accent); color: var(--ink); border-color: var(--accent); }
-.box-card.mystery .box-open-btn:hover:not(:disabled) { background: var(--paper-1); border-color: var(--paper-1); }
+.box-open-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+.box-open-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: var(--paper-3);
+  color: var(--text-4);
+  border-color: var(--hairline);
+}
+.box-card-mystery .box-open-btn {
+  background: var(--accent);
+  color: var(--ink);
+  border-color: var(--accent);
+}
+.box-card-mystery .box-open-btn:hover:not(:disabled) {
+  background: var(--paper-1);
+  border-color: var(--paper-1);
+}
+.box-open-arrow { transition: transform .18s; }
+.box-open-btn:hover:not(:disabled) .box-open-arrow { transform: translate(2px,-2px); }
 
 /* Box open modal */
 .box-modal-overlay {
@@ -3357,54 +3437,112 @@ section { background: var(--bg); }
   position: relative;
   animation: popIn .4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.box-cube {
-  width: 160px;
-  height: 160px;
-  margin: 0 auto 32px;
-  background: var(--ink);
+.box-modal-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--text-4);
+  text-transform: uppercase;
+  margin-bottom: 32px;
+}
+
+.box-stage {
+  width: 240px;
+  height: 240px;
+  margin: 0 auto 28px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-size: 48px;
-  font-weight: 500;
-  color: var(--accent);
-  letter-spacing: -0.04em;
-  overflow: hidden;
 }
-.box-cube.shaking { animation: boxShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) 6; }
-.box-cube.opening { animation: boxBurst 0.8s forwards; }
+.box-stage .box-svg {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  position: relative;
+  z-index: 1;
+}
+
+/* Lid group animation (applies to each svg's <g.box-lid>) */
+.box-lid { transition: transform .5s cubic-bezier(0.68, -0.4, 0.27, 1.55); transform-origin: 50% 30%; }
+.box-lid.open { transform: translateY(-18px) rotate(-6deg); }
+
+/* Shake phase */
+.box-stage-shake .box-svg { animation: boxShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) 4; }
 @keyframes boxShake {
-  0%, 100% { transform: translate(0, 0); }
-  10% { transform: translate(-6px, -3px) rotate(-1deg); }
-  20% { transform: translate(6px, 2px) rotate(1deg); }
-  30% { transform: translate(-4px, 3px) rotate(0deg); }
-  40% { transform: translate(5px, -4px) rotate(1deg); }
-  50% { transform: translate(-6px, 2px) rotate(-1deg); }
-  60% { transform: translate(4px, 3px) rotate(0deg); }
-  70% { transform: translate(-5px, 1px) rotate(-1deg); }
-  80% { transform: translate(3px, -3px) rotate(1deg); }
-  90% { transform: translate(-3px, 2px) rotate(0deg); }
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  20% { transform: translate(-5px, -2px) rotate(-1.2deg); }
+  40% { transform: translate(5px, 1px) rotate(1.2deg); }
+  60% { transform: translate(-3px, 2px) rotate(-0.6deg); }
+  80% { transform: translate(3px, -1px) rotate(0.6deg); }
 }
-@keyframes boxBurst {
-  0%   { transform: scale(1); opacity: 1; }
-  50%  { transform: scale(1.3); opacity: 0.7; }
-  100% { transform: scale(2); opacity: 0; }
+
+/* Unlock pulse */
+.box-stage-unlock .box-svg { animation: boxBreathe 0.8s ease-out; }
+@keyframes boxBreathe {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
-.box-flash {
-  position: absolute;
-  inset: 0;
-  background: var(--paper-1);
-  opacity: 0;
+
+/* Shimmer layer on SVG */
+.box-shimmer {
+  transform: translateX(-100%);
+  animation: boxShimmer 1.6s ease-in-out infinite;
+  mix-blend-mode: overlay;
   pointer-events: none;
 }
-.box-flash.active { animation: flashIn 0.4s; }
-@keyframes flashIn {
-  0%   { opacity: 0; }
-  30%  { opacity: 1; }
-  100% { opacity: 0; }
+.box-stage-shake .box-shimmer { animation-duration: 0.9s; }
+@keyframes boxShimmer {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(110%); }
 }
+
+/* Flash */
+.box-flash {
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(circle at center, var(--paper-1) 0%, rgba(215,255,58,0.5) 45%, rgba(215,255,58,0) 75%);
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 50%;
+  z-index: 2;
+}
+.box-flash.active { animation: flashBurst 0.5s ease-out forwards; }
+@keyframes flashBurst {
+  0%   { opacity: 0; transform: scale(0.2); }
+  50%  { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(2);   }
+}
+
+/* Status text */
+.box-modal-status {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  text-align: center;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+.box-card-mystery .box-modal-status,
+.box-stage-mystery ~ .box-modal-status { color: var(--ink); }
+
+/* Progress ticker */
+.box-modal-ticker {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.box-modal-tick {
+  width: 6px;
+  height: 10px;
+  background: var(--paper-4);
+  transition: background .2s;
+}
+.box-modal-tick.on { background: var(--accent); }
 
 .box-reveal-art {
   width: 160px;
