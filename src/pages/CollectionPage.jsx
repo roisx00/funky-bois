@@ -507,11 +507,34 @@ function timeAgo(ts) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+// Twitter intent URLs for the three engagement actions. `handle` is
+// the poster's @username (optional — only used for the reply UX).
+function intentUrl(action, tweetId) {
+  const id = encodeURIComponent(String(tweetId));
+  if (action === 'like')  return `https://twitter.com/intent/like?tweet_id=${id}`;
+  if (action === 'rt')    return `https://twitter.com/intent/retweet?tweet_id=${id}`;
+  if (action === 'reply') return `https://twitter.com/intent/tweet?in_reply_to=${id}`;
+  return null;
+}
+
+const ACTION_META = {
+  like:  { label: 'Like the tweet',         openCta: 'Like on X',     doneCta: "I've liked it",    icon: '♥' },
+  rt:    { label: 'Retweet',                openCta: 'Retweet on X',  doneCta: "I've retweeted",   icon: '↻' },
+  reply: { label: 'Leave a comment',        openCta: 'Reply on X',    doneCta: "I've replied",     icon: '💬' },
+};
+
+// LocalStorage key per (user-session, task, action). We only persist the
+// "opened on X" checkpoint — the authoritative state (pending/approved/
+// rejected) lives on the server and comes back through task.myActions.
+const OPENED_KEY = (taskId, action) => `t1969:task-opened:${taskId}:${action}`;
+
 function TasksTab() {
   const [tasks, setTasks]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy]       = useState(null); // `${taskId}:${action}` while submitting
-  const [toast, setToast]     = useState('');
+  // Re-render bump when we touch localStorage so the button swaps shape
+  const [openedTick, bumpOpened] = useState(0);
+  const toast = useToast();
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -523,7 +546,16 @@ function TasksTab() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const submit = async (task, action) => {
+  const markOpened = (task, action) => {
+    try { localStorage.setItem(OPENED_KEY(task.id, action), String(Date.now())); } catch { /* ignore */ }
+    bumpOpened((n) => n + 1);
+  };
+
+  const wasOpened = (task, action) => {
+    try { return !!localStorage.getItem(OPENED_KEY(task.id, action)); } catch { return false; }
+  };
+
+  const confirmDone = async (task, action) => {
     setBusy(`${task.id}:${action}`);
     const r = await fetch('/api/tasks-submit', {
       method: 'POST',
@@ -534,12 +566,11 @@ function TasksTab() {
     const d = r.ok ? await r.json() : { error: 'failed' };
     setBusy(null);
     if (d.submitted) {
-      setToast(`Submitted for review (+${d.points} BUSTS pending)`);
+      toast.success(`Submitted for review · +${d.points} BUSTS pending`);
       refresh();
     } else {
-      setToast(`Error: ${d.error || 'try again'}`);
+      toast.error(d.error || 'Submit failed — try again');
     }
-    setTimeout(() => setToast(''), 4000);
   };
 
   return (
@@ -549,16 +580,10 @@ function TasksTab() {
           X engagement tasks.
         </h2>
         <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.55 }}>
-          Open the linked tweet, perform the action on X, then click submit here.
-          Admins verify periodically (auto-scrape + manual approve) and BUSTS land within a day.
+          Complete each action on X first, then come back and confirm it here.
+          Admins verify periodically and the BUSTS land in your balance on approval.
         </p>
       </div>
-
-      {toast && (
-        <div style={{ padding: '10px 14px', background: toast.startsWith('Error') ? 'rgba(204,58,42,0.08)' : 'var(--accent-dim)', border: '1px solid var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 12, marginBottom: 16 }}>
-          {toast}
-        </div>
-      )}
 
       {loading ? (
         <div className="gift-row-empty">Loading.</div>
@@ -567,58 +592,77 @@ function TasksTab() {
       ) : (
         <div className="tasks-list">
           {tasks.map((t, idx) => (
-            <div key={t.id} className="task-card">
-              <div>
-                <div className="task-head">
-                  <span className="task-num">Task {String(idx + 1).padStart(2, '0')}</span>
-                  <a className="task-status" href={t.tweetUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline', cursor: 'pointer' }}>
-                    Open tweet ↗
-                  </a>
-                </div>
-                <div className="task-title">{t.description || `Engage with tweet ${t.tweetId}`}</div>
-                <div className="task-desc">
-                  Like +{t.rewards.like} / RT +{t.rewards.rt} / Reply +{t.rewards.reply} / Trifecta bonus +{t.rewards.trifecta}
+            <div key={t.id} className="task-card task-card-pro">
+              <div className="task-pro-head">
+                <div>
+                  <div className="task-head" style={{ marginBottom: 6 }}>
+                    <span className="task-num">Task {String(idx + 1).padStart(2, '0')}</span>
+                    <a
+                      className="task-open-link"
+                      href={t.tweetUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >View tweet ↗</a>
+                  </div>
+                  <div className="task-title">{t.description || `Engage with tweet ${t.tweetId}`}</div>
+                  <div className="task-desc">
+                    Reward pool: Like +{t.rewards.like} · RT +{t.rewards.rt} · Reply +{t.rewards.reply}
+                    {t.rewards.trifecta ? ` · Trifecta bonus +${t.rewards.trifecta}` : ''}
+                  </div>
                 </div>
               </div>
-              <div className="task-reward" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {[
-                  { key: 'like',  label: 'Mark Liked',     pts: t.rewards.like  },
-                  { key: 'rt',    label: 'Mark RT',        pts: t.rewards.rt    },
-                  { key: 'reply', label: 'Mark Replied',   pts: t.rewards.reply },
-                ].map(({ key, label, pts }) => {
-                  const status = t.myActions?.[key];
-                  const k = `${t.id}:${key}`;
-                  if (status === 'approved') {
-                    return (
-                      <div key={key} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 10px', background: 'var(--accent)', color: 'var(--ink)', textAlign: 'center', border: '1px solid var(--ink)' }}>
-                        ✓ +{pts} BUSTS
-                      </div>
-                    );
-                  }
-                  if (status === 'pending') {
-                    return (
-                      <div key={key} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 10px', background: 'var(--paper-2)', color: 'var(--text-3)', textAlign: 'center', border: '1px solid var(--hairline)' }}>
-                        Pending review
-                      </div>
-                    );
-                  }
-                  if (status === 'rejected') {
-                    return (
-                      <div key={key} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 10px', background: 'rgba(204,58,42,0.06)', color: 'var(--red)', textAlign: 'center', border: '1px solid var(--red)' }}>
-                        Rejected
-                      </div>
-                    );
-                  }
+
+              <div className="task-actions">
+                {['like', 'rt', 'reply'].map((action) => {
+                  const meta = ACTION_META[action];
+                  const pts = t.rewards[action];
+                  const status = t.myActions?.[action]; // 'pending' | 'approved' | 'rejected' | undefined
+                  const k = `${t.id}:${action}`;
+                  const opened = wasOpened(t, action);
+                  // openedTick is referenced to bust memoization — otherwise
+                  // the row doesn't re-render when localStorage flips.
+                  void openedTick;
+
                   return (
-                    <button
-                      key={key}
-                      className="btn btn-ghost btn-sm"
-                      disabled={busy === k}
-                      onClick={() => submit(t, key)}
-                      style={{ minWidth: 130 }}
-                    >
-                      {busy === k ? 'Submitting...' : label}
-                    </button>
+                    <div key={action} className={`task-action-row status-${status || (opened ? 'ready' : 'idle')}`}>
+                      <div className="task-action-label">
+                        <span className="task-action-icon">{meta.icon}</span>
+                        <div>
+                          <div className="task-action-name">{meta.label}</div>
+                          <div className="task-action-pts">+{pts} BUSTS</div>
+                        </div>
+                      </div>
+
+                      <div className="task-action-cta">
+                        {status === 'approved' ? (
+                          <span className="task-action-badge approved">✓ Verified · +{pts}</span>
+                        ) : status === 'pending' ? (
+                          <span className="task-action-badge pending">● Waiting for verification</span>
+                        ) : status === 'rejected' ? (
+                          <span className="task-action-badge rejected">✕ Rejected</span>
+                        ) : opened ? (
+                          // Step 2 — user came back from X; now confirm
+                          <button
+                            className="btn btn-solid btn-sm btn-arrow"
+                            onClick={() => confirmDone(t, action)}
+                            disabled={busy === k}
+                          >
+                            {busy === k ? 'Submitting.' : meta.doneCta}
+                          </button>
+                        ) : (
+                          // Step 1 — send them to X with the intent pre-filled
+                          <a
+                            className="btn btn-ghost btn-sm"
+                            href={intentUrl(action, t.tweetId)}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => markOpened(t, action)}
+                          >
+                            {meta.openCta} ↗
+                          </a>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
