@@ -279,6 +279,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
 
 function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
   const toast = useToast();
+  const { checkUserExists } = useGame();
   const [toUsername, setToUsername] = useState('');
   const [selected, setSelected]     = useState(null);
   const [sendQty, setSendQty]       = useState(1);
@@ -297,22 +298,6 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
 
   useEffect(() => { setSendQty(1); }, [selected?.type, selected?.variant]);
 
-  const knownUsernames = useMemo(() => {
-    const set = new Set();
-    if (xUser?.username) set.add(xUser.username.toLowerCase());
-    pendingGifts.forEach((g) => {
-      if (g.fromXUsername) set.add(g.fromXUsername.toLowerCase());
-      if (g.toXUsername)   set.add(g.toXUsername.toLowerCase());
-    });
-    ['internxbt', 'the1969eth'].forEach((u) => set.add(u));
-    return set;
-  }, [xUser?.username, pendingGifts]);
-
-  const isUserKnown = (u) => {
-    const clean = u.trim().replace(/^@/, '').toLowerCase();
-    return knownUsernames.has(clean);
-  };
-
   const dispatchGift = async (rawUsername, element, qty) => {
     const clean = rawUsername.trim().replace(/^@/, '').toLowerCase();
     const count = Math.max(1, Math.min(qty, maxQty));
@@ -329,20 +314,30 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
       toast.success(`Sent ${sent}× ${element.name} to @${clean}`);
     }
     if (lastError) {
-      toast.error(`Only ${sent} of ${count} sent: ${lastError}`);
+      toast.error(`Only ${sent}/${count} sent: ${lastError}`);
+    } else if (sent === 0) {
+      toast.error('Gift failed — please try again');
     }
     setSelected(null);
     setSendQty(1);
     setToUsername('');
   };
 
-  const handleSend = () => {
-    if (!selected || !toUsername.trim()) return;
-    if (!isUserKnown(toUsername)) {
-      setConfirmUnknown({ username: toUsername.trim().replace(/^@/, '').toLowerCase(), element: selected, qty: sendQty });
+  const handleSend = async () => {
+    if (!selected || !toUsername.trim() || sending) return;
+    const clean = toUsername.trim().replace(/^@/, '').toLowerCase();
+    if (xUser?.username && clean === xUser.username.toLowerCase()) {
+      toast.error('You cannot gift yourself.');
       return;
     }
-    dispatchGift(toUsername, selected, sendQty);
+    setSending(true);
+    const exists = await checkUserExists(clean);
+    setSending(false);
+    if (!exists) {
+      setConfirmUnknown({ username: clean, element: selected, qty: sendQty });
+      return;
+    }
+    dispatchGift(clean, selected, sendQty);
   };
 
   const confirmSend = () => {
