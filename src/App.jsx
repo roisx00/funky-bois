@@ -28,12 +28,34 @@ function DashboardGate({ navigate, page }) {
   );
 }
 
+const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin'];
+
+function pathToPage(pathname) {
+  const clean = pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+  if (!clean) return 'home';
+  if (clean === 'build') return 'builder';
+  return VALID_PAGES.includes(clean) ? clean : 'home';
+}
+
+function pageToPath(page) {
+  if (!page || page === 'home') return '/';
+  if (page === 'builder') return '/build';
+  return `/${page}`;
+}
+
 function AppInner() {
-  const [page, setPage] = useState('home');
+  const [page, setPage] = useState(() => pathToPage(window.location.pathname));
   const [xAuthPending, setXAuthPending] = useState(
     () => window.location.search.includes('code=')
   );
   const { loginWithX, setReferredBy } = useGame();
+
+  // Sync browser back/forward buttons to internal page state
+  useEffect(() => {
+    const onPop = () => setPage(pathToPage(window.location.pathname));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   useEffect(() => {
     if (!window.location.search.includes('code=')) return;
@@ -54,6 +76,10 @@ function AppInner() {
 
   const navigate = (to) => {
     setPage(to);
+    const path = pageToPath(to);
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, '', path + window.location.search);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
