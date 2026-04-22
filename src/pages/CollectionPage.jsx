@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import ElementCard from '../components/ElementCard';
 import BuilderPage from './BuilderPage';
-import { ELEMENT_TYPES, ELEMENT_LABELS } from '../data/elements';
+import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
 import { MysteryBoxOpener } from '../components/MysteryBox';
 
 const TABS = [
@@ -316,18 +316,54 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, addG
   const [toUsername, setToUsername] = useState('');
   const [selected, setSelected]     = useState(null);
   const [status, setStatus]         = useState('');
+  const [confirmUnknown, setConfirmUnknown] = useState(null); // { username, element } or null
 
   const myInbox = pendingGifts.filter((g) => !g.claimed && g.toXUsername?.toLowerCase() === xUser?.username?.toLowerCase());
 
-  const handleSend = () => {
-    if (!selected || !toUsername.trim()) return;
-    const clean = toUsername.trim().replace(/^@/, '');
-    sendGift(clean, selected);
-    setStatus(`Gifted ${selected.name} → @${clean}`);
+  // Set of usernames we've seen on this device (proxy for "known to THE 1969"
+  // until the backend lands). Includes: self, gift senders, gift recipients.
+  const knownUsernames = useMemo(() => {
+    const set = new Set();
+    if (xUser?.username) set.add(xUser.username.toLowerCase());
+    pendingGifts.forEach((g) => {
+      if (g.fromXUsername) set.add(g.fromXUsername.toLowerCase());
+      if (g.toXUsername)   set.add(g.toXUsername.toLowerCase());
+    });
+    // Known test accounts
+    ['internxbt', 'the1969eth'].forEach((u) => set.add(u));
+    return set;
+  }, [xUser?.username, pendingGifts]);
+
+  const isUserKnown = (u) => {
+    const clean = u.trim().replace(/^@/, '').toLowerCase();
+    return knownUsernames.has(clean);
+  };
+
+  const dispatchGift = (rawUsername, element) => {
+    const clean = rawUsername.trim().replace(/^@/, '');
+    sendGift(clean, element);
+    setStatus(`Gifted ${element.name} to @${clean}`);
     setSelected(null);
     setToUsername('');
     setTimeout(() => setStatus(''), 4000);
   };
+
+  const handleSend = () => {
+    if (!selected || !toUsername.trim()) return;
+    if (!isUserKnown(toUsername)) {
+      setConfirmUnknown({ username: toUsername.trim().replace(/^@/, ''), element: selected });
+      return;
+    }
+    dispatchGift(toUsername, selected);
+  };
+
+  const confirmSend = () => {
+    if (!confirmUnknown) return;
+    dispatchGift(confirmUnknown.username, confirmUnknown.element);
+    setConfirmUnknown(null);
+  };
+
+  const cancelConfirm = () => setConfirmUnknown(null);
 
   const handleClaim = (gift) => {
     addGiftedElement(gift.element);
@@ -354,41 +390,37 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, addG
 
           <div>
             <label>Trait to send</label>
-            <div style={{
-              marginTop: 6, maxHeight: 260, overflowY: 'auto',
-              border: '1px solid var(--hairline)', background: 'var(--paper-2)', padding: 8,
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8,
-            }}>
+            <div className="gift-trait-grid">
               {inventory.length === 0 ? (
                 <div className="gift-row-empty" style={{ gridColumn: '1/-1' }}>No traits to send.</div>
               ) : (
-                inventory.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setSelected({ type: item.type, variant: item.variant, name: item.name, rarity: item.rarity })}
-                    style={{
-                      padding: 8,
-                      background: selected?.type === item.type && selected?.variant === item.variant ? 'var(--accent)' : 'var(--surface)',
-                      border: '1px solid',
-                      borderColor: selected?.type === item.type && selected?.variant === item.variant ? 'var(--ink)' : 'var(--hairline)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-4)', textTransform: 'uppercase', marginBottom: 4 }}>
-                      {item.type.replace('_', ' ')}
-                    </div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 500, letterSpacing: '-0.01em' }}>
-                      {item.name}
-                    </div>
-                    {item.quantity > 1 && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-4)', marginTop: 2 }}>
-                        ×{item.quantity}
+                inventory.map((item) => {
+                  const isSelected = selected?.type === item.type && selected?.variant === item.variant;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelected({ type: item.type, variant: item.variant, name: item.name, rarity: item.rarity })}
+                      className={`gift-trait-card${isSelected ? ' selected' : ''}`}
+                    >
+                      <div className="gift-trait-art">
+                        <svg
+                          viewBox="0 0 100 100"
+                          xmlns="http://www.w3.org/2000/svg"
+                          shapeRendering="crispEdges"
+                          dangerouslySetInnerHTML={{ __html: getElementSVG(item.type, item.variant) }}
+                        />
+                        {item.quantity > 1 && (
+                          <span className="gift-trait-qty">×{item.quantity}</span>
+                        )}
                       </div>
-                    )}
-                  </button>
-                ))
+                      <div className="gift-trait-info">
+                        <div className="gift-trait-type">{(ELEMENT_LABELS[item.type] || item.type).toUpperCase()}</div>
+                        <div className="gift-trait-name">{item.name}</div>
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
@@ -431,6 +463,39 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, addG
           )}
         </div>
       </div>
+
+      {confirmUnknown && (
+        <div className="confirm-overlay" onClick={cancelConfirm}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-kicker">Recipient not recognised</div>
+            <h3 className="confirm-title">
+              <em>@{confirmUnknown.username}</em> is not registered on THE 1969 yet.
+            </h3>
+            <p className="confirm-body">
+              The gift will wait in the system. If they sign in with that X account later, they will be able to claim the trait from their Dashboard. Are you sure you want to send?
+            </p>
+            <div className="confirm-preview">
+              <div className="confirm-preview-art">
+                <svg
+                  viewBox="0 0 100 100"
+                  xmlns="http://www.w3.org/2000/svg"
+                  shapeRendering="crispEdges"
+                  dangerouslySetInnerHTML={{ __html: getElementSVG(confirmUnknown.element.type, confirmUnknown.element.variant) }}
+                />
+              </div>
+              <div className="confirm-preview-meta">
+                <div className="confirm-preview-type">{(ELEMENT_LABELS[confirmUnknown.element.type] || confirmUnknown.element.type).toUpperCase()}</div>
+                <div className="confirm-preview-name">{confirmUnknown.element.name}</div>
+                <div className="confirm-preview-to">going to <strong>@{confirmUnknown.username}</strong></div>
+              </div>
+            </div>
+            <div className="confirm-actions">
+              <button className="btn btn-ghost" onClick={cancelConfirm}>Cancel</button>
+              <button className="btn btn-solid btn-arrow" onClick={confirmSend}>Send anyway</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
