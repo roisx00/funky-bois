@@ -7,10 +7,10 @@ import { ELEMENT_TYPES, ELEMENT_LABELS, ELEMENT_VARIANTS, getElementSVG, buildNF
 const X_HANDLE = '@the1969eth';
 
 export default function BuilderPage({ onNavigate }) {
-  const {
-    inventory, completeNFT, markShared, recordWhitelist,
-    completedNFTs, xUser, walletAddress, isWalletConnected,
-  } = useGame();
+  const game = useGame();
+  const inventory = Array.isArray(game.inventory) ? game.inventory : [];
+  const completedNFTs = Array.isArray(game.completedNFTs) ? game.completedNFTs : [];
+  const { completeNFT, markShared, recordWhitelist, xUser, walletAddress, isWalletConnected } = game;
   const { openConnectModal } = useConnectModal();
 
   const [selection, setSelection] = useState({});
@@ -245,9 +245,12 @@ export default function BuilderPage({ onNavigate }) {
               <div className="builder-picker-grid">
                 {activeOwned.map((item) => {
                   const isSelected = selection[item.type] === item.variant;
+                  const variantInfo = ELEMENT_VARIANTS[item.type]?.[item.variant];
+                  const name = item.name || variantInfo?.name || 'Unknown';
+                  const rarity = item.rarity || variantInfo?.rarity || 'common';
                   return (
                     <button
-                      key={item.id}
+                      key={`${item.type}-${item.variant}`}
                       type="button"
                       className={`builder-trait${isSelected ? ' selected' : ''}`}
                       onClick={() => toggle(item.type, item.variant)}
@@ -264,8 +267,8 @@ export default function BuilderPage({ onNavigate }) {
                         )}
                       </div>
                       <div className="builder-trait-info">
-                        <div className="builder-trait-name">{item.name}</div>
-                        <span className={`badge badge-${item.rarity}`}>{item.rarity.replace('_', ' ')}</span>
+                        <div className="builder-trait-name">{name}</div>
+                        <span className={`badge badge-${rarity}`}>{String(rarity).replace('_', ' ')}</span>
                       </div>
                     </button>
                   );

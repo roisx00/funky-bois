@@ -1,6 +1,7 @@
 import { sql } from '../_lib/db.js';
 import { getSessionUser, isAdminUser } from '../_lib/auth.js';
 import { ok } from '../_lib/json.js';
+import { ELEMENT_VARIANTS } from '../_lib/elements.js';
 
 export default async function handler(req, res) {
   const user = await getSessionUser(req);
@@ -33,9 +34,17 @@ export default async function handler(req, res) {
       dailyClaimedOn:  user.daily_claimed_on,
       isAdmin:         isAdminUser(user),
     },
-    inventory: inventory.map((r) => ({
-      type: r.element_type, variant: r.variant, quantity: r.quantity, obtainedAt: r.obtained_at,
-    })),
+    inventory: inventory.map((r) => {
+      const info = ELEMENT_VARIANTS[r.element_type]?.[r.variant];
+      return {
+        type: r.element_type,
+        variant: r.variant,
+        quantity: r.quantity,
+        obtainedAt: r.obtained_at,
+        name: info?.name || 'Unknown',
+        rarity: info?.rarity || 'common',
+      };
+    }),
     bustsHistory: ledger.map((r) => ({
       amount: r.amount, reason: r.reason, ts: new Date(r.created_at).getTime(),
     })),
