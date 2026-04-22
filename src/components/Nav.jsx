@@ -11,8 +11,8 @@ const BASE_PAGES = [
   { id: 'gallery', label: 'Gallery' },
 ];
 const X_PAGES = [
-  { id: 'dashboard', label: 'Dashboard', requiresX: true },
   { id: 'builder',   label: 'Build',     requiresX: true },
+  { id: 'dashboard', label: 'Dashboard', requiresX: true },
 ];
 
 function XIcon({ size = 12 }) {
@@ -67,9 +67,8 @@ export default function Nav({ currentPage, onNavigate }) {
     setMobileOpen(false);
   };
 
-  const activePage = currentPage === 'builder' || currentPage === 'collection'
-    ? 'dashboard'
-    : currentPage;
+  // Builder is its own route now; only collection (legacy) folds into dashboard.
+  const activePage = currentPage === 'collection' ? 'dashboard' : currentPage;
 
   const shortAddr = walletAddress
     ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
