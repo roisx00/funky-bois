@@ -3,12 +3,14 @@
 import { sql, one } from '../_lib/db.js';
 import { requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
+import { rateLimit } from '../_lib/ratelimit.js';
 import { ELEMENT_VARIANTS } from '../_lib/elements.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
+  if (!(await rateLimit(res, user.id, { name: 'gift', max: 20, windowSecs: 86400 }))) return;
 
   const { toXUsername, elementType, variant } = await readBody(req) || {};
   const v = Number(variant);

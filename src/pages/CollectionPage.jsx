@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import ElementCard from '../components/ElementCard';
 import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
@@ -11,13 +11,6 @@ const TABS = [
   { id: 'inventory', label: 'Inventory' },
   { id: 'gift',      label: 'Gift' },
   { id: 'history',   label: 'History' },
-];
-
-// Placeholder tasks until backend is wired
-const SEED_TASKS = [
-  { id: 't1', num: 'Task 01', title: 'Like the pinned drop teaser', desc: 'Open the official pinned post on @the1969eth and like it.', reward: 10, action: 'Like' },
-  { id: 't2', num: 'Task 02', title: 'Retweet the daily drop alert', desc: 'Amplify today\'s hourly drop announcement.', reward: 20, action: 'Retweet' },
-  { id: 't3', num: 'Task 03', title: 'Reply with your portrait ID', desc: 'Drop your portrait ID as a reply for +30 BUSTS.', reward: 30, action: 'Reply' },
 ];
 
 export default function CollectionPage({ onNavigate, initialTab = 'overview' }) {
@@ -40,7 +33,15 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
 
   const totalItems = inventory.reduce((s, i) => s + (i.quantity || 1), 0);
   const myGifts    = pendingGifts.filter((g) => !g.claimed && g.toXUsername?.toLowerCase() === xUser?.username?.toLowerCase());
-  const taskCount  = SEED_TASKS.length;
+  const [taskCount, setTaskCount] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/tasks/active', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : { tasks: [] }))
+      .then((d) => { if (!cancelled) setTaskCount((d.tasks || []).length); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div className="page dash-page">
@@ -174,40 +175,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       )}
 
       {/* ─── Tasks ─── */}
-      {tab === 'tasks' && (
-        <div>
-          <div style={{ marginBottom: 32, maxWidth: 640 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 500, letterSpacing: '-0.03em', marginBottom: 10 }}>
-              X engagement tasks.
-            </h2>
-            <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.55 }}>
-              Interact with official @the1969eth posts to earn BUSTS. Actions are verified manually by an admin.
-            </p>
-          </div>
-
-          <div className="tasks-list">
-            {SEED_TASKS.map((t) => (
-              <div key={t.id} className="task-card">
-                <div>
-                  <div className="task-head">
-                    <span className="task-num">{t.num}</span>
-                    <span className="task-status">{t.action}</span>
-                  </div>
-                  <div className="task-title">{t.title}</div>
-                  <div className="task-desc">{t.desc}</div>
-                </div>
-                <div className="task-reward">
-                  <div className="task-reward-value">+{t.reward}</div>
-                  <div className="task-reward-label">BUSTS</div>
-                  <button className="btn btn-solid btn-sm" onClick={() => window.open('https://x.com/the1969eth', '_blank')}>
-                    Open on X
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {tab === 'tasks' && <TasksTab />}
 
 
       {/* ─── Inventory ─── */}
@@ -503,4 +471,127 @@ function timeAgo(ts) {
   const h = Math.floor(mins / 60);
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
+}
+
+function TasksTab() {
+  const [tasks, setTasks]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy]       = useState(null); // `${taskId}:${action}` while submitting
+  const [toast, setToast]     = useState('');
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const r = await fetch('/api/tasks/active', { credentials: 'same-origin' });
+    const d = r.ok ? await r.json() : { tasks: [] };
+    setTasks(d.tasks || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const submit = async (task, action) => {
+    setBusy(`${task.id}:${action}`);
+    const r = await fetch('/api/tasks/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ taskId: task.id, action }),
+    });
+    const d = r.ok ? await r.json() : { error: 'failed' };
+    setBusy(null);
+    if (d.submitted) {
+      setToast(`Submitted for review (+${d.points} BUSTS pending)`);
+      refresh();
+    } else {
+      setToast(`Error: ${d.error || 'try again'}`);
+    }
+    setTimeout(() => setToast(''), 4000);
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 32, maxWidth: 640 }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 500, letterSpacing: '-0.03em', marginBottom: 10 }}>
+          X engagement tasks.
+        </h2>
+        <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.55 }}>
+          Open the linked tweet, perform the action on X, then click submit here.
+          Admins verify periodically (auto-scrape + manual approve) and BUSTS land within a day.
+        </p>
+      </div>
+
+      {toast && (
+        <div style={{ padding: '10px 14px', background: toast.startsWith('Error') ? 'rgba(204,58,42,0.08)' : 'var(--accent-dim)', border: '1px solid var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 12, marginBottom: 16 }}>
+          {toast}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="gift-row-empty">Loading.</div>
+      ) : tasks.length === 0 ? (
+        <div className="gift-row-empty">No active tasks. Check back soon.</div>
+      ) : (
+        <div className="tasks-list">
+          {tasks.map((t, idx) => (
+            <div key={t.id} className="task-card">
+              <div>
+                <div className="task-head">
+                  <span className="task-num">Task {String(idx + 1).padStart(2, '0')}</span>
+                  <a className="task-status" href={t.tweetUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline', cursor: 'pointer' }}>
+                    Open tweet ↗
+                  </a>
+                </div>
+                <div className="task-title">{t.description || `Engage with tweet ${t.tweetId}`}</div>
+                <div className="task-desc">
+                  Like +{t.rewards.like} / RT +{t.rewards.rt} / Reply +{t.rewards.reply} / Trifecta bonus +{t.rewards.trifecta}
+                </div>
+              </div>
+              <div className="task-reward" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[
+                  { key: 'like',  label: 'Mark Liked',     pts: t.rewards.like  },
+                  { key: 'rt',    label: 'Mark RT',        pts: t.rewards.rt    },
+                  { key: 'reply', label: 'Mark Replied',   pts: t.rewards.reply },
+                ].map(({ key, label, pts }) => {
+                  const status = t.myActions?.[key];
+                  const k = `${t.id}:${key}`;
+                  if (status === 'approved') {
+                    return (
+                      <div key={key} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 10px', background: 'var(--accent)', color: 'var(--ink)', textAlign: 'center', border: '1px solid var(--ink)' }}>
+                        ✓ +{pts} BUSTS
+                      </div>
+                    );
+                  }
+                  if (status === 'pending') {
+                    return (
+                      <div key={key} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 10px', background: 'var(--paper-2)', color: 'var(--text-3)', textAlign: 'center', border: '1px solid var(--hairline)' }}>
+                        Pending review
+                      </div>
+                    );
+                  }
+                  if (status === 'rejected') {
+                    return (
+                      <div key={key} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 10px', background: 'rgba(204,58,42,0.06)', color: 'var(--red)', textAlign: 'center', border: '1px solid var(--red)' }}>
+                        Rejected
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      key={key}
+                      className="btn btn-ghost btn-sm"
+                      disabled={busy === k}
+                      onClick={() => submit(t, key)}
+                      style={{ minWidth: 130 }}
+                    >
+                      {busy === k ? 'Submitting...' : label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

@@ -3,12 +3,14 @@
 import { sql, one } from '../_lib/db.js';
 import { requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
+import { rateLimit } from '../_lib/ratelimit.js';
 import { BOX_TIERS, pickFromBox } from '../_lib/elements.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
+  if (!(await rateLimit(res, user.id, { name: 'box', max: 10, windowSecs: 3600 }))) return;
 
   const { tier: tierId } = await readBody(req) || {};
   const tier = BOX_TIERS[tierId];

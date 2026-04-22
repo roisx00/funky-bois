@@ -257,10 +257,177 @@ export default function AdminPanel({ onNavigate }) {
         )}
       </section>
 
+      <AdminTasksPanel />
+
       <button onClick={() => onNavigate('home')} className="btn btn-ghost" style={{ width: '100%', marginTop: 32 }}>
         Back to home
       </button>
     </div>
+  );
+}
+
+function AdminTasksPanel() {
+  const [tasks, setTasks]               = useState([]);
+  const [verifs, setVerifs]             = useState([]);
+  const [tweetUrl, setTweetUrl]         = useState('');
+  const [desc, setDesc]                 = useState('');
+  const [busy, setBusy]                 = useState(false);
+  const [scanResult, setScanResult]     = useState(null);
+  const [selected, setSelected]         = useState(new Set());
+  const [toast, setToast]               = useState('');
+
+  const refresh = useCallback(async () => {
+    const [t, v] = await Promise.all([
+      jget('/api/tasks/active'),
+      jget('/api/admin/verifications'),
+    ]);
+    if (t.ok) setTasks(t.tasks || []);
+    if (v.ok) setVerifs(v.verifications || []);
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const handleCreate = async () => {
+    if (!tweetUrl.trim()) return;
+    setBusy(true);
+    const r = await jpost('/api/admin/tasks/create', { tweetUrl: tweetUrl.trim(), description: desc.trim() || null });
+    setBusy(false);
+    if (r.ok) {
+      setToast(`Task created (id ${r.id})`);
+      setTweetUrl(''); setDesc('');
+      refresh();
+    } else {
+      setToast(`Error: ${r.error}`);
+    }
+    setTimeout(() => setToast(''), 4000);
+  };
+
+  const handleClose = async (taskId) => {
+    if (!confirm('Close this task?')) return;
+    const r = await jpost('/api/admin/tasks/close', { taskId });
+    if (r.ok) refresh();
+  };
+
+  const handleScan = async (taskId) => {
+    setBusy(true);
+    setScanResult(null);
+    const r = await jpost('/api/admin/scan', { taskId });
+    setBusy(false);
+    if (r.ok) {
+      setScanResult(r);
+      refresh();
+    } else {
+      setToast(`Scan error: ${r.error}`);
+      setTimeout(() => setToast(''), 5000);
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulk = async (action) => {
+    if (selected.size === 0) return;
+    const r = await jpost('/api/admin/approve', { ids: Array.from(selected), action });
+    if (r.ok) {
+      setToast(`${action === 'approve' ? 'Approved' : 'Rejected'} ${r.processed}`);
+      setSelected(new Set());
+      refresh();
+    }
+    setTimeout(() => setToast(''), 4000);
+  };
+
+  return (
+    <>
+      {toast && (
+        <div style={{ padding: '10px 14px', background: toast.startsWith('Error') || toast.startsWith('Scan error') ? 'rgba(204,58,42,0.08)' : 'var(--accent-dim)', border: '1px solid var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 12, marginTop: 32 }}>
+          {toast}
+        </div>
+      )}
+
+      {/* Create task */}
+      <section className="admin-roster" style={{ marginTop: 32 }}>
+        <div className="admin-roster-head">
+          <div>
+            <div className="admin-roster-title">Engagement tasks</div>
+            <div className="admin-roster-meta">{tasks.length} active</div>
+          </div>
+        </div>
+        <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, alignItems: 'end', borderBottom: '1px solid var(--hairline)' }}>
+          <div>
+            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Tweet URL</label>
+            <input type="text" value={tweetUrl} onChange={(e) => setTweetUrl(e.target.value)} placeholder="https://x.com/handle/status/123..." style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Description (optional)</label>
+            <input type="text" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Daily drop alert" style={{ width: '100%' }} />
+          </div>
+          <button className="btn btn-solid btn-arrow" disabled={busy || !tweetUrl.trim()} onClick={handleCreate}>
+            {busy ? 'Creating' : 'Create task'}
+          </button>
+        </div>
+
+        {tasks.length === 0 ? (
+          <div className="admin-roster-empty">No active tasks.</div>
+        ) : (
+          tasks.map((t, idx) => (
+            <div key={t.id} className="admin-roster-row" style={{ gridTemplateColumns: '40px 1fr auto auto auto' }}>
+              <div className="admin-roster-time" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-4)' }}>#{idx + 1}</div>
+              <div>
+                <div className="admin-roster-user">{t.description || `Tweet ${t.tweetId}`}</div>
+                <a href={t.tweetUrl} target="_blank" rel="noreferrer" className="admin-roster-wallet" style={{ textDecoration: 'underline' }}>{t.tweetUrl}</a>
+              </div>
+              <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => handleScan(t.id)}>Scan</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => handleClose(t.id)}>Close</button>
+              <div className="admin-roster-time">+{t.rewards.like}/{t.rewards.rt}/{t.rewards.reply}</div>
+            </div>
+          ))
+        )}
+
+        {scanResult && (
+          <div style={{ padding: '14px 24px', background: 'var(--paper-2)', borderTop: '1px solid var(--hairline)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+            Scanned: {scanResult.scraped.likes ?? '?'} likes / {scanResult.scraped.rts ?? '?'} RTs / {scanResult.scraped.replies ?? '?'} replies →
+            queued: {scanResult.queued.likes.queued} likes, {scanResult.queued.rts.queued} RTs, {scanResult.queued.replies.queued} replies
+          </div>
+        )}
+      </section>
+
+      {/* Pending verifications */}
+      <section className="admin-roster" style={{ marginTop: 32 }}>
+        <div className="admin-roster-head">
+          <div>
+            <div className="admin-roster-title">Pending verifications</div>
+            <div className="admin-roster-meta">{verifs.length} pending / {selected.size} selected</div>
+          </div>
+          <div className="admin-roster-actions">
+            <button className="btn btn-ghost btn-sm" disabled={selected.size === 0} onClick={() => handleBulk('reject')}>Reject selected</button>
+            <button className="btn btn-solid btn-sm" disabled={selected.size === 0} onClick={() => handleBulk('approve')}>Approve selected</button>
+          </div>
+        </div>
+        {verifs.length === 0 ? (
+          <div className="admin-roster-empty">No pending verifications. Run a Scan above to fill the queue.</div>
+        ) : (
+          verifs.map((v) => (
+            <div key={v.id} className="admin-roster-row" style={{ gridTemplateColumns: '32px 1fr auto auto auto' }}>
+              <div>
+                <input type="checkbox" checked={selected.has(v.id)} onChange={() => toggleSelect(v.id)} />
+              </div>
+              <div>
+                <div className="admin-roster-user">@{v.xUsername}</div>
+                <div className="admin-roster-wallet">Task #{v.taskId} / {v.action} / {v.source}</div>
+              </div>
+              <div className="admin-roster-time" style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--ink)', fontWeight: 500 }}>+{v.points}</div>
+              <button className="btn btn-ghost btn-sm" onClick={() => { setSelected(new Set([v.id])); handleBulk('reject'); }}>✗</button>
+              <button className="btn btn-solid btn-sm" onClick={() => { setSelected(new Set([v.id])); handleBulk('approve'); }}>✓</button>
+            </div>
+          ))
+        )}
+      </section>
+    </>
   );
 }
 

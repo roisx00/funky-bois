@@ -4,6 +4,7 @@
 import { sql, one } from '../_lib/db.js';
 import { requireUser } from '../_lib/auth.js';
 import { ok, bad } from '../_lib/json.js';
+import { rateLimit } from '../_lib/ratelimit.js';
 import {
   pickRandomElement, DROP_BUSTS_REWARD, DAILY_CLAIM_BONUS,
   getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION, DEFAULT_POOL_SIZE, todayKey,
@@ -13,6 +14,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
+  if (!(await rateLimit(res, user.id, { name: 'drop', max: 10, windowSecs: 60 }))) return;
 
   const sessId = getCurrentSessionId();
   if (!isSessionActive(sessId)) return bad(res, 409, 'no_active_session');

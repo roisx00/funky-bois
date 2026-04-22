@@ -18,25 +18,39 @@ import adminWhitelist      from './_routes/admin-whitelist.js';
 import adminCredit         from './_routes/admin-credit.js';
 import adminUsers          from './_routes/admin-users.js';
 import adminStats          from './_routes/admin-stats.js';
+import tasksActive         from './_routes/tasks-active.js';
+import tasksSubmit         from './_routes/tasks-submit.js';
+import tasksCreate         from './_routes/tasks-create.js';
+import tasksClose          from './_routes/tasks-close.js';
+import adminVerifications  from './_routes/admin-verifications.js';
+import adminApprove        from './_routes/admin-approve.js';
+import adminScan           from './_routes/admin-scan.js';
 
 const ROUTES = {
-  'me':                meHandler,
-  'x-token':           xTokenHandler,
-  'x-me':              xMeHandler,
-  'sign-out':          signOutHandler,
-  'drop-claim':        dropClaimHandler,
-  'drop-status':       dropStatusHandler,
-  'box-open':          boxOpenHandler,
-  'gift/send':         giftSendHandler,
-  'gift/claim':        giftClaimHandler,
-  'users/exists':      usersExistsHandler,
-  'portrait/submit':   portraitSubmit,
-  'portrait/share':    portraitShare,
-  'whitelist/record':  whitelistRecord,
-  'admin/whitelist':   adminWhitelist,
-  'admin/credit':      adminCredit,
-  'admin/users':       adminUsers,
-  'admin/stats':       adminStats,
+  'me':                  meHandler,
+  'x-token':             xTokenHandler,
+  'x-me':                xMeHandler,
+  'sign-out':            signOutHandler,
+  'drop-claim':          dropClaimHandler,
+  'drop-status':         dropStatusHandler,
+  'box-open':            boxOpenHandler,
+  'gift/send':           giftSendHandler,
+  'gift/claim':          giftClaimHandler,
+  'users/exists':        usersExistsHandler,
+  'portrait/submit':     portraitSubmit,
+  'portrait/share':      portraitShare,
+  'whitelist/record':    whitelistRecord,
+  'admin/whitelist':     adminWhitelist,
+  'admin/credit':        adminCredit,
+  'admin/users':         adminUsers,
+  'admin/stats':         adminStats,
+  'tasks/active':        tasksActive,
+  'tasks/submit':        tasksSubmit,
+  'admin/tasks/create':  tasksCreate,
+  'admin/tasks/close':   tasksClose,
+  'admin/verifications': adminVerifications,
+  'admin/approve':       adminApprove,
+  'admin/scan':          adminScan,
 };
 
 function extractPath(req) {
