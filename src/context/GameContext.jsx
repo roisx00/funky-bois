@@ -97,7 +97,8 @@ function reducer(state, action) {
         bustsHistory:     me.bustsHistory,
         inventory:        me.inventory,
         completedNFTs:    me.completedNFTs,
-        pendingInbox:     me.pendingGifts,
+        pendingGifts:     me.pendingGifts || [],
+        pendingInbox:     me.pendingGifts || [], // legacy alias
       };
     }
 
@@ -166,7 +167,11 @@ function reducer(state, action) {
     }
 
     case 'REMOVE_INBOX_GIFT':
-      return { ...state, pendingInbox: state.pendingInbox.filter((g) => g.id !== action.giftId) };
+      return {
+        ...state,
+        pendingGifts: state.pendingGifts.filter((g) => g.id !== action.giftId),
+        pendingInbox: state.pendingInbox.filter((g) => g.id !== action.giftId),
+      };
 
     case 'SET_WALLET':
       return { ...state, walletAddress: action.address || null, isWalletConnected: !!action.address };
