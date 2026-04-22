@@ -1735,60 +1735,47 @@
   max-width: 120px;
 }
 
-/* Mobile: side-by-side layout inside the preview card */
+/* Mobile: horizontal compact card (art + slots chip), hide detailed list.
+   The full per-slot list is already shown in the .builder-progress block
+   further down the page, so duplicating it here on phones just overflows. */
 @media (max-width: 800px) {
   .builder-preview-wrap {
     position: static;
     display: grid;
     grid-template-columns: 132px minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    column-gap: 12px;
-    row-gap: 8px;
-    align-items: start;
+    column-gap: 14px;
+    row-gap: 10px;
+    align-items: center;
     padding: 14px;
     overflow: hidden;
   }
-  .builder-preview-kicker { grid-column: 1 / -1; }
+  .builder-preview-kicker { grid-column: 1 / -1; grid-row: 1 / 2; }
   .builder-preview-art {
     grid-column: 1 / 2;
-    grid-row: 2 / 4;
+    grid-row: 2 / 3;
     padding: 4px;
-    align-self: start;
+    align-self: center;
     min-width: 0;
   }
-  .builder-preview-art .nft-canvas-wrap { max-width: 124px; }
+  .builder-preview-art .nft-canvas-wrap {
+    max-width: 124px !important;
+    width: 100% !important;
+  }
   .builder-preview-stats {
     grid-column: 2 / 3;
     grid-row: 2 / 3;
-    padding: 6px 10px;
+    padding: 14px 12px;
     min-width: 0;
-    overflow: hidden;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
-  .builder-preview-list {
-    grid-column: 2 / 3;
-    grid-row: 3 / 4;
-    gap: 3px;
-    min-width: 0;
-  }
-  .builder-preview-row {
-    padding: 4px 8px;
-    font-size: 11px;
-    min-width: 0;
-    gap: 6px;
-  }
-  .builder-preview-label { font-size: 8px; flex-shrink: 0; }
-  .builder-preview-value {
-    font-size: 11px;
-    max-width: none;
-    min-width: 0;
-    flex: 1;
-    text-align: right;
-  }
+  .builder-preview-stats strong { font-size: 26px; letter-spacing: -0.03em; }
+  .builder-preview-list { display: none; }
 }
 @media (max-width: 420px) {
   .builder-preview-wrap { grid-template-columns: 108px minmax(0, 1fr); column-gap: 10px; padding: 12px; }
-  .builder-preview-art .nft-canvas-wrap { max-width: 100px; }
-  .builder-preview-label { font-size: 7px; letter-spacing: 0.06em; }
+  .builder-preview-art .nft-canvas-wrap { max-width: 100px !important; }
 }
 
 .builder-type-tabs {
