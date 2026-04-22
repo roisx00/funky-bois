@@ -457,6 +457,10 @@ export function GameProvider({ children }) {
   }, []);
   const claimGift = useCallback((giftId) => dispatch({ type: 'CLAIM_GIFT', giftId }), []);
 
+  const earnReferralBonus = useCallback((referredUsername) => {
+    dispatch({ type: 'EARN_REFERRAL_BONUS', referredUsername });
+  }, []);
+
   const resetProgress = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('the1969-mock-wallet');
