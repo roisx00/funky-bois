@@ -175,11 +175,6 @@ export default function LandingPage({ onNavigate }) {
 
         <div className="hero-grid">
           <div>
-            <div className="hero-eyebrow">
-              <span className="hero-eyebrow-dot" />
-              Collective portrait drop · Ethereum
-            </div>
-
             <h1 className="hero-headline">
               <em>One thousand</em><br />
               nine hundred <span className="hl-accent">sixty-nine</span><br />
@@ -530,7 +525,7 @@ export default function LandingPage({ onNavigate }) {
           Build it. Share it. <em>Get in.</em>
         </h2>
         <p className="cta-band-sub">
-          Earn your whitelist by making something worth showing off. No farming tasks, no fake hype, no shortcuts.
+          Earn your whitelist by making something worth showing off.
         </p>
         <button className="btn btn-lg btn-arrow btn-lime-dot" onClick={() => onNavigate('drop')}>
           Enter the Drop
@@ -564,17 +559,6 @@ export default function LandingPage({ onNavigate }) {
             <div className="footer-col-title">Social</div>
             <ul className="footer-link-list">
               <li><a href="https://x.com/the1969eth" target="_blank" rel="noreferrer">X / Twitter</a></li>
-              <li><a href="#" onClick={(e) => e.preventDefault()}>Farcaster</a></li>
-              <li><a href="#" onClick={(e) => e.preventDefault()}>Discord</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <div className="footer-col-title">Signals</div>
-            <ul className="footer-link-list">
-              <li><a href="#" onClick={(e) => e.preventDefault()}>Whitepaper</a></li>
-              <li><a href="#" onClick={(e) => e.preventDefault()}>Contract</a></li>
-              <li><a href="#" onClick={(e) => e.preventDefault()}>Press</a></li>
             </ul>
           </div>
         </div>

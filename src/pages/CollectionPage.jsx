@@ -98,7 +98,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
 
       {/* ─── Overview ─── */}
       {tab === 'overview' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+        <div className="dash-overview-grid">
           <div className="gift-card">
             <div className="gift-card-title">Progress toward portrait</div>
             <div className="gift-card-sub">
