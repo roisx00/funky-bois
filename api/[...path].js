@@ -25,6 +25,7 @@ import tasksClose          from './_routes/tasks-close.js';
 import adminVerifications  from './_routes/admin-verifications.js';
 import adminApprove        from './_routes/admin-approve.js';
 import adminScan           from './_routes/admin-scan.js';
+import galleryHandler      from './_routes/gallery.js';
 
 const ROUTES = {
   'me':                  meHandler,
@@ -51,6 +52,7 @@ const ROUTES = {
   'admin/verifications': adminVerifications,
   'admin/approve':       adminApprove,
   'admin/scan':          adminScan,
+  'gallery':             galleryHandler,
 };
 
 function extractPath(req) {

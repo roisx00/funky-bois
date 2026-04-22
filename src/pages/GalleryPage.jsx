@@ -1,28 +1,44 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import NFTCanvas from '../components/NFTCanvas';
-import { MOCK_GALLERY, timeAgo } from '../data/gallery';
+
+function timeAgo(ts) {
+  const mins = Math.floor((Date.now() - ts) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const h = Math.floor(mins / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 export default function GalleryPage() {
-  const { completedNFTs, userId } = useGame();
-  const [filter, setFilter] = useState('all');
-  const [sort, setSort]     = useState('recent');
+  const { xUser } = useGame();
+  const [entries, setEntries] = useState([]);
+  const [filter, setFilter]   = useState('all');
+  const [sort, setSort]       = useState('recent');
+  const [loading, setLoading] = useState(true);
 
-  const myNFTs = completedNFTs.map((n) => ({
-    ...n,
-    isMine: true,
-    username: n.username || `Boi#${userId.slice(0, 4).toUpperCase()}`,
-  }));
+  const load = useCallback(async () => {
+    setLoading(true);
+    const url = filter === 'mine' ? '/api/gallery?filter=mine&limit=100' : '/api/gallery?limit=120';
+    try {
+      const r = await fetch(url, { credentials: 'same-origin' });
+      const d = r.ok ? await r.json() : { entries: [] };
+      setEntries(d.entries || []);
+    } catch {
+      setEntries([]);
+    }
+    setLoading(false);
+  }, [filter]);
 
-  const all = useMemo(() => {
-    const merged = [...myNFTs, ...MOCK_GALLERY.map((n) => ({ ...n, isMine: false }))];
-    if (sort === 'recent')   merged.sort((a, b) => b.createdAt - a.createdAt);
-    if (sort === 'oldest')   merged.sort((a, b) => a.createdAt - b.createdAt);
-    return merged;
-  }, [myNFTs, sort]);
+  useEffect(() => { load(); }, [load]);
 
-  const displayed = filter === 'mine' ? all.filter((n) => n.isMine) : all;
-  const totalCount = all.length;
+  const sorted = [...entries].sort((a, b) => sort === 'oldest'
+    ? a.createdAt - b.createdAt
+    : b.createdAt - a.createdAt
+  );
+
+  const totalCount = entries.length;
 
   return (
     <div className="page gallery-page">
@@ -46,10 +62,15 @@ export default function GalleryPage() {
       <div className="gallery-filter-bar">
         <div className="gallery-filter-group">
           <button className={`gallery-filter-btn${filter === 'all' ? ' active' : ''}`} onClick={() => setFilter('all')}>
-            All · {all.length}
+            All
           </button>
-          <button className={`gallery-filter-btn${filter === 'mine' ? ' active' : ''}`} onClick={() => setFilter('mine')}>
-            Mine · {myNFTs.length}
+          <button
+            className={`gallery-filter-btn${filter === 'mine' ? ' active' : ''}`}
+            onClick={() => setFilter('mine')}
+            disabled={!xUser}
+            title={!xUser ? 'Sign in with X to see yours' : ''}
+          >
+            Mine
           </button>
         </div>
 
@@ -63,23 +84,36 @@ export default function GalleryPage() {
         </div>
       </div>
 
-      {displayed.length === 0 ? (
+      {loading ? (
+        <div className="gallery-grid-premium">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <article key={i} className="gallery-tile" style={{ opacity: 0.5 }}>
+              <div className="gallery-tile-art" style={{ background: 'var(--paper-3)' }} />
+              <div className="gallery-tile-info">
+                <span className="gallery-tile-id">loading.</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : sorted.length === 0 ? (
         <div style={{
           textAlign: 'center', padding: '120px 20px',
           border: '1px dashed var(--rule)', background: 'var(--paper-2)',
           maxWidth: 640, margin: '0 auto',
         }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 500, letterSpacing: '-0.035em', marginBottom: 14, color: 'var(--text-3)' }}>
-            Nothing here.
+            {filter === 'mine' ? 'No portraits yet.' : 'Nothing here.'}
           </div>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-4)' }}>
-            {filter === 'mine' ? 'You have not completed a portrait yet.' : 'Gallery is empty.'}
+            {filter === 'mine'
+              ? 'Build your first portrait and share it on X.'
+              : 'Gallery fills up as the community shares their portraits.'}
           </p>
         </div>
       ) : (
         <div className="gallery-grid-premium">
-          {displayed.map((nft) => (
-            <GalleryTile key={nft.id} nft={nft} />
+          {sorted.map((nft) => (
+            <GalleryTile key={nft.id} nft={nft} isMine={xUser && nft.xUsername === xUser.username} />
           ))}
         </div>
       )}
@@ -87,15 +121,15 @@ export default function GalleryPage() {
   );
 }
 
-function GalleryTile({ nft }) {
+function GalleryTile({ nft, isMine }) {
   return (
-    <article className={`gallery-tile${nft.isMine ? ' mine' : ''}`}>
+    <article className={`gallery-tile${isMine ? ' mine' : ''}`}>
       <div className="gallery-tile-art">
         <NFTCanvas elements={nft.elements} size={280} />
       </div>
       <div className="gallery-tile-info">
         <span className="gallery-tile-id">#{String(nft.id).slice(-6).toUpperCase()}</span>
-        <span className="gallery-tile-name">@{nft.username}</span>
+        <span className="gallery-tile-name">@{nft.xUsername}</span>
         <span className="gallery-tile-time">{timeAgo(nft.createdAt)}</span>
       </div>
     </article>

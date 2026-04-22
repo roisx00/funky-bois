@@ -77,11 +77,24 @@ function AppInner() {
 
   useEffect(() => {
     if (!window.location.search.includes('code=')) return;
-    handleXCallback().then((user) => {
-      if (user) loginWithX(user);
-      else console.warn('[App] X login failed / check browser console for details');
-      setXAuthPending(false);
-    });
+    let cancelled = false;
+    (async () => {
+      try {
+        const user = await handleXCallback();
+        if (cancelled) return;
+        if (user) {
+          // loginWithX is async — wait for the full hydrate before unlocking UI
+          await loginWithX(user);
+        } else {
+          console.warn('[App] X login failed / check browser console for details');
+        }
+      } catch (e) {
+        console.error('[App] OAuth callback error', e);
+      } finally {
+        if (!cancelled) setXAuthPending(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

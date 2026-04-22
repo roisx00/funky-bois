@@ -226,14 +226,20 @@ export function GameProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, null, emptyState);
   const dropPollRef = useRef(null);
 
-  // Initial hydrate
+  // Initial hydrate. Skipped when an OAuth callback is in progress
+  // (?code=...) because handleXCallback() will fire and set the session
+  // cookie a moment later — racing /api/me now would latch a false-negative
+  // authenticated:false that overwrites the good state once the callback
+  // completes.
   useEffect(() => {
+    const hasOAuthCode = typeof window !== 'undefined' && window.location.search.includes('code=');
     let cancelled = false;
     (async () => {
-      const me = await jget('/api/me');
-      if (cancelled) return;
-      if (me.ok) dispatch({ type: 'HYDRATE', payload: me });
-      else        dispatch({ type: 'HYDRATE', payload: { authenticated: false } });
+      if (!hasOAuthCode) {
+        const me = await jget('/api/me');
+        if (cancelled) return;
+        dispatch({ type: 'HYDRATE', payload: me.ok ? me : { authenticated: false } });
+      }
       const ds = await jget('/api/drop-status');
       if (!cancelled && ds.ok) dispatch({ type: 'SET_DROP_STATUS', payload: ds });
     })();
@@ -269,13 +275,16 @@ export function GameProvider({ children }) {
   // ── Actions ──
   const refreshMe = useCallback(async () => {
     const me = await jget('/api/me');
-    if (me.ok) dispatch({ type: 'HYDRATE', payload: me });
+    dispatch({ type: 'HYDRATE', payload: me.ok ? me : { authenticated: false } });
   }, []);
 
-  const loginWithX = useCallback((user) => {
+  const loginWithX = useCallback(async (user) => {
     // Called from App.jsx after X OAuth callback succeeds.
     dispatch({ type: 'SET_X_USER', user });
-    refreshMe();
+    // Fully rehydrate from server so balance, inventory, etc. are populated.
+    await refreshMe();
+    const ds = await jget('/api/drop-status');
+    if (ds.ok) dispatch({ type: 'SET_DROP_STATUS', payload: ds });
   }, [refreshMe]);
 
   const logoutX = useCallback(async () => {
