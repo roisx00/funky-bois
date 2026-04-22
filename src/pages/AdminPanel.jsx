@@ -186,6 +186,9 @@ export default function AdminPanel({ onNavigate }) {
         )}
       </section>
 
+      <AdminDropConfig />
+
+
       {/* WL roster */}
       <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
         <div className="admin-roster-head">
@@ -475,5 +478,97 @@ function StatCard({ label, value, cta }) {
       )}
       {cta}
     </div>
+  );
+}
+
+function AdminDropConfig() {
+  const [cfg, setCfg]       = useState(null);    // { defaultPoolSize, currentSession }
+  const [size, setSize]     = useState('');
+  const [apply, setApply]   = useState(true);
+  const [msg, setMsg]       = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    const r = await jget('/api/admin-drop-config');
+    if (r.ok) {
+      setCfg(r);
+      setSize(String(r.defaultPoolSize));
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const save = async () => {
+    const n = Number(size);
+    if (!Number.isFinite(n) || n < 1 || n > 10000) {
+      setMsg('Error: size must be between 1 and 10000');
+      return;
+    }
+    setSaving(true);
+    const r = await jpost('/api/admin-drop-config', { defaultPoolSize: n, applyToCurrentSession: apply });
+    setSaving(false);
+    if (r.ok) {
+      setMsg(`Saved · default now ${r.defaultPoolSize}${r.updatedCurrentSession ? ` · live session updated` : ''}`);
+      load();
+    } else {
+      setMsg(`Error: ${r.error || 'failed'}`);
+    }
+    setTimeout(() => setMsg(''), 5000);
+  };
+
+  const current = cfg?.currentSession;
+
+  return (
+    <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+      <div className="admin-roster-head">
+        <div>
+          <div className="admin-roster-title">Drop pool size</div>
+          <div className="admin-roster-meta">
+            Public sees only a mood label. Admins set how many traits drop each hour.
+          </div>
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)' }}>
+          {current
+            ? `live: ${current.poolClaimed}/${current.poolSize} claimed · ${current.poolRemaining} left`
+            : 'no live session'}
+        </div>
+      </div>
+      <div className="admin-credit-form">
+        <div>
+          <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+            Default pool size
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="10000"
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+            placeholder="20"
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div>
+          <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+            Apply to current session
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 12, paddingTop: 10 }}>
+            <input type="checkbox" checked={apply} onChange={(e) => setApply(e.target.checked)} />
+            <span>Overwrite live hourly pool</span>
+          </label>
+        </div>
+        <button className="btn btn-solid btn-arrow" onClick={save} disabled={saving || !size}>
+          {saving ? 'Saving.' : 'Save'}
+        </button>
+      </div>
+      {msg && (
+        <div style={{
+          padding: '12px 24px',
+          background: msg.startsWith('Error') ? 'rgba(204,58,42,0.08)' : 'var(--accent-dim)',
+          borderTop: '1px solid var(--hairline)',
+          fontFamily: 'var(--font-mono)', fontSize: 12,
+        }}>{msg}</div>
+      )}
+    </section>
   );
 }

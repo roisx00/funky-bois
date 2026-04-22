@@ -9,7 +9,6 @@ import { ELEMENT_TYPES } from '../data/elements';
 const SESSION_INTERVAL_MS    = 60 * 60 * 1000;
 const SESSION_WINDOW_MS      = 5 * 60 * 1000;
 const MAX_CLAIMS_PER_SESSION = 3;
-const DEFAULT_SESSION_POOL_SIZE = 20;
 
 function getCurrentSessionId() {
   return Math.floor(Date.now() / SESSION_INTERVAL_MS) * SESSION_INTERVAL_MS;
@@ -18,21 +17,22 @@ function getCurrentSessionId() {
 function deriveSessionStatus(serverStatus, claimsThisSession) {
   const sessId = serverStatus?.sessId ?? getCurrentSessionId();
   const elapsed = Date.now() - sessId;
-  const totalPool       = serverStatus?.poolSize       ?? DEFAULT_SESSION_POOL_SIZE;
-  const poolClaimed     = serverStatus?.poolClaimed    ?? 0;
-  const poolRemaining   = serverStatus?.poolRemaining  ?? Math.max(0, totalPool - poolClaimed);
-  const isPoolEmpty     = poolRemaining <= 0;
-  const isActive        = (serverStatus?.isActive ?? (elapsed < SESSION_WINDOW_MS)) && !isPoolEmpty;
+  // Server intentionally hides raw pool counts from the public response.
+  // We only get a mood label + percentage. Admin responses additionally
+  // expose raw numbers under `admin` — we surface those for the admin UI.
+  const poolState   = serverStatus?.poolState ?? 'stocked';
+  const poolPct     = typeof serverStatus?.poolPct === 'number' ? serverStatus.poolPct : 1;
+  const isPoolEmpty = poolState === 'sealed' || poolPct <= 0;
+  const isActive    = (serverStatus?.isActive ?? (elapsed < SESSION_WINDOW_MS)) && !isPoolEmpty;
   return {
     sessId,
     isActive,
     isPoolEmpty,
     msUntilNext:  Math.max(0, SESSION_INTERVAL_MS - elapsed),
     msUntilClose: Math.max(0, SESSION_WINDOW_MS - elapsed),
-    simClaimed:   poolClaimed,
-    poolRemaining,
-    poolPct:      poolRemaining / totalPool,
-    totalPool,
+    poolState,     // 'stocked' | 'flowing' | 'thinning' | 'low' | 'sealed'
+    poolPct,       // 0..1 (for the meter bar, no raw numbers)
+    admin:        serverStatus?.admin ?? null, // raw {poolSize, poolClaimed, poolRemaining} — admins only
     claimsThisSession,
     canClaimThisSession: claimsThisSession < MAX_CLAIMS_PER_SESSION,
     maxClaims: MAX_CLAIMS_PER_SESSION,

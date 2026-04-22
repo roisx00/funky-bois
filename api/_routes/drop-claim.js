@@ -5,6 +5,7 @@ import { sql, one } from '../_lib/db.js';
 import { requireUser } from '../_lib/auth.js';
 import { ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
+import { getConfigInt } from '../_lib/config.js';
 import {
   pickRandomElement, DROP_BUSTS_REWARD, DAILY_CLAIM_BONUS,
   getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION, DEFAULT_POOL_SIZE, todayKey,
@@ -19,10 +20,13 @@ export default async function handler(req, res) {
   const sessId = getCurrentSessionId();
   if (!isSessionActive(sessId)) return bad(res, 409, 'no_active_session');
 
-  // Ensure session row exists
+  // Admin-tunable default pool size (fall back to compile-time default).
+  const poolSize = await getConfigInt('default_pool_size', DEFAULT_POOL_SIZE);
+
+  // Ensure session row exists — uses the current admin-set default.
   await sql`
     INSERT INTO drop_sessions (session_id, pool_size, opened_at)
-    VALUES (${sessId}, ${DEFAULT_POOL_SIZE}, to_timestamp(${sessId / 1000}))
+    VALUES (${sessId}, ${poolSize}, to_timestamp(${sessId / 1000}))
     ON CONFLICT (session_id) DO NOTHING
   `;
 

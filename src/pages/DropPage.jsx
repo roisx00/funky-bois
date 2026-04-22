@@ -19,7 +19,7 @@ export default function DropPage() {
   const {
     isActive, isPoolEmpty, msUntilNext, msUntilClose,
     claimsThisSession, canClaimThisSession, maxClaims,
-    poolPct, poolRemaining, totalPool,
+    poolPct, poolState, admin: adminPool,
     reactionTimeSec, bestPosition, claimPositions,
   } = sessionStatus;
 
@@ -78,8 +78,22 @@ export default function DropPage() {
     toast.success(`${result.element.name} · +${result.bustsReward} BUSTS`);
   }, [claimElement, toast]);
 
-  const urgency = !poolPct || poolPct > 0.5 ? 'normal' : poolPct > 0.2 ? 'low' : 'critical';
+  // Urgency tier derives from the mood label so the server controls the
+  // thresholds; fall back to a numeric pct bucket if the server ever
+  // sends an unknown label.
+  const urgency =
+    poolState === 'sealed' || poolState === 'low' ? 'critical'
+    : poolState === 'thinning'                     ? 'low'
+    :                                                'normal';
   const poolFillPct = Math.max(0, poolPct * 100);
+  const POOL_LABELS = {
+    stocked:  { head: 'Pool open',     foot: 'Fresh session' },
+    flowing:  { head: 'Pool open',     foot: 'Healthy flow' },
+    thinning: { head: 'Pool thinning', foot: 'Fewer left than before' },
+    low:      { head: 'Nearly sealed', foot: 'Final slots' },
+    sealed:   { head: 'Pool sealed',   foot: 'Gone for the hour' },
+  };
+  const poolCopy = POOL_LABELS[poolState] || POOL_LABELS.stocked;
 
   return (
     <div className="page drop-page">
@@ -99,11 +113,14 @@ export default function DropPage() {
       <div className="drop-main">
         {/* ────── LEFT: action panel ────── */}
         <div className="drop-panel">
-          {/* Pool meter */}
+          {/* Pool meter — mystery mode. Raw supply numbers are hidden
+              from the public; only a mood label + progress bar show. */}
           <div className="drop-meter">
             <div className="drop-meter-head">
-              <span className="drop-meter-label">Pool</span>
-              <span className="drop-meter-count">{poolRemaining}<span className="drop-meter-total">/ {totalPool}</span></span>
+              <span className="drop-meter-label">Supply</span>
+              <span className="drop-meter-count" style={{ letterSpacing: '0.08em' }}>
+                {poolCopy.head}
+              </span>
             </div>
             <div className="drop-meter-track">
               <div
@@ -112,8 +129,13 @@ export default function DropPage() {
               />
             </div>
             <div className="drop-meter-foot">
-              <span>{urgency === 'critical' ? 'Almost gone' : urgency === 'low' ? 'Filling fast' : 'Healthy supply'}</span>
-              <span>{Math.round(poolFillPct)}%</span>
+              <span>{poolCopy.foot}</span>
+              {/* Admins additionally see the real numbers for ops sanity */}
+              {adminPool ? (
+                <span title="Visible to admins only">
+                  ADMIN · {adminPool.poolRemaining}/{adminPool.poolSize}
+                </span>
+              ) : null}
             </div>
           </div>
 
@@ -255,9 +277,12 @@ export default function DropPage() {
             <div className="drop-aside-title">Rules</div>
             <ul>
               <li>1-hour cycle · 5-min window</li>
-              <li>{totalPool} slots shared globally</li>
+              <li>Limited slots shared globally</li>
               <li>Max 3 claims per user per session</li>
               <li>Click timing + cursor heuristics against bots</li>
+              {adminPool ? (
+                <li style={{ opacity: 0.7 }}>ADMIN · pool size {adminPool.poolSize}</li>
+              ) : null}
             </ul>
           </div>
         </aside>

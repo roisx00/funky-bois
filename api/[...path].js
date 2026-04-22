@@ -25,6 +25,7 @@ import tasksClose          from './_routes/tasks-close.js';
 import adminVerifications  from './_routes/admin-verifications.js';
 import adminApprove        from './_routes/admin-approve.js';
 import adminScan           from './_routes/admin-scan.js';
+import adminDropConfig     from './_routes/admin-drop-config.js';
 import galleryHandler      from './_routes/gallery.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
@@ -55,6 +56,7 @@ const ROUTES = {
   'admin-verifications': adminVerifications,
   'admin-approve':       adminApprove,
   'admin-scan':          adminScan,
+  'admin-drop-config':   adminDropConfig,
   'gallery':             galleryHandler,
 
   // slash aliases (backward compat — keep until all callers migrated)
