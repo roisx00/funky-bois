@@ -9,6 +9,7 @@ import GalleryPage from './pages/GalleryPage';
 import AdminPanel from './pages/AdminPanel';
 import BuilderPage from './pages/BuilderPage';
 import { handleXCallback, startXLogin } from './utils/xAuth';
+import { useToast } from './components/Toast';
 import './App.css';
 
 function SignInGate({ title, children }) {
@@ -67,6 +68,7 @@ function AppInner() {
     () => window.location.search.includes('code=')
   );
   const { loginWithX, setReferredBy } = useGame();
+  const toast = useToast();
 
   // Sync browser back/forward buttons to internal page state
   useEffect(() => {
@@ -82,14 +84,21 @@ function AppInner() {
       try {
         const user = await handleXCallback();
         if (cancelled) return;
-        if (user) {
+        if (user && !user.__error) {
           // loginWithX is async — wait for the full hydrate before unlocking UI
           await loginWithX(user);
+          toast.success(`Signed in as @${user.xUsername}`);
+        } else if (user && user.__error) {
+          // Surface the real error instead of silently landing on home
+          console.error('[App] X login failed:', user.__error, user.__detail);
+          toast.error(`X login failed: ${user.__error}. Please try again.`);
         } else {
-          console.warn('[App] X login failed / check browser console for details');
+          console.warn('[App] X login returned null — see console for details');
+          toast.error('X login did not complete. Please try again.');
         }
       } catch (e) {
         console.error('[App] OAuth callback error', e);
+        toast.error(`X login error: ${e?.message || 'network error'}`);
       } finally {
         if (!cancelled) setXAuthPending(false);
       }

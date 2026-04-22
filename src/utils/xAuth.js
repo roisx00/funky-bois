@@ -6,7 +6,12 @@
 // the user to our DB, and sets an HttpOnly session cookie so refresh keeps
 // the user signed in.
 const CLIENT_ID    = process.env.X_CLIENT_ID || process.env.VITE_X_CLIENT_ID || '';
-const REDIRECT_URI = typeof window !== 'undefined' ? window.location.origin + '/' : '';
+// Prefer a locked env-set redirect URI so preview deployments and
+// custom-domain changes can't silently trigger redirect_uri_mismatch.
+// Falls back to the current origin if nothing is configured.
+const REDIRECT_URI = (typeof window !== 'undefined'
+  ? (process.env.VITE_X_REDIRECT_URI || (window.location.origin + '/'))
+  : '');
 
 function b64url(buf) {
   return btoa(String.fromCharCode(...new Uint8Array(buf)))
@@ -80,14 +85,16 @@ export async function handleXCallback() {
       credentials: 'same-origin',
     });
     if (!r.ok) {
-      console.error('[xAuth] token exchange failed:', await r.text());
-      return null;
+      const text = await r.text();
+      console.error('[xAuth] token exchange failed:', text);
+      let parsed = null; try { parsed = JSON.parse(text); } catch { /* noop */ }
+      return { __error: parsed?.error || `HTTP ${r.status}`, __detail: parsed?.detail || text };
     }
     const data = await r.json();
     return data.user || null;
   } catch (e) {
     console.error('[xAuth] /api/x-token error:', e);
-    return null;
+    return { __error: 'network_error', __detail: e?.message || String(e) };
   }
 }
 

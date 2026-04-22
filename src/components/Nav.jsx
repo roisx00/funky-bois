@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import { ELEMENT_TYPES } from '../data/elements';
 import { startXLogin } from '../utils/xAuth';
 import BrandMark from './BrandMark';
+import { useToast } from './Toast';
 import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
 
 const BASE_PAGES = [
@@ -44,6 +45,7 @@ export default function Nav({ currentPage, onNavigate }) {
   const [mobileOpen, setMobileOpen]     = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const toast = useToast();
 
   useEffect(() => {
     const handler = (e) => {
@@ -57,8 +59,15 @@ export default function Nav({ currentPage, onNavigate }) {
 
   const handleXLogin = async () => {
     setXLoading(true);
-    await startXLogin(loginWithX);
-    setXLoading(false);
+    try {
+      await startXLogin(loginWithX);
+    } catch (e) {
+      // Configuration problem (missing X_CLIENT_ID, crypto unavailable, etc.)
+      console.error('[Nav] startXLogin failed:', e);
+      toast.error(e?.message || 'Could not start X sign-in. Try again.');
+      setXLoading(false);
+    }
+    // If the redirect succeeds we navigate away before reaching here.
   };
 
 

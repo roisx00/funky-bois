@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>THE 1969 — launch trailer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" />
+<style>
+  :root {
+    --paper:#F9F6F0; --ink:#0E0E0E; --lime:#D7FF3A; --grey:#BBBBBB;
+  }
+  html,body{margin:0;padding:0;background:#111;color:#fff;font-family:'JetBrains Mono',ui-monospace,monospace;}
+  header{padding:20px 24px;border-bottom:1px solid #333;}
+  header h1{margin:0;font-family:'Instrument Serif',serif;font-style:italic;font-size:24px;color:var(--lime);}
+  header p{margin:6px 0 0;opacity:.8;font-size:12px;line-height:1.5;}
+  main{display:flex;flex-direction:column;align-items:center;padding:28px;gap:16px;}
+  .stage{position:relative;width:100%;max-width:960px;aspect-ratio:16/9;background:#000;border:1px solid #333;overflow:hidden;}
+  canvas{width:100%;height:100%;display:block;background:#000;}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  button{
+    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.06em;
+    padding:12px 20px;border:1px solid var(--ink);cursor:pointer;text-transform:uppercase;
+    background:var(--lime);color:var(--ink);
+  }
+  button.ghost{background:#222;color:#fff;border-color:#555;}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  .status{font-size:11px;opacity:.75;min-height:16px;letter-spacing:.04em;}
+  .size-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;}
+  .size-row label{font-size:11px;opacity:.75;}
+  select{background:#222;color:#fff;border:1px solid #555;padding:6px 8px;font-family:inherit;font-size:11px;}
+  a.download-link{display:inline-block;padding:12px 20px;background:#222;color:var(--lime);border:1px solid var(--lime);text-decoration:none;font-size:12px;letter-spacing:.06em;text-transform:uppercase;}
+</style>
+</head>
+<body>
+<header>
+  <h1>THE 1969 — launch trailer</h1>
+  <p>
+    Press <strong>Play</strong> to preview. Then <strong>Record &amp; Download HD</strong> bakes the exact same 16-second canvas + audio into a real .mp4 (or .webm where MP4 isn't supported). Video + sound are fully synthesised in-browser so there's no quality loss from screen-recording.
+  </p>
+</header>
+
+<main>
+  <div class="size-row">
+    <label>Resolution:
+      <select id="res">
+        <option value="1920x1080">1920×1080 (Full HD)</option>
+        <option value="1280x720" selected>1280×720 (HD · smaller file)</option>
+      </select>
+    </label>
+    <label>Audio:
+      <select id="audio-mode">
+        <option value="full" selected>Full (ambient drone + hits + synth)</option>
+        <option value="silent">Silent</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="stage"><canvas id="stage" width="1280" height="720"></canvas></div>
+
+  <div class="controls">
+    <button id="play">Play preview</button>
+    <button id="record" class="ghost">Record &amp; download HD</button>
+    <button id="stop" class="ghost" disabled>Stop</button>
+  </div>
+  <div class="status" id="status">Ready. Fonts preload on first interaction.</div>
+  <div id="download-wrap"></div>
+</main>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// Brand constants
+// ══════════════════════════════════════════════════════════════════════
+const PAPER = '#F9F6F0';
+const INK   = '#0E0E0E';
+const LIME  = '#D7FF3A';
+const GREY  = '#BBBBBB';
+const DURATION_MS = 16000;
+
+// Canvas setup
+const cv = document.getElementById('stage');
+const ctx = cv.getContext('2d');
+let WIDTH = 1280, HEIGHT = 720;
+
+function setResolution(wh) {
+  [WIDTH, HEIGHT] = wh.split('x').map(Number);
+  cv.width = WIDTH;
+  cv.height = HEIGHT;
+}
+
+document.getElementById('res').addEventListener('change', (e) => {
+  setResolution(e.target.value);
+  drawFrame(0); // preview current state
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// Pixel bust primitive — uses 24×24 grid like the brand-export
+// ══════════════════════════════════════════════════════════════════════
+function drawPixelBust(ctx, cx, cy, s, opts = {}) {
+  const px = (gx, gy, w, h, fill) => {
+    ctx.fillStyle = fill;
+    ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, w * s, h * s);
+  };
+  const hair   = opts.hair   || PAPER;
+  const face   = opts.face   || GREY;
+  const accent = opts.accent || LIME;
+  // Hair
+  px(5, 2, 14, 1, hair);
+  px(4, 3, 16, 1, hair);
+  px(4, 4, 16, 1, hair);
+  px(3, 5, 18, 1, hair);
+  px(3, 6, 18, 1, hair);
+  px(3, 7, 18, 1, INK); // undercut
+  // Face
+  for (let y = 8; y <= 14; y++) px(4, y, 16, 1, face);
+  px(5, 15, 14, 1, face);
+  px(6, 16, 12, 1, face);
+  // Eyes
+  px(7,  10, 3, 2, INK);
+  px(14, 10, 3, 2, INK);
+  // Mouth
+  px(9, 14, 6, 1, INK);
+  // Neck
+  px(10, 17, 4, 1, face);
+  px(10, 18, 4, 1, face);
+  // Collar
+  px(6, 19, 12, 1, accent);
+  px(4, 20, 16, 1, accent);
+  px(2, 21, 20, 1, accent);
+  px(2, 22, 20, 1, accent);
+  px(2, 23, 20, 1, INK);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Animation — per-frame rendering. `t` is seconds from 0..16
+// Scene breakdown (total 16s):
+//   0.0 - 2.0 : Black hold → lime flicker dot → "1969" stamp
+//   2.0 - 4.0 : Hold "THE 1969" + tagline fade
+//   4.0 - 7.0 : Single bust assembles layer by layer
+//   7.0 - 10.0: Grid of 9 busts flash in
+//   10.0 - 13.0: "1,969 BUSTS" big wordmark
+//   13.0 - 16.0: Final mark + "Mint unlocks when the grid fills."
+// ══════════════════════════════════════════════════════════════════════
+function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
+function easeInOut(x) { return x < 0.5 ? 2*x*x : 1 - Math.pow(-2*x + 2, 2) / 2; }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function drawFrame(tMs) {
+  const t = tMs / 1000;
+  const w = WIDTH, h = HEIGHT;
+
+  // Background always black
+  ctx.fillStyle = INK;
+  ctx.fillRect(0, 0, w, h);
+
+  // Subtle animated grain / film flicker
+  ctx.globalAlpha = 0.04 + 0.02 * Math.sin(t * 40);
+  ctx.fillStyle = PAPER;
+  for (let i = 0; i < 60; i++) {
+    const gx = Math.random() * w;
+    const gy = Math.random() * h;
+    ctx.fillRect(gx, gy, 1, 1);
+  }
+  ctx.globalAlpha = 1;
+
+  // ── Scene 1 (0-2): Flicker dot then wordmark fade-in ──
+  if (t < 2.0) {
+    const flicker = Math.sin(t * 18) * 0.5 + 0.5;
+    ctx.fillStyle = t < 0.6 ? LIME : PAPER;
+    ctx.globalAlpha = clamp(flicker, 0.2, 1);
+    const dotR = h * 0.012 + Math.sin(t * 6) * 2;
+    ctx.beginPath(); ctx.arc(w/2, h/2, dotR, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    if (t > 0.8) {
+      const fade = clamp((t - 0.8) / 0.8, 0, 1);
+      ctx.fillStyle = PAPER;
+      ctx.globalAlpha = fade;
+      ctx.font = `500 ${h * 0.22}px 'Space Grotesk', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('1969', w/2, h/2);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // ── Scene 2 (2-4): Wordmark steady + tagline draws in ──
+  else if (t < 4.0) {
+    const u = (t - 2.0) / 2.0;
+    ctx.fillStyle = PAPER;
+    ctx.font = `500 ${h * 0.22}px 'Space Grotesk', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('1969', w/2, h/2 - h*0.05);
+
+    // Lime underline accent grows
+    const accentW = w * 0.08 * easeOutCubic(clamp(u * 2, 0, 1));
+    ctx.fillStyle = LIME;
+    ctx.fillRect(w/2 - accentW/2, h/2 + h*0.10, accentW, Math.max(3, h*0.005));
+
+    // Italic serif tagline typewrites
+    const full = 'busts that speak for themselves.';
+    const chars = Math.floor(full.length * clamp((u - 0.3) * 1.6, 0, 1));
+    if (chars > 0) {
+      ctx.fillStyle = PAPER;
+      ctx.globalAlpha = 0.85;
+      ctx.font = `italic ${h * 0.05}px 'Instrument Serif', serif`;
+      ctx.fillText(full.slice(0, chars), w/2, h/2 + h*0.20);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // ── Scene 3 (4-7): Single bust assembles layer by layer ──
+  else if (t < 7.0) {
+    const u = (t - 4.0) / 3.0; // 0..1
+    const cx = w/2, cy = h/2;
+    const s = h * 0.028;
+
+    // Kicker
+    ctx.fillStyle = PAPER;
+    ctx.globalAlpha = clamp(u * 2, 0, 1) * 0.75;
+    ctx.font = `500 ${h * 0.022}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('EIGHT TRAITS · ONE BUST', cx, h * 0.12);
+    ctx.globalAlpha = 1;
+
+    // Layer reveals — 8 phases
+    const phases = [
+      { at: 0.00, draw: () => { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(cx - 16*s, cy - 14*s, 32*s, 24*s); } }, // bg plate
+      { at: 0.10, draw: () => {
+        // hair
+        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
+        ctx.fillStyle = PAPER;
+        px(5, 2, 14, 1); px(4, 3, 16, 1); px(4, 4, 16, 1); px(3, 5, 18, 1); px(3, 6, 18, 1);
+        ctx.fillStyle = INK;
+        px(3, 7, 18, 1);
+      } },
+      { at: 0.22, draw: () => {
+        // face
+        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
+        ctx.fillStyle = GREY;
+        for (let y = 8; y <= 14; y++) px(4, y, 16, 1);
+        px(5, 15, 14, 1); px(6, 16, 12, 1);
+      } },
+      { at: 0.35, draw: () => {
+        // eyes
+        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
+        ctx.fillStyle = INK; px(7, 10, 3, 2); px(14, 10, 3, 2);
+      } },
+      { at: 0.45, draw: () => {
+        // mouth
+        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
+        ctx.fillStyle = INK; px(9, 14, 6, 1);
+      } },
+      { at: 0.58, draw: () => {
+        // neck
+        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
+        ctx.fillStyle = GREY; px(10, 17, 4, 1); px(10, 18, 4, 1);
+      } },
+      { at: 0.70, draw: () => {
+        // collar / lime accent
+        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
+        ctx.fillStyle = LIME;
+        px(6, 19, 12, 1); px(4, 20, 16, 1); px(2, 21, 20, 1); px(2, 22, 20, 1);
+        ctx.fillStyle = INK; px(2, 23, 20, 1);
+      } },
+      { at: 0.85, draw: () => {
+        // lime dot + label
+        ctx.fillStyle = LIME;
+        ctx.beginPath(); ctx.arc(cx - 14*s, cy + 13*s, s * 0.4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = PAPER;
+        ctx.font = `500 ${h * 0.022}px 'JetBrains Mono', monospace`;
+        ctx.textAlign = 'left';
+        ctx.fillText('bust · 0000', cx - 12*s, cy + 14*s);
+      } },
+    ];
+    phases.forEach(({ at, draw }) => { if (u >= at) draw(); });
+  }
+
+  // ── Scene 4 (7-10): Grid of 9 busts flash in ──
+  else if (t < 10.0) {
+    const u = (t - 7.0) / 3.0;
+    const cols = 5, rows = 3;
+    const gap = w * 0.012;
+    const cellW = (w - gap * (cols + 1)) / cols;
+    const cellH = (h - gap * (rows + 1) - h * 0.20) / rows;
+    const top = h * 0.20;
+
+    ctx.fillStyle = PAPER;
+    ctx.globalAlpha = 0.75;
+    ctx.font = `500 ${h * 0.022}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('NO TWO ALIKE · 1,969 UNIQUE BUSTS', w/2, h * 0.10);
+    ctx.globalAlpha = 1;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const idx = r * cols + c;
+        const revealAt = idx * 0.055;
+        if (u < revealAt) continue;
+        const reveal = clamp((u - revealAt) / 0.12, 0, 1);
+
+        const x = gap + c * (cellW + gap);
+        const y = top + gap + r * (cellH + gap);
+        ctx.save();
+        ctx.globalAlpha = reveal;
+        ctx.fillStyle = '#181818';
+        ctx.fillRect(x, y, cellW, cellH);
+        // Random-variant bust — scale to fit
+        const bs = Math.min(cellW, cellH) / 26;
+        const randHair = (idx % 3 === 0) ? LIME : PAPER;
+        const randFace = (idx % 2 === 0) ? GREY : '#a8a8a8';
+        const randAccent = (idx % 4 === 0) ? PAPER : LIME;
+        drawPixelBust(ctx, x + cellW/2, y + cellH/2, bs, { hair: randHair, face: randFace, accent: randAccent });
+        ctx.restore();
+      }
+    }
+  }
+
+  // ── Scene 5 (10-13): Giant "1,969 BUSTS" wordmark ──
+  else if (t < 13.0) {
+    const u = (t - 10.0) / 3.0;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.fillStyle = PAPER;
+    ctx.globalAlpha = 0.7;
+    ctx.font = `500 ${h * 0.03}px 'JetBrains Mono', monospace`;
+    ctx.fillText('SUPPLY', w/2, h/2 - h*0.22);
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = PAPER;
+    ctx.font = `500 ${h * 0.32}px 'Space Grotesk', sans-serif`;
+    const countUp = Math.floor(1969 * easeOutCubic(clamp(u * 1.2, 0, 1))).toLocaleString();
+    ctx.fillText(countUp, w/2, h/2 - h*0.03);
+
+    ctx.fillStyle = LIME;
+    ctx.font = `italic ${h * 0.075}px 'Instrument Serif', serif`;
+    ctx.fillText('busts.', w/2, h/2 + h*0.18);
+  }
+
+  // ── Scene 6 (13-16): Closing mark — THE 1969 ──
+  else {
+    const u = (t - 13.0) / 3.0;
+    const fade = easeOutCubic(clamp(u * 1.6, 0, 1));
+
+    // Central bust
+    ctx.save();
+    ctx.globalAlpha = fade;
+    drawPixelBust(ctx, w/2, h/2 - h*0.05, h * 0.022);
+    ctx.restore();
+
+    // Wordmark + badge
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = PAPER;
+    ctx.font = `500 ${h * 0.04}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('THE · 1969 · ETHEREUM', w/2, h/2 + h*0.22);
+
+    // Lime call-to-action
+    ctx.fillStyle = LIME;
+    ctx.font = `italic ${h * 0.055}px 'Instrument Serif', serif`;
+    ctx.fillText('mint unlocks when the grid fills.', w/2, h/2 + h*0.31);
+    ctx.globalAlpha = 1;
+
+    // Corner ticker
+    ctx.fillStyle = PAPER;
+    ctx.globalAlpha = 0.6 * fade;
+    ctx.font = `500 ${h * 0.02}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'left';
+    ctx.fillText('INDEX 001 / SERIES A', w*0.04, h - h*0.05);
+    ctx.textAlign = 'right';
+    ctx.fillText('@the1969eth', w - w*0.04, h - h*0.05);
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Synthesized soundtrack — Web Audio API
+// ══════════════════════════════════════════════════════════════════════
+let audioCtx = null;
+let audioDestination = null; // for capture stream
+
+function buildAudio(sendToRecorder) {
+  // Fresh context each playthrough so we can schedule everything at t=0
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const master = audioCtx.createGain();
+  master.gain.value = 0.9;
+  master.connect(audioCtx.destination);
+  if (sendToRecorder) {
+    audioDestination = audioCtx.createMediaStreamDestination();
+    master.connect(audioDestination);
+  }
+
+  const now = audioCtx.currentTime + 0.1; // small lead-in
+
+  // 1) Low-freq drone pad running the whole 16s
+  const drone = audioCtx.createOscillator();
+  drone.type = 'sawtooth';
+  drone.frequency.setValueAtTime(55, now);
+  drone.frequency.linearRampToValueAtTime(82, now + 14);
+  const droneFilter = audioCtx.createBiquadFilter();
+  droneFilter.type = 'lowpass';
+  droneFilter.frequency.setValueAtTime(200, now);
+  droneFilter.frequency.linearRampToValueAtTime(1200, now + 12);
+  const droneGain = audioCtx.createGain();
+  droneGain.gain.setValueAtTime(0, now);
+  droneGain.gain.linearRampToValueAtTime(0.10, now + 0.5);
+  droneGain.gain.setValueAtTime(0.10, now + 13);
+  droneGain.gain.linearRampToValueAtTime(0, now + 16);
+  drone.connect(droneFilter).connect(droneGain).connect(master);
+  drone.start(now);
+  drone.stop(now + 16.2);
+
+  // 2) Kick hit on each big beat
+  const beatTimes = [0.0, 2.0, 4.0, 7.0, 10.0, 13.0, 15.5];
+  beatTimes.forEach((t) => {
+    const o = audioCtx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(160, now + t);
+    o.frequency.exponentialRampToValueAtTime(38, now + t + 0.25);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, now + t);
+    g.gain.linearRampToValueAtTime(0.7, now + t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, now + t + 0.35);
+    o.connect(g).connect(master);
+    o.start(now + t);
+    o.stop(now + t + 0.4);
+  });
+
+  // 3) Trait-reveal ticks during scene 3 (4-7s)
+  for (let i = 0; i < 8; i++) {
+    const tick = 4.0 + i * 0.28;
+    const o = audioCtx.createOscillator();
+    o.type = 'square';
+    o.frequency.setValueAtTime(880 + i * 120, now + tick);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, now + tick);
+    g.gain.linearRampToValueAtTime(0.12, now + tick + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, now + tick + 0.08);
+    o.connect(g).connect(master);
+    o.start(now + tick);
+    o.stop(now + tick + 0.1);
+  }
+
+  // 4) Grid-fill percussive bursts during scene 4 (7-10s)
+  for (let i = 0; i < 15; i++) {
+    const tick = 7.0 + i * 0.18;
+    const noise = audioCtx.createBufferSource();
+    const buf = audioCtx.createBuffer(1, 44100 * 0.05, 44100);
+    const ch = buf.getChannelData(0);
+    for (let k = 0; k < ch.length; k++) ch[k] = (Math.random() * 2 - 1) * Math.exp(-k / 800);
+    noise.buffer = buf;
+    const g = audioCtx.createGain();
+    g.gain.value = 0.10;
+    noise.connect(g).connect(master);
+    noise.start(now + tick);
+  }
+
+  // 5) Final synth sweep landing at 13s ("1969")
+  const sweep = audioCtx.createOscillator();
+  sweep.type = 'triangle';
+  sweep.frequency.setValueAtTime(200, now + 10.5);
+  sweep.frequency.exponentialRampToValueAtTime(1200, now + 13);
+  const sweepGain = audioCtx.createGain();
+  sweepGain.gain.setValueAtTime(0, now + 10.5);
+  sweepGain.gain.linearRampToValueAtTime(0.15, now + 12);
+  sweepGain.gain.linearRampToValueAtTime(0, now + 13.3);
+  sweep.connect(sweepGain).connect(master);
+  sweep.start(now + 10.5);
+  sweep.stop(now + 13.5);
+
+  // 6) Final chord at 13s
+  [220, 277.18, 329.63].forEach((f, i) => {
+    const o = audioCtx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = f;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, now + 13);
+    g.gain.linearRampToValueAtTime(0.10, now + 13.1);
+    g.gain.setValueAtTime(0.10, now + 15);
+    g.gain.linearRampToValueAtTime(0, now + 16);
+    o.connect(g).connect(master);
+    o.start(now + 13);
+    o.stop(now + 16.1);
+  });
+
+  return now;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Playback + record
+// ══════════════════════════════════════════════════════════════════════
+let rafId = null;
+let startedAt = 0;
+let recorder = null;
+let recChunks = [];
+
+function setStatus(s) { document.getElementById('status').textContent = s; }
+
+function loopFrame() {
+  const elapsed = performance.now() - startedAt;
+  if (elapsed >= DURATION_MS) {
+    drawFrame(DURATION_MS - 16);
+    return;
+  }
+  drawFrame(elapsed);
+  rafId = requestAnimationFrame(loopFrame);
+}
+
+async function ensureFontsReady() {
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+}
+
+document.getElementById('play').addEventListener('click', async () => {
+  await ensureFontsReady();
+  setResolution(document.getElementById('res').value);
+  const silent = document.getElementById('audio-mode').value === 'silent';
+  if (rafId) cancelAnimationFrame(rafId);
+  if (audioCtx) { try { await audioCtx.close(); } catch {} audioCtx = null; }
+  if (!silent) buildAudio(false);
+  startedAt = performance.now();
+  setStatus('Playing preview.');
+  rafId = requestAnimationFrame(loopFrame);
+  setTimeout(() => setStatus('Done. Click Record & download HD for a real file.'), DURATION_MS);
+});
+
+function pickRecorderMime() {
+  // Try MP4 first (Chrome 119+ supports it). Fall back to WebM.
+  const candidates = [
+    'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+    'video/mp4;codecs=avc1.64001F,mp4a.40.2',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+  ];
+  for (const m of candidates) {
+    if (MediaRecorder.isTypeSupported(m)) return m;
+  }
+  return '';
+}
+
+document.getElementById('record').addEventListener('click', async () => {
+  await ensureFontsReady();
+  setResolution(document.getElementById('res').value);
+  const silent = document.getElementById('audio-mode').value === 'silent';
+  if (rafId) cancelAnimationFrame(rafId);
+  if (audioCtx) { try { await audioCtx.close(); } catch {} audioCtx = null; }
+
+  const mime = pickRecorderMime();
+  if (!mime) { setStatus('Your browser cannot record video. Try Chrome or Edge.'); return; }
+
+  buildAudio(!silent);
+
+  const canvasStream = cv.captureStream(60);
+  const tracks = [...canvasStream.getTracks()];
+  if (!silent && audioDestination) {
+    for (const t of audioDestination.stream.getAudioTracks()) tracks.push(t);
+  }
+  const combined = new MediaStream(tracks);
+
+  recChunks = [];
+  recorder = new MediaRecorder(combined, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+  recorder.ondataavailable = (e) => { if (e.data.size) recChunks.push(e.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(recChunks, { type: mime });
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    const url = URL.createObjectURL(blob);
+    const wrap = document.getElementById('download-wrap');
+    wrap.innerHTML = '';
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `the-1969-trailer-16s.${ext}`;
+    a.className = 'download-link';
+    a.textContent = `Download .${ext} (${(blob.size / (1024*1024)).toFixed(1)} MB)`;
+    wrap.appendChild(a);
+    setStatus(`Recorded ${ext.toUpperCase()} · ready to download. X accepts both MP4 and WebM — MP4 is preferred for maximum compatibility.`);
+    document.getElementById('stop').disabled = true;
+  };
+
+  document.getElementById('stop').disabled = false;
+  startedAt = performance.now();
+  setStatus(`Recording ${mime.split(';')[0]} · ${WIDTH}×${HEIGHT} · 60fps. Do NOT switch tabs.`);
+  recorder.start();
+  rafId = requestAnimationFrame(function tick() {
+    const elapsed = performance.now() - startedAt;
+    if (elapsed >= DURATION_MS) {
+      drawFrame(DURATION_MS - 16);
+      recorder.stop();
+      return;
+    }
+    drawFrame(elapsed);
+    rafId = requestAnimationFrame(tick);
+  });
+});
+
+document.getElementById('stop').addEventListener('click', () => {
+  if (recorder && recorder.state === 'recording') recorder.stop();
+  if (rafId) cancelAnimationFrame(rafId);
+});
+
+// First paint at t=0 so the canvas isn't blank
+drawFrame(0);
+</script>
+</body>
+</html>

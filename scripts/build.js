@@ -80,6 +80,7 @@ const defineEnv = {
   'process.env.VITE_SEPOLIA_RPC': JSON.stringify(process.env.VITE_SEPOLIA_RPC || process.env.SEPOLIA_RPC || ''),
   'process.env.X_CLIENT_ID': JSON.stringify(process.env.X_CLIENT_ID || process.env.VITE_X_CLIENT_ID || ''),
   'process.env.VITE_X_CLIENT_ID': JSON.stringify(process.env.VITE_X_CLIENT_ID || process.env.X_CLIENT_ID || ''),
+  'process.env.VITE_X_REDIRECT_URI': JSON.stringify(process.env.VITE_X_REDIRECT_URI || process.env.X_REDIRECT_URI || ''),
 };
 
 async function copyStaticFiles() {
