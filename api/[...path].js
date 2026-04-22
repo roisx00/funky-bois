@@ -33,13 +33,35 @@ const ROUTES = {
   'admin/whitelist':   adminWhitelist,
 };
 
+function extractPath(req) {
+  // 1) Vercel passes wildcard segments via req.query.path on Pages-style routes
+  const q = req.query?.path;
+  if (Array.isArray(q) && q.length) return q.join('/');
+  if (typeof q === 'string' && q) return q;
+
+  // 2) Fall back to parsing req.url directly (vanilla Vercel functions)
+  try {
+    const u = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    let p = u.pathname;
+    p = p.replace(/^\/+/, '');           // strip leading slashes
+    p = p.replace(/^api\/?/, '');        // strip api/ prefix
+    p = p.replace(/\/+$/, '');           // strip trailing slash
+    // Re-attach req.query so handlers can still read query params
+    if (!req.query || typeof req.query !== 'object') req.query = {};
+    for (const [k, v] of u.searchParams.entries()) {
+      if (req.query[k] === undefined) req.query[k] = v;
+    }
+    return p;
+  } catch {
+    return '';
+  }
+}
+
 export default async function handler(req, res) {
-  // path is an array (Vercel passes the wildcard segments)
-  const segments = Array.isArray(req.query?.path) ? req.query.path : [String(req.query?.path || '')];
-  const key = segments.join('/');
+  const key = extractPath(req);
   const route = ROUTES[key];
   if (!route) {
-    res.status(404).json({ error: 'route_not_found', path: key });
+    res.status(404).json({ error: 'route_not_found', path: key, url: req.url });
     return;
   }
   try {
