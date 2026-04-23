@@ -117,7 +117,7 @@ export default async function handler(req, res) {
 
   const eng = await scrapeTweetEngagement(task.tweet_id);
 
-  // If Nitter is entirely unreachable (all 3 mirrors dead), eng.likes etc
+  // If Nitter is entirely unreachable (all mirrors dead), eng.likes etc
   // will be null. Surface that clearly instead of silently approving 0.
   const scrapeFailed = eng.likes === null && eng.retweets === null && eng.replies === null;
 
@@ -126,6 +126,18 @@ export default async function handler(req, res) {
     rt:    await matchAndApprove(task, 'rt',    eng.retweets, admin.x_username),
     reply: await matchAndApprove(task, 'reply', eng.replies,  admin.x_username),
   };
+
+  // Manual-review fallback: when scraping fails we list every pending
+  // self-claim so the admin can review them by opening each X profile.
+  const pendingForManualReview = await sql`
+    SELECT pv.id, pv.user_id, pv.action_type, pv.points, pv.created_at,
+           u.x_username, u.x_avatar
+      FROM pending_verifications pv
+      JOIN users u ON u.id = pv.user_id
+     WHERE pv.task_id = ${task.id}
+       AND pv.status = 'pending'
+     ORDER BY pv.created_at ASC
+  `;
 
   const totalApproved = results.like.autoApproved.length + results.rt.autoApproved.length + results.reply.autoApproved.length;
   const totalFakeClaims = results.like.fakeClaims.length + results.rt.fakeClaims.length + results.reply.fakeClaims.length;
@@ -150,5 +162,16 @@ export default async function handler(req, res) {
       fakeClaims:   totalFakeClaims,
       scraperQueued: totalQueued,
     },
+    tweetUrl: task.tweet_url,
+    diag: eng.diag || [],
+    pendingForManualReview: pendingForManualReview.map((p) => ({
+      verifId:   p.id,
+      userId:    p.user_id,
+      xUsername: p.x_username,
+      xAvatar:   p.x_avatar,
+      action:    p.action_type,
+      points:    p.points,
+      claimedAt: new Date(p.created_at).getTime(),
+    })),
   });
 }

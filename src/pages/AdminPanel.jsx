@@ -804,9 +804,7 @@ function ScanResultPanel({ result, onRejectAll }) {
   return (
     <div style={{ borderTop: '1px solid var(--hairline)' }}>
       {scrapeFailed ? (
-        <div style={{ padding: '14px 20px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red, #c4352b)', background: 'rgba(204,58,42,0.04)' }}>
-          Scrape failed — every Nitter mirror returned nothing. Can't auto-verify. Check NITTER_HOSTS env or try again later.
-        </div>
+        <ScrapeFailedFallback result={result} />
       ) : (
         <>
           <div style={{ padding: '12px 20px', background: 'var(--paper-2)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', color: 'var(--text-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -833,5 +831,142 @@ function ScanResultPanel({ result, onRejectAll }) {
         </>
       )}
     </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Manual-review fallback when Nitter is dead. Shows every pending self-
+// claim with an "open profile" link + one-click approve/reject.
+// ══════════════════════════════════════════════════════════════════════
+function ScrapeFailedFallback({ result }) {
+  const [pending, setPending] = useState(result.pendingForManualReview || []);
+  const [busyId, setBusyId]   = useState(null);
+
+  const decide = async (verifId, action) => {
+    setBusyId(verifId);
+    const r = await jpost('/api/admin-approve', { ids: [verifId], action });
+    setBusyId(null);
+    if (r.ok) setPending((prev) => prev.filter((p) => p.verifId !== verifId));
+  };
+
+  const diag = Array.isArray(result.diag) ? result.diag : [];
+  const tweetId = result.scraped && result.tweetUrl
+    ? (result.tweetUrl.match(/\/status\/(\d+)/) || [])[1]
+    : null;
+  const ACTION_LABEL = { like: 'Liked', rt: 'Retweeted', reply: 'Replied' };
+
+  return (
+    <>
+      <div style={{
+        padding: '14px 20px',
+        fontFamily: 'var(--font-mono)', fontSize: 12,
+        color: 'var(--red, #c4352b)',
+        background: 'rgba(204,58,42,0.04)',
+        borderBottom: '1px solid var(--hairline)',
+      }}>
+        <div style={{ marginBottom: 8, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          Auto-scrape failed — manual review below
+        </div>
+        <div style={{ color: 'var(--text-3)', fontSize: 11, lineHeight: 1.6 }}>
+          All Nitter mirrors rejected the request. This is normal — most public mirrors die periodically.
+          Use the list below to verify each self-claim by hand:
+          click the user's profile, confirm they really engaged with the tweet, then Approve or Reject.
+          {' '}You can also set <code>NITTER_HOSTS</code> env var on Vercel to try different mirrors.
+        </div>
+        {diag.length > 0 && (
+          <details style={{ marginTop: 10 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 10, color: 'var(--text-4)' }}>
+              Show scraper diagnostics ({diag.length} attempts)
+            </summary>
+            <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
+              {diag.slice(0, 20).map((d, i) => (
+                <div key={i}>
+                  {d.ok ? '✓' : '✕'} {d.host}{d.prefix || ''}
+                  {' · '}HTTP {d.status ?? '-'}
+                  {d.error ? ` · ${d.error}` : ''}
+                  {typeof d.count === 'number' ? ` · ${d.count} handles` : ''}
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+
+      {pending.length === 0 ? (
+        <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-4)' }}>
+          No pending self-claims for this task.
+        </div>
+      ) : (
+        pending.map((p) => (
+          <div
+            key={p.verifId}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '44px 1fr auto auto auto auto',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 20px',
+              borderBottom: '1px solid var(--hairline)',
+            }}
+          >
+            {p.xAvatar ? (
+              <img src={p.xAvatar} alt="" style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid var(--hairline)' }} />
+            ) : (
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--paper-2)', border: '1px solid var(--hairline)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-3)' }}>
+                {p.xUsername?.[0]?.toUpperCase() || '?'}
+              </div>
+            )}
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>
+                @{p.xUsername}
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-4)', letterSpacing: '0.04em' }}>
+                claims {ACTION_LABEL[p.action] || p.action} · submitted {timeAgo(p.claimedAt)}
+              </div>
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 500 }}>
+              +{p.points} <span style={{ fontSize: 9, color: 'var(--text-4)' }}>BUSTS</span>
+            </div>
+            <a
+              className="btn btn-ghost btn-sm"
+              href={`https://x.com/${p.xUsername}`}
+              target="_blank"
+              rel="noreferrer"
+              title="Open profile on X — verify they engaged"
+            >
+              Check on X ↗
+            </a>
+            {tweetId && (
+              <a
+                className="btn btn-ghost btn-sm"
+                href={`https://x.com/search?q=from%3A${encodeURIComponent(p.xUsername)}%20url%3A${encodeURIComponent(tweetId)}&src=typed_query&f=live`}
+                target="_blank"
+                rel="noreferrer"
+                title="Search their activity around this tweet"
+              >
+                Search ↗
+              </a>
+            )}
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                className="btn btn-solid btn-sm"
+                disabled={busyId === p.verifId}
+                onClick={() => decide(p.verifId, 'approve')}
+              >
+                {busyId === p.verifId ? '...' : 'Approve'}
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ borderColor: 'var(--red, #c4352b)', color: 'var(--red, #c4352b)' }}
+                disabled={busyId === p.verifId}
+                onClick={() => decide(p.verifId, 'reject')}
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+    </>
   );
 }

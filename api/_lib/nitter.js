@@ -5,11 +5,15 @@
 // cheerio is loaded lazily inside the scrape functions so a broken/missing
 // install can't crash the dispatcher cold-start.
 
+// Public Nitter mirrors come and go. This default list is current as of
+// late 2025 — override via NITTER_HOSTS env when mirrors die. First one
+// that returns data wins; the scraper tries them in order.
 const NITTER_HOSTS = (process.env.NITTER_HOSTS ||
-  'nitter.net,nitter.privacydev.net,nitter.poast.org'
+  'xcancel.com,nitter.space,nitter.privacydev.net,nitter.poast.org,nitter.lucabased.xyz,nitter.kavin.rocks'
 ).split(',').map((h) => h.trim()).filter(Boolean);
 
-const UA = 'Mozilla/5.0 (compatible; THE1969-engagement-bot/1.0)';
+// Browser-like UA — some mirrors reject obvious bot user-agents.
+const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 async function loadCheerio() {
   try {
@@ -24,13 +28,16 @@ async function loadCheerio() {
 async function tryFetch(url) {
   try {
     const r = await fetch(url, {
-      headers: { 'User-Agent': UA, Accept: 'text/html' },
+      headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml' },
       redirect: 'follow',
     });
-    if (!r.ok) return null;
-    return await r.text();
-  } catch {
-    return null;
+    if (!r.ok) return { ok: false, status: r.status, text: null };
+    const text = await r.text();
+    // Detect empty/error pages returned with 200 status (common on dead mirrors)
+    if (!text || text.length < 500) return { ok: false, status: r.status, text: null };
+    return { ok: true, status: r.status, text };
+  } catch (e) {
+    return { ok: false, status: 0, text: null, error: e?.message };
   }
 }
 
@@ -48,21 +55,36 @@ function extractHandles($) {
   return out;
 }
 
-async function scrapeOne(cheerio, host, tweetId, suffix) {
-  const html = await tryFetch(`https://${host}/i/status/${tweetId}${suffix}`);
-  if (!html) return null;
-  const $ = cheerio.load(html);
-  return extractHandles($);
+async function scrapeOne(cheerio, host, tweetId, suffix, diag) {
+  // Try both the /i/status/ and /status/ URL forms — forks like xcancel
+  // sometimes only support one of them.
+  for (const prefix of ['/i/status', '/status']) {
+    const url = `https://${host}${prefix}/${tweetId}${suffix}`;
+    // eslint-disable-next-line no-await-in-loop
+    const r = await tryFetch(url);
+    if (r.ok && r.text) {
+      const $ = cheerio.load(r.text);
+      const handles = extractHandles($);
+      diag.push({ host, prefix, status: r.status, ok: true, count: handles.size });
+      return handles;
+    }
+    diag.push({ host, prefix, status: r.status, ok: false, error: r.error });
+  }
+  return null;
 }
 
 export async function scrapeTweetEngagement(tweetId) {
   const cheerio = await loadCheerio();
-  const out = { likes: null, retweets: null, replies: null };
-  if (!cheerio) return out;
+  const diag = [];
+  const out = { likes: null, retweets: null, replies: null, diag };
+  if (!cheerio) {
+    diag.push({ host: '-', error: 'cheerio_not_available' });
+    return out;
+  }
   for (const host of NITTER_HOSTS) {
-    if (out.likes === null)    out.likes    = await scrapeOne(cheerio, host, tweetId, '/favorites');
-    if (out.retweets === null) out.retweets = await scrapeOne(cheerio, host, tweetId, '/retweets');
-    if (out.replies === null)  out.replies  = await scrapeOne(cheerio, host, tweetId, '');
+    if (out.likes === null)    out.likes    = await scrapeOne(cheerio, host, tweetId, '/favorites', diag);
+    if (out.retweets === null) out.retweets = await scrapeOne(cheerio, host, tweetId, '/retweets', diag);
+    if (out.replies === null)  out.replies  = await scrapeOne(cheerio, host, tweetId, '', diag);
     if (out.likes && out.retweets && out.replies) break;
   }
   return out;
