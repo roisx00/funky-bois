@@ -297,15 +297,35 @@ export function GameProvider({ children }) {
     dispatch({ type: 'CLEAR_USER' });
   }, []);
 
-  const claimElement = useCallback(async () => {
+  // Step 1 of the claim flow — request an arm token from the server.
+  // Token binds to (userId, sessId, nonce) and has a 1.5s not-before.
+  const armDrop = useCallback(async () => {
     if (!state.authenticated) return { ok: false, reason: 'Sign in with X first' };
-    const r = await jpost('/api/drop-claim');
+    const r = await jpost('/api/drop-arm');
+    if (!r.ok) return { ok: false, reason: r.error || 'Could not arm' };
+    return {
+      ok: true,
+      token:              r.token,
+      nonce:              r.nonce,
+      notValidBeforeMs:   r.notValidBeforeMs,
+      expiresAtMs:        r.expiresAtMs,
+    };
+  }, [state.authenticated]);
+
+  // Step 2 — submit the claim with the arm token + human-interaction proof.
+  // Callers must pass { armToken, interactionProof } where interactionProof
+  // carries the ACTUAL measurements of this user's arming session.
+  const claimElement = useCallback(async ({ armToken, interactionProof } = {}) => {
+    if (!state.authenticated) return { ok: false, reason: 'Sign in with X first' };
+    if (!armToken || !interactionProof) {
+      return { ok: false, reason: 'Missing arm token or interaction proof' };
+    }
+    const r = await jpost('/api/drop-claim', { armToken, interactionProof });
     if (!r.ok) return { ok: false, reason: r.error || 'Drop claim failed' };
     dispatch({ type: 'ADD_INVENTORY', element: r.element });
     dispatch({ type: 'BUMP_BALANCE', amount: r.bustsReward, reason: `Drop reward: ${r.element.name}` });
     if (r.dailyBonus) dispatch({ type: 'BUMP_BALANCE', amount: r.dailyBonus, reason: 'Daily drop claim' });
     dispatch({ type: 'BUMP_SESSION_CLAIMS' });
-    // Re-pull status so pool counter is in sync
     jget('/api/drop-status').then((ds) => ds.ok && dispatch({ type: 'SET_DROP_STATUS', payload: ds }));
     return { ok: true, element: r.element, bustsReward: r.bustsReward, position: r.position };
   }, [state.authenticated]);
@@ -433,6 +453,7 @@ export function GameProvider({ children }) {
     setReferralCode,
     setReferredBy,
     claimElement,
+    armDrop,
     openMysteryBox,
     claimConsolation,
     addBusts,

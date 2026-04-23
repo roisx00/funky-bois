@@ -281,6 +281,8 @@ export default function AdminPanel({ onNavigate }) {
         )}
       </section>
 
+      <AdminDropAudit />
+
       <AdminTasksPanel />
 
       <button onClick={() => onNavigate('home')} className="btn btn-ghost" style={{ width: '100%', marginTop: 32 }}>
@@ -568,6 +570,146 @@ function AdminDropConfig() {
           borderTop: '1px solid var(--hairline)',
           fontFamily: 'var(--font-mono)', fontSize: 12,
         }}>{msg}</div>
+      )}
+    </section>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Drop claims audit — list every claim with bot score + rollback control
+// ══════════════════════════════════════════════════════════════════════
+function AdminDropAudit() {
+  const [rows, setRows]           = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [suspiciousOnly, setSO]   = useState(false);
+  const [busyId, setBusyId]       = useState(null);
+  const [msg, setMsg]             = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const r = await jget('/api/admin-drop-audit?limit=200');
+    if (r.ok) setRows(r.claims || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const rollback = async (row) => {
+    const ok = window.confirm(
+      `Rollback @${row.xUsername || 'user'} claim of ${row.rarity} ${row.elementType} (${row.bustsReward} BUSTS)?\n\n` +
+      `Claim was ${row.msFromOpen}ms after session open. Bot score ${row.botScore}/100.\n\n` +
+      `This will: remove the trait from their inventory, refund ${row.bustsReward} BUSTS (debit), and restore the pool slot.`
+    );
+    if (!ok) return;
+    setBusyId(row.id);
+    const r = await jpost('/api/admin-rollback-claim', { claimId: row.id, reason: 'bot-flagged' });
+    setBusyId(null);
+    if (r.ok) {
+      setMsg(`Rolled back claim ${row.id.slice(0, 8)} · -${row.bustsReward} BUSTS from @${row.xUsername}`);
+      load();
+    } else {
+      setMsg(`Error: ${r.error || 'failed'}`);
+    }
+    setTimeout(() => setMsg(''), 5000);
+  };
+
+  const filtered = suspiciousOnly ? rows.filter((r) => r.botScore >= 60) : rows;
+
+  return (
+    <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+      <div className="admin-roster-head">
+        <div>
+          <div className="admin-roster-title">Drop claims audit</div>
+          <div className="admin-roster-meta">
+            Claims with bot score ≥ 60 almost certainly used automation.
+            Rollback removes the trait + refunds BUSTS + restores the pool slot.
+          </div>
+        </div>
+        <div className="admin-roster-actions">
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+            <input type="checkbox" checked={suspiciousOnly} onChange={(e) => setSO(e.target.checked)} />
+            Suspicious only
+          </label>
+          <button className="btn btn-ghost btn-sm" onClick={load} disabled={loading}>
+            {loading ? 'Loading.' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+
+      {msg && (
+        <div style={{
+          padding: '10px 24px',
+          background: msg.startsWith('Error') ? 'rgba(204,58,42,0.08)' : 'var(--accent-dim)',
+          borderTop: '1px solid var(--hairline)',
+          fontFamily: 'var(--font-mono)', fontSize: 11,
+        }}>{msg}</div>
+      )}
+
+      {filtered.length === 0 ? (
+        <div className="admin-roster-empty">
+          {loading ? 'Loading claims.' : suspiciousOnly ? 'No suspicious claims.' : 'No claims yet.'}
+        </div>
+      ) : (
+        filtered.map((row) => {
+          const tier =
+            row.botScore >= 80 ? { bg: 'rgba(204,58,42,0.10)', fg: 'var(--red, #c4352b)', label: 'BOT' }
+            : row.botScore >= 60 ? { bg: 'rgba(216,143,50,0.10)', fg: '#a7691e', label: 'SUSPICIOUS' }
+            : row.botScore >= 30 ? { bg: 'var(--paper-2)', fg: 'var(--text-3)', label: 'WATCH' }
+            : { bg: 'transparent', fg: 'var(--text-3)', label: 'OK' };
+          return (
+            <div
+              key={row.id}
+              className="admin-roster-row"
+              style={{
+                gridTemplateColumns: '1.2fr 1fr 0.8fr 1fr 0.6fr auto',
+                background: tier.bg,
+              }}
+            >
+              <div>
+                <div className="admin-roster-user">@{row.xUsername || row.userId.slice(0, 8)}</div>
+                <div className="admin-roster-wallet">
+                  {row.msFromOpen}ms after open · avg {row.avgMsFromOpen ?? '—'}ms
+                </div>
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', color: 'var(--text-3)' }}>
+                  {row.elementType} #{row.variant}
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-4)', marginTop: 2 }}>
+                  {row.rarity}
+                </div>
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 500 }}>
+                +{row.bustsReward}
+                <span style={{ fontSize: 9, color: 'var(--text-4)', marginLeft: 4 }}>BUSTS</span>
+              </div>
+              <div>
+                <span style={{
+                  display: 'inline-block',
+                  fontFamily: 'var(--font-mono)', fontSize: 10,
+                  padding: '3px 8px',
+                  border: `1px solid ${tier.fg}`,
+                  color: tier.fg, letterSpacing: '0.06em',
+                }}>
+                  {tier.label} · {row.botScore}
+                </span>
+              </div>
+              <div className="admin-roster-time">
+                {timeAgo(row.claimedAt)}
+              </div>
+              <div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ borderColor: 'var(--red, #c4352b)', color: 'var(--red, #c4352b)' }}
+                  onClick={() => rollback(row)}
+                  disabled={busyId === row.id}
+                >
+                  {busyId === row.id ? 'Rolling.' : 'Rollback'}
+                </button>
+              </div>
+            </div>
+          );
+        })
       )}
     </section>
   );

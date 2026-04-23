@@ -5313,3 +5313,213 @@ section { background: var(--bg); }
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  Drop page v2 — bot-gated arming flow                                    */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.drop-page-v2 { max-width: 1240px; margin: 0 auto; }
+.drop-v2-header { text-align: center; max-width: 720px; margin: 0 auto 48px; }
+.drop-v2-kicker {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 18px;
+}
+.drop-v2-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--accent); border: 1px solid var(--ink);
+  box-shadow: 0 0 0 0 var(--accent);
+  animation: dropDot 2s infinite;
+}
+.drop-v2-dot.urgency-low      { background: #d88f32; }
+.drop-v2-dot.urgency-critical { background: #c4352b; animation: dropDot 0.8s infinite; }
+@keyframes dropDot {
+  0%   { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+  70%  { box-shadow: 0 0 0 8px rgba(215,255,58,0); opacity: .6; }
+  100% { box-shadow: 0 0 0 0 rgba(215,255,58,0); opacity: 1; }
+}
+.drop-v2-title {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: clamp(38px, 6vw, 68px); letter-spacing: -0.03em;
+  line-height: 1.02; margin: 0 0 18px; color: var(--ink);
+}
+.drop-v2-title em { font-family: var(--font-serif, 'Instrument Serif', serif); font-style: italic; font-weight: 400; }
+.drop-v2-sub {
+  max-width: 560px; margin: 0 auto; font-size: 15px; line-height: 1.55;
+  color: var(--text-3);
+}
+
+.drop-v2-main {
+  display: grid; grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 28px; align-items: start;
+}
+@media (max-width: 960px) { .drop-v2-main { grid-template-columns: 1fr; } }
+
+/* ── Stage panel ───────────────────────────────────────────────────── */
+.drop-v2-stage {
+  background: var(--surface); border: 1px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 28px;
+}
+.drop-v2-timer-row {
+  display: grid; grid-template-columns: auto 1fr; gap: 28px;
+  padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--hairline);
+  align-items: center;
+}
+@media (max-width: 640px) { .drop-v2-timer-row { grid-template-columns: 1fr; gap: 16px; } }
+.drop-v2-timer-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+  color: var(--text-4); text-transform: uppercase; margin-bottom: 4px;
+}
+.drop-v2-timer-value .timer { gap: 6px; }
+.drop-v2-timer-value .timer-digits { font-size: 32px; }
+.drop-v2-timer-value .timer-label { font-size: 9px; }
+.drop-v2-mood { display: flex; flex-direction: column; gap: 6px; }
+.drop-v2-mood-label {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink);
+}
+.drop-v2-mood-bar {
+  height: 6px; background: var(--paper-2); border: 1px solid var(--hairline); overflow: hidden;
+}
+.drop-v2-mood-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+.drop-v2-mood.urgency-low .drop-v2-mood-fill       { background: #d88f32; }
+.drop-v2-mood.urgency-critical .drop-v2-mood-fill  { background: #c4352b; }
+.drop-v2-mood-foot {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+  color: var(--text-4);
+}
+
+/* ── Action area ───────────────────────────────────────────────────── */
+.drop-v2-action { min-height: 180px; }
+.drop-v2-action-idle {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 40px 20px; text-align: center;
+  border: 1px dashed var(--rule); background: var(--paper-2);
+}
+.drop-v2-action-icon {
+  font-size: 32px; color: var(--text-3); line-height: 1;
+}
+.drop-v2-action-title {
+  font-family: var(--font-display); font-weight: 500; font-size: 24px;
+  letter-spacing: -0.02em; color: var(--ink);
+}
+.drop-v2-action-sub {
+  font-size: 13px; color: var(--text-3); line-height: 1.5; max-width: 420px;
+}
+
+.drop-v2-step-head {
+  display: flex; gap: 14px; align-items: center; margin-bottom: 16px;
+}
+.drop-v2-step-num {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
+  padding: 4px 10px; border: 1px solid var(--ink); background: var(--paper);
+  color: var(--ink);
+}
+.drop-v2-step-title {
+  font-family: var(--font-display); font-size: 18px; font-weight: 500;
+  letter-spacing: -0.01em; color: var(--ink);
+}
+.drop-v2-step-sub {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em;
+  color: var(--text-3); margin-top: 2px;
+}
+
+/* Drag-to-arm rail */
+.drop-v2-drag-rail {
+  position: relative; height: 64px;
+  background: var(--paper-2); border: 2px solid var(--ink);
+  user-select: none; touch-action: none;
+  cursor: grab; overflow: hidden;
+}
+.drop-v2-drag-rail.arming { cursor: grabbing; }
+.drop-v2-drag-fill {
+  position: absolute; inset: 0 auto 0 0;
+  background: var(--accent);
+  transition: width 0.05s linear;
+}
+.drop-v2-drag-handle {
+  position: absolute; top: 4px; bottom: 4px; left: 0; width: 56px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ink); color: var(--accent);
+  font-family: var(--font-mono); font-size: 22px; font-weight: 700;
+  transition: left 0.05s linear;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+}
+.drop-v2-drag-label {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink);
+  pointer-events: none; mix-blend-mode: difference; color: #fff;
+}
+
+/* Claim button states */
+.drop-v2-claim-btn {
+  width: 100%; padding: 22px 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: var(--ink); color: var(--accent); border: 2px solid var(--ink);
+  font-family: var(--font-display); font-size: 22px; font-weight: 500;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer; transition: transform 0.12s, background 0.12s;
+}
+.drop-v2-claim-btn.live { background: var(--accent); color: var(--ink); animation: claimPulse 1.2s infinite; }
+.drop-v2-claim-btn.live:hover { transform: translateY(-1px); }
+.drop-v2-claim-btn.locked { background: var(--paper-2); color: var(--text-4); border-color: var(--hairline); cursor: not-allowed; }
+.drop-v2-claim-inner { font-size: 28px; }
+.drop-v2-claim-sub {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+  color: inherit; opacity: 0.7; text-transform: uppercase;
+}
+@keyframes claimPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(215,255,58,0.6); }
+  50%      { box-shadow: 0 0 0 10px rgba(215,255,58,0); }
+}
+
+.drop-v2-alert {
+  margin-top: 16px; padding: 10px 14px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em;
+}
+.drop-v2-alert.error { border: 1px solid var(--red, #c4352b); background: rgba(204,58,42,0.06); color: var(--red, #c4352b); }
+
+/* Your claims dots */
+.drop-v2-claims-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 20px; margin-top: 20px; border-top: 1px solid var(--hairline);
+  flex-wrap: wrap; gap: 12px;
+}
+.drop-v2-claims-label {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+  color: var(--text-3); text-transform: uppercase;
+}
+.drop-v2-claims-dots { display: inline-flex; align-items: center; gap: 8px; }
+.drop-v2-dot-ch {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 1px solid var(--ink); background: transparent;
+}
+.drop-v2-dot-ch.on { background: var(--accent); }
+.drop-v2-claims-count {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;
+  color: var(--text-4); margin-left: 6px;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────── */
+.drop-v2-aside { display: flex; flex-direction: column; gap: 16px; }
+.drop-v2-aside-card {
+  background: var(--surface); border: 1px solid var(--hairline);
+  padding: 18px 20px;
+}
+.drop-v2-aside-title {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+  color: var(--text-4); text-transform: uppercase; margin-bottom: 12px;
+}
+.drop-v2-aside-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; font-size: 13px;
+}
+.drop-v2-aside-row span  { color: var(--text-3); }
+.drop-v2-aside-row strong{ color: var(--ink); font-weight: 500; }
+.drop-v2-howto, .drop-v2-rules {
+  margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.65;
+  color: var(--text-3);
+}
+.drop-v2-howto li, .drop-v2-rules li { margin: 4px 0; }

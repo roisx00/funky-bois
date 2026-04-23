@@ -26,6 +26,9 @@ import adminVerifications  from './_routes/admin-verifications.js';
 import adminApprove        from './_routes/admin-approve.js';
 import adminScan           from './_routes/admin-scan.js';
 import adminDropConfig     from './_routes/admin-drop-config.js';
+import adminDropAudit      from './_routes/admin-drop-audit.js';
+import adminRollbackClaim  from './_routes/admin-rollback-claim.js';
+import dropArm             from './_routes/drop-arm.js';
 import galleryHandler      from './_routes/gallery.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
@@ -38,6 +41,7 @@ const ROUTES = {
   'sign-out':            signOutHandler,
   'drop-claim':          dropClaimHandler,
   'drop-status':         dropStatusHandler,
+  'drop-arm':            dropArm,
   'box-open':            boxOpenHandler,
   'gift-send':           giftSendHandler,
   'gift-claim':          giftClaimHandler,
@@ -57,6 +61,8 @@ const ROUTES = {
   'admin-approve':       adminApprove,
   'admin-scan':          adminScan,
   'admin-drop-config':   adminDropConfig,
+  'admin-drop-audit':    adminDropAudit,
+  'admin-rollback-claim': adminRollbackClaim,
   'gallery':             galleryHandler,
 
   // slash aliases (backward compat — keep until all callers migrated)

@@ -63,3 +63,44 @@ export function buildSessionCookie(token, { secure = true } = {}) {
 export function buildClearSessionCookie() {
   return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure`;
 }
+
+// ───────────────────────────────────────────────────────────────────────
+// Short-lived ARM token. Used to gate /api/drop-claim so direct hammering
+// of the claim endpoint without going through /api/drop-arm fails.
+//
+// Payload:
+//   sub    — user_uuid (ties token to the claimer — can't be shared)
+//   sess   — drop session_id (ties token to one hourly window)
+//   nonce  — random, must be echoed back by the client
+//   nbf    — not-before (UNIX seconds) — claim must wait this long after arm
+//   exp    — expiry (UNIX seconds)
+// ───────────────────────────────────────────────────────────────────────
+export async function signArmToken({ userId, sessionId, nonce, notBeforeMs = 1500, ttlMs = 20000 }) {
+  const now = Math.floor(Date.now() / 1000);
+  const nbf = Math.floor((Date.now() + notBeforeMs) / 1000);
+  const exp = Math.floor((Date.now() + ttlMs) / 1000);
+  return await new SignJWT({ sub: userId, sess: String(sessionId), nonce })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt(now)
+    .setNotBefore(nbf)
+    .setExpirationTime(exp)
+    .sign(getSecret());
+}
+
+// Verify an arm token. Returns {sub, sess, nonce} on success, or
+// { error: 'expired'|'too_early'|'invalid' } on failure.
+export async function verifyArmToken(token) {
+  if (!token) return { error: 'missing' };
+  try {
+    const { payload } = await jwtVerify(token, getSecret(), {
+      algorithms: ['HS256'],
+      clockTolerance: 0, // strict — bots would exploit tolerance
+    });
+    return { sub: payload.sub, sess: payload.sess, nonce: payload.nonce };
+  } catch (e) {
+    const msg = String(e?.code || e?.message || 'invalid');
+    if (msg.includes('NOT_YET_VALID') || msg.includes('nbf'))   return { error: 'too_early' };
+    if (msg.includes('EXPIRED')      || msg.includes('exp'))   return { error: 'expired' };
+    return { error: 'invalid' };
+  }
+}
