@@ -76,7 +76,15 @@ async function scrapeOne(cheerio, host, tweetId, suffix, diag) {
 export async function scrapeTweetEngagement(tweetId) {
   const cheerio = await loadCheerio();
   const diag = [];
-  const out = { likes: null, retweets: null, replies: null, diag };
+  const out = { likes: null, retweets: null, replies: null, diag, counts: null };
+
+  // ── 1. X syndication endpoint — always returns real engagement COUNTS
+  //       (no handle lists, but works even when every Nitter is dead).
+  //       Used as a sanity check + a fallback when we can't get handle
+  //       lists at all, so admin can decide whether to blanket-approve.
+  out.counts = await fetchSyndicationCounts(tweetId, diag);
+
+  // ── 2. Nitter mirrors for actual handle lists (what we really want)
   if (!cheerio) {
     diag.push({ host: '-', error: 'cheerio_not_available' });
     return out;
@@ -88,6 +96,44 @@ export async function scrapeTweetEngagement(tweetId) {
     if (out.likes && out.retweets && out.replies) break;
   }
   return out;
+}
+
+// X's public syndication endpoint (the one used by website embeds).
+// Reliable because it's what third-party tweet embeds depend on, and X
+// can't easily kill it without breaking every embedded tweet on the web.
+// Returns { likes, retweets, replies, quotes } (counts only, no handles).
+async function fetchSyndicationCounts(tweetId, diag) {
+  try {
+    // Tokenisation that syndication requires (reverse-engineered from the
+    // public X embed JS). Without this the endpoint returns 403.
+    const n = Number(tweetId);
+    if (!Number.isFinite(n)) return null;
+    const token = ((n / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, '');
+    const url = `https://cdn.syndication.twimg.com/tweet-result?id=${encodeURIComponent(tweetId)}&lang=en&token=${encodeURIComponent(token)}`;
+    const r = await fetch(url, {
+      headers: {
+        'User-Agent': UA,
+        Accept: 'application/json',
+        Referer: 'https://platform.twitter.com/',
+      },
+    });
+    if (!r.ok) {
+      diag.push({ host: 'syndication', status: r.status, ok: false });
+      return null;
+    }
+    const j = await r.json();
+    const counts = {
+      likes:    Number(j?.favorite_count ?? j?.favorite_count_total ?? 0),
+      retweets: Number(j?.retweet_count ?? 0),
+      replies:  Number(j?.conversation_count ?? j?.reply_count ?? 0),
+      quotes:   Number(j?.quote_count ?? 0),
+    };
+    diag.push({ host: 'syndication', status: r.status, ok: true, counts });
+    return counts;
+  } catch (e) {
+    diag.push({ host: 'syndication', ok: false, error: e?.message });
+    return null;
+  }
 }
 
 export async function tweetContainsHash(tweetId, hash) {

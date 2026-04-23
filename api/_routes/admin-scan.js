@@ -152,10 +152,14 @@ export default async function handler(req, res) {
       replies:  eng.replies  ? Array.from(eng.replies)  : null,
     },
     counts: {
-      likes:    eng.likes    ? eng.likes.size    : null,
-      retweets: eng.retweets ? eng.retweets.size : null,
-      replies:  eng.replies  ? eng.replies.size  : null,
+      // Prefer scraped handle counts; fall back to X syndication counts
+      // (which work even when every Nitter is dead).
+      likes:    eng.likes    ? eng.likes.size    : (eng.counts ? eng.counts.likes    : null),
+      retweets: eng.retweets ? eng.retweets.size : (eng.counts ? eng.counts.retweets : null),
+      replies:  eng.replies  ? eng.replies.size  : (eng.counts ? eng.counts.replies  : null),
     },
+    countsSource: (eng.likes || eng.retweets || eng.replies) ? 'nitter' : (eng.counts ? 'syndication' : 'none'),
+    syndication: eng.counts || null,
     results,
     summary: {
       autoApproved: totalApproved,

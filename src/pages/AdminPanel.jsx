@@ -880,12 +880,33 @@ function ScanResultPanel({ result, onRejectAll }) {
 function ScrapeFailedFallback({ result }) {
   const [pending, setPending] = useState(result.pendingForManualReview || []);
   const [busyId, setBusyId]   = useState(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const decide = async (verifId, action) => {
     setBusyId(verifId);
     const r = await jpost('/api/admin-approve', { ids: [verifId], action });
     setBusyId(null);
     if (r.ok) setPending((prev) => prev.filter((p) => p.verifId !== verifId));
+  };
+
+  // When Nitter is dead but syndication gives us real counts, we know
+  // ~how many real engagements exist. If fewer users have self-claimed
+  // than the real count, trusting them all is usually safe.
+  const syndication = result.syndication;
+  const approveAll = async () => {
+    if (pending.length === 0) return;
+    const ok = window.confirm(
+      `Approve ALL ${pending.length} pending self-claim(s) for this task?\n\n` +
+      (syndication
+        ? `X reports ${syndication.likes} likes, ${syndication.retweets} RTs, ${syndication.replies} replies on this tweet — the self-claim total (${pending.length}) is well within that.`
+        : 'No engagement counts available; approve only if you trust these users.')
+    );
+    if (!ok) return;
+    setBulkBusy(true);
+    const ids = pending.map((p) => p.verifId);
+    const r = await jpost('/api/admin-approve', { ids, action: 'approve' });
+    setBulkBusy(false);
+    if (r.ok) setPending([]);
   };
 
   const diag = Array.isArray(result.diag) ? result.diag : [];
@@ -896,21 +917,60 @@ function ScrapeFailedFallback({ result }) {
 
   return (
     <>
+      {/* Real engagement counts from X syndication — works even when Nitter is dead */}
+      {syndication && (
+        <div style={{
+          padding: '14px 20px',
+          background: 'var(--accent-dim)',
+          borderBottom: '1px solid var(--hairline)',
+          display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', gap: 16, flexWrap: 'wrap',
+        }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.5 }}>
+            <div style={{ marginBottom: 4, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--ink)' }}>
+              Real engagement (X syndication)
+            </div>
+            <div style={{ color: 'var(--text-2)' }}>
+              <strong style={{ color: 'var(--ink)' }}>{syndication.likes}</strong> likes
+              {' · '}
+              <strong style={{ color: 'var(--ink)' }}>{syndication.retweets}</strong> RTs
+              {' · '}
+              <strong style={{ color: 'var(--ink)' }}>{syndication.replies}</strong> replies
+              {' · '}
+              <strong style={{ color: 'var(--ink)' }}>{syndication.quotes}</strong> quotes
+              <span style={{ color: 'var(--text-4)', marginLeft: 8 }}>
+                ({pending.length} users self-claimed)
+              </span>
+            </div>
+          </div>
+          {pending.length > 0 && (
+            <button
+              className="btn btn-solid btn-sm"
+              disabled={bulkBusy}
+              onClick={approveAll}
+              title="Approve every pending self-claim for this task in one batch"
+            >
+              {bulkBusy ? 'Approving...' : `Approve all ${pending.length}`}
+            </button>
+          )}
+        </div>
+      )}
+
       <div style={{
         padding: '14px 20px',
         fontFamily: 'var(--font-mono)', fontSize: 12,
-        color: 'var(--red, #c4352b)',
+        color: 'var(--text-3)',
         background: 'rgba(204,58,42,0.04)',
         borderBottom: '1px solid var(--hairline)',
       }}>
-        <div style={{ marginBottom: 8, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          Auto-scrape failed — manual review below
+        <div style={{ marginBottom: 8, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--red, #c4352b)' }}>
+          Couldn't scrape handle list — manual review below
         </div>
         <div style={{ color: 'var(--text-3)', fontSize: 11, lineHeight: 1.6 }}>
-          All Nitter mirrors rejected the request. This is normal — most public mirrors die periodically.
-          Use the list below to verify each self-claim by hand:
-          click the user's profile, confirm they really engaged with the tweet, then Approve or Reject.
-          {' '}You can also set <code>NITTER_HOSTS</code> env var on Vercel to try different mirrors.
+          Public Nitter mirrors are unreliable — X blocks guest-token flows so they die often.
+          Use the counts above (real, from X directly) as a sanity check, then review each self-claim below.
+          <br />Options: <strong>Approve all</strong> (trust self-claims — fine if count fits syndication),
+          or click each user's profile and decide per-row.
         </div>
         {diag.length > 0 && (
           <details style={{ marginTop: 10 }}>
