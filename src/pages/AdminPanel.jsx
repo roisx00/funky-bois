@@ -2,6 +2,40 @@ import { useEffect, useState, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import Skeleton from '../components/Skeleton';
 
+const PAGE_SIZE = 20;
+
+// Reusable "show first N, then reveal more" helper for long admin lists.
+// Collapses back to the first page whenever `items` identity changes so a
+// refresh doesn't leave stale expanded state behind.
+function PaginatedList({ items, render, empty }) {
+  const [shown, setShown] = useState(PAGE_SIZE);
+  useEffect(() => { setShown(PAGE_SIZE); }, [items]);
+  if (!items || items.length === 0) return empty ?? null;
+  const slice = items.slice(0, shown);
+  const remaining = items.length - shown;
+  return (
+    <>
+      {slice.map(render)}
+      {remaining > 0 && (
+        <div style={{
+          padding: '14px 20px', display: 'flex', justifyContent: 'center',
+          borderTop: '1px solid var(--hairline)', background: 'var(--paper-2)',
+        }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setShown((n) => n + PAGE_SIZE)}
+          >
+            Show {Math.min(PAGE_SIZE, remaining)} more
+            <span style={{ opacity: 0.5, marginLeft: 8, fontSize: 10 }}>
+              {shown}/{items.length}
+            </span>
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
 function shortAddr(a) { return a ? `${a.slice(0, 6)}...${a.slice(-4)}` : '/'; }
 function timeAgo(ts) {
   const m = Math.floor((Date.now() - ts) / 60000);
@@ -263,21 +297,24 @@ export default function AdminPanel({ onNavigate }) {
             <div className="admin-roster-empty">No users yet.</div>
           )
         ) : (
-          users.map((u) => (
-            <div key={u.id} className="admin-roster-row users-row">
-              <div>
-                <div className="admin-roster-user">@{u.xUsername}</div>
-                <div className="admin-roster-wallet">{u.walletAddress ? shortAddr(u.walletAddress) : 'no wallet'}</div>
+          <PaginatedList
+            items={users}
+            render={(u) => (
+              <div key={u.id} className="admin-roster-row users-row">
+                <div>
+                  <div className="admin-roster-user">@{u.xUsername}</div>
+                  <div className="admin-roster-wallet">{u.walletAddress ? shortAddr(u.walletAddress) : 'no wallet'}</div>
+                </div>
+                <div className="admin-roster-wallet" style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)', fontWeight: 500 }}>
+                  {u.bustsBalance.toLocaleString()} <span style={{ fontSize: 10, color: 'var(--text-4)' }}>BUSTS</span>
+                </div>
+                <div className="admin-roster-time">
+                  {u.isWhitelisted ? <span style={{ color: 'var(--ink)', fontWeight: 600 }}>WL</span> : '/'}
+                </div>
+                <div className="admin-roster-time">{timeAgo(u.createdAt)}</div>
               </div>
-              <div className="admin-roster-wallet" style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)', fontWeight: 500 }}>
-                {u.bustsBalance.toLocaleString()} <span style={{ fontSize: 10, color: 'var(--text-4)' }}>BUSTS</span>
-              </div>
-              <div className="admin-roster-time">
-                {u.isWhitelisted ? <span style={{ color: 'var(--ink)', fontWeight: 600 }}>WL</span> : '/'}
-              </div>
-              <div className="admin-roster-time">{timeAgo(u.createdAt)}</div>
-            </div>
-          ))
+            )}
+          />
         )}
       </section>
 
@@ -450,10 +487,10 @@ function AdminTasksPanel() {
             <button className="btn btn-solid btn-sm" disabled={selected.size === 0} onClick={() => handleBulk('approve')}>Approve selected</button>
           </div>
         </div>
-        {verifs.length === 0 ? (
-          <div className="admin-roster-empty">No pending verifications. Run a Scan above to fill the queue.</div>
-        ) : (
-          verifs.map((v) => (
+        <PaginatedList
+          items={verifs}
+          empty={<div className="admin-roster-empty">No pending verifications. Run a Scan above to fill the queue.</div>}
+          render={(v) => (
             <div key={v.id} className="admin-roster-row verifs-row">
               <div>
                 <input type="checkbox" checked={selected.has(v.id)} onChange={() => toggleSelect(v.id)} />
@@ -466,8 +503,8 @@ function AdminTasksPanel() {
               <button className="btn btn-ghost btn-sm" onClick={() => { setSelected(new Set([v.id])); handleBulk('reject'); }}>✗</button>
               <button className="btn btn-solid btn-sm" onClick={() => { setSelected(new Set([v.id])); handleBulk('approve'); }}>✓</button>
             </div>
-          ))
-        )}
+          )}
+        />
       </section>
     </>
   );
@@ -661,12 +698,14 @@ function AdminDropAudit() {
         }}>{msg}</div>
       )}
 
-      {filtered.length === 0 ? (
-        <div className="admin-roster-empty">
-          {loading ? 'Loading claims.' : suspiciousOnly ? 'No suspicious claims.' : 'No claims yet.'}
-        </div>
-      ) : (
-        filtered.map((row) => {
+      <PaginatedList
+        items={filtered}
+        empty={
+          <div className="admin-roster-empty">
+            {loading ? 'Loading claims.' : suspiciousOnly ? 'No suspicious claims.' : 'No claims yet.'}
+          </div>
+        }
+        render={(row) => {
           const tier =
             row.botScore >= 80 ? { bg: 'rgba(204,58,42,0.10)', fg: 'var(--red, #c4352b)', label: 'BOT' }
             : row.botScore >= 60 ? { bg: 'rgba(216,143,50,0.10)', fg: '#a7691e', label: 'SUSPICIOUS' }
@@ -725,8 +764,8 @@ function AdminDropAudit() {
               </div>
             </div>
           );
-        })
-      )}
+        }}
+      />
     </section>
   );
 }
