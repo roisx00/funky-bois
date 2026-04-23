@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { useToast } from './Toast';
 import { ELEMENT_TYPES, ELEMENT_VARIANTS, getElementSVG } from '../data/elements';
 import BoxArt from './BoxArt';
 
@@ -29,31 +30,6 @@ export const BOX_TIERS = {
     tagline: 'Flagship',
   },
 };
-
-function pickFromBox(tier) {
-  const odds = tier.odds;
-  const r = Math.random() * 100;
-  let rarity = 'common';
-  let acc = 0;
-  for (const [k, v] of Object.entries(odds)) {
-    acc += v;
-    if (r < acc) { rarity = k; break; }
-  }
-  const pool = [];
-  for (const type of ELEMENT_TYPES) {
-    ELEMENT_VARIANTS[type].forEach((v, idx) => {
-      if (v.rarity === rarity) pool.push({ type, variant: idx, ...v });
-    });
-  }
-  if (pool.length === 0) {
-    for (const type of ELEMENT_TYPES) {
-      ELEMENT_VARIANTS[type].forEach((v, idx) => {
-        if (v.rarity === 'common') pool.push({ type, variant: idx, ...v });
-      });
-    }
-  }
-  return pool[Math.floor(Math.random() * pool.length)];
-}
 
 export default function MysteryBoxCard({ tier, onOpen, disabled }) {
   return (
@@ -99,26 +75,49 @@ export default function MysteryBoxCard({ tier, onOpen, disabled }) {
 }
 
 export function MysteryBoxOpener() {
-  const { bustsBalance, spendBusts, addGiftedElement } = useGame();
+  const { bustsBalance, openMysteryBox, authenticated } = useGame();
+  const toast = useToast();
   const [openingTier, setOpeningTier] = useState(null);
   const [phase, setPhase]             = useState('idle'); // 'idle' | 'shake' | 'unlock' | 'flash' | 'reveal'
   const [pulled, setPulled]           = useState(null);
+  const [busy, setBusy]               = useState(false);
 
-  const handleOpen = (tier) => {
+  const handleOpen = async (tier) => {
+    if (busy) return;
+    if (!authenticated) { toast.error('Sign in with X first.'); return; }
     if (bustsBalance < tier.cost) return;
-    spendBusts(tier.cost, `Opened ${tier.name}`);
-    const el = pickFromBox(tier);
-    setPulled(el);
+
+    // Show the opening animation immediately, fire the real API call in
+    // parallel, and only reveal if the server confirms the pull.
+    setBusy(true);
     setOpeningTier(tier);
     setPhase('shake');
-
     setTimeout(() => setPhase('unlock'), 1800);
     setTimeout(() => setPhase('flash'),  2600);
-    setTimeout(() => setPhase('reveal'), 3100);
+
+    const r = await openMysteryBox(tier.id);
+
+    if (!r?.ok) {
+      // Abort the animation, surface the server reason.
+      setBusy(false);
+      setOpeningTier(null);
+      setPhase('idle');
+      setPulled(null);
+      toast.error(r?.reason || 'Could not open box');
+      return;
+    }
+
+    // Wait for the reveal beat so the animation completes cleanly, then
+    // paint the trait the server actually rolled.
+    setTimeout(() => {
+      setPulled(r.element);
+      setPhase('reveal');
+      setBusy(false);
+    }, 3100);
   };
 
   const handleClose = () => {
-    if (pulled) addGiftedElement(pulled);
+    // Server already dispatched ADD_INVENTORY on success — nothing to do here
     setOpeningTier(null);
     setPulled(null);
     setPhase('idle');

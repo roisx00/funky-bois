@@ -1,607 +1,1207 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
+<meta charset="utf-8"/>
 <title>THE 1969 — launch trailer</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" />
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700;900&display=swap"/>
 <style>
-  :root {
-    --paper:#F9F6F0; --ink:#0E0E0E; --lime:#D7FF3A; --grey:#BBBBBB;
-  }
-  html,body{margin:0;padding:0;background:#111;color:#fff;font-family:'JetBrains Mono',ui-monospace,monospace;}
-  header{padding:20px 24px;border-bottom:1px solid #333;}
-  header h1{margin:0;font-family:'Instrument Serif',serif;font-style:italic;font-size:24px;color:var(--lime);}
-  header p{margin:6px 0 0;opacity:.8;font-size:12px;line-height:1.5;}
-  main{display:flex;flex-direction:column;align-items:center;padding:28px;gap:16px;}
-  .stage{position:relative;width:100%;max-width:960px;aspect-ratio:16/9;background:#000;border:1px solid #333;overflow:hidden;}
-  canvas{width:100%;height:100%;display:block;background:#000;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#000;color:#fff;font-family:'JetBrains Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+  header{width:100%;max-width:1000px;padding:18px 24px;border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .logo{font-family:'Instrument Serif',serif;font-style:italic;font-size:20px;color:#D7FF3A;letter-spacing:.01em;}
+  .tagline{font-size:10px;opacity:.45;letter-spacing:.08em;text-transform:uppercase;}
+  main{width:100%;max-width:1000px;padding:20px 24px;display:flex;flex-direction:column;gap:14px;align-items:center;}
+  .stage-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#000;border:1px solid #1c1c1c;overflow:hidden;cursor:pointer;}
+  canvas{width:100%;height:100%;display:block;image-rendering:pixelated;}
+  .play-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);transition:opacity .2s;}
+  .play-overlay.hidden{opacity:0;pointer-events:none;}
+  .play-btn{width:64px;height:64px;border:2px solid #D7FF3A;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+  .play-btn:hover{background:rgba(215,255,58,.15);}
+  .play-btn svg{margin-left:4px;}
   .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
-  button{
-    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.06em;
-    padding:12px 20px;border:1px solid var(--ink);cursor:pointer;text-transform:uppercase;
-    background:var(--lime);color:var(--ink);
-  }
-  button.ghost{background:#222;color:#fff;border-color:#555;}
-  button:disabled{opacity:.5;cursor:not-allowed;}
-  .status{font-size:11px;opacity:.75;min-height:16px;letter-spacing:.04em;}
-  .size-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;}
-  .size-row label{font-size:11px;opacity:.75;}
-  select{background:#222;color:#fff;border:1px solid #555;padding:6px 8px;font-family:inherit;font-size:11px;}
-  a.download-link{display:inline-block;padding:12px 20px;background:#222;color:var(--lime);border:1px solid var(--lime);text-decoration:none;font-size:12px;letter-spacing:.06em;text-transform:uppercase;}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;}
+  button{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.07em;padding:10px 18px;border:1px solid #333;cursor:pointer;text-transform:uppercase;background:#D7FF3A;color:#000;transition:opacity .15s;}
+  button:hover{opacity:.85;}
+  button.sec{background:#111;color:#D7FF3A;border-color:#D7FF3A;}
+  button.ghost{background:#111;color:#888;border-color:#2a2a2a;}
+  button:disabled{opacity:.35;cursor:not-allowed;}
+  select{background:#111;color:#fff;border:1px solid #2a2a2a;padding:6px 10px;font-family:inherit;font-size:11px;letter-spacing:.05em;}
+  label{font-size:10px;opacity:.5;letter-spacing:.06em;text-transform:uppercase;}
+  .status-bar{font-size:10px;letter-spacing:.06em;opacity:.5;min-height:16px;text-align:center;}
+  #download-wrap{margin-top:4px;}
+  a.dl{display:inline-block;padding:10px 18px;background:#111;color:#D7FF3A;border:1px solid #D7FF3A;text-decoration:none;font-size:11px;letter-spacing:.07em;text-transform:uppercase;}
 </style>
 </head>
 <body>
 <header>
-  <h1>THE 1969 — launch trailer</h1>
-  <p>
-    Press <strong>Play</strong> to preview. Then <strong>Record &amp; Download HD</strong> bakes the exact same 16-second canvas + audio into a real .mp4 (or .webm where MP4 isn't supported). Video + sound are fully synthesised in-browser so there's no quality loss from screen-recording.
-  </p>
+  <span class="logo">THE 1969</span>
+  <span class="tagline">launch trailer · 24s · 1969 unique pixel busts · ethereum</span>
 </header>
-
 <main>
-  <div class="size-row">
-    <label>Resolution:
-      <select id="res">
-        <option value="1920x1080">1920×1080 (Full HD)</option>
-        <option value="1280x720" selected>1280×720 (HD · smaller file)</option>
-      </select>
-    </label>
-    <label>Audio:
-      <select id="audio-mode">
-        <option value="full" selected>Full (ambient drone + hits + synth)</option>
-        <option value="silent">Silent</option>
-      </select>
-    </label>
+  <div class="row">
+    <label>Res <select id="res"><option value="1920x1080">1920×1080</option><option value="1280x720" selected>1280×720</option></select></label>
+    <label>Audio <select id="amode"><option value="full" selected>Full soundtrack</option><option value="silent">Silent</option></select></label>
   </div>
 
-  <div class="stage"><canvas id="stage" width="1280" height="720"></canvas></div>
+  <div class="stage-wrap" id="stageWrap">
+    <canvas id="stage" width="1280" height="720"></canvas>
+    <div class="play-overlay" id="playOverlay">
+      <div class="play-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#D7FF3A"><polygon points="6,3 20,12 6,21"/></svg>
+      </div>
+    </div>
+  </div>
 
   <div class="controls">
-    <button id="play">Play preview</button>
-    <button id="record" class="ghost">Record &amp; download HD</button>
-    <button id="stop" class="ghost" disabled>Stop</button>
+    <button id="btnPlay">▶ Play Preview</button>
+    <button id="btnRecord" class="sec">⬤ Record &amp; Download HD</button>
+    <button id="btnStop" class="ghost" disabled>■ Stop</button>
   </div>
-  <div class="status" id="status">Ready. Fonts preload on first interaction.</div>
+  <div class="status-bar" id="status">Click Play to preview the trailer.</div>
   <div id="download-wrap"></div>
 </main>
 
+<!-- ═══════════════════ SVG CHARACTER SPRITES ═══════════════════ -->
+<svg style="display:none">
+  <!-- 01: Old Commander -->
+  <symbol id="char-01" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#333"/>
+    <rect x="14" y="80" width="68" height="16" fill="#777"/>
+    <rect x="18" y="76" width="60" height="4" fill="#777"/>
+    <rect x="22" y="72" width="52" height="4" fill="#777"/>
+    <rect x="14" y="80" width="68" height="2" fill="#555"/>
+    <rect x="38" y="72" width="20" height="4" fill="#333"/>
+    <rect x="40" y="70" width="16" height="2" fill="#333"/>
+    <rect x="40" y="64" width="16" height="8" fill="#bbb"/>
+    <rect x="40" y="64" width="16" height="2" fill="#777"/>
+    <rect x="32" y="22" width="32" height="2" fill="#bbb"/>
+    <rect x="30" y="24" width="36" height="2" fill="#bbb"/>
+    <rect x="28" y="26" width="40" height="30" fill="#bbb"/>
+    <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+    <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+    <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+    <rect x="30" y="22" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="22" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="24" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="24" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="26" width="2" height="30" fill="#0A0A0A"/>
+    <rect x="68" y="26" width="2" height="30" fill="#0A0A0A"/>
+    <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+    <rect x="60" y="28" width="8" height="28" fill="#999" opacity=".4"/>
+    <rect x="24" y="40" width="4" height="8" fill="#999"/>
+    <rect x="68" y="40" width="4" height="8" fill="#777"/>
+    <rect x="36" y="26" width="14" height="2" fill="#eee"/>
+    <rect x="32" y="36" width="10" height="5" fill="#777"/>
+    <rect x="54" y="36" width="10" height="5" fill="#777"/>
+    <rect x="34" y="38" width="6" height="2" fill="#333"/>
+    <rect x="56" y="38" width="6" height="2" fill="#333"/>
+    <rect x="36" y="38" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="58" y="38" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="46" y="40" width="4" height="8" fill="#999"/>
+    <rect x="44" y="48" width="8" height="2" fill="#555"/>
+    <rect x="34" y="50" width="28" height="4" fill="#eee"/>
+    <rect x="30" y="56" width="4" height="4" fill="#eee"/>
+    <rect x="62" y="56" width="4" height="4" fill="#eee"/>
+    <rect x="32" y="58" width="32" height="6" fill="#eee"/>
+    <rect x="34" y="60" width="28" height="2" fill="#ddd"/>
+  </symbol>
+  <!-- 02: Bandana Bandit -->
+  <symbol id="char-02" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#eaeaea"/>
+    <rect x="0" y="60" width="96" height="36" fill="#d8d8d8"/>
+    <rect x="14" y="82" width="68" height="14" fill="#333"/>
+    <rect x="18" y="78" width="60" height="4" fill="#333"/>
+    <rect x="24" y="74" width="48" height="4" fill="#333"/>
+    <rect x="22" y="78" width="52" height="4" fill="#222"/>
+    <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+    <rect x="40" y="66" width="16" height="2" fill="#777"/>
+    <rect x="32" y="30" width="32" height="2" fill="#bbb"/>
+    <rect x="30" y="32" width="36" height="2" fill="#bbb"/>
+    <rect x="28" y="34" width="40" height="22" fill="#bbb"/>
+    <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+    <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+    <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+    <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+    <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+    <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+    <rect x="60" y="36" width="8" height="20" fill="#999" opacity=".4"/>
+    <rect x="24" y="42" width="4" height="8" fill="#999"/>
+    <rect x="68" y="42" width="4" height="8" fill="#777"/>
+    <rect x="30" y="22" width="36" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="24" width="40" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="26" width="44" height="10" fill="#0A0A0A"/>
+    <rect x="70" y="30" width="10" height="8" fill="#0A0A0A"/>
+    <rect x="78" y="34" width="6" height="4" fill="#0A0A0A"/>
+    <rect x="34" y="28" width="2" height="2" fill="#bbb"/>
+    <rect x="42" y="30" width="2" height="2" fill="#bbb"/>
+    <rect x="50" y="28" width="2" height="2" fill="#bbb"/>
+    <rect x="58" y="30" width="2" height="2" fill="#bbb"/>
+    <rect x="32" y="40" width="10" height="4" fill="#0A0A0A"/>
+    <rect x="54" y="40" width="10" height="4" fill="#0A0A0A"/>
+    <rect x="36" y="41" width="2" height="2" fill="#eee"/>
+    <rect x="58" y="41" width="2" height="2" fill="#eee"/>
+    <rect x="46" y="44" width="4" height="8" fill="#999"/>
+    <rect x="46" y="44" width="2" height="8" fill="#bbb"/>
+    <rect x="50" y="44" width="2" height="8" fill="#777"/>
+    <rect x="44" y="52" width="8" height="2" fill="#555"/>
+    <rect x="36" y="54" width="24" height="2" fill="#0A0A0A"/>
+    <rect x="34" y="56" width="28" height="2" fill="#0A0A0A"/>
+    <rect x="42" y="58" width="12" height="6" fill="#0A0A0A"/>
+    <rect x="44" y="64" width="8" height="2" fill="#0A0A0A"/>
+    <rect x="40" y="56" width="16" height="1" fill="#333"/>
+  </symbol>
+  <!-- 03: Graveyard Ghoul -->
+  <symbol id="char-03" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#0A0A0A"/>
+    <g fill="#333"><rect x="6" y="22" width="2" height="12"/><rect x="2" y="26" width="10" height="2"/><rect x="84" y="18" width="2" height="14"/><rect x="80" y="22" width="10" height="2"/><rect x="82" y="48" width="2" height="12"/><rect x="78" y="52" width="10" height="2"/></g>
+    <rect x="12" y="78" width="72" height="18" fill="#222"/>
+    <rect x="16" y="74" width="64" height="4" fill="#222"/>
+    <rect x="20" y="70" width="56" height="4" fill="#222"/>
+    <rect x="22" y="66" width="52" height="4" fill="#222"/>
+    <rect x="24" y="26" width="48" height="8" fill="#222"/>
+    <rect x="22" y="30" width="52" height="4" fill="#222"/>
+    <rect x="20" y="34" width="2" height="32" fill="#222"/>
+    <rect x="74" y="34" width="2" height="32" fill="#222"/>
+    <rect x="26" y="32" width="44" height="8" fill="#0A0A0A" opacity=".6"/>
+    <rect x="40" y="66" width="16" height="8" fill="#777"/>
+    <rect x="32" y="30" width="32" height="2" fill="#777"/>
+    <rect x="30" y="32" width="36" height="2" fill="#777"/>
+    <rect x="28" y="34" width="40" height="22" fill="#777"/>
+    <rect x="30" y="56" width="36" height="2" fill="#777"/>
+    <rect x="32" y="58" width="32" height="2" fill="#777"/>
+    <rect x="34" y="60" width="28" height="4" fill="#777"/>
+    <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+    <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+    <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+    <rect x="60" y="36" width="8" height="20" fill="#555" opacity=".5"/>
+    <rect x="32" y="42" width="10" height="5" fill="#0A0A0A"/>
+    <rect x="54" y="42" width="10" height="5" fill="#0A0A0A"/>
+    <rect x="34" y="43" width="6" height="3" fill="#555"/>
+    <rect x="56" y="43" width="6" height="3" fill="#555"/>
+    <rect x="36" y="44" width="2" height="2" fill="#eee"/>
+    <rect x="58" y="44" width="2" height="2" fill="#eee"/>
+    <rect x="46" y="46" width="4" height="8" fill="#555"/>
+    <rect x="46" y="46" width="2" height="8" fill="#777"/>
+    <rect x="50" y="46" width="2" height="8" fill="#333"/>
+    <rect x="44" y="54" width="8" height="2" fill="#333"/>
+    <rect x="32" y="56" width="32" height="6" fill="#333"/>
+    <rect x="40" y="58" width="16" height="1" fill="#0A0A0A"/>
+  </symbol>
+  <!-- 04: Nurse -->
+  <symbol id="char-04" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#c8c8c8"/>
+    <rect x="0" y="60" width="96" height="36" fill="#bababa"/>
+    <rect x="12" y="82" width="72" height="14" fill="#eee"/>
+    <rect x="18" y="78" width="60" height="4" fill="#eee"/>
+    <rect x="24" y="74" width="48" height="4" fill="#eee"/>
+    <rect x="40" y="74" width="16" height="8" fill="#c8c8c8"/>
+    <rect x="42" y="76" width="12" height="6" fill="#bbb"/>
+    <rect x="40" y="66" width="16" height="8" fill="#bbb"/>
+    <rect x="40" y="66" width="16" height="2" fill="#777"/>
+    <rect x="32" y="22" width="32" height="2" fill="#bbb"/>
+    <rect x="30" y="24" width="36" height="2" fill="#bbb"/>
+    <rect x="28" y="26" width="40" height="30" fill="#bbb"/>
+    <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+    <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+    <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+    <rect x="30" y="22" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="22" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="24" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="24" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="26" width="2" height="30" fill="#0A0A0A"/>
+    <rect x="68" y="26" width="2" height="30" fill="#0A0A0A"/>
+    <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+    <rect x="60" y="28" width="8" height="28" fill="#999" opacity=".4"/>
+    <rect x="24" y="40" width="4" height="8" fill="#999"/>
+    <rect x="68" y="40" width="4" height="8" fill="#777"/>
+    <rect x="28" y="14" width="40" height="8" fill="#eee"/>
+    <rect x="30" y="12" width="36" height="2" fill="#eee"/>
+    <rect x="26" y="16" width="2" height="6" fill="#0A0A0A"/>
+    <rect x="68" y="16" width="2" height="6" fill="#0A0A0A"/>
+    <rect x="44" y="14" width="8" height="8" fill="#0A0A0A"/>
+    <rect x="46" y="14" width="4" height="8" fill="#eee"/>
+    <rect x="44" y="16" width="8" height="4" fill="#eee"/>
+    <rect x="46" y="16" width="4" height="4" fill="#0A0A0A"/>
+    <rect x="28" y="22" width="40" height="4" fill="#444"/>
+    <rect x="32" y="36" width="10" height="6" fill="#eee"/>
+    <rect x="54" y="36" width="10" height="6" fill="#eee"/>
+    <rect x="32" y="36" width="10" height="1" fill="#0A0A0A"/>
+    <rect x="54" y="36" width="10" height="1" fill="#0A0A0A"/>
+    <rect x="32" y="41" width="10" height="1" fill="#0A0A0A"/>
+    <rect x="54" y="41" width="10" height="1" fill="#0A0A0A"/>
+    <rect x="36" y="38" width="4" height="3" fill="#0A0A0A"/>
+    <rect x="58" y="38" width="4" height="3" fill="#0A0A0A"/>
+    <rect x="46" y="42" width="4" height="8" fill="#999"/>
+    <rect x="44" y="50" width="8" height="2" fill="#555"/>
+    <rect x="40" y="56" width="16" height="1" fill="#555"/>
+    <rect x="33" y="46" width="5" height="2" fill="#999" opacity=".45"/>
+    <rect x="58" y="46" width="5" height="2" fill="#888" opacity=".45"/>
+  </symbol>
+  <!-- 05: Bearded Traveler -->
+  <symbol id="char-05" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#9a9a9a"/>
+    <rect x="0" y="60" width="96" height="36" fill="#8a8a8a"/>
+    <rect x="12" y="82" width="72" height="14" fill="#222"/>
+    <rect x="18" y="78" width="60" height="4" fill="#222"/>
+    <rect x="24" y="74" width="48" height="4" fill="#222"/>
+    <rect x="30" y="74" width="12" height="10" fill="#333"/>
+    <rect x="54" y="74" width="12" height="10" fill="#333"/>
+    <rect x="42" y="78" width="12" height="6" fill="#444"/>
+    <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+    <rect x="40" y="66" width="16" height="2" fill="#777"/>
+    <rect x="32" y="30" width="32" height="2" fill="#bbb"/>
+    <rect x="30" y="32" width="36" height="2" fill="#bbb"/>
+    <rect x="28" y="34" width="40" height="22" fill="#bbb"/>
+    <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+    <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+    <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+    <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+    <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+    <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+    <rect x="60" y="34" width="8" height="22" fill="#999" opacity=".4"/>
+    <rect x="24" y="42" width="4" height="8" fill="#999"/>
+    <rect x="68" y="42" width="4" height="8" fill="#777"/>
+    <rect x="28" y="22" width="40" height="10" fill="#222"/>
+    <rect x="30" y="20" width="36" height="2" fill="#222"/>
+    <rect x="32" y="18" width="32" height="2" fill="#222"/>
+    <rect x="22" y="32" width="52" height="4" fill="#0A0A0A"/>
+    <rect x="28" y="36" width="40" height="3" fill="#777" opacity=".55"/>
+    <rect x="32" y="42" width="10" height="4" fill="#0A0A0A"/>
+    <rect x="54" y="42" width="10" height="4" fill="#0A0A0A"/>
+    <rect x="36" y="43" width="2" height="2" fill="#eee"/>
+    <rect x="58" y="43" width="2" height="2" fill="#eee"/>
+    <rect x="46" y="46" width="4" height="8" fill="#999"/>
+    <rect x="46" y="46" width="2" height="8" fill="#bbb"/>
+    <rect x="50" y="46" width="2" height="8" fill="#777"/>
+    <rect x="34" y="54" width="28" height="4" fill="#333"/>
+    <rect x="32" y="56" width="32" height="4" fill="#333"/>
+    <rect x="30" y="58" width="36" height="4" fill="#333"/>
+    <rect x="32" y="62" width="32" height="2" fill="#333"/>
+    <rect x="34" y="64" width="28" height="2" fill="#222"/>
+    <rect x="42" y="56" width="12" height="1" fill="#555"/>
+  </symbol>
+  <!-- 06: Flat Cap Gent -->
+  <symbol id="char-06" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#f0f0f0"/>
+    <rect x="0" y="60" width="96" height="36" fill="#e0e0e0"/>
+    <rect x="12" y="82" width="72" height="14" fill="#222"/>
+    <rect x="18" y="78" width="60" height="4" fill="#222"/>
+    <rect x="24" y="74" width="48" height="4" fill="#222"/>
+    <rect x="30" y="74" width="12" height="12" fill="#444"/>
+    <rect x="54" y="74" width="12" height="12" fill="#444"/>
+    <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+    <rect x="40" y="66" width="16" height="2" fill="#777"/>
+    <rect x="32" y="28" width="32" height="2" fill="#bbb"/>
+    <rect x="30" y="30" width="36" height="2" fill="#bbb"/>
+    <rect x="28" y="32" width="40" height="24" fill="#bbb"/>
+    <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+    <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+    <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+    <rect x="30" y="28" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="28" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="32" width="2" height="24" fill="#0A0A0A"/>
+    <rect x="68" y="32" width="2" height="24" fill="#0A0A0A"/>
+    <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+    <rect x="60" y="32" width="8" height="24" fill="#999" opacity=".35"/>
+    <rect x="24" y="42" width="4" height="8" fill="#999"/>
+    <rect x="68" y="42" width="4" height="8" fill="#777"/>
+    <rect x="22" y="18" width="52" height="10" fill="#0A0A0A"/>
+    <rect x="26" y="16" width="42" height="2" fill="#0A0A0A"/>
+    <rect x="18" y="28" width="60" height="4" fill="#0A0A0A"/>
+    <rect x="40" y="22" width="16" height="2" fill="#222"/>
+    <rect x="28" y="32" width="40" height="3" fill="#777" opacity=".5"/>
+    <rect x="32" y="40" width="10" height="4" fill="#0A0A0A"/>
+    <rect x="54" y="40" width="10" height="4" fill="#0A0A0A"/>
+    <rect x="36" y="41" width="2" height="2" fill="#eee"/>
+    <rect x="58" y="41" width="2" height="2" fill="#eee"/>
+    <rect x="46" y="44" width="4" height="8" fill="#999"/>
+    <rect x="46" y="44" width="2" height="8" fill="#bbb"/>
+    <rect x="50" y="44" width="2" height="8" fill="#777"/>
+    <rect x="44" y="52" width="8" height="2" fill="#555"/>
+    <rect x="38" y="54" width="20" height="2" fill="#0A0A0A"/>
+    <rect x="40" y="56" width="16" height="1" fill="#333"/>
+    <rect x="40" y="58" width="16" height="1" fill="#555"/>
+  </symbol>
+  <!-- 07: Beanie Brute -->
+  <symbol id="char-07" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#c4c4c4"/>
+    <rect x="0" y="60" width="96" height="36" fill="#b0b0b0"/>
+    <rect x="12" y="82" width="72" height="14" fill="#333"/>
+    <rect x="18" y="78" width="60" height="4" fill="#333"/>
+    <rect x="24" y="74" width="48" height="4" fill="#333"/>
+    <rect x="30" y="74" width="36" height="10" fill="#222"/>
+    <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+    <rect x="40" y="66" width="16" height="2" fill="#777"/>
+    <rect x="32" y="28" width="32" height="2" fill="#bbb"/>
+    <rect x="30" y="30" width="36" height="2" fill="#bbb"/>
+    <rect x="28" y="32" width="40" height="24" fill="#bbb"/>
+    <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+    <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+    <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+    <rect x="30" y="28" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="28" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="32" width="2" height="24" fill="#0A0A0A"/>
+    <rect x="68" y="32" width="2" height="24" fill="#0A0A0A"/>
+    <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+    <rect x="60" y="32" width="8" height="24" fill="#999" opacity=".4"/>
+    <rect x="24" y="42" width="4" height="8" fill="#999"/>
+    <rect x="68" y="42" width="4" height="8" fill="#777"/>
+    <rect x="30" y="16" width="36" height="2" fill="#555"/>
+    <rect x="28" y="18" width="40" height="2" fill="#555"/>
+    <rect x="26" y="20" width="44" height="12" fill="#555"/>
+    <rect x="28" y="22" width="40" height="2" fill="#333"/>
+    <rect x="28" y="26" width="40" height="2" fill="#333"/>
+    <rect x="26" y="30" width="44" height="2" fill="#0A0A0A"/>
+    <rect x="30" y="38" width="6" height="2" fill="#0A0A0A"/>
+    <rect x="60" y="38" width="6" height="2" fill="#0A0A0A"/>
+    <rect x="32" y="40" width="10" height="4" fill="#0A0A0A"/>
+    <rect x="54" y="40" width="10" height="4" fill="#0A0A0A"/>
+    <rect x="36" y="41" width="2" height="2" fill="#333"/>
+    <rect x="58" y="41" width="2" height="2" fill="#333"/>
+    <rect x="52" y="36" width="2" height="14" fill="#0A0A0A"/>
+    <rect x="54" y="38" width="2" height="2" fill="#888"/>
+    <rect x="46" y="44" width="4" height="8" fill="#999"/>
+    <rect x="46" y="44" width="2" height="8" fill="#bbb"/>
+    <rect x="50" y="44" width="2" height="8" fill="#777"/>
+    <rect x="44" y="52" width="8" height="2" fill="#555"/>
+    <rect x="32" y="56" width="32" height="6" fill="#777" opacity=".4"/>
+    <rect x="34" y="58" width="2" height="2" fill="#333"/>
+    <rect x="40" y="58" width="2" height="2" fill="#333"/>
+    <rect x="52" y="58" width="2" height="2" fill="#333"/>
+    <rect x="60" y="58" width="2" height="2" fill="#333"/>
+    <rect x="38" y="60" width="20" height="1" fill="#0A0A0A"/>
+    <rect x="36" y="61" width="4" height="2" fill="#0A0A0A"/>
+    <rect x="56" y="61" width="4" height="2" fill="#0A0A0A"/>
+  </symbol>
+  <!-- 08: Bowler Hat -->
+  <symbol id="char-08" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#8a8a8a"/>
+    <rect x="0" y="62" width="96" height="34" fill="#7a7a7a"/>
+    <rect x="12" y="82" width="72" height="14" fill="#0A0A0A"/>
+    <rect x="18" y="78" width="60" height="4" fill="#0A0A0A"/>
+    <rect x="24" y="74" width="48" height="4" fill="#0A0A0A"/>
+    <rect x="26" y="74" width="14" height="12" fill="#333"/>
+    <rect x="56" y="74" width="14" height="12" fill="#333"/>
+    <rect x="38" y="74" width="20" height="22" fill="#eee"/>
+    <rect x="44" y="74" width="8" height="8" fill="#0A0A0A"/>
+    <rect x="46" y="82" width="4" height="14" fill="#0A0A0A"/>
+    <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+    <rect x="40" y="66" width="16" height="2" fill="#777"/>
+    <rect x="32" y="30" width="32" height="2" fill="#bbb"/>
+    <rect x="30" y="32" width="36" height="2" fill="#bbb"/>
+    <rect x="28" y="34" width="40" height="22" fill="#bbb"/>
+    <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+    <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+    <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+    <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+    <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+    <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+    <rect x="60" y="34" width="8" height="22" fill="#999" opacity=".35"/>
+    <rect x="24" y="42" width="4" height="8" fill="#999"/>
+    <rect x="68" y="42" width="4" height="8" fill="#777"/>
+    <rect x="30" y="14" width="36" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="16" width="40" height="14" fill="#0A0A0A"/>
+    <rect x="22" y="30" width="52" height="4" fill="#0A0A0A"/>
+    <rect x="28" y="26" width="40" height="2" fill="#555"/>
+    <rect x="28" y="34" width="40" height="3" fill="#777" opacity=".55"/>
+    <rect x="34" y="40" width="6" height="4" fill="#0A0A0A"/>
+    <rect x="56" y="40" width="6" height="4" fill="#0A0A0A"/>
+    <rect x="46" y="44" width="4" height="8" fill="#999"/>
+    <rect x="46" y="44" width="2" height="8" fill="#bbb"/>
+    <rect x="50" y="44" width="2" height="8" fill="#777"/>
+    <rect x="30" y="54" width="36" height="4" fill="#0A0A0A"/>
+    <rect x="28" y="52" width="4" height="6" fill="#0A0A0A"/>
+    <rect x="64" y="52" width="4" height="6" fill="#0A0A0A"/>
+    <rect x="26" y="54" width="4" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="54" width="4" height="2" fill="#0A0A0A"/>
+    <rect x="42" y="60" width="12" height="1" fill="#555"/>
+  </symbol>
+  <!-- 09: Cop Uniform -->
+  <symbol id="char-09" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#5a5a5a"/>
+    <rect x="0" y="60" width="96" height="36" fill="#4a4a4a"/>
+    <rect x="12" y="82" width="72" height="14" fill="#333"/>
+    <rect x="18" y="78" width="60" height="4" fill="#333"/>
+    <rect x="24" y="74" width="48" height="4" fill="#333"/>
+    <rect x="38" y="74" width="20" height="22" fill="#eee"/>
+    <rect x="44" y="74" width="8" height="22" fill="#0A0A0A"/>
+    <rect x="28" y="78" width="2" height="2" fill="#eee"/>
+    <rect x="28" y="84" width="2" height="2" fill="#eee"/>
+    <rect x="28" y="90" width="2" height="2" fill="#eee"/>
+    <rect x="66" y="78" width="2" height="2" fill="#eee"/>
+    <rect x="66" y="84" width="2" height="2" fill="#eee"/>
+    <rect x="66" y="90" width="2" height="2" fill="#eee"/>
+    <rect x="40" y="66" width="16" height="10" fill="#bbb"/>
+    <rect x="40" y="66" width="16" height="2" fill="#777"/>
+    <rect x="32" y="30" width="32" height="2" fill="#bbb"/>
+    <rect x="30" y="32" width="36" height="2" fill="#bbb"/>
+    <rect x="28" y="34" width="40" height="22" fill="#bbb"/>
+    <rect x="30" y="56" width="36" height="2" fill="#bbb"/>
+    <rect x="32" y="58" width="32" height="2" fill="#bbb"/>
+    <rect x="34" y="60" width="28" height="4" fill="#bbb"/>
+    <rect x="30" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="30" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="28" y="32" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="32" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="34" width="2" height="22" fill="#0A0A0A"/>
+    <rect x="68" y="34" width="2" height="22" fill="#0A0A0A"/>
+    <rect x="28" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="66" y="56" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="30" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="64" y="58" width="2" height="2" fill="#0A0A0A"/>
+    <rect x="32" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="62" y="60" width="2" height="4" fill="#0A0A0A"/>
+    <rect x="34" y="64" width="28" height="2" fill="#0A0A0A"/>
+    <rect x="60" y="34" width="8" height="22" fill="#999" opacity=".4"/>
+    <rect x="24" y="42" width="4" height="8" fill="#999"/>
+    <rect x="68" y="42" width="4" height="8" fill="#777"/>
+    <rect x="26" y="22" width="44" height="8" fill="#0A0A0A"/>
+    <rect x="24" y="30" width="48" height="4" fill="#0A0A0A"/>
+    <rect x="20" y="34" width="56" height="2" fill="#0A0A0A"/>
+    <rect x="26" y="26" width="44" height="2" fill="#555"/>
+    <rect x="44" y="22" width="8" height="4" fill="#eee"/>
+    <rect x="46" y="22" width="4" height="4" fill="#0A0A0A"/>
+    <rect x="28" y="36" width="40" height="3" fill="#777" opacity=".6"/>
+    <rect x="32" y="42" width="10" height="4" fill="#0A0A0A"/>
+    <rect x="54" y="42" width="10" height="4" fill="#0A0A0A"/>
+    <rect x="36" y="43" width="2" height="2" fill="#eee"/>
+    <rect x="58" y="43" width="2" height="2" fill="#eee"/>
+    <rect x="46" y="46" width="4" height="8" fill="#999"/>
+    <rect x="46" y="46" width="2" height="8" fill="#bbb"/>
+    <rect x="50" y="46" width="2" height="8" fill="#777"/>
+    <rect x="44" y="54" width="8" height="2" fill="#555"/>
+    <rect x="38" y="56" width="20" height="2" fill="#333"/>
+    <rect x="40" y="60" width="16" height="1" fill="#0A0A0A"/>
+  </symbol>
+</svg>
+
 <script>
-// ══════════════════════════════════════════════════════════════════════
-// Brand constants
-// ══════════════════════════════════════════════════════════════════════
-const PAPER = '#F9F6F0';
-const INK   = '#0E0E0E';
-const LIME  = '#D7FF3A';
-const GREY  = '#BBBBBB';
-const DURATION_MS = 16000;
+// ─── SHOW ERRORS ON SCREEN so we can debug ───────────────────────────────
+window.onerror = function(msg, src, line) {
+  var el = document.getElementById('status');
+  if (el) el.textContent = '❌ JS ERROR: ' + msg + ' (line ' + line + ')';
+  return false;
+};
 
-// Canvas setup
-const cv = document.getElementById('stage');
-const ctx = cv.getContext('2d');
-let WIDTH = 1280, HEIGHT = 720;
+// ─── CONSTANTS ────────────────────────────────────────────────────────────
+var LIME  = '#D7FF3A';
+var INK   = '#0A0A0A';
+var PAPER = '#F2EDE4';
+var GREY  = '#888888';
+var DUR   = 24000;
 
-function setResolution(wh) {
-  [WIDTH, HEIGHT] = wh.split('x').map(Number);
-  cv.width = WIDTH;
-  cv.height = HEIGHT;
+var CHARS = [
+  { id:'char-01', name:'THE COMMANDER', trait:'BALD · WHITE BEARD · VETERAN' },
+  { id:'char-02', name:'THE BANDIT',    trait:'BANDANA · GOATEE · ROGUE' },
+  { id:'char-03', name:'THE GHOUL',     trait:'HOODED CLOAK · GLOWING EYES · CURSED' },
+  { id:'char-04', name:'THE NURSE',     trait:'HAT · SCRUBS · NURSE CROSS' },
+  { id:'char-05', name:'THE TRAVELER',  trait:'CAP · FULL BEARD · DRIFTER' },
+  { id:'char-06', name:'THE GENT',      trait:'FLAT CAP · MOUSTACHE · SUITED' },
+  { id:'char-07', name:'THE BRUTE',     trait:'BEANIE · SCAR · FROWN' },
+  { id:'char-08', name:'THE DANDY',     trait:'BOWLER HAT · HANDLEBAR · GILD' },
+  { id:'char-09', name:'THE OFFICER',   trait:'POLICE CAP · BADGE · AUTHORITY' }
+];
+
+// ─── CANVAS ───────────────────────────────────────────────────────────────
+var cv  = document.getElementById('stage');
+var ctx = cv.getContext('2d');
+var W = 1280, H = 720;
+
+function setRes(wh) {
+  var parts = wh.split('x');
+  W = parseInt(parts[0]); H = parseInt(parts[1]);
+  cv.width = W; cv.height = H;
 }
-
-document.getElementById('res').addEventListener('change', (e) => {
-  setResolution(e.target.value);
-  drawFrame(0); // preview current state
+document.getElementById('res').addEventListener('change', function(e) {
+  setRes(e.target.value); drawFrame(0);
 });
 
-// ══════════════════════════════════════════════════════════════════════
-// Pixel bust primitive — uses 24×24 grid like the brand-export
-// ══════════════════════════════════════════════════════════════════════
-function drawPixelBust(ctx, cx, cy, s, opts = {}) {
-  const px = (gx, gy, w, h, fill) => {
-    ctx.fillStyle = fill;
-    ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, w * s, h * s);
-  };
-  const hair   = opts.hair   || PAPER;
-  const face   = opts.face   || GREY;
-  const accent = opts.accent || LIME;
-  // Hair
-  px(5, 2, 14, 1, hair);
-  px(4, 3, 16, 1, hair);
-  px(4, 4, 16, 1, hair);
-  px(3, 5, 18, 1, hair);
-  px(3, 6, 18, 1, hair);
-  px(3, 7, 18, 1, INK); // undercut
-  // Face
-  for (let y = 8; y <= 14; y++) px(4, y, 16, 1, face);
-  px(5, 15, 14, 1, face);
-  px(6, 16, 12, 1, face);
-  // Eyes
-  px(7,  10, 3, 2, INK);
-  px(14, 10, 3, 2, INK);
-  // Mouth
-  px(9, 14, 6, 1, INK);
-  // Neck
-  px(10, 17, 4, 1, face);
-  px(10, 18, 4, 1, face);
-  // Collar
-  px(6, 19, 12, 1, accent);
-  px(4, 20, 16, 1, accent);
-  px(2, 21, 20, 1, accent);
-  px(2, 22, 20, 1, accent);
-  px(2, 23, 20, 1, INK);
+// ─── IMAGE CACHE ──────────────────────────────────────────────────────────
+var imgs = {};
+var imgsReady = false;
+
+function makeSVGUrl(id, sz) {
+  sz = sz || 384;
+  var sym = document.getElementById(id);
+  if (!sym) { console.error('Symbol not found: ' + id); return ''; }
+  var vb = sym.getAttribute('viewBox') || '0 0 96 96';
+  var inner = sym.innerHTML;
+  var svgStr = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb +
+    '" width="' + sz + '" height="' + sz + '" shape-rendering="crispEdges">' +
+    inner + '</svg>';
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// Animation — per-frame rendering. `t` is seconds from 0..16
-// Scene breakdown (total 16s):
-//   0.0 - 2.0 : Black hold → lime flicker dot → "1969" stamp
-//   2.0 - 4.0 : Hold "THE 1969" + tagline fade
-//   4.0 - 7.0 : Single bust assembles layer by layer
-//   7.0 - 10.0: Grid of 9 busts flash in
-//   10.0 - 13.0: "1,969 BUSTS" big wordmark
-//   13.0 - 16.0: Final mark + "Mint unlocks when the grid fills."
-// ══════════════════════════════════════════════════════════════════════
-function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
-function easeInOut(x) { return x < 0.5 ? 2*x*x : 1 - Math.pow(-2*x + 2, 2) / 2; }
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function loadAllImgs(sz, cb) {
+  sz = sz || 384;
+  var remaining = CHARS.length;
+  if (remaining === 0) { cb(); return; }
+  CHARS.forEach(function(c) {
+    var img = new Image();
+    img.onload  = function() { imgs[c.id] = img; remaining--; if (remaining <= 0) cb(); };
+    img.onerror = function() { console.error('Failed to load ' + c.id); remaining--; if (remaining <= 0) cb(); };
+    img.src = makeSVGUrl(c.id, sz);
+  });
+}
+
+// ─── DRAW HELPERS ─────────────────────────────────────────────────────────
+function clamp(v,a,b) { return Math.max(a, Math.min(b, v)); }
+function ease(x) { return 1 - Math.pow(1-x, 3); }
+function lerp(a,b,t) { return a + (b-a)*t; }
+
+function drawChar(id, cx, cy, sz, alpha) {
+  var img = imgs[id];
+  if (!img || sz <= 0) return;
+  alpha = (alpha === undefined) ? 1 : alpha;
+  ctx.save();
+  ctx.globalAlpha = clamp(alpha, 0, 1);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, cx - sz/2, cy - sz/2, sz, sz);
+  ctx.restore();
+}
+
+function drawCharCA(id, cx, cy, sz, alpha, ca) {
+  // Chromatic aberration via screen blend
+  var img = imgs[id];
+  if (!img || sz <= 0) return;
+  alpha = (alpha === undefined) ? 1 : alpha;
+  ca = ca || 0;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  if (ca > 1) {
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = clamp(alpha * 0.5, 0, 1);
+    ctx.drawImage(img, cx - sz/2 - ca, cy - sz/2, sz, sz);
+    ctx.drawImage(img, cx - sz/2 + ca, cy - sz/2, sz, sz);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  ctx.globalAlpha = clamp(alpha, 0, 1);
+  ctx.drawImage(img, cx - sz/2, cy - sz/2, sz, sz);
+  ctx.restore();
+}
+
+function bigText(txt, x, y, sz, color, alpha) {
+  ctx.save();
+  ctx.globalAlpha = clamp(alpha === undefined ? 1 : alpha, 0, 1);
+  ctx.fillStyle = color || PAPER;
+  ctx.font = '900 ' + Math.round(sz) + 'px Space Grotesk, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(txt, x, y);
+  ctx.restore();
+}
+
+function monoText(txt, x, y, sz, color, alpha) {
+  ctx.save();
+  ctx.globalAlpha = clamp(alpha === undefined ? 1 : alpha, 0, 1);
+  ctx.fillStyle = color || GREY;
+  ctx.font = '700 ' + Math.round(sz) + 'px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(txt, x, y);
+  ctx.restore();
+}
+
+function italicText(txt, x, y, sz, color, alpha) {
+  ctx.save();
+  ctx.globalAlpha = clamp(alpha === undefined ? 1 : alpha, 0, 1);
+  ctx.fillStyle = color || PAPER;
+  ctx.font = 'italic ' + Math.round(sz) + 'px Instrument Serif, serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(txt, x, y);
+  ctx.restore();
+}
+
+function limeBar(cx, cy, maxW, pct) {
+  var bw = maxW * clamp(pct, 0, 1);
+  if (bw <= 0) return;
+  var bh = Math.max(3, H * 0.005);
+  ctx.fillStyle = LIME;
+  ctx.fillRect(cx - bw/2, cy - bh/2, bw, bh);
+}
+
+function flashOverlay(a) {
+  if (a <= 0) return;
+  ctx.fillStyle = 'rgba(215,255,58,' + clamp(a,0,1) + ')';
+  ctx.fillRect(0, 0, W, H);
+}
+
+function whiteFlash(a) {
+  if (a <= 0) return;
+  ctx.fillStyle = 'rgba(255,255,255,' + clamp(a,0,1) + ')';
+  ctx.fillRect(0, 0, W, H);
+}
+
+function scanlines() {
+  ctx.save();
+  ctx.globalAlpha = 0.13;
+  ctx.fillStyle = '#000';
+  for (var y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+  ctx.restore();
+}
+
+function vignette() {
+  var g = ctx.createRadialGradient(W/2, H/2, H*0.22, W/2, H/2, W*0.72);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0.75)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function grain() {
+  ctx.save();
+  ctx.globalAlpha = 0.032;
+  ctx.fillStyle = '#fff';
+  for (var i = 0; i < 100; i++) {
+    ctx.fillRect(Math.random()*W, Math.random()*H, 1, 1);
+  }
+  ctx.restore();
+}
+
+function glitchBars(intensity) {
+  if (intensity < 0.02) return;
+  ctx.save();
+  var n = Math.floor(intensity * 10);
+  for (var i = 0; i < n; i++) {
+    var sy = Math.random() * H;
+    var sh = 1 + Math.random() * 10;
+    var sw = W * (0.15 + Math.random() * 0.5);
+    var sx = Math.random() * (W - sw);
+    var rnd = Math.random();
+    if (rnd < 0.4) {
+      ctx.globalAlpha = intensity * 0.3;
+      ctx.fillStyle = LIME;
+    } else {
+      ctx.globalAlpha = intensity * 0.35;
+      ctx.fillStyle = '#000';
+    }
+    ctx.fillRect(sx, sy, sw, sh);
+  }
+  ctx.restore();
+}
+
+// ─── HERO CARD ────────────────────────────────────────────────────────────
+function heroScene(charIdx, u) {
+  var c    = CHARS[charIdx];
+  var slid = ease(clamp(u * 3, 0, 1));
+  var fade = clamp(u * 4, 0, 1);
+
+  // Character on left half
+  var charSz  = H * 0.84 * ease(clamp(u * 2, 0, 1));
+  var startCX = -charSz * 0.5;
+  var cx      = lerp(startCX, W * 0.36, slid);
+  drawChar(c.id, cx, H * 0.5, charSz, fade);
+
+  // Right-side text panel
+  var rx   = W * 0.63;
+  var textA = fade * clamp((u - 0.1) * 5, 0, 1);
+
+  monoText('#' + String(charIdx+1).padStart(4,'0'), rx, H*0.26, H*0.020, LIME, textA);
+
+  // Name drops from above
+  var nameA    = clamp((u - 0.1) * 4, 0, 1);
+  var nameDrop = lerp(-H * 0.07, 0, ease(clamp((u - 0.1) * 5, 0, 1)));
+  bigText(c.name, rx, H*0.42 + nameDrop, H*0.058, PAPER, nameA);
+
+  limeBar(rx, H*0.53, W*0.30, clamp((u - 0.25) * 4, 0, 1));
+
+  monoText(c.trait,              rx, H*0.61, H*0.017, GREY, textA * clamp((u-0.3)*4,0,1));
+  monoText('1 OF 1,969 · ETHEREUM', rx, H*0.70, H*0.014, LIME, textA * clamp((u-0.4)*4,0,1) * 0.65);
+}
+
+// ─── MAIN RENDER ─────────────────────────────────────────────────────────
+// Timeline:
+//  0.0 – 1.5  : Black + glitch + lime pulse dot
+//  1.5 – 3.0  : "THE" slams from above
+//  3.0 – 4.5  : "1969" crashes with chromatic aberration
+//  4.5 – 6.0  : Tagline typewrite + lime bar
+//  6.0 – 9.0  : HERO #1 — THE COMMANDER
+//  9.0 – 12.0 : HERO #2 — THE GHOUL
+// 12.0 – 15.0 : HERO #3 — THE OFFICER
+// 15.0 – 18.0 : Rapid montage 6 chars (0.5s each)
+// 18.0 – 21.0 : 3×3 full grid slam
+// 21.0 – 23.0 : count-up 1,969
+// 23.0 – 24.0 : Fade to black
 
 function drawFrame(tMs) {
-  const t = tMs / 1000;
-  const w = WIDTH, h = HEIGHT;
+  var t = tMs / 1000;
+  var w = W, h = H;
 
-  // Background always black
   ctx.fillStyle = INK;
   ctx.fillRect(0, 0, w, h);
 
-  // Subtle animated grain / film flicker
-  ctx.globalAlpha = 0.04 + 0.02 * Math.sin(t * 40);
-  ctx.fillStyle = PAPER;
-  for (let i = 0; i < 60; i++) {
-    const gx = Math.random() * w;
-    const gy = Math.random() * h;
-    ctx.fillRect(gx, gy, 1, 1);
-  }
-  ctx.globalAlpha = 1;
-
-  // ── Scene 1 (0-2): Flicker dot then wordmark fade-in ──
-  if (t < 2.0) {
-    const flicker = Math.sin(t * 18) * 0.5 + 0.5;
-    ctx.fillStyle = t < 0.6 ? LIME : PAPER;
-    ctx.globalAlpha = clamp(flicker, 0.2, 1);
-    const dotR = h * 0.012 + Math.sin(t * 6) * 2;
-    ctx.beginPath(); ctx.arc(w/2, h/2, dotR, 0, Math.PI*2); ctx.fill();
-    ctx.globalAlpha = 1;
-
-    if (t > 0.8) {
-      const fade = clamp((t - 0.8) / 0.8, 0, 1);
-      ctx.fillStyle = PAPER;
-      ctx.globalAlpha = fade;
-      ctx.font = `500 ${h * 0.22}px 'Space Grotesk', sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('1969', w/2, h/2);
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  // ── Scene 2 (2-4): Wordmark steady + tagline draws in ──
-  else if (t < 4.0) {
-    const u = (t - 2.0) / 2.0;
-    ctx.fillStyle = PAPER;
-    ctx.font = `500 ${h * 0.22}px 'Space Grotesk', sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('1969', w/2, h/2 - h*0.05);
-
-    // Lime underline accent grows
-    const accentW = w * 0.08 * easeOutCubic(clamp(u * 2, 0, 1));
+  // ── 0–1.5: cold open ──────────────────────────────────────────────────
+  if (t < 1.5) {
+    var u1 = t / 1.5;
+    glitchBars(Math.max(0, 1 - u1 * 3) * 0.75);
+    // lime pulse dot
+    ctx.save();
+    ctx.globalAlpha = clamp(u1 * 5, 0, 1) * (0.6 + 0.4 * Math.sin(t * 20));
     ctx.fillStyle = LIME;
-    ctx.fillRect(w/2 - accentW/2, h/2 + h*0.10, accentW, Math.max(3, h*0.005));
+    var r = h * (0.009 + 0.005 * Math.sin(t * 14));
+    ctx.beginPath(); ctx.arc(w/2, h/2, r, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    whiteFlash(clamp(1 - u1 * 10, 0, 0.8));
+  }
 
-    // Italic serif tagline typewrites
-    const full = 'busts that speak for themselves.';
-    const chars = Math.floor(full.length * clamp((u - 0.3) * 1.6, 0, 1));
-    if (chars > 0) {
-      ctx.fillStyle = PAPER;
-      ctx.globalAlpha = 0.85;
-      ctx.font = `italic ${h * 0.05}px 'Instrument Serif', serif`;
-      ctx.fillText(full.slice(0, chars), w/2, h/2 + h*0.20);
-      ctx.globalAlpha = 1;
+  // ── 1.5–3.0: "THE" slams ───────────────────────────────────────────────
+  else if (t < 3.0) {
+    var u2 = (t - 1.5) / 1.5;
+    var drop2 = lerp(-h * 0.25, 0, ease(clamp(u2 * 4, 0, 1)));
+    bigText('THE', w/2, h*0.44 + drop2, h*0.18, PAPER, ease(clamp(u2*3,0,1)));
+    whiteFlash(clamp(1 - u2 * 12, 0, 0.65));
+  }
+
+  // ── 3.0–4.5: "1969" crashes ────────────────────────────────────────────
+  else if (t < 4.5) {
+    var u3 = (t - 3.0) / 1.5;
+    bigText('THE', w/2, h*0.26, h*0.10, PAPER, 0.65);
+    var drop3  = lerp(-h * 0.3, 0, ease(clamp(u3 * 5, 0, 1)));
+    var alpha3 = ease(clamp(u3 * 2, 0, 1));
+    var ca3    = clamp(1 - u3 * 5, 0, 1) * w * 0.022;
+    // chromatic aberration red/blue ghost
+    if (ca3 > 1) {
+      ctx.save();
+      ctx.font = '900 ' + Math.round(h * 0.40) + 'px Space Grotesk, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.globalAlpha = alpha3 * 0.45;
+      ctx.fillStyle = '#ff2222';
+      ctx.fillText('1969', w/2 - ca3, h*0.55 + drop3);
+      ctx.fillStyle = '#2222ff';
+      ctx.fillText('1969', w/2 + ca3, h*0.55 + drop3);
+      ctx.restore();
     }
+    bigText('1969', w/2, h*0.55 + drop3, h*0.40, PAPER, alpha3);
+    whiteFlash(clamp(1 - u3 * 14, 0, 0.75));
   }
 
-  // ── Scene 3 (4-7): Single bust assembles layer by layer ──
-  else if (t < 7.0) {
-    const u = (t - 4.0) / 3.0; // 0..1
-    const cx = w/2, cy = h/2;
-    const s = h * 0.028;
-
-    // Kicker
-    ctx.fillStyle = PAPER;
-    ctx.globalAlpha = clamp(u * 2, 0, 1) * 0.75;
-    ctx.font = `500 ${h * 0.022}px 'JetBrains Mono', monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText('EIGHT TRAITS · ONE BUST', cx, h * 0.12);
-    ctx.globalAlpha = 1;
-
-    // Layer reveals — 8 phases
-    const phases = [
-      { at: 0.00, draw: () => { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(cx - 16*s, cy - 14*s, 32*s, 24*s); } }, // bg plate
-      { at: 0.10, draw: () => {
-        // hair
-        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
-        ctx.fillStyle = PAPER;
-        px(5, 2, 14, 1); px(4, 3, 16, 1); px(4, 4, 16, 1); px(3, 5, 18, 1); px(3, 6, 18, 1);
-        ctx.fillStyle = INK;
-        px(3, 7, 18, 1);
-      } },
-      { at: 0.22, draw: () => {
-        // face
-        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
-        ctx.fillStyle = GREY;
-        for (let y = 8; y <= 14; y++) px(4, y, 16, 1);
-        px(5, 15, 14, 1); px(6, 16, 12, 1);
-      } },
-      { at: 0.35, draw: () => {
-        // eyes
-        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
-        ctx.fillStyle = INK; px(7, 10, 3, 2); px(14, 10, 3, 2);
-      } },
-      { at: 0.45, draw: () => {
-        // mouth
-        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
-        ctx.fillStyle = INK; px(9, 14, 6, 1);
-      } },
-      { at: 0.58, draw: () => {
-        // neck
-        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
-        ctx.fillStyle = GREY; px(10, 17, 4, 1); px(10, 18, 4, 1);
-      } },
-      { at: 0.70, draw: () => {
-        // collar / lime accent
-        const px = (gx, gy, pw, ph) => ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, pw * s, ph * s);
-        ctx.fillStyle = LIME;
-        px(6, 19, 12, 1); px(4, 20, 16, 1); px(2, 21, 20, 1); px(2, 22, 20, 1);
-        ctx.fillStyle = INK; px(2, 23, 20, 1);
-      } },
-      { at: 0.85, draw: () => {
-        // lime dot + label
-        ctx.fillStyle = LIME;
-        ctx.beginPath(); ctx.arc(cx - 14*s, cy + 13*s, s * 0.4, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = PAPER;
-        ctx.font = `500 ${h * 0.022}px 'JetBrains Mono', monospace`;
-        ctx.textAlign = 'left';
-        ctx.fillText('bust · 0000', cx - 12*s, cy + 14*s);
-      } },
-    ];
-    phases.forEach(({ at, draw }) => { if (u >= at) draw(); });
+  // ── 4.5–6.0: tagline ───────────────────────────────────────────────────
+  else if (t < 6.0) {
+    var u4 = (t - 4.5) / 1.5;
+    bigText('THE',  w/2, h*0.24, h*0.10, PAPER, 0.65);
+    bigText('1969', w/2, h*0.50, h*0.36, PAPER, 1);
+    limeBar(w/2, h*0.74, w*0.55, ease(clamp(u4*2.5,0,1)));
+    var tag  = 'busts that speak for themselves.';
+    var nch  = Math.floor(tag.length * clamp((u4 - 0.18) * 2.5, 0, 1));
+    if (nch > 0) italicText(tag.slice(0, nch), w/2, h*0.84, h*0.042, PAPER, 0.85);
   }
 
-  // ── Scene 4 (7-10): Grid of 9 busts flash in ──
-  else if (t < 10.0) {
-    const u = (t - 7.0) / 3.0;
-    const cols = 5, rows = 3;
-    const gap = w * 0.012;
-    const cellW = (w - gap * (cols + 1)) / cols;
-    const cellH = (h - gap * (rows + 1) - h * 0.20) / rows;
-    const top = h * 0.20;
+  // ── 6.0–9.0: HERO 1 Commander ─────────────────────────────────────────
+  else if (t < 9.0) {
+    var u5 = (t - 6.0) / 3.0;
+    heroScene(0, u5);
+    whiteFlash(clamp(1 - u5 * 20, 0, 0.6));
+  }
 
-    ctx.fillStyle = PAPER;
-    ctx.globalAlpha = 0.75;
-    ctx.font = `500 ${h * 0.022}px 'JetBrains Mono', monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText('NO TWO ALIKE · 1,969 UNIQUE BUSTS', w/2, h * 0.10);
-    ctx.globalAlpha = 1;
+  // ── 9.0–12.0: HERO 2 Ghoul ────────────────────────────────────────────
+  else if (t < 12.0) {
+    var u6 = (t - 9.0) / 3.0;
+    heroScene(2, u6);
+    whiteFlash(clamp(1 - u6 * 20, 0, 0.6));
+  }
 
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const idx = r * cols + c;
-        const revealAt = idx * 0.055;
-        if (u < revealAt) continue;
-        const reveal = clamp((u - revealAt) / 0.12, 0, 1);
+  // ── 12.0–15.0: HERO 3 Officer ─────────────────────────────────────────
+  else if (t < 15.0) {
+    var u7 = (t - 12.0) / 3.0;
+    heroScene(8, u7);
+    whiteFlash(clamp(1 - u7 * 20, 0, 0.6));
+  }
 
-        const x = gap + c * (cellW + gap);
-        const y = top + gap + r * (cellH + gap);
+  // ── 15.0–18.0: Rapid montage (6 chars x 0.5s) ────────────────────────
+  else if (t < 18.0) {
+    var montage = [1, 3, 4, 5, 6, 7];
+    var slot    = (t - 15.0) / 0.5;
+    var mIdx    = Math.min(Math.floor(slot), 5);
+    var mu      = slot - mIdx;
+    var cI      = montage[mIdx];
+    var mc      = CHARS[cI];
+
+    var mSz  = h * ease(clamp(mu * 8, 0, 1));
+    var mA   = clamp(mu * 8, 0, 1);
+    drawCharCA(mc.id, w/2, h*0.50, mSz, mA, clamp(0.4 - mu*5,0,0.4)*w*0.02);
+
+    var nA  = clamp(mu * 8, 0, 1);
+    var nDr = lerp(-h*0.06, 0, ease(clamp(mu*8,0,1)));
+    bigText(mc.name,  w/2, h*0.14 + nDr, h*0.052, LIME, nA);
+    monoText(mc.trait, w/2, h*0.87, h*0.017, GREY, nA);
+    whiteFlash(clamp(1 - mu * 20, 0, 0.75));
+  }
+
+  // ── 18.0–21.0: 3×3 grid ──────────────────────────────────────────────
+  else if (t < 21.0) {
+    var ug = (t - 18.0) / 3.0;
+    monoText('NO TWO ALIKE   ·   1,969 UNIQUE BUSTS', w/2, h*0.05, h*0.019, LIME, clamp(ug*5,0,1)*0.85);
+    var cols = 3, rows = 3;
+    var padX = w * 0.04, padY = h * 0.12;
+    var cw   = (w - padX*2) / cols;
+    var ch2  = (h - padY - h*0.04) / rows;
+    for (var r2 = 0; r2 < rows; r2++) {
+      for (var c2 = 0; c2 < cols; c2++) {
+        var idx = r2*cols + c2;
+        var rat  = idx * 0.07;
+        if (ug < rat) continue;
+        var rv  = clamp((ug - rat) / 0.12, 0, 1);
+        var gcx = padX + c2*cw + cw/2;
+        var gcy = padY + r2*ch2 + ch2/2;
+        var gsz = Math.min(cw, ch2) * 0.86 * ease(rv);
+        // lime flash border on entry
+        var flashA = clamp(1 - rv*6, 0, 0.55);
+        if (flashA > 0) {
+          ctx.save();
+          ctx.globalAlpha = flashA;
+          ctx.fillStyle = LIME;
+          ctx.fillRect(padX + c2*cw, padY + r2*ch2, cw, ch2);
+          ctx.restore();
+        }
         ctx.save();
-        ctx.globalAlpha = reveal;
+        ctx.globalAlpha = rv*0.22;
         ctx.fillStyle = '#181818';
-        ctx.fillRect(x, y, cellW, cellH);
-        // Random-variant bust — scale to fit
-        const bs = Math.min(cellW, cellH) / 26;
-        const randHair = (idx % 3 === 0) ? LIME : PAPER;
-        const randFace = (idx % 2 === 0) ? GREY : '#a8a8a8';
-        const randAccent = (idx % 4 === 0) ? PAPER : LIME;
-        drawPixelBust(ctx, x + cellW/2, y + cellH/2, bs, { hair: randHair, face: randFace, accent: randAccent });
+        ctx.fillRect(padX + c2*cw + 2, padY + r2*ch2 + 2, cw-4, ch2-4);
         ctx.restore();
+        drawChar(CHARS[idx].id, gcx, gcy, gsz, rv);
       }
     }
+    whiteFlash(clamp(1 - ug*28, 0, 0.65));
   }
 
-  // ── Scene 5 (10-13): Giant "1,969 BUSTS" wordmark ──
-  else if (t < 13.0) {
-    const u = (t - 10.0) / 3.0;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    ctx.fillStyle = PAPER;
-    ctx.globalAlpha = 0.7;
-    ctx.font = `500 ${h * 0.03}px 'JetBrains Mono', monospace`;
-    ctx.fillText('SUPPLY', w/2, h/2 - h*0.22);
-    ctx.globalAlpha = 1;
-
-    ctx.fillStyle = PAPER;
-    ctx.font = `500 ${h * 0.32}px 'Space Grotesk', sans-serif`;
-    const countUp = Math.floor(1969 * easeOutCubic(clamp(u * 1.2, 0, 1))).toLocaleString();
-    ctx.fillText(countUp, w/2, h/2 - h*0.03);
-
-    ctx.fillStyle = LIME;
-    ctx.font = `italic ${h * 0.075}px 'Instrument Serif', serif`;
-    ctx.fillText('busts.', w/2, h/2 + h*0.18);
+  // ── 21.0–23.0: Count-up ──────────────────────────────────────────────
+  else if (t < 23.0) {
+    var uc = (t - 21.0) / 2.0;
+    var cnt = Math.floor(1969 * ease(clamp(uc * 1.3, 0, 1)));
+    monoText('TOTAL SUPPLY', w/2, h*0.28, h*0.023, GREY, clamp(uc*5,0,1)*0.7);
+    bigText(cnt.toLocaleString(), w/2, h*0.51, h*0.37, PAPER, clamp(uc*5,0,1));
+    italicText('unique busts.', w/2, h*0.76, h*0.062, LIME, clamp(uc*4,0,1));
+    monoText('ETHEREUM BLOCKCHAIN · ON-CHAIN METADATA', w/2, h*0.89, h*0.015, GREY, clamp(uc*4,0,1)*0.5);
+    if (uc > 0.5) {
+      var pa = clamp((uc-0.5)*3,0,1) * 0.6;
+      for (var pi = 0; pi < CHARS.length; pi++) {
+        var px2 = (w/(CHARS.length+1)) * (pi+1);
+        drawChar(CHARS[pi].id, px2, h*0.93, h*0.082, pa);
+      }
+    }
+    whiteFlash(clamp(1 - uc*22, 0, 0.55));
   }
 
-  // ── Scene 6 (13-16): Closing mark — THE 1969 ──
+  // ── 23.0–24.0: Fade to black ─────────────────────────────────────────
   else {
-    const u = (t - 13.0) / 3.0;
-    const fade = easeOutCubic(clamp(u * 1.6, 0, 1));
+    var uf = (t - 23.0) / 1.0;
+    var fA = clamp(1 - uf*1.4, 0, 1);
+    drawChar('char-01', w*0.25, h*0.43, h*0.48, fA*0.9);
+    drawChar('char-05', w*0.50, h*0.43, h*0.48, fA*0.9);
+    drawChar('char-09', w*0.75, h*0.43, h*0.48, fA*0.9);
+    bigText('THE 1969', w/2, h*0.78, h*0.062, PAPER, fA);
+    monoText('1,969 UNIQUE PIXEL BUSTS · ETHEREUM', w/2, h*0.88, h*0.015, GREY, fA*0.6);
+    italicText('mint unlocks when the grid fills.', w/2, h*0.94, h*0.032, LIME, fA*0.8);
+    ctx.fillStyle = 'rgba(0,0,0,' + ease(clamp((uf-0.4)*2,0,1)) + ')';
+    ctx.fillRect(0, 0, w, h);
+  }
 
-    // Central bust
-    ctx.save();
-    ctx.globalAlpha = fade;
-    drawPixelBust(ctx, w/2, h/2 - h*0.05, h * 0.022);
-    ctx.restore();
+  vignette();
+  scanlines();
+  grain();
+}
 
-    // Wordmark + badge
-    ctx.globalAlpha = fade;
-    ctx.fillStyle = PAPER;
-    ctx.font = `500 ${h * 0.04}px 'JetBrains Mono', monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText('THE · 1969 · ETHEREUM', w/2, h/2 + h*0.22);
+// ─── AUDIO ────────────────────────────────────────────────────────────────
+var audioCtx = null, audioDest = null;
 
-    // Lime call-to-action
-    ctx.fillStyle = LIME;
-    ctx.font = `italic ${h * 0.055}px 'Instrument Serif', serif`;
-    ctx.fillText('mint unlocks when the grid fills.', w/2, h/2 + h*0.31);
-    ctx.globalAlpha = 1;
+function buildAudio(capture) {
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var master = audioCtx.createGain(); master.gain.value = 0.85;
+    master.connect(audioCtx.destination);
+    if (capture) {
+      audioDest = audioCtx.createMediaStreamDestination();
+      master.connect(audioDest);
+    }
+    var now = audioCtx.currentTime + 0.05;
 
-    // Corner ticker
-    ctx.fillStyle = PAPER;
-    ctx.globalAlpha = 0.6 * fade;
-    ctx.font = `500 ${h * 0.02}px 'JetBrains Mono', monospace`;
-    ctx.textAlign = 'left';
-    ctx.fillText('INDEX 001 / SERIES A', w*0.04, h - h*0.05);
-    ctx.textAlign = 'right';
-    ctx.fillText('@the1969eth', w - w*0.04, h - h*0.05);
-    ctx.globalAlpha = 1;
+    // Bass drone
+    var drone = audioCtx.createOscillator(); drone.type = 'sawtooth';
+    drone.frequency.setValueAtTime(41, now);
+    drone.frequency.linearRampToValueAtTime(65, now+20);
+    var df = audioCtx.createBiquadFilter(); df.type = 'lowpass'; df.frequency.value = 200;
+    var dg = audioCtx.createGain();
+    dg.gain.setValueAtTime(0, now);
+    dg.gain.linearRampToValueAtTime(0.12, now+1.5);
+    dg.gain.setValueAtTime(0.12, now+22);
+    dg.gain.linearRampToValueAtTime(0, now+24);
+    drone.connect(df); df.connect(dg); dg.connect(master);
+    drone.start(now); drone.stop(now+24.2);
+
+    // Sub-bass pulse kicks every 0.75s
+    for (var i = 0; i < 32; i++) {
+      var bt = i * 0.75;
+      if (bt > 23.5) break;
+      var ko = audioCtx.createOscillator(); ko.type = 'sine';
+      ko.frequency.setValueAtTime(58, now+bt);
+      ko.frequency.exponentialRampToValueAtTime(25, now+bt+0.22);
+      var kg = audioCtx.createGain();
+      kg.gain.setValueAtTime(0, now+bt);
+      kg.gain.linearRampToValueAtTime(0.6, now+bt+0.004);
+      kg.gain.exponentialRampToValueAtTime(0.001, now+bt+0.28);
+      ko.connect(kg); kg.connect(master);
+      ko.start(now+bt); ko.stop(now+bt+0.3);
+    }
+
+    // Scene hits
+    [0, 1.5, 3.0, 4.5, 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 23.0].forEach(function(bt) {
+      var ho = audioCtx.createOscillator(); ho.type = 'sine';
+      ho.frequency.setValueAtTime(190, now+bt);
+      ho.frequency.exponentialRampToValueAtTime(32, now+bt+0.28);
+      var hg = audioCtx.createGain();
+      hg.gain.setValueAtTime(0, now+bt);
+      hg.gain.linearRampToValueAtTime(0.8, now+bt+0.003);
+      hg.gain.exponentialRampToValueAtTime(0.001, now+bt+0.32);
+      ho.connect(hg); hg.connect(master);
+      ho.start(now+bt); ho.stop(now+bt+0.35);
+    });
+
+    // Montage ticks
+    for (var m = 0; m < 6; m++) {
+      var mt = 15.0 + m * 0.5;
+      var mo = audioCtx.createOscillator(); mo.type = 'square';
+      mo.frequency.value = 1100 - m * 70;
+      var mg = audioCtx.createGain();
+      mg.gain.setValueAtTime(0, now+mt);
+      mg.gain.linearRampToValueAtTime(0.07, now+mt+0.003);
+      mg.gain.exponentialRampToValueAtTime(0.001, now+mt+0.07);
+      mo.connect(mg); mg.connect(master);
+      mo.start(now+mt); mo.stop(now+mt+0.09);
+    }
+
+    // Count-up sweep
+    var sw = audioCtx.createOscillator(); sw.type = 'triangle';
+    sw.frequency.setValueAtTime(150, now+21);
+    sw.frequency.exponentialRampToValueAtTime(1600, now+23);
+    var sg = audioCtx.createGain();
+    sg.gain.setValueAtTime(0, now+21);
+    sg.gain.linearRampToValueAtTime(0.13, now+22);
+    sg.gain.linearRampToValueAtTime(0, now+23.1);
+    sw.connect(sg); sg.connect(master);
+    sw.start(now+21); sw.stop(now+23.5);
+
+    // Final chord
+    [110, 138.59, 164.81].forEach(function(f) {
+      var fo = audioCtx.createOscillator(); fo.type = 'sine'; fo.frequency.value = f;
+      var fg = audioCtx.createGain();
+      fg.gain.setValueAtTime(0, now+23);
+      fg.gain.linearRampToValueAtTime(0.10, now+23.1);
+      fg.gain.setValueAtTime(0.10, now+23.7);
+      fg.gain.linearRampToValueAtTime(0, now+24);
+      fo.connect(fg); fg.connect(master);
+      fo.start(now+23); fo.stop(now+24.1);
+    });
+  } catch(e) {
+    console.error('Audio error:', e);
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// Synthesized soundtrack — Web Audio API
-// ══════════════════════════════════════════════════════════════════════
-let audioCtx = null;
-let audioDestination = null; // for capture stream
+// ─── PLAYBACK ─────────────────────────────────────────────────────────────
+var rafId = null, startAt = 0, recorder = null, chunks = [];
 
-function buildAudio(sendToRecorder) {
-  // Fresh context each playthrough so we can schedule everything at t=0
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const master = audioCtx.createGain();
-  master.gain.value = 0.9;
-  master.connect(audioCtx.destination);
-  if (sendToRecorder) {
-    audioDestination = audioCtx.createMediaStreamDestination();
-    master.connect(audioDestination);
-  }
-
-  const now = audioCtx.currentTime + 0.1; // small lead-in
-
-  // 1) Low-freq drone pad running the whole 16s
-  const drone = audioCtx.createOscillator();
-  drone.type = 'sawtooth';
-  drone.frequency.setValueAtTime(55, now);
-  drone.frequency.linearRampToValueAtTime(82, now + 14);
-  const droneFilter = audioCtx.createBiquadFilter();
-  droneFilter.type = 'lowpass';
-  droneFilter.frequency.setValueAtTime(200, now);
-  droneFilter.frequency.linearRampToValueAtTime(1200, now + 12);
-  const droneGain = audioCtx.createGain();
-  droneGain.gain.setValueAtTime(0, now);
-  droneGain.gain.linearRampToValueAtTime(0.10, now + 0.5);
-  droneGain.gain.setValueAtTime(0.10, now + 13);
-  droneGain.gain.linearRampToValueAtTime(0, now + 16);
-  drone.connect(droneFilter).connect(droneGain).connect(master);
-  drone.start(now);
-  drone.stop(now + 16.2);
-
-  // 2) Kick hit on each big beat
-  const beatTimes = [0.0, 2.0, 4.0, 7.0, 10.0, 13.0, 15.5];
-  beatTimes.forEach((t) => {
-    const o = audioCtx.createOscillator();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(160, now + t);
-    o.frequency.exponentialRampToValueAtTime(38, now + t + 0.25);
-    const g = audioCtx.createGain();
-    g.gain.setValueAtTime(0, now + t);
-    g.gain.linearRampToValueAtTime(0.7, now + t + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.001, now + t + 0.35);
-    o.connect(g).connect(master);
-    o.start(now + t);
-    o.stop(now + t + 0.4);
-  });
-
-  // 3) Trait-reveal ticks during scene 3 (4-7s)
-  for (let i = 0; i < 8; i++) {
-    const tick = 4.0 + i * 0.28;
-    const o = audioCtx.createOscillator();
-    o.type = 'square';
-    o.frequency.setValueAtTime(880 + i * 120, now + tick);
-    const g = audioCtx.createGain();
-    g.gain.setValueAtTime(0, now + tick);
-    g.gain.linearRampToValueAtTime(0.12, now + tick + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.001, now + tick + 0.08);
-    o.connect(g).connect(master);
-    o.start(now + tick);
-    o.stop(now + tick + 0.1);
-  }
-
-  // 4) Grid-fill percussive bursts during scene 4 (7-10s)
-  for (let i = 0; i < 15; i++) {
-    const tick = 7.0 + i * 0.18;
-    const noise = audioCtx.createBufferSource();
-    const buf = audioCtx.createBuffer(1, 44100 * 0.05, 44100);
-    const ch = buf.getChannelData(0);
-    for (let k = 0; k < ch.length; k++) ch[k] = (Math.random() * 2 - 1) * Math.exp(-k / 800);
-    noise.buffer = buf;
-    const g = audioCtx.createGain();
-    g.gain.value = 0.10;
-    noise.connect(g).connect(master);
-    noise.start(now + tick);
-  }
-
-  // 5) Final synth sweep landing at 13s ("1969")
-  const sweep = audioCtx.createOscillator();
-  sweep.type = 'triangle';
-  sweep.frequency.setValueAtTime(200, now + 10.5);
-  sweep.frequency.exponentialRampToValueAtTime(1200, now + 13);
-  const sweepGain = audioCtx.createGain();
-  sweepGain.gain.setValueAtTime(0, now + 10.5);
-  sweepGain.gain.linearRampToValueAtTime(0.15, now + 12);
-  sweepGain.gain.linearRampToValueAtTime(0, now + 13.3);
-  sweep.connect(sweepGain).connect(master);
-  sweep.start(now + 10.5);
-  sweep.stop(now + 13.5);
-
-  // 6) Final chord at 13s
-  [220, 277.18, 329.63].forEach((f, i) => {
-    const o = audioCtx.createOscillator();
-    o.type = 'sine';
-    o.frequency.value = f;
-    const g = audioCtx.createGain();
-    g.gain.setValueAtTime(0, now + 13);
-    g.gain.linearRampToValueAtTime(0.10, now + 13.1);
-    g.gain.setValueAtTime(0.10, now + 15);
-    g.gain.linearRampToValueAtTime(0, now + 16);
-    o.connect(g).connect(master);
-    o.start(now + 13);
-    o.stop(now + 16.1);
-  });
-
-  return now;
+function setStatus(s) {
+  var el = document.getElementById('status');
+  if (el) el.textContent = s;
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// Playback + record
-// ══════════════════════════════════════════════════════════════════════
-let rafId = null;
-let startedAt = 0;
-let recorder = null;
-let recChunks = [];
-
-function setStatus(s) { document.getElementById('status').textContent = s; }
-
-function loopFrame() {
-  const elapsed = performance.now() - startedAt;
-  if (elapsed >= DURATION_MS) {
-    drawFrame(DURATION_MS - 16);
+function animLoop() {
+  try {
+    var el = performance.now() - startAt;
+    if (el >= DUR) { drawFrame(DUR - 16); return; }
+    drawFrame(el);
+  } catch(e) {
+    setStatus('❌ Render error: ' + e.message);
+    console.error(e);
     return;
   }
-  drawFrame(elapsed);
-  rafId = requestAnimationFrame(loopFrame);
+  rafId = requestAnimationFrame(animLoop);
 }
 
-async function ensureFontsReady() {
+function stopAll() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  if (recorder && recorder.state === 'recording') recorder.stop();
+  if (audioCtx) { try { audioCtx.close(); } catch(e) {} audioCtx = null; }
+}
+
+async function ensureReady() {
   if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  if (!imgsReady) {
+    setStatus('⏳ Loading character art…');
+    await new Promise(function(res) { loadAllImgs(384, res); });
+    imgsReady = true;
+  }
 }
 
-document.getElementById('play').addEventListener('click', async () => {
-  await ensureFontsReady();
-  setResolution(document.getElementById('res').value);
-  const silent = document.getElementById('audio-mode').value === 'silent';
-  if (rafId) cancelAnimationFrame(rafId);
-  if (audioCtx) { try { await audioCtx.close(); } catch {} audioCtx = null; }
-  if (!silent) buildAudio(false);
-  startedAt = performance.now();
-  setStatus('Playing preview.');
-  rafId = requestAnimationFrame(loopFrame);
-  setTimeout(() => setStatus('Done. Click Record & download HD for a real file.'), DURATION_MS);
+document.getElementById('btnPlay').addEventListener('click', async function() {
+  try {
+    document.getElementById('playOverlay').classList.add('hidden');
+    await ensureReady();
+    setRes(document.getElementById('res').value);
+    stopAll();
+    var silent = document.getElementById('amode').value === 'silent';
+    if (!silent) buildAudio(false);
+    startAt = performance.now();
+    setStatus('▶ Playing…');
+    rafId = requestAnimationFrame(animLoop);
+    setTimeout(function() { setStatus('Done. Hit Record & Download for an HD file.'); }, DUR);
+  } catch(e) {
+    setStatus('❌ Play error: ' + e.message);
+    console.error(e);
+  }
 });
 
-function pickRecorderMime() {
-  // Try MP4 first (Chrome 119+ supports it). Fall back to WebM.
-  const candidates = [
+document.getElementById('stageWrap').addEventListener('click', function() {
+  document.getElementById('btnPlay').click();
+});
+
+function pickMime() {
+  var candidates = [
     'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-    'video/mp4;codecs=avc1.64001F,mp4a.40.2',
     'video/mp4',
     'video/webm;codecs=vp9,opus',
-    'video/webm;codecs=vp8,opus',
-    'video/webm',
+    'video/webm'
   ];
-  for (const m of candidates) {
-    if (MediaRecorder.isTypeSupported(m)) return m;
+  for (var i = 0; i < candidates.length; i++) {
+    try { if (MediaRecorder.isTypeSupported(candidates[i])) return candidates[i]; } catch(e) {}
   }
   return '';
 }
 
-document.getElementById('record').addEventListener('click', async () => {
-  await ensureFontsReady();
-  setResolution(document.getElementById('res').value);
-  const silent = document.getElementById('audio-mode').value === 'silent';
-  if (rafId) cancelAnimationFrame(rafId);
-  if (audioCtx) { try { await audioCtx.close(); } catch {} audioCtx = null; }
-
-  const mime = pickRecorderMime();
-  if (!mime) { setStatus('Your browser cannot record video. Try Chrome or Edge.'); return; }
-
-  buildAudio(!silent);
-
-  const canvasStream = cv.captureStream(60);
-  const tracks = [...canvasStream.getTracks()];
-  if (!silent && audioDestination) {
-    for (const t of audioDestination.stream.getAudioTracks()) tracks.push(t);
-  }
-  const combined = new MediaStream(tracks);
-
-  recChunks = [];
-  recorder = new MediaRecorder(combined, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
-  recorder.ondataavailable = (e) => { if (e.data.size) recChunks.push(e.data); };
-  recorder.onstop = () => {
-    const blob = new Blob(recChunks, { type: mime });
-    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
-    const url = URL.createObjectURL(blob);
-    const wrap = document.getElementById('download-wrap');
-    wrap.innerHTML = '';
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `the-1969-trailer-16s.${ext}`;
-    a.className = 'download-link';
-    a.textContent = `Download .${ext} (${(blob.size / (1024*1024)).toFixed(1)} MB)`;
-    wrap.appendChild(a);
-    setStatus(`Recorded ${ext.toUpperCase()} · ready to download. X accepts both MP4 and WebM — MP4 is preferred for maximum compatibility.`);
-    document.getElementById('stop').disabled = true;
-  };
-
-  document.getElementById('stop').disabled = false;
-  startedAt = performance.now();
-  setStatus(`Recording ${mime.split(';')[0]} · ${WIDTH}×${HEIGHT} · 60fps. Do NOT switch tabs.`);
-  recorder.start();
-  rafId = requestAnimationFrame(function tick() {
-    const elapsed = performance.now() - startedAt;
-    if (elapsed >= DURATION_MS) {
-      drawFrame(DURATION_MS - 16);
-      recorder.stop();
-      return;
+document.getElementById('btnRecord').addEventListener('click', async function() {
+  try {
+    document.getElementById('playOverlay').classList.add('hidden');
+    await ensureReady();
+    setRes(document.getElementById('res').value);
+    stopAll();
+    var mime = pickMime();
+    if (!mime) { setStatus('Browser cannot record — try Chrome or Edge.'); return; }
+    var silent = document.getElementById('amode').value === 'silent';
+    buildAudio(!silent);
+    var tracks = Array.from(cv.captureStream(60).getTracks());
+    if (!silent && audioDest) {
+      audioDest.stream.getAudioTracks().forEach(function(t) { tracks.push(t); });
     }
-    drawFrame(elapsed);
-    rafId = requestAnimationFrame(tick);
-  });
+    chunks = [];
+    recorder = new MediaRecorder(new MediaStream(tracks), { mimeType: mime, videoBitsPerSecond: 8000000 });
+    recorder.ondataavailable = function(e) { if (e.data && e.data.size) chunks.push(e.data); };
+    recorder.onstop = function() {
+      var blob = new Blob(chunks, { type: mime });
+      var ext  = mime.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
+      var url  = URL.createObjectURL(blob);
+      var wrap = document.getElementById('download-wrap');
+      wrap.innerHTML = '';
+      var a = document.createElement('a');
+      a.href = url; a.download = 'the-1969-trailer-24s.' + ext;
+      a.className = 'dl';
+      a.textContent = '⬇ Download .' + ext + ' (' + (blob.size/1048576).toFixed(1) + ' MB)';
+      wrap.appendChild(a);
+      setStatus('✅ ' + ext.toUpperCase() + ' ready · X/Twitter prefers MP4.');
+      document.getElementById('btnStop').disabled = true;
+    };
+    document.getElementById('btnStop').disabled = false;
+    startAt = performance.now();
+    setStatus('⬤ Recording ' + W + '×' + H + ' · 60fps · do NOT switch tabs…');
+    recorder.start();
+    rafId = requestAnimationFrame(function tick() {
+      try {
+        var el = performance.now() - startAt;
+        if (el >= DUR) { drawFrame(DUR - 16); recorder.stop(); return; }
+        drawFrame(el);
+        rafId = requestAnimationFrame(tick);
+      } catch(e) {
+        setStatus('❌ Record render error: ' + e.message);
+        console.error(e);
+        if (recorder.state === 'recording') recorder.stop();
+      }
+    });
+  } catch(e) {
+    setStatus('❌ Record error: ' + e.message);
+    console.error(e);
+  }
 });
 
-document.getElementById('stop').addEventListener('click', () => {
-  if (recorder && recorder.state === 'recording') recorder.stop();
-  if (rafId) cancelAnimationFrame(rafId);
+document.getElementById('btnStop').addEventListener('click', function() {
+  stopAll();
+  document.getElementById('btnStop').disabled = true;
 });
 
-// First paint at t=0 so the canvas isn't blank
-drawFrame(0);
+// ─── INITIAL PAINT ────────────────────────────────────────────────────────
+loadAllImgs(384, function() {
+  imgsReady = true;
+  setStatus('Ready — click Play to preview the trailer.');
+  drawFrame(0);
+});
 </script>
 </body>
 </html>
