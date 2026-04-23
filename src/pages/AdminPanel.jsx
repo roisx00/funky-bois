@@ -415,10 +415,26 @@ function AdminTasksPanel() {
         )}
 
         {scanResult && (
-          <div style={{ padding: '14px 24px', background: 'var(--paper-2)', borderTop: '1px solid var(--hairline)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-            Scanned: {scanResult.scraped.likes ?? '?'} likes / {scanResult.scraped.rts ?? '?'} RTs / {scanResult.scraped.replies ?? '?'} replies →
-            queued: {scanResult.queued.likes.queued} likes, {scanResult.queued.rts.queued} RTs, {scanResult.queued.replies.queued} replies
-          </div>
+          <ScanResultPanel
+            result={scanResult}
+            onRejectAll={async () => {
+              const ids = [
+                ...scanResult.results.like.fakeClaims,
+                ...scanResult.results.rt.fakeClaims,
+                ...scanResult.results.reply.fakeClaims,
+              ].map((f) => f.verifId);
+              if (ids.length === 0) return;
+              const ok = window.confirm(`Reject ${ids.length} fake self-claim(s)? These users said they engaged but the scraper didn't find them on X.`);
+              if (!ok) return;
+              const r = await jpost('/api/admin-approve', { ids, action: 'reject' });
+              if (r.ok) {
+                setToast(`Rejected ${r.processed} fake claim(s)`);
+                setTimeout(() => setToast(''), 4000);
+                setScanResult(null);
+                refresh();
+              }
+            }}
+          />
         )}
       </section>
 
@@ -712,5 +728,110 @@ function AdminDropAudit() {
         })
       )}
     </section>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Scan result breakdown — shown below the task list after clicking Scan
+// ══════════════════════════════════════════════════════════════════════
+function ScanResultPanel({ result, onRejectAll }) {
+  if (!result) return null;
+  const { scrapeFailed, counts, summary, results } = result;
+
+  const Section = ({ label, data, reward }) => {
+    const scrapedCount = counts[label === 'Retweets' ? 'retweets' : label === 'Replies' ? 'replies' : 'likes'];
+    const list = result.scraped[label === 'Retweets' ? 'retweets' : label === 'Replies' ? 'replies' : 'likes'];
+    return (
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--hairline)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
+            {label}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)' }}>
+            scraped {scrapedCount ?? '?'} · auto-approved <strong style={{ color: 'var(--ink)' }}>{data.autoApproved.length}</strong>
+            {data.fakeClaims.length ? ` · fake claims ` : ''}
+            {data.fakeClaims.length ? <strong style={{ color: 'var(--red, #c4352b)' }}>{data.fakeClaims.length}</strong> : null}
+          </div>
+        </div>
+
+        {data.autoApproved.length > 0 && (
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-4)', marginBottom: 4 }}>
+              ✓ APPROVED (+{reward} BUSTS each)
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {data.autoApproved.map((a) => (
+                <span key={a.userId} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 8px', background: 'var(--accent)', color: 'var(--ink)', border: '1px solid var(--ink)' }}>
+                  @{a.xUsername}
+                  {a.trifectaBonus ? ` +${a.trifectaBonus}★` : ''}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {data.fakeClaims.length > 0 && (
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red, #c4352b)', marginBottom: 4 }}>
+              ✕ CLAIMED but NOT on X
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {data.fakeClaims.map((f) => (
+                <span key={f.verifId} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 8px', background: 'rgba(204,58,42,0.08)', color: 'var(--red, #c4352b)', border: '1px solid var(--red, #c4352b)' }}>
+                  @{f.xUsername}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {list && list.length > 0 && (
+          <details style={{ marginTop: 8 }}>
+            <summary style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-4)', cursor: 'pointer' }}>
+              Show all {list.length} scraped handles
+            </summary>
+            <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {list.map((h) => (
+                <span key={h} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)' }}>@{h}</span>
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ borderTop: '1px solid var(--hairline)' }}>
+      {scrapeFailed ? (
+        <div style={{ padding: '14px 20px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red, #c4352b)', background: 'rgba(204,58,42,0.04)' }}>
+          Scrape failed — every Nitter mirror returned nothing. Can't auto-verify. Check NITTER_HOSTS env or try again later.
+        </div>
+      ) : (
+        <>
+          <div style={{ padding: '12px 20px', background: 'var(--paper-2)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', color: 'var(--text-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <span>
+              <strong style={{ color: 'var(--ink)' }}>{summary.autoApproved}</strong> auto-approved
+              {' · '}
+              <strong style={{ color: summary.fakeClaims ? 'var(--red, #c4352b)' : 'var(--ink)' }}>{summary.fakeClaims}</strong> fake claims
+              {' · '}
+              <strong style={{ color: 'var(--ink)' }}>{summary.scraperQueued}</strong> queued from scraper
+            </span>
+            {summary.fakeClaims > 0 && (
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ borderColor: 'var(--red, #c4352b)', color: 'var(--red, #c4352b)' }}
+                onClick={onRejectAll}
+              >
+                Reject {summary.fakeClaims} fake claim{summary.fakeClaims === 1 ? '' : 's'}
+              </button>
+            )}
+          </div>
+          <Section label="Likes"     data={results.like}  reward={result.taskId ? '' : ''} />
+          <Section label="Retweets"  data={results.rt}    reward={result.taskId ? '' : ''} />
+          <Section label="Replies"   data={results.reply} reward={result.taskId ? '' : ''} />
+        </>
+      )}
+    </div>
   );
 }

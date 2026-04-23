@@ -1,37 +1,107 @@
-// Admin: scan a task's tweet for engagement and auto-create pending_verifications
-// for each of our users that engaged. Idempotent — re-running just adds new
-// engagers, never duplicates.
+// Admin: scan a task's tweet for real engagement and auto-approve matches.
+//
+// Flow:
+//   1. Scrape likes / retweets / replies from Nitter → real X handles
+//   2. For every pending self-submission on this task (users who clicked
+//      "I've liked it" / "I've retweeted" / "I've replied"):
+//        • if the scraper also found them on X → auto-approve + credit BUSTS
+//        • if the scraper did NOT find them     → surface as 'fake_claim'
+//      so the admin can reject with one click
+//   3. For engagers the scraper found who HAVEN'T self-reported yet, queue
+//      a pending_verifications row so they'll appear in the manual queue
+//      (optional credit — admin can approve later)
+//
+// Returns a detailed report for the admin UI: scraped handles, auto-
+// approved users, fake self-claims, and queued scraper-sourced pendings.
 import { sql, one } from '../_lib/db.js';
 import { requireAdmin } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { scrapeTweetEngagement } from '../_lib/nitter.js';
+import { approveVerification } from '../_lib/taskApprove.js';
 
-async function ingest(taskId, action, handles, points) {
-  if (!handles || handles.size === 0) return { matched: 0, queued: 0 };
-  // Find users in our DB whose handle matches any of these (case-insensitive)
-  const list = Array.from(handles);
-  const users = await sql`
-    SELECT id, x_username FROM users
-    WHERE LOWER(x_username) = ANY(${list.map((h) => h.toLowerCase())})
+// Split pending rows into "on scrape list" (auto-approve) and "fake claim"
+// (on our DB as pending, but not found on X).
+async function matchAndApprove(task, action, scrapedSet, adminHandle) {
+  const result = {
+    autoApproved: [],       // { userId, xUsername, awarded, trifectaBonus? }
+    fakeClaims:   [],       // { userId, xUsername, verifId }
+    scraperQueued: [],      // { userId, xUsername, verifId }  (engagers we just queued)
+  };
+  if (!scrapedSet) return result;
+  const pointsCol = action === 'like' ? 'reward_like' : action === 'rt' ? 'reward_rt' : 'reward_reply';
+  const points = task[pointsCol];
+
+  // 1. Fetch every pending self-submission for this (task, action)
+  const pending = await sql`
+    SELECT pv.id, pv.user_id, u.x_username
+      FROM pending_verifications pv
+      JOIN users u ON u.id = pv.user_id
+     WHERE pv.task_id = ${task.id}
+       AND pv.action_type = ${action}
+       AND pv.status = 'pending'
   `;
-  let queued = 0;
-  for (const u of users) {
-    // Snapshot the engagement (dedupe via unique constraint)
+
+  for (const p of pending) {
+    if (scrapedSet.has(p.x_username.toLowerCase())) {
+      // Genuine — auto-approve
+      // eslint-disable-next-line no-await-in-loop
+      const r = await approveVerification(p.id, adminHandle);
+      if (r.approved) {
+        result.autoApproved.push({
+          userId: p.user_id,
+          xUsername: p.x_username,
+          awarded: r.awarded,
+          trifectaBonus: r.trifectaBonus,
+        });
+      }
+    } else {
+      // Claimed to have done it, but not on X — surface for rejection
+      result.fakeClaims.push({
+        userId: p.user_id,
+        xUsername: p.x_username,
+        verifId: p.id,
+      });
+    }
+  }
+
+  // 2. Engagers scraped but who haven't self-reported yet → queue them
+  //    (they'll see "pending review" next time they open the task card).
+  const pendingHandles = new Set(pending.map((p) => p.x_username.toLowerCase()));
+  const unclaimedEngagers = Array.from(scrapedSet).filter((h) => !pendingHandles.has(h));
+  if (unclaimedEngagers.length) {
+    const matched = await sql`
+      SELECT id, x_username FROM users
+      WHERE LOWER(x_username) = ANY(${unclaimedEngagers})
+    `;
+    for (const u of matched) {
+      // eslint-disable-next-line no-await-in-loop
+      const inserted = one(await sql`
+        INSERT INTO pending_verifications (user_id, task_id, action_type, points, source, status)
+        VALUES (${u.id}, ${task.id}, ${action}, ${points}, 'scraper', 'pending')
+        ON CONFLICT (user_id, task_id, action_type) DO NOTHING
+        RETURNING id
+      `);
+      if (inserted) {
+        result.scraperQueued.push({
+          userId: u.id,
+          xUsername: u.x_username,
+          verifId: inserted.id,
+        });
+      }
+    }
+  }
+
+  // 3. Snapshot every scraped handle for audit
+  for (const h of scrapedSet) {
+    // eslint-disable-next-line no-await-in-loop
     await sql`
       INSERT INTO scrape_snapshots (task_id, action_type, x_username)
-      VALUES (${taskId}, ${action}, ${u.x_username})
+      VALUES (${task.id}, ${action}, ${h})
       ON CONFLICT (task_id, action_type, x_username_lc) DO NOTHING
     `;
-    // Queue a pending verification (no-op if already exists)
-    const insertedRow = one(await sql`
-      INSERT INTO pending_verifications (user_id, task_id, action_type, points, source, status)
-      VALUES (${u.id}, ${taskId}, ${action}, ${points}, 'scraper', 'pending')
-      ON CONFLICT (user_id, task_id, action_type) DO NOTHING
-      RETURNING id
-    `);
-    if (insertedRow) queued += 1;
   }
-  return { matched: users.length, queued };
+
+  return result;
 }
 
 export default async function handler(req, res) {
@@ -47,19 +117,38 @@ export default async function handler(req, res) {
 
   const eng = await scrapeTweetEngagement(task.tweet_id);
 
-  const summary = {
-    likes:    await ingest(taskId, 'like',  eng.likes,    task.reward_like),
-    rts:      await ingest(taskId, 'rt',    eng.retweets, task.reward_rt),
-    replies:  await ingest(taskId, 'reply', eng.replies,  task.reward_reply),
+  // If Nitter is entirely unreachable (all 3 mirrors dead), eng.likes etc
+  // will be null. Surface that clearly instead of silently approving 0.
+  const scrapeFailed = eng.likes === null && eng.retweets === null && eng.replies === null;
+
+  const results = {
+    like:  await matchAndApprove(task, 'like',  eng.likes,    admin.x_username),
+    rt:    await matchAndApprove(task, 'rt',    eng.retweets, admin.x_username),
+    reply: await matchAndApprove(task, 'reply', eng.replies,  admin.x_username),
   };
+
+  const totalApproved = results.like.autoApproved.length + results.rt.autoApproved.length + results.reply.autoApproved.length;
+  const totalFakeClaims = results.like.fakeClaims.length + results.rt.fakeClaims.length + results.reply.fakeClaims.length;
+  const totalQueued = results.like.scraperQueued.length + results.rt.scraperQueued.length + results.reply.scraperQueued.length;
 
   ok(res, {
     taskId,
+    scrapeFailed,
     scraped: {
+      likes:    eng.likes    ? Array.from(eng.likes)    : null,
+      retweets: eng.retweets ? Array.from(eng.retweets) : null,
+      replies:  eng.replies  ? Array.from(eng.replies)  : null,
+    },
+    counts: {
       likes:    eng.likes    ? eng.likes.size    : null,
-      rts:      eng.retweets ? eng.retweets.size : null,
+      retweets: eng.retweets ? eng.retweets.size : null,
       replies:  eng.replies  ? eng.replies.size  : null,
     },
-    queued: summary,
+    results,
+    summary: {
+      autoApproved: totalApproved,
+      fakeClaims:   totalFakeClaims,
+      scraperQueued: totalQueued,
+    },
   });
 }
