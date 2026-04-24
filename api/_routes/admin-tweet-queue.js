@@ -77,6 +77,21 @@ the1969.io/drop`;
 the1969.io/drop`;
 }
 
+function draftBoxRarePull(row) {
+  const label = (ELEMENT_LABELS[row.element_type] || row.element_type).toLowerCase();
+  const rarityLabel = row.rarity === 'ultra_rare' ? 'Ultra rare' : 'Legendary';
+  const boxName = row.tier === 'mystery' ? 'Mystery Box'
+                : row.tier === 'rare'    ? 'Rare Box'
+                : 'Regular Box';
+  return `${rarityLabel} from the box.
+
+@${row.x_username} opened the ${boxName} and pulled ${row.element_name} on the ${label} layer.
+
+Earn BUSTS from the hourly drop, spend them on boxes for better odds.
+
+the1969.io/dashboard`;
+}
+
 function draftBuilderSpotlight(row) {
   const f = Number(row.x_followers) || 0;
   const fmt = fmtFollowers(f);
@@ -118,6 +133,19 @@ async function queueDraft({ type, key, payload, text, template }) {
 async function scan() {
   let queued = 0;
   const { ELEMENT_VARIANTS } = await import('../_lib/elements.js');
+
+  // ── 0. Auto-dismiss stale drop_sealed drafts ──
+  // drop_sealed tweets are time-sensitive ("next window opens in N min").
+  // After ~70 minutes their copy is wrong, so dismiss them automatically
+  // instead of letting the admin see expired countdowns.
+  const staleCutoff = Date.now() - 70 * 60 * 1000;
+  await sql`
+    UPDATE pending_tweets
+       SET status = 'dismissed', dismissed_at = now()
+     WHERE status = 'pending'
+       AND trigger_type = 'drop_sealed'
+       AND (payload ->> 'sessionId')::bigint < ${staleCutoff}
+  `;
 
   // ── 1. Drop opening (fires at T minus 10 min) ──
   // User spec: "post on X when 10 minutes left to drop"
@@ -207,6 +235,39 @@ async function scan() {
     })) queued += 1;
   }
 
+  // ── 3b. Box rare pulls (legendary + ultra_rare from mystery boxes) ──
+  // Same concept as drop rare pulls, but sourced from box_opens.
+  // Tier tells us which box was opened so the tweet can call it out.
+  const boxRows = await sql`
+    SELECT b.id, b.user_id, b.tier, b.cost, b.element_type, b.variant,
+           b.rarity, b.opened_at, u.x_username
+      FROM box_opens b
+      JOIN users u ON u.id = b.user_id
+     WHERE b.rarity IN ('legendary', 'ultra_rare')
+       AND b.opened_at > now() - interval '48 hours'
+  `;
+  for (const row of boxRows) {
+    const info = ELEMENT_VARIANTS[row.element_type]?.[row.variant];
+    const element_name = info?.name || row.element_type;
+    const key = `box_rare:${row.id}`;
+    const payload = {
+      xUsername: row.x_username,
+      elementType: row.element_type,
+      variant: row.variant,
+      elementName: element_name,
+      rarity: row.rarity,
+      tier: row.tier,
+      cost: row.cost,
+      source: 'box',
+    };
+    if (await queueDraft({
+      type: 'box_rare_pull', key,
+      payload,
+      text: draftBoxRarePull({ ...row, element_name }),
+      template: 'trait_flash',
+    })) queued += 1;
+  }
+
   // ── 4. Builder spotlight (every new portrait, last 48h) ──
   const builderRows = await sql`
     SELECT n.id AS portrait_id, n.elements,
@@ -258,12 +319,13 @@ async function listQueue() {
      ORDER BY
        -- Drop content first, then recency
        CASE trigger_type
-         WHEN 'drop_opening' THEN 0
-         WHEN 'drop_sealed'  THEN 1
-         WHEN 'rare_pull'    THEN 2
-         WHEN 'builder_spotlight' THEN 3
-         WHEN 'milestone'    THEN 4
-         ELSE 5
+         WHEN 'drop_opening'      THEN 0
+         WHEN 'drop_sealed'       THEN 1
+         WHEN 'rare_pull'         THEN 2
+         WHEN 'box_rare_pull'     THEN 3
+         WHEN 'builder_spotlight' THEN 4
+         WHEN 'milestone'         THEN 5
+         ELSE 6
        END,
        created_at DESC
      LIMIT 200

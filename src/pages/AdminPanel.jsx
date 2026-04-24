@@ -1529,7 +1529,7 @@ async function drawTweetGraphic(canvas, item) {
 
       gfxStamp(ctx, w - 180, 220, 'FOMO', -0.08);
     }
-    else if (item.triggerType === 'rare_pull') {
+    else if (item.triggerType === 'rare_pull' || item.triggerType === 'box_rare_pull') {
       const p = item.payload || {};
       const svg = getElementSVG(p.elementType, p.variant);
       const img = await gfxSvgToImage(
@@ -1543,8 +1543,15 @@ async function drawTweetGraphic(canvas, item) {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, bx, by, box, box);
       ctx.imageSmoothingEnabled = true;
-      gfxStamp(ctx, bx + box - 40, by + 40,
-        p.rarity === 'ultra_rare' ? 'ULTRA RARE · 3%' : 'LEGENDARY · 12%', 0.06);
+
+      // Stamp varies by source: box pulls get "FROM THE BOX"; hourly
+      // drop pulls keep their odds-based label.
+      const stampText = item.triggerType === 'box_rare_pull'
+        ? (p.tier === 'mystery' ? 'FROM THE MYSTERY BOX'
+         : p.tier === 'rare'    ? 'FROM THE RARE BOX'
+         : 'FROM THE BOX')
+        : (p.rarity === 'ultra_rare' ? 'ULTRA RARE · 3%' : 'LEGENDARY · 12%');
+      gfxStamp(ctx, bx + box - 40, by + 40, stampText, 0.06);
 
       const ny = by + box + 60;
       ctx.fillStyle = GFX_INK;
@@ -1556,7 +1563,8 @@ async function drawTweetGraphic(canvas, item) {
       ctx.fillText((ELEMENT_LABELS[p.elementType] || p.elementType || '').toLowerCase() + ' layer.', w / 2, ny + 106);
       ctx.font = "500 20px 'JetBrains Mono', monospace";
       ctx.fillStyle = GFX_INK;
-      ctx.fillText('pulled by @' + (p.xUsername || ''), w / 2, ny + 170);
+      const source = item.triggerType === 'box_rare_pull' ? 'opened by' : 'pulled by';
+      ctx.fillText(`${source} @` + (p.xUsername || ''), w / 2, ny + 170);
     }
     else if (item.triggerType === 'big_builder' || item.triggerType === 'builder_spotlight') {
       const p = item.payload || {};
