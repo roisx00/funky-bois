@@ -1,19 +1,27 @@
 // Record a wallet to the whitelist. Eligibility rule: must have a BUILT
-// portrait. Sharing on X is rewarded separately (+200 BUSTS) but is no
-// longer a gate for the whitelist row.
+// portrait AND must prove control of the wallet by signing a canonical
+// message with its private key. The signature is verified server-side
+// against the claimed address using viem's verifyMessage.
+//
+// Sharing on X is rewarded separately (+200 BUSTS) but is no longer a
+// gate for the whitelist row.
+import { verifyMessage } from 'viem';
 import { sql, one } from '../_lib/db.js';
 import { requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
+import { whitelistClaimMessage } from '../_lib/wlMessage.js';
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
+const SIG_RE  = /^0x[a-fA-F0-9]+$/;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
 
-  const { walletAddress, portraitId } = await readBody(req) || {};
+  const { walletAddress, portraitId, signature } = await readBody(req) || {};
   if (!walletAddress || !ADDR_RE.test(walletAddress)) return bad(res, 400, 'invalid_wallet');
+  if (!signature || !SIG_RE.test(signature))         return bad(res, 400, 'invalid_signature');
   const walletLc = walletAddress.toLowerCase();
 
   // Require at least one built portrait; honour an explicit portraitId
@@ -25,6 +33,29 @@ export default async function handler(req, res) {
      ORDER BY created_at DESC LIMIT 1
   `);
   if (!portraitRow) return bad(res, 403, 'no_portrait_built');
+
+  // ── Cryptographic proof of wallet ownership ──
+  // The client signed the EXACT message produced by whitelistClaimMessage
+  // above with the private key of `walletAddress`. We recover the signer
+  // and reject if it doesn't match. Includes the handle + portrait id so
+  // signatures can't be replayed across accounts or portraits.
+  const expectedMessage = whitelistClaimMessage({
+    xUsername:     user.x_username,
+    portraitId:    portraitRow.id,
+    walletAddress: walletLc,
+  });
+  let sigOk = false;
+  try {
+    sigOk = await verifyMessage({
+      address:   walletLc,
+      message:   expectedMessage,
+      signature,
+    });
+  } catch (e) {
+    console.warn('[whitelist-record] verify error:', e?.message);
+    sigOk = false;
+  }
+  if (!sigOk) return bad(res, 403, 'signature_mismatch');
 
   // One wallet per user; also prevent the same wallet from claiming WL
   // on behalf of two X accounts.

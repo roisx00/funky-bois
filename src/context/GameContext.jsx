@@ -493,8 +493,11 @@ export function GameProvider({ children }) {
     return r;
   }, []);
 
-  const recordWhitelist = useCallback(async ({ walletAddress, portraitId }) => {
-    const r = await jpost('/api/whitelist-record', { walletAddress, portraitId });
+  const recordWhitelist = useCallback(async ({ walletAddress, portraitId, signature }) => {
+    if (!signature) {
+      return { ok: false, reason: 'signature_required' };
+    }
+    const r = await jpost('/api/whitelist-record', { walletAddress, portraitId, signature });
     if (r.ok) {
       dispatch({ type: 'SET_WALLET', address: walletAddress });
       refreshMe();

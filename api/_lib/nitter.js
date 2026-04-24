@@ -146,6 +146,36 @@ export async function tweetContainsHash(tweetId, hash) {
   return false;
 }
 
+// Best-effort follow-verification: scrape the target account's recent
+// followers list (first page ~20 handles on most Nitter forks). If the
+// user appears there, they definitely follow. If they don't appear,
+// return null (can't rule it out — they might be deeper in the list).
+// Only FALSE is definitive; we return null when mirrors are dead too.
+export async function userFollowsTarget(targetHandle, userHandle) {
+  if (!targetHandle || !userHandle) return null;
+  const cheerio = await loadCheerio();
+  if (!cheerio) return null;
+  const target = String(targetHandle).replace(/^@/, '').toLowerCase();
+  const user   = String(userHandle).replace(/^@/, '').toLowerCase();
+  if (!target || !user) return null;
+
+  for (const host of NITTER_HOSTS) {
+    for (const path of ['/followers', '/followers?cursor=']) {
+      const url = `https://${host}/${target}${path}`;
+      // eslint-disable-next-line no-await-in-loop
+      const r = await tryFetch(url);
+      if (!r.ok || !r.text) continue;
+      const $ = cheerio.load(r.text);
+      const handles = extractHandles($);
+      if (handles.has(user)) return true;
+      // Mirror returned data but our user isn't in the first page —
+      // return UNCERTAIN, not false. They might be further down.
+      if (handles.size >= 5) return null;
+    }
+  }
+  return null;
+}
+
 export function parseTweetId(input) {
   if (!input) return null;
   const m = String(input).match(/(?:status|statuses)\/(\d{6,})/i);

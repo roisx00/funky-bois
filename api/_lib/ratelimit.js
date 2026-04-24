@@ -43,9 +43,22 @@ async function getLimiter(name, max, windowSecs) {
   return limiterCache.get(key);
 }
 
+// In production, if Upstash isn't configured we MUST refuse rather
+// than silently disable every rate limit. A prod deploy without
+// UPSTASH_* set used to let bots farm drops/gifts/busts unbounded.
+const IS_PROD = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+
 export async function rateLimit(res, key, { name, max, windowSecs }) {
   const limiter = await getLimiter(name, max, windowSecs);
-  if (!limiter) return true;
+  if (!limiter) {
+    if (IS_PROD) {
+      res.setHeader('Content-Type', 'application/json');
+      res.status(503).end(JSON.stringify({ error: 'rate_limit_unavailable' }));
+      return false;
+    }
+    // Dev / preview: fail open so local work isn't blocked on missing Redis.
+    return true;
+  }
   try {
     const { success, reset, remaining } = await limiter.limit(`${name}:${key}`);
     if (!success) {
@@ -59,7 +72,8 @@ export async function rateLimit(res, key, { name, max, windowSecs }) {
       return false;
     }
   } catch (e) {
-    // Never fail-closed: if Redis is briefly down, let the request through.
+    // A transient Redis outage shouldn't take the whole site down —
+    // but in prod we still flag it in logs so the dashboards notice.
     console.warn('[ratelimit] check error:', e?.message);
   }
   return true;

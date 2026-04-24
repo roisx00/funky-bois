@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useSignMessage } from 'wagmi';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import NFTCanvas from '../components/NFTCanvas';
 import { ELEMENT_TYPES, ELEMENT_LABELS, ELEMENT_VARIANTS, getElementSVG, buildNFTSVG } from '../data/elements';
+import { whitelistClaimMessage } from '../utils/wlMessage';
 
 const X_HANDLE = '@the1969eth';
 
@@ -13,6 +15,7 @@ export default function BuilderPage({ onNavigate }) {
   const completedNFTs = Array.isArray(game.completedNFTs) ? game.completedNFTs : [];
   const { completeNFT, markShared, recordWhitelist, xUser, walletAddress, isWalletConnected } = game;
   const { openConnectModal } = useConnectModal();
+  const { signMessageAsync } = useSignMessage();
   const toast = useToast();
 
   const [selection, setSelection] = useState({});
@@ -136,20 +139,48 @@ export default function BuilderPage({ onNavigate }) {
     if (openConnectModal) openConnectModal();
   };
 
-  const handleClaimWL = () => {
+  const handleClaimWL = async () => {
     if (!isWalletConnected || !walletAddress) {
       handleConnectWallet();
       return;
     }
+    if (!xUser?.username) {
+      toast.error('Sign in with X first.');
+      return;
+    }
     const latest = completedNFTs.find((n) => n.id === builtId) || completedNFTs[completedNFTs.length - 1];
-    recordWhitelist({
-      xUsername: xUser?.username || null,
-      xAvatar: xUser?.avatar || null,
+    const portraitIdToClaim = builtId || latest?.id || null;
+    if (!portraitIdToClaim) {
+      toast.error('No portrait found to claim.');
+      return;
+    }
+
+    // Server requires the user to prove wallet ownership by signing a
+    // canonical message. Popup is the wallet's sign-message prompt — if
+    // they reject it, the claim never hits the server.
+    let signature;
+    try {
+      const message = whitelistClaimMessage({
+        xUsername:     xUser.username,
+        portraitId:    portraitIdToClaim,
+        walletAddress,
+      });
+      signature = await signMessageAsync({ message });
+    } catch (e) {
+      toast.error('Signature required to secure whitelist.');
+      console.warn('[handleClaimWL] signature cancelled:', e?.message);
+      return;
+    }
+
+    const r = await recordWhitelist({
       walletAddress,
-      portraitId: builtId || latest?.id || null,
-      portraitElements: selection,
-      tweetUrl: null,
+      portraitId: portraitIdToClaim,
+      signature,
     });
+    if (r && r.ok === false) {
+      toast.error(`Whitelist failed (${r.reason || 'unknown'})`);
+      return;
+    }
     setFlow('wl-secured');
   };
 
