@@ -35,6 +35,7 @@ export default async function handler(req, res) {
       walletAddress:   user.wallet_address,
       referralCode:    user.referral_code,
       dailyClaimedOn:  user.daily_claimed_on,
+      followClaimedAt: user.follow_claimed_at ? new Date(user.follow_claimed_at).getTime() : null,
       isAdmin:         isAdminUser(user),
     },
     inventory: inventory.map((r) => {

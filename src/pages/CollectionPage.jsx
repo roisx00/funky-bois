@@ -620,6 +620,8 @@ function TasksTab() {
         </p>
       </div>
 
+      <FollowTaskCard />
+
       {loading ? (
         <div className="gift-row-empty">Loading.</div>
       ) : tasks.length === 0 ? (
@@ -705,6 +707,102 @@ function TasksTab() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Follow @the1969eth. One-shot task, +50 BUSTS. Intent-click trust
+// signal like share-on-X. After claim the card flips to "followed" and
+// is inert forever for this user.
+// ══════════════════════════════════════════════════════════════════════
+const FOLLOW_OPENED_KEY = 't1969:follow-opened';
+const FOLLOW_HANDLE = 'the1969eth';
+const FOLLOW_REWARD = 50;
+
+function FollowTaskCard() {
+  const toast = useToast();
+  const { followClaimedAt, claimFollow, authenticated } = useGame();
+  const [opened, setOpened] = useState(() => {
+    try { return !!localStorage.getItem(FOLLOW_OPENED_KEY); } catch { return false; }
+  });
+  const [busy, setBusy] = useState(false);
+  const claimed = !!followClaimedAt;
+
+  const openIntent = () => {
+    try { localStorage.setItem(FOLLOW_OPENED_KEY, String(Date.now())); } catch { /* noop */ }
+    setOpened(true);
+    window.open(
+      `https://twitter.com/intent/follow?screen_name=${encodeURIComponent(FOLLOW_HANDLE)}`,
+      '_blank'
+    );
+  };
+
+  const markFollowed = async () => {
+    if (!authenticated) {
+      toast.error('Sign in with X first.');
+      return;
+    }
+    setBusy(true);
+    const r = await claimFollow();
+    setBusy(false);
+    if (!r?.ok) {
+      toast.error(r?.reason || 'Could not claim reward. Try again.');
+      return;
+    }
+    if (r.alreadyClaimed) {
+      toast.info('Already claimed this reward.');
+      return;
+    }
+    toast.success(`+${r.reward || FOLLOW_REWARD} BUSTS credited. Thanks for following.`);
+  };
+
+  return (
+    <div className="task-card task-card-pro" style={{ marginBottom: 16 }}>
+      <div className="task-pro-head">
+        <div className="task-head" style={{ marginBottom: 6 }}>
+          <span className="task-num">Task 00</span>
+          <span className="task-open-link" style={{ textDecoration: 'none', cursor: 'default', pointerEvents: 'none' }}>
+            Permanent · one-shot
+          </span>
+        </div>
+        <div className="task-title">Follow @{FOLLOW_HANDLE} on X</div>
+        <div className="task-desc">
+          One click, one follow, one time. Keeps you wired into every drop, milestone, and holder spotlight.
+        </div>
+      </div>
+
+      <div className="task-actions">
+        <div className={`task-action-row status-${claimed ? 'approved' : opened ? 'ready' : 'idle'}`}>
+          <div className="task-action-label">
+            <span className="task-action-icon" aria-hidden>X</span>
+            <div>
+              <div className="task-action-name">Follow on X</div>
+              <div className="task-action-pts">+{FOLLOW_REWARD} BUSTS</div>
+            </div>
+          </div>
+          <div className="task-action-cta">
+            {claimed ? (
+              <span className="task-action-badge approved">✓ Followed · +{FOLLOW_REWARD}</span>
+            ) : opened ? (
+              <button
+                className="btn btn-solid btn-sm btn-arrow"
+                onClick={markFollowed}
+                disabled={busy}
+              >
+                {busy ? 'Claiming.' : "I've followed"}
+              </button>
+            ) : (
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={openIntent}
+              >
+                Open @{FOLLOW_HANDLE} ↗
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

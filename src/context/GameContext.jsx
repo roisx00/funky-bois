@@ -59,6 +59,7 @@ function emptyState() {
     inventory:       [],
     completedNFTs:   [],
     isWhitelisted:   false,
+    followClaimedAt: null,
     pendingGifts:    [],
     pendingInbox:    [],
     referralCode:    null,
@@ -92,6 +93,7 @@ function reducer(state, action) {
         isWalletConnected: !!me.user.walletAddress,
         bustsBalance:     me.user.bustsBalance,
         isWhitelisted:    me.user.isWhitelisted,
+        followClaimedAt:  me.user.followClaimedAt || null,
         referralCode:     me.user.referralCode,
         isAdmin:          me.user.isAdmin,
         bustsHistory:     me.bustsHistory,
@@ -171,6 +173,9 @@ function reducer(state, action) {
         isWhitelisted: true,
       };
     }
+
+    case 'MARK_FOLLOW_CLAIMED':
+      return { ...state, followClaimedAt: action.ts || Date.now() };
 
     case 'REMOVE_INBOX_GIFT':
       return {
@@ -363,6 +368,18 @@ export function GameProvider({ children }) {
     return { ok: true, element: r.element };
   }, []);
 
+  const claimFollow = useCallback(async () => {
+    const r = await jpost('/api/task-follow-claim');
+    if (!r.ok) return { ok: false, reason: r.error || 'follow claim failed' };
+    if (r.claimed) {
+      dispatch({ type: 'MARK_FOLLOW_CLAIMED', ts: r.claimedAt ? new Date(r.claimedAt).getTime() : Date.now() });
+      if (r.reward) dispatch({ type: 'BUMP_BALANCE', amount: r.reward, reason: 'Followed @the1969eth' });
+    } else if (r.already_claimed) {
+      dispatch({ type: 'MARK_FOLLOW_CLAIMED', ts: Date.now() });
+    }
+    return { ok: true, reward: r.reward || 0, alreadyClaimed: !!r.already_claimed };
+  }, []);
+
   const checkUserExists = useCallback(async (username) => {
     const r = await jget(`/api/users-exists?username=${encodeURIComponent(username)}`);
     if (!r.ok) return false;
@@ -482,6 +499,7 @@ export function GameProvider({ children }) {
     sendGift,
     claimGift,
     checkUserExists,
+    claimFollow,
     earnReferralBonus,
     resetProgress,
     setUsername,
