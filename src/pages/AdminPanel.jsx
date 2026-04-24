@@ -1585,11 +1585,6 @@ async function drawTweetGraphic(canvas, item) {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, bx, by, box, box);
       ctx.imageSmoothingEnabled = true;
-      const f = Number(p.xFollowers) || 0;
-      const fmt = f >= 1_000_000 ? `${(f / 1_000_000).toFixed(1)}M`
-                : f >= 1000     ? `${Math.round(f / 1000)}K`
-                : String(f);
-      gfxStamp(ctx, bx + 140, by + 42, `${fmt} FOLLOWERS`, -0.06);
 
       const ty = by + box + 56;
       ctx.fillStyle = GFX_INK;
