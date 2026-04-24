@@ -74,13 +74,19 @@ export default async function handler(req, res) {
   // button already gated on server time via the nbf field.
   const notBeforeMs = 2500 + Math.floor(Math.random() * 3000);
 
+  // Token TTL bumped 20s -> 90s so the client can silently retry
+  // `slot_not_yet_revealed` across jittered reveal windows without
+  // forcing the user to re-drag. Bots don't benefit: they still have
+  // to wait the randomised notBefore + fail the signed nonce check +
+  // hit rate limits + pass the slot-reveal gate.
+  const ttlMs = 90000;
   const nonce = randomNonce();
   const token = await signArmToken({
     userId:       user.id,
     sessionId:    sessId,
     nonce,
     notBeforeMs,
-    ttlMs:        20000,
+    ttlMs,
   });
 
   ok(res, {
@@ -88,6 +94,6 @@ export default async function handler(req, res) {
     nonce,
     sessId,
     notValidBeforeMs: Date.now() + notBeforeMs,
-    expiresAtMs:      Date.now() + 20000,
+    expiresAtMs:      Date.now() + ttlMs,
   });
 }

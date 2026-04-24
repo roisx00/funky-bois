@@ -29,7 +29,13 @@ function friendlyDropError(r) {
   if (code === 'min_followers_not_met') {
     const need = Number(r.required) || 20;
     const have = Number(r.have) || 0;
-    return `Drops require at least ${need} followers on X. Your account currently has ${have}. Grow your X account, then try again.`;
+    // Follower count is captured at X sign-in time and never auto-refreshed.
+    // Users who've grown their account since signing up need to re-auth.
+    return (
+      `Drops require at least ${need} followers on X. We recorded ${have} for you at sign-in. ` +
+      `If you've gained followers since, sign out and sign back in to refresh the count, ` +
+      `then try again.`
+    );
   }
   if (code === 'pool_exhausted')  return 'All slots claimed this session. Next pool opens at the top of the hour.';
   if (code === 'no_active_session') return 'The drop window just closed. Back at the top of the next hour.';
@@ -259,26 +265,73 @@ export default function DropPage() {
       armedMs:      Date.now() - armStartedAt.current,
     };
 
-    const r = await claimElement({ armToken: armToken.token, interactionProof });
-    if (!r.ok) {
-      // Map raw error codes to human copy. Anything not in the map
-      // falls back to the raw code so we still have diagnostics.
-      const friendly = friendlyDropError(r);
-      if (r.reason === 'slot_not_yet_revealed') {
-        toast.info(friendly);
-      } else {
-        toast.error(friendly);
+    // ── Silent retry loop ──────────────────────────────────────────
+    // Soft errors (slot_not_yet_revealed, rate_limited) are absorbed
+    // here and retried with a visible "queuing your slot…" spinner.
+    // The user never sees raw errors for these — they either get a
+    // trait or hit a TERMINAL error (pool_exhausted, no_active_session,
+    // min_followers_not_met, arm_expired). Max 60s total wait so we
+    // don't hang forever.
+    const startedAt = Date.now();
+    const TERMINAL = new Set([
+      'pool_exhausted',
+      'no_active_session',
+      'min_followers_not_met',
+      'max_claims_reached',
+      'arm_expired',
+    ]);
+    let attempt = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      attempt++;
+      const r = await claimElement({ armToken: armToken.token, interactionProof });
+      if (r.ok) {
+        setRevealed({ ...r.element, position: r.position, bustsReward: r.bustsReward });
+        setFlow('revealed');
+        setArmToken(null);
+        setDragPct(0);
+        return;
       }
-      setLastError(friendly);
-      setArmToken(null);
-      setDragPct(0);
-      setFlow('ready');
-      return;
+      const reason = r.reason || '';
+      const isSoft = reason === 'slot_not_yet_revealed' || reason === 'rate_limited';
+      const exceeded = Date.now() - startedAt > 60_000;
+      const armDead  = reason.startsWith('arm_');
+
+      if (!isSoft || exceeded || armDead) {
+        // Terminal or timed out — surface a real error. Only show a
+        // toast when it's something actionable for the user.
+        const friendly = friendlyDropError(r);
+        if (TERMINAL.has(reason) || armDead) {
+          toast.error(friendly);
+          setLastError(friendly);
+        } else if (exceeded) {
+          toast.error('Could not grab a slot in time — try again.');
+          setLastError('Could not grab a slot in time — try again.');
+        } else {
+          toast.error(friendly);
+          setLastError(friendly);
+        }
+        setArmToken(null);
+        setDragPct(0);
+        setFlow('ready');
+        return;
+      }
+
+      // Soft error — silently wait and retry.
+      const waitMs = reason === 'slot_not_yet_revealed'
+        ? Math.min(20_000, Math.max(800, Number(r.retryAfterMs) || 3000))
+        : 4000;      // rate_limited backoff
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+      // Keep flow = 'claiming' so the UI stays in the "queuing…" state.
+      if (attempt > 20) {
+        toast.error('Something went wrong — try again.');
+        setArmToken(null);
+        setDragPct(0);
+        setFlow('ready');
+        return;
+      }
     }
-    setRevealed({ ...r.element, position: r.position, bustsReward: r.bustsReward });
-    setFlow('revealed');
-    setArmToken(null);
-    setDragPct(0);
   }, [flow, armToken, claimElement, toast]);
 
   // ── Urgency tier ───────────────────────────────────────────────────
@@ -469,8 +522,11 @@ export default function DropPage() {
                 <div className="drop-v2-step-head">
                   <span className="drop-v2-step-num">04</span>
                   <div>
-                    <div className="drop-v2-step-title">Pulling&hellip;</div>
-                    <div className="drop-v2-step-sub">Server is decrementing the pool.</div>
+                    <div className="drop-v2-step-title">Queuing your slot&hellip;</div>
+                    <div className="drop-v2-step-sub">
+                      Slots unlock on a jittered schedule. Holding your
+                      place — you&apos;ll get the next one.
+                    </div>
                   </div>
                 </div>
                 <button type="button" className="drop-v2-claim-btn locked" disabled>
