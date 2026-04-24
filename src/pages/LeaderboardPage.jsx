@@ -97,9 +97,8 @@ export default function LeaderboardPage() {
             BUSTS <em>top earners.</em>
           </h1>
           <p className="lead-hero-sub">
-            Top 100 real holders. Accounts must have built a portrait, secured
-            the whitelist, or be actively engaged on X — single-drop bot
-            accounts and referral-only farms are filtered out.
+            Top 100 real holders. To keep the board clean we filter out
+            bot-farm accounts — see eligibility below.
           </p>
         </div>
 
@@ -242,6 +241,41 @@ export default function LeaderboardPage() {
           <span className="lead-col-busts">{meRow.balance.toLocaleString()} BUSTS</span>
         </div>
       )}
+
+      {/* ─── Eligibility disclosure ─── */}
+      <div className="lead-eligibility">
+        <div className="lead-eligibility-head">
+          <span className="lead-eligibility-kicker">ELIGIBILITY</span>
+          <span className="lead-eligibility-title">Who appears here</span>
+        </div>
+        <p className="lead-eligibility-lead">
+          To appear on the leaderboard your account must satisfy at least
+          one of these rules. The bar exists to keep the board free of
+          referral farms and throwaway accounts.
+        </p>
+        <ul className="lead-eligibility-list">
+          <li>
+            <strong>Built a portrait.</strong> Completed the 8-trait game
+            loop in the Build tab.
+          </li>
+          <li>
+            <strong>Secured the whitelist.</strong> Built a portrait,
+            connected a wallet, and signed the ownership message.
+          </li>
+          <li>
+            <strong>Claimed 2+ drops AND has at least 20 X followers.</strong>
+            Drops alone are farmable; drops + a real X presence is not.
+            If your X account has fewer than 20 followers you won&apos;t
+            appear even with drops claimed — build a portrait instead and
+            you&apos;re in.
+          </li>
+        </ul>
+        <p className="lead-eligibility-foot">
+          Your BUSTS balance and inventory are unaffected by leaderboard
+          eligibility — this filter only controls who is <em>ranked</em>,
+          not who holds points.
+        </p>
+      </div>
     </div>
   );
 }
