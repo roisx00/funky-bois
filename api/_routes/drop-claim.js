@@ -43,20 +43,18 @@ function scoreInteraction(proof) {
   if (!proof || typeof proof !== 'object') return { ok: false, reason: 'proof_missing' };
   const { windowOpenMs, moveCount, pathEntropy, armedMs, nonce, dragVarY, dragVarX } = proof;
   if (typeof nonce !== 'string' || !nonce.length) return { ok: false, reason: 'proof_nonce_missing' };
-  // Raised thresholds. Bots that open the page 2s before :00 now fail:
-  // a real user typically sits on the page for 5+ seconds while reading
-  // the countdown.
+  // Keep the meaningful barriers. Loosen the passive-hover metrics so
+  // touch-only mobile users (who never generate pointer hover events)
+  // still pass; the drag-gesture variance checks below are the real
+  // bot screen and they work identically on touch.
   if (typeof windowOpenMs !== 'number' || windowOpenMs < 4000) return { ok: false, reason: 'proof_windowopen_too_short' };
-  if (typeof moveCount !== 'number' || moveCount < 10)         return { ok: false, reason: 'proof_movecount_too_low' };
-  if (typeof pathEntropy !== 'number' || pathEntropy < 0.20)   return { ok: false, reason: 'proof_pathentropy_too_low' };
+  if (typeof moveCount !== 'number' || moveCount < 3)          return { ok: false, reason: 'proof_movecount_too_low' };
+  if (typeof pathEntropy !== 'number' || pathEntropy < 0.05)   return { ok: false, reason: 'proof_pathentropy_too_low' };
   if (typeof armedMs !== 'number' || armedMs < 500)            return { ok: false, reason: 'proof_armedms_too_short' };
-  // Drag straightness check: a real hand wobbles vertically while
-  // dragging left-to-right. A bot scripting mouse events typically
-  // follows a perfect straight line (Y variance ≈ 0). Require some Y
-  // wobble during the drag.
-  if (typeof dragVarY !== 'number' || dragVarY < 2) return { ok: false, reason: 'proof_drag_too_straight' };
-  // Also require non-trivial X movement (so "clicked the handle and
-  // snapped it across with a keyboard shortcut" attacks fail).
+  // The real bot-screen: drag path geometry. Works the same for mouse
+  // and touch (both emit pointermove during the gesture). A programmatic
+  // drag follows a straight line with Y variance near 0.
+  if (typeof dragVarY !== 'number' || dragVarY < 2)  return { ok: false, reason: 'proof_drag_too_straight' };
   if (typeof dragVarX !== 'number' || dragVarX < 20) return { ok: false, reason: 'proof_drag_too_short' };
   return { ok: true };
 }

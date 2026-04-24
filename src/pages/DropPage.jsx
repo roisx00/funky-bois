@@ -79,15 +79,29 @@ export default function DropPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, isPoolEmpty, canClaimThisSession]);
 
-  // ── Track mouse movement globally while the user is on this page ──
+  // ── Track pointer movement globally while the user is on this page ──
+  // Uses pointermove (NOT mousemove) so touch devices register activity
+  // too. Also attaches touchmove as a belt-and-suspenders fallback for
+  // older mobile browsers that don't fully implement pointer events.
   useEffect(() => {
     const onMove = (e) => {
       moveCount.current += 1;
       movePath.current.push({ x: e.clientX, y: e.clientY });
       if (movePath.current.length > 60) movePath.current.shift();
     };
-    window.addEventListener('mousemove', onMove, { passive: true });
-    return () => window.removeEventListener('mousemove', onMove);
+    const onTouch = (e) => {
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+      moveCount.current += 1;
+      movePath.current.push({ x: t.clientX, y: t.clientY });
+      if (movePath.current.length > 60) movePath.current.shift();
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('touchmove',   onTouch, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('touchmove',   onTouch);
+    };
   }, []);
 
   // ── Countdown re-render tick ──────────────────────────────────────
