@@ -1527,10 +1527,16 @@ async function drawTweetGraphic(canvas, item) {
       ctx.fillStyle = GFX_INK;
       ctx.fillText('pulled by @' + (p.xUsername || ''), w / 2, ny + 170);
     }
-    else if (item.triggerType === 'big_builder') {
+    else if (item.triggerType === 'big_builder' || item.triggerType === 'builder_spotlight') {
       const p = item.payload || {};
-      const svg = buildNFTSVG(p.elements || {});
-      const img = await gfxSvgToImage(svg);
+      // buildNFTSVG returns `<svg width="100%" height="100%">`. With no
+      // intrinsic size the browser rasterizes it as 0x0 and the portrait
+      // shows up blank. Force explicit pixel dimensions.
+      const rawSvg = buildNFTSVG(p.elements || {});
+      const sizedSvg = rawSvg
+        .replace(/width="100%"/g, 'width="720"')
+        .replace(/height="100%"/g, 'height="720"');
+      const img = await gfxSvgToImage(sizedSvg);
       const box = 720, bx = (w - box) / 2, by = 180;
       ctx.fillStyle = '#ece8de';
       ctx.fillRect(bx, by, box, box);
