@@ -1151,11 +1151,14 @@ function AdminBuiltNoWallet() {
 // posts manually (or dismisses). No auto-posting.
 // ══════════════════════════════════════════════════════════════════════
 function AdminTweetQueue() {
-  const [items, setItems]   = useState([]);
-  const [loading, setLoad]  = useState(false);
-  const [busyId, setBusyId] = useState(null);
-  const [copied, setCopied] = useState(null);
+  const [items, setItems]    = useState([]);
+  const [loading, setLoad]   = useState(false);
+  const [busyId, setBusyId]  = useState(null);
+  const [copied, setCopied]  = useState(null);
+  const [scanMsg, setScanMsg] = useState(''); // feedback after a manual rescan
 
+  // Silent initial load. Rescan button uses the explicit path below so
+  // the user gets a "N new / 0 new" signal.
   const load = useCallback(async () => {
     setLoad(true);
     const r = await jget('/api/admin-tweet-queue');
@@ -1163,6 +1166,25 @@ function AdminTweetQueue() {
     setLoad(false);
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  const rescan = useCallback(async () => {
+    setLoad(true);
+    setScanMsg('');
+    const r = await jpost('/api/admin-tweet-queue', { action: 'scan' });
+    setLoad(false);
+    if (r.ok) {
+      setItems(r.items || []);
+      setScanMsg(
+        r.queued > 0
+          ? `${r.queued} new draft${r.queued === 1 ? '' : 's'} added.`
+          : 'No new drafts since last scan.'
+      );
+      setTimeout(() => setScanMsg(''), 4000);
+    } else {
+      setScanMsg('Scan failed. Check console.');
+      setTimeout(() => setScanMsg(''), 5000);
+    }
+  }, []);
 
   const dismiss = async (id) => {
     setBusyId(id);
@@ -1187,10 +1209,19 @@ function AdminTweetQueue() {
             {items.length} draft{items.length === 1 ? '' : 's'} waiting. Auto-generated from rare pulls, milestones, and big-account builds. Copy the text, download the graphic, post from your account.
           </div>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={load} disabled={loading}>
-          {loading ? 'Loading.' : 'Rescan'}
+        <button className="btn btn-ghost btn-sm" onClick={rescan} disabled={loading}>
+          {loading ? 'Scanning.' : 'Rescan'}
         </button>
       </div>
+
+      {scanMsg && (
+        <div style={{
+          padding: '10px 24px',
+          background: scanMsg.startsWith('Scan failed') ? 'rgba(204,58,42,0.08)' : 'var(--accent-dim)',
+          borderTop: '1px solid var(--hairline)',
+          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em',
+        }}>{scanMsg}</div>
+      )}
 
       {items.length === 0 ? (
         <div className="admin-roster-empty">
