@@ -17,7 +17,7 @@
   .hd{padding:18px 24px;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #333;}
   h2{margin:0;font-family:'Space Grotesk',sans-serif;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#fff;font-weight:500;}
   .meta{font-size:10px;color:#888;letter-spacing:.04em;}
-  .stage{background:repeating-conic-gradient(#1e1e1e 0 25%, #171717 0 50%) 50% / 16px 16px;padding:14px;overflow:auto;}
+  .stage{background:repeating-conic-gradient(#1e1e1e 0 25%, #171717 0 50%) 50% / 16px 16px;padding:14px;overflow:auto;display:flex;justify-content:center;}
   canvas{display:block;max-width:100%;height:auto;background:#F9F6F0;}
   .row{padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #333;}
   .dim{font-size:10px;color:#777;letter-spacing:.04em;}
@@ -29,68 +29,31 @@
 <body>
 <header>
   <h1>THE 1969 · article graphics</h1>
-  <p>Seven hand-made editorial graphics for the field-guide thread. Cream paper, ink type, hairlines, stamp badges.</p>
-  <p>Fonts load from Google Fonts — wait ~1 second after page load for a clean first paint, then use the Download PNG buttons.</p>
+  <p>Seven hand-made editorial graphics for the field-guide thread. All 1200 × 675 landscape — X's canonical preview-card ratio.</p>
+  <p>Real portrait art pulled from the project's own SVG catalog. Wait a second after page load for web fonts, then download each PNG.</p>
 </header>
-<div id="status">Loading fonts.</div>
+<div id="status">Loading art + fonts.</div>
 
 <main>
-
-<section>
-  <div class="hd"><h2>01 · Supply counter</h2><span class="meta">1200 × 675 · landscape</span></div>
-  <div class="stage"><canvas id="g01" width="1200" height="675"></canvas></div>
-  <div class="row"><span class="dim">Drop this in above the fold of the thread.</span><button onclick="dl('g01','the1969-01-supply.png')">Download PNG</button></div>
-</section>
-
-<section>
-  <div class="hd"><h2>02 · Timeline</h2><span class="meta">1200 × 675 · landscape</span></div>
-  <div class="stage"><canvas id="g02" width="1200" height="675"></canvas></div>
-  <div class="row"><span class="dim">Pairs with the "why 1,969" section.</span><button onclick="dl('g02','the1969-02-timeline.png')">Download PNG</button></div>
-</section>
-
-<section>
-  <div class="hd"><h2>03 · Drop flowchart</h2><span class="meta">1200 × 1500 · portrait</span></div>
-  <div class="stage"><canvas id="g03" width="1200" height="1500"></canvas></div>
-  <div class="row"><span class="dim">Anchor image for the hourly drop section.</span><button onclick="dl('g03','the1969-03-drop-flow.png')">Download PNG</button></div>
-</section>
-
-<section>
-  <div class="hd"><h2>04 · Build equation</h2><span class="meta">1200 × 675 · landscape</span></div>
-  <div class="stage"><canvas id="g04" width="1200" height="675"></canvas></div>
-  <div class="row"><span class="dim">8 traits become 1 portrait, forever.</span><button onclick="dl('g04','the1969-04-build.png')">Download PNG</button></div>
-</section>
-
-<section>
-  <div class="hd"><h2>05 · BUSTS economy</h2><span class="meta">1200 × 1200 · square</span></div>
-  <div class="stage"><canvas id="g05" width="1200" height="1200"></canvas></div>
-  <div class="row"><span class="dim">Hub-and-spoke showing earn + spend.</span><button onclick="dl('g05','the1969-05-economy.png')">Download PNG</button></div>
-</section>
-
-<section>
-  <div class="hd"><h2>06 · Gallery rank</h2><span class="meta">1200 × 1200 · square</span></div>
-  <div class="stage"><canvas id="g06" width="1200" height="1200"></canvas></div>
-  <div class="row"><span class="dim">Follower-sorted grid mock with real handles.</span><button onclick="dl('g06','the1969-06-gallery.png')">Download PNG</button></div>
-</section>
-
-<section>
-  <div class="hd"><h2>07 · Utility triptych</h2><span class="meta">1200 × 675 · landscape</span></div>
-  <div class="stage"><canvas id="g07" width="1200" height="675"></canvas></div>
-  <div class="row"><span class="dim">Three holder commitments. Drop / Reveal / Print.</span><button onclick="dl('g07','the1969-07-utility.png')">Download PNG</button></div>
-</section>
-
+<section><div class="hd"><h2>01 · Supply counter</h2><span class="meta">1200 × 675</span></div><div class="stage"><canvas id="g01" width="1200" height="675"></canvas></div><div class="row"><span class="dim">Pair with section 01 of the article.</span><button onclick="dl('g01','the1969-01-supply.png')">Download PNG</button></div></section>
+<section><div class="hd"><h2>02 · Timeline</h2><span class="meta">1200 × 675</span></div><div class="stage"><canvas id="g02" width="1200" height="675"></canvas></div><div class="row"><span class="dim">Pair with section 02 · Why 1,969.</span><button onclick="dl('g02','the1969-02-timeline.png')">Download PNG</button></div></section>
+<section><div class="hd"><h2>03 · Drop flowchart</h2><span class="meta">1200 × 675</span></div><div class="stage"><canvas id="g03" width="1200" height="675"></canvas></div><div class="row"><span class="dim">Pair with section 03 · The hourly drop.</span><button onclick="dl('g03','the1969-03-drop-flow.png')">Download PNG</button></div></section>
+<section><div class="hd"><h2>04 · Build equation</h2><span class="meta">1200 × 675</span></div><div class="stage"><canvas id="g04" width="1200" height="675"></canvas></div><div class="row"><span class="dim">Pair with section 04 · The build.</span><button onclick="dl('g04','the1969-04-build.png')">Download PNG</button></div></section>
+<section><div class="hd"><h2>05 · BUSTS economy</h2><span class="meta">1200 × 675</span></div><div class="stage"><canvas id="g05" width="1200" height="675"></canvas></div><div class="row"><span class="dim">Pair with section 05 · The economy.</span><button onclick="dl('g05','the1969-05-economy.png')">Download PNG</button></div></section>
+<section><div class="hd"><h2>06 · Gallery (example)</h2><span class="meta">1200 × 675</span></div><div class="stage"><canvas id="g06" width="1200" height="675"></canvas></div><div class="row"><span class="dim">Real portrait art, schematic handles. Not a claim about specific accounts.</span><button onclick="dl('g06','the1969-06-gallery.png')">Download PNG</button></div></section>
+<section><div class="hd"><h2>07 · The archive (lore)</h2><span class="meta">1200 × 675</span></div><div class="stage"><canvas id="g07" width="1200" height="675"></canvas></div><div class="row"><span class="dim">Pair with section 07 · The lore.</span><button onclick="dl('g07','the1969-07-archive.png')">Download PNG</button></div></section>
 </main>
 
-<script>
-// ══════════════════════════════════════════════════════════════════════
-// Shared primitives — same editorial system as the tweet-queue graphics
-// ══════════════════════════════════════════════════════════════════════
+<script type="module">
+import { buildNFTSVG, ELEMENT_VARIANTS } from './article-art.js';
+
 const PAPER = '#F9F6F0';
 const INK   = '#0E0E0E';
 const LIME  = '#D7FF3A';
 const GREY  = '#777777';
 const SOFT  = '#ece8de';
 
-function dl(id, filename) {
+window.dl = function (id, filename) {
   const c = document.getElementById(id);
   c.toBlob((b) => {
     const u = URL.createObjectURL(b);
@@ -99,48 +62,48 @@ function dl(id, filename) {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(u), 1000);
   }, 'image/png');
-}
+};
 
 function fillPaper(ctx, w, h) {
   ctx.fillStyle = PAPER; ctx.fillRect(0, 0, w, h);
   ctx.save();
   ctx.globalAlpha = 0.045; ctx.fillStyle = INK;
-  for (let i = 0; i < Math.round(w * h / 1800); i++) {
+  for (let i = 0; i < Math.round(w * h / 2000); i++) {
     ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
   }
   ctx.restore();
 }
 
 function drawKicker(ctx, w, leftLabel, rightLabel) {
-  ctx.fillStyle = INK; ctx.fillRect(40, 40, w - 80, 40);
+  ctx.fillStyle = INK; ctx.fillRect(40, 40, w - 80, 36);
   ctx.fillStyle = PAPER;
-  ctx.font = "500 14px 'JetBrains Mono', monospace";
+  ctx.font = "500 13px 'JetBrains Mono', monospace";
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  ctx.fillText(leftLabel, 56, 60);
+  ctx.fillText(leftLabel, 56, 58);
   if (rightLabel) {
     ctx.textAlign = 'right';
-    ctx.fillText(rightLabel, w - 56, 60);
+    ctx.fillText(rightLabel, w - 56, 58);
   }
 }
 
-function drawFooter(ctx, w, h, leftLabel = 'the1969.io', rightLabel = '@the1969eth') {
+function drawFooter(ctx, w, h) {
   ctx.save(); ctx.strokeStyle = INK; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(40, h - 80); ctx.lineTo(w - 40, h - 80); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(40, h - 60); ctx.lineTo(w - 40, h - 60); ctx.stroke();
   ctx.restore();
   ctx.fillStyle = INK;
-  ctx.font = "500 16px 'JetBrains Mono', monospace";
+  ctx.font = "500 14px 'JetBrains Mono', monospace";
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  ctx.fillText(leftLabel, 56, h - 52);
+  ctx.fillText('the1969.io', 56, h - 38);
   ctx.textAlign = 'right';
-  ctx.fillText(rightLabel, w - 56, h - 52);
+  ctx.fillText('@the1969eth', w - 56, h - 38);
 }
 
-function drawStamp(ctx, cx, cy, text, rotation = -0.08, size = 22) {
+function drawStamp(ctx, cx, cy, text, rotation = -0.08, size = 18) {
   ctx.save();
   ctx.translate(cx, cy); ctx.rotate(rotation);
   ctx.font = `700 ${size}px 'JetBrains Mono', monospace`;
   const tw = ctx.measureText(text).width;
-  const padX = 16, padY = Math.round(size * 0.5);
+  const padX = 14, padY = Math.round(size * 0.5);
   const boxW = tw + padX * 2;
   const boxH = size + padY * 2;
   ctx.fillStyle = LIME;   ctx.fillRect(-boxW / 2, -boxH / 2, boxW, boxH);
@@ -152,45 +115,34 @@ function drawStamp(ctx, cx, cy, text, rotation = -0.08, size = 22) {
   ctx.restore();
 }
 
-function drawPixelBust(ctx, cx, cy, s, opts = {}) {
-  const hair   = opts.hair   || PAPER;
-  const face   = opts.face   || '#BBB';
-  const accent = opts.accent || LIME;
-  const px = (gx, gy, w, h, fill) => {
-    ctx.fillStyle = fill;
-    ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, w * s, h * s);
-  };
-  px(5, 2, 14, 1, hair);
-  px(4, 3, 16, 1, hair); px(4, 4, 16, 1, hair);
-  px(3, 5, 18, 1, hair); px(3, 6, 18, 1, hair);
-  px(3, 7, 18, 1, INK);
-  for (let y = 8; y <= 14; y++) px(4, y, 16, 1, face);
-  px(5, 15, 14, 1, face); px(6, 16, 12, 1, face);
-  px(7, 10, 3, 2, INK);   px(14, 10, 3, 2, INK);
-  px(9, 14, 6, 1, INK);
-  px(10, 17, 4, 1, face); px(10, 18, 4, 1, face);
-  px(6, 19, 12, 1, accent);
-  px(4, 20, 16, 1, accent);
-  px(2, 21, 20, 1, accent);
-  px(2, 22, 20, 1, accent);
-  px(2, 23, 20, 1, INK);
+async function portraitImage(elements, size = 800) {
+  const raw = buildNFTSVG(elements);
+  const sized = raw.replace(/width="100%"/g, `width="${size}"`).replace(/height="100%"/g, `height="${size}"`);
+  const blob = new Blob([sized], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+    img.src = url;
+  });
 }
 
-function wrapText(ctx, text, cx, y, maxW, lineH) {
-  const words = text.split(/\s+/);
-  const lines = [];
-  let line = '';
-  for (const w of words) {
-    const test = line ? line + ' ' + w : w;
-    if (ctx.measureText(test).width > maxW && line) {
-      lines.push(line); line = w;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  lines.forEach((l, i) => ctx.fillText(l, cx, y + i * lineH));
-}
+// Twelve visually diverse presets from the real catalog.
+const PRESETS = [
+  { background: 5, outfit: 7, skin: 1, eyes: 7, facial_hair: 6, hair: 6, headwear: 7, face_mark: 6 },
+  { background: 6, outfit: 6, skin: 2, eyes: 6, facial_hair: 5, hair: 4, headwear: 6, face_mark: 5 },
+  { background: 7, outfit: 4, skin: 0, eyes: 5, facial_hair: 7, hair: 5, headwear: 2, face_mark: 4 },
+  { background: 3, outfit: 2, skin: 3, eyes: 0, facial_hair: 3, hair: 3, headwear: 4, face_mark: 1 },
+  { background: 5, outfit: 0, skin: 1, eyes: 2, facial_hair: 1, hair: 2, headwear: 5, face_mark: 0 },
+  { background: 0, outfit: 5, skin: 2, eyes: 3, facial_hair: 2, hair: 1, headwear: 1, face_mark: 2 },
+  { background: 4, outfit: 3, skin: 0, eyes: 1, facial_hair: 0, hair: 4, headwear: 0, face_mark: 0 },
+  { background: 2, outfit: 6, skin: 1, eyes: 6, facial_hair: 6, hair: 5, headwear: 3, face_mark: 6 },
+  { background: 1, outfit: 1, skin: 1, eyes: 0, facial_hair: 4, hair: 2, headwear: 4, face_mark: 0 },
+  { background: 6, outfit: 7, skin: 3, eyes: 7, facial_hair: 2, hair: 4, headwear: 6, face_mark: 4 },
+  { background: 5, outfit: 4, skin: 1, eyes: 4, facial_hair: 3, hair: 0, headwear: 5, face_mark: 3 },
+  { background: 7, outfit: 6, skin: 2, eyes: 7, facial_hair: 7, hair: 6, headwear: 7, face_mark: 6 },
+];
 
 // ══════════════════════════════════════════════════════════════════════
 // 01 · Supply counter
@@ -200,45 +152,41 @@ function draw01() {
   const ctx = c.getContext('2d');
   const w = c.width, h = c.height;
   fillPaper(ctx, w, h);
-  drawKicker(ctx, w,
-    'THE 1969  ·  SUPPLY COUNTER  ·  LIVE',
-    new Date().toISOString().slice(0, 10).toUpperCase()
-  );
+  drawKicker(ctx, w, 'THE 1969  ·  SUPPLY COUNTER  ·  LIVE', new Date().toISOString().slice(0, 10).toUpperCase());
 
-  // Headline above the bar
-  ctx.fillStyle = INK;
-  ctx.font = "500 18px 'JetBrains Mono', monospace";
-  ctx.textBaseline = 'bottom'; ctx.textAlign = 'left';
-  ctx.fillText('BUILT', 80, 200);
-  ctx.textAlign = 'right';
-  ctx.fillText('OPEN', w - 80, 200);
-
-  // The giant bar
-  const barX = 80, barY = 220, barW = w - 160, barH = 90;
   const BUILT = 100, TOTAL = 1969;
-  const filled = barW * (BUILT / TOTAL);
-  ctx.fillStyle = LIME;
-  ctx.fillRect(barX, barY, filled, barH);
-  ctx.fillStyle = SOFT;
-  ctx.fillRect(barX + filled, barY, barW - filled, barH);
+  const pct = BUILT / TOTAL;
+
+  // Headline labels above bar
+  ctx.fillStyle = INK;
+  ctx.font = "500 16px 'JetBrains Mono', monospace";
+  ctx.textBaseline = 'bottom'; ctx.textAlign = 'left';
+  ctx.fillText('BUILT', 80, 175);
+  ctx.textAlign = 'right';
+  ctx.fillText('OPEN', w - 80, 175);
+
+  // Progress bar
+  const barX = 80, barY = 195, barW = w - 160, barH = 72;
+  ctx.fillStyle = SOFT; ctx.fillRect(barX, barY, barW, barH);
+  ctx.fillStyle = LIME; ctx.fillRect(barX, barY, barW * pct, barH);
   ctx.strokeStyle = INK; ctx.lineWidth = 3;
   ctx.strokeRect(barX, barY, barW, barH);
 
-  // Big numerals under the bar
+  // Big numerals
   ctx.fillStyle = INK;
-  ctx.font = "500 88px 'Space Grotesk', sans-serif";
+  ctx.font = "500 160px 'Space Grotesk', sans-serif";
   ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-  ctx.fillText(String(BUILT), 80, barY + barH + 30);
+  ctx.fillText(String(BUILT), 80, barY + barH + 32);
   ctx.textAlign = 'right';
-  ctx.fillText((TOTAL - BUILT).toLocaleString(), w - 80, barY + barH + 30);
+  ctx.fillText((TOTAL - BUILT).toLocaleString(), w - 80, barY + barH + 32);
 
-  // Small captions under the big numbers
-  ctx.font = "italic 28px 'Instrument Serif', serif";
+  // Small captions under numerals
+  ctx.font = "italic 26px 'Instrument Serif', serif";
   ctx.fillStyle = GREY;
-  ctx.textAlign = 'left';
-  ctx.fillText('busts earned, recorded.', 80, barY + barH + 130);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('busts earned, recorded.', 80, barY + barH + 210);
   ctx.textAlign = 'right';
-  ctx.fillText('seats open. one at a time.', w - 80, barY + barH + 130);
+  ctx.fillText('seats open. one at a time.', w - 80, barY + barH + 210);
 
   drawFooter(ctx, w, h);
 }
@@ -255,123 +203,133 @@ function draw02() {
 
   const lineY = h / 2;
 
-  // Main ink line across
+  // Main ink line
   ctx.strokeStyle = INK; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(120, lineY); ctx.lineTo(w - 120, lineY); ctx.stroke();
 
-  // Small inner ticks every 60px for paper-texture feel
-  ctx.strokeStyle = INK; ctx.lineWidth = 1;
-  for (let x = 120; x <= w - 120; x += 60) {
+  // Fine ticks for paper-texture feel
+  ctx.lineWidth = 1;
+  for (let x = 120; x <= w - 120; x += 40) {
     ctx.beginPath();
-    ctx.moveTo(x, lineY - 6);
-    ctx.lineTo(x, lineY + 6);
+    ctx.moveTo(x, lineY - 5);
+    ctx.lineTo(x, lineY + 5);
     ctx.stroke();
   }
 
-  // 1969 marker (left-leaning)
+  // Left tick · 1969
   const x1 = 260;
-  ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.strokeStyle = INK; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(x1, lineY - 28); ctx.lineTo(x1, lineY + 28); ctx.stroke();
   ctx.fillStyle = INK;
   ctx.font = "500 104px 'Space Grotesk', sans-serif";
   ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-  ctx.fillText('1969', x1, lineY - 60);
+  ctx.fillText('1969', x1, lineY - 50);
   ctx.font = "italic 26px 'Instrument Serif', serif";
   ctx.fillStyle = GREY; ctx.textBaseline = 'top';
-  ctx.fillText('the year something started.', x1, lineY + 60);
+  ctx.fillText('the year something started.', x1, lineY + 50);
 
-  // 2026 marker (right)
+  // Right tick · 2026
   const x2 = w - 260;
-  ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.strokeStyle = INK; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(x2, lineY - 28); ctx.lineTo(x2, lineY + 28); ctx.stroke();
   ctx.fillStyle = INK;
   ctx.font = "500 104px 'Space Grotesk', sans-serif";
   ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-  ctx.fillText('2026', x2, lineY - 60);
+  ctx.fillText('2026', x2, lineY - 50);
   ctx.font = "italic 26px 'Instrument Serif', serif";
   ctx.fillStyle = GREY; ctx.textBaseline = 'top';
-  ctx.fillText('the year someone picked it up.', x2, lineY + 60);
+  ctx.fillText('the year someone picked it up.', x2, lineY + 50);
 
   drawFooter(ctx, w, h);
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 03 · Drop flowchart (portrait)
+// 03 · Drop flowchart (horizontal 7-step)
 // ══════════════════════════════════════════════════════════════════════
 function draw03() {
   const c = document.getElementById('g03');
   const ctx = c.getContext('2d');
   const w = c.width, h = c.height;
   fillPaper(ctx, w, h);
-  drawKicker(ctx, w,
-    'THE 1969  ·  HOURLY DROP MECHANIC',
-    '20 SLOTS · 5 MIN WINDOW'
-  );
+  drawKicker(ctx, w, 'THE 1969  ·  HOURLY DROP MECHANIC', '20 SLOTS · 5 MIN');
 
-  const boxes = [
-    { title: ':00  WINDOW OPENS',     sub: 'global pool of 20 trait slots' },
-    { title: '/DROP  PAGE OPENED',    sub: 'user lands on the page before :00' },
-    { title: 'DRAG-TO-ARM  GESTURE',  sub: 'anti-bot rail · ≥90% travel, ≥300ms' },
-    { title: '1.5s  ARMING LOCK',     sub: 'server issues a signed token bound to user + session' },
-    { title: 'CLAIM  CLICKED',        sub: 'request fires with interaction proof' },
-    { title: 'SERVER  ROLLS',         sub: 'atomic pool decrement + trait + BUSTS' },
-    { title: 'REVEAL',                sub: 'trait lands in inventory · +5 to +100 BUSTS' },
+  const steps = [
+    { title: ':00',       sub: 'OPEN'        },
+    { title: '/DROP',     sub: 'PAGE OPEN'   },
+    { title: 'ARM',       sub: 'DRAG RAIL'   },
+    { title: '1.5s',      sub: 'LOCKED'      },
+    { title: 'CLAIM',     sub: 'CLICKED'     },
+    { title: 'ROLL',      sub: 'SERVER'      },
+    { title: 'REVEAL',    sub: 'TRAIT LANDS' },
   ];
 
-  const topY = 140;
-  const bottomPad = 120;
-  const stepH = (h - topY - bottomPad) / boxes.length;
-  const boxW = 900;
-  const boxH = 92;
+  const n = steps.length;
+  const topY = 170;
+  const rowH = 240;
+  const sidePad = 60;
+  const totalW = w - sidePad * 2;
+  const arrowW = 36;
+  const boxW = (totalW - arrowW * (n - 1)) / n;
+  const boxH = 140;
 
-  boxes.forEach((b, i) => {
-    const cx = w / 2;
-    const cy = topY + stepH * i + stepH / 2;
-    const isEdge = (i === 0 || i === boxes.length - 1);
+  steps.forEach((s, i) => {
+    const x = sidePad + i * (boxW + arrowW);
+    const isEdge = (i === 0 || i === n - 1);
     ctx.fillStyle = isEdge ? LIME : SOFT;
-    ctx.fillRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH);
+    ctx.fillRect(x, topY, boxW, boxH);
     ctx.strokeStyle = INK; ctx.lineWidth = 2;
-    ctx.strokeRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH);
+    ctx.strokeRect(x, topY, boxW, boxH);
 
     ctx.fillStyle = INK;
-    ctx.font = "500 28px 'Space Grotesk', sans-serif";
+    ctx.font = "500 32px 'Space Grotesk', sans-serif";
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(b.title, cx, cy - 12);
+    ctx.fillText(s.title, x + boxW / 2, topY + boxH / 2 - 14);
 
-    ctx.font = "500 14px 'JetBrains Mono', monospace";
+    ctx.font = "500 12px 'JetBrains Mono', monospace";
     ctx.fillStyle = GREY;
-    ctx.fillText(b.sub, cx, cy + 20);
+    ctx.fillText(s.sub, x + boxW / 2, topY + boxH / 2 + 20);
 
-    if (i < boxes.length - 1) {
-      const ay1 = cy + boxH / 2 + 8;
-      const ay2 = topY + stepH * (i + 1) + stepH / 2 - boxH / 2 - 8;
+    if (i < n - 1) {
+      const ax1 = x + boxW + 6;
+      const ax2 = x + boxW + arrowW - 6;
+      const ay = topY + boxH / 2;
       ctx.strokeStyle = INK; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(cx, ay1); ctx.lineTo(cx, ay2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax1, ay); ctx.lineTo(ax2, ay); ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(cx - 9, ay2 - 10);
-      ctx.lineTo(cx, ay2);
-      ctx.lineTo(cx + 9, ay2 - 10);
+      ctx.moveTo(ax2 - 8, ay - 6);
+      ctx.lineTo(ax2, ay);
+      ctx.lineTo(ax2 - 8, ay + 6);
       ctx.stroke();
     }
   });
+
+  // Caption below the flow
+  ctx.fillStyle = GREY;
+  ctx.font = "italic 28px 'Instrument Serif', serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('drag, hold, claim. the bot can not hold.', w / 2, topY + boxH + 80);
+
+  ctx.fillStyle = INK;
+  ctx.font = "500 16px 'JetBrains Mono', monospace";
+  ctx.fillText('anti-bot gate · drag path entropy · signed token · server pool atomic', w / 2, topY + boxH + 130);
 
   drawFooter(ctx, w, h);
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 04 · Build equation (8 traits → 1 portrait)
+// 04 · Build equation (horizontal: 8 trait cells → real portrait)
 // ══════════════════════════════════════════════════════════════════════
-function draw04() {
+async function draw04() {
   const c = document.getElementById('g04');
   const ctx = c.getContext('2d');
   const w = c.width, h = c.height;
   fillPaper(ctx, w, h);
   drawKicker(ctx, w, 'THE 1969  ·  THE BUILD', '8 TRAITS → 1 PORTRAIT');
 
+  // Left: 2x4 trait grid
   const LABELS = ['BG', 'OUTFIT', 'SKIN', 'EYES', 'FACIAL', 'HAIR', 'HEADWEAR', 'MARK'];
-  const leftX = 70, topY = 160;
-  const cellW = 95, cellH = 95, gap = 14;
-
+  const leftX = 70, topY = 150;
+  const cellW = 110, cellH = 110, gap = 14;
   LABELS.forEach((lbl, i) => {
     const col = i % 4, row = Math.floor(i / 4);
     const x = leftX + col * (cellW + gap);
@@ -380,219 +338,199 @@ function draw04() {
     ctx.strokeStyle = INK; ctx.lineWidth = 2;
     ctx.strokeRect(x, y, cellW, cellH);
     ctx.fillStyle = INK;
-    ctx.font = "500 15px 'JetBrains Mono', monospace";
+    ctx.font = "500 17px 'JetBrains Mono', monospace";
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(lbl, x + cellW / 2, y + cellH / 2);
   });
 
-  const tailX = leftX + 4 * (cellW + gap);
-
-  // Arrow spanning the gap
-  const arrY = topY + cellH + gap / 2;
-  const ax1 = tailX + 14;
-  const ax2 = w - 340;
-  ctx.strokeStyle = INK; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(ax1, arrY); ctx.lineTo(ax2, arrY); ctx.stroke();
+  // Horizontal arrow in the middle
+  const arrowY = topY + cellH + gap / 2;
+  const gridRight = leftX + 4 * (cellW + gap) - gap;
+  const ax1 = gridRight + 18;
+  const ax2 = w - 420;
+  ctx.strokeStyle = INK; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(ax1, arrowY); ctx.lineTo(ax2, arrowY); ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(ax2 - 18, arrY - 12);
-  ctx.lineTo(ax2, arrY);
-  ctx.lineTo(ax2 - 18, arrY + 12);
+  ctx.moveTo(ax2 - 18, arrowY - 12);
+  ctx.lineTo(ax2, arrowY);
+  ctx.lineTo(ax2 - 18, arrowY + 12);
   ctx.stroke();
 
-  // Portrait block on the right
-  const pbx = w - 300, pby = topY - 10;
-  const pbw = 260, pbh = 260;
-  ctx.fillStyle = SOFT; ctx.fillRect(pbx, pby, pbw, pbh);
+  // Right: real portrait card
+  const pbSize = 360;
+  const pbx = w - pbSize - 40;
+  const pby = topY - 15;
+  const img = await portraitImage(PRESETS[0], 600);
+  ctx.fillStyle = SOFT; ctx.fillRect(pbx, pby, pbSize, pbSize);
   ctx.strokeStyle = INK; ctx.lineWidth = 2;
-  ctx.strokeRect(pbx, pby, pbw, pbh);
+  ctx.strokeRect(pbx, pby, pbSize, pbSize);
   ctx.imageSmoothingEnabled = false;
-  drawPixelBust(ctx, pbx + pbw / 2, pby + pbh / 2, 8);
+  ctx.drawImage(img, pbx + 4, pby + 4, pbSize - 8, pbSize - 8);
   ctx.imageSmoothingEnabled = true;
-  drawStamp(ctx, pbx + pbw - 30, pby + 32, 'BUILT', -0.08, 18);
+  drawStamp(ctx, pbx + pbSize - 50, pby + 28, 'BUILT', -0.08, 18);
 
-  // Caption under the portrait
-  ctx.font = "italic 26px 'Instrument Serif', serif";
-  ctx.fillStyle = GREY;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  ctx.fillText('one per @handle, forever.', pbx + pbw / 2, pby + pbh + 22);
-
-  // Caption under the trait grid
-  const gridBottom = topY + 2 * (cellH + gap);
+  // Caption under portrait
   ctx.font = "italic 24px 'Instrument Serif', serif";
   ctx.fillStyle = GREY;
-  ctx.textAlign = 'left';
-  ctx.fillText('each earned from the hourly pool.', leftX, gridBottom + 14);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('one per @handle, forever.', pbx + pbSize / 2, pby + pbSize + 16);
+
+  // Caption under trait grid
+  const gridBottom = topY + 2 * cellH + gap;
+  ctx.font = "italic 22px 'Instrument Serif', serif";
+  ctx.fillStyle = GREY;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('each earned from the hourly pool.', leftX, gridBottom + 18);
   ctx.font = "500 14px 'JetBrains Mono', monospace";
   ctx.fillStyle = INK;
-  ctx.fillText('then consumed, never re-giftable.', leftX, gridBottom + 54);
+  ctx.fillText('then consumed, never re-giftable.', leftX, gridBottom + 52);
 
   drawFooter(ctx, w, h);
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 05 · BUSTS economy
+// 05 · BUSTS economy (hub + arrows)
 // ══════════════════════════════════════════════════════════════════════
 function draw05() {
   const c = document.getElementById('g05');
   const ctx = c.getContext('2d');
   const w = c.width, h = c.height;
   fillPaper(ctx, w, h);
-  drawKicker(ctx, w, 'THE 1969  ·  BUSTS ECONOMY', 'EARN / SPEND');
+  drawKicker(ctx, w, 'THE 1969  ·  BUSTS ECONOMY', 'EARN · SPEND');
 
-  const cx = w / 2, cy = h / 2 - 30;
-  const r = 170;
+  const cx = w / 2, cy = h / 2 + 10;
+  const r = 120;
 
-  // Hub circle
+  // Hub
   ctx.fillStyle = INK;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = LIME;
-  ctx.font = "700 88px 'Space Grotesk', sans-serif";
+  ctx.font = "700 60px 'Space Grotesk', sans-serif";
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('BUSTS', cx, cy);
 
-  // Earn side (left) — lime arrows
+  const armSpan = 140;
+
+  // Earn side (left)
   const earns = [
-    { label: 'DROP claims',     sub: '+5 to +100' },
-    { label: 'SHARE on X',      sub: '+200' },
-    { label: 'TASKS',           sub: '+10 to +50' },
+    { label: 'DROP claims',  sub: '+5 to +100' },
+    { label: 'SHARE on X',   sub: '+200' },
+    { label: 'TASKS',        sub: '+10 to +50' },
   ];
   earns.forEach((obj, i) => {
-    const y = cy - 180 + i * 180;
+    const y = cy - armSpan + i * armSpan;
     // Arrow
-    ctx.strokeStyle = LIME; ctx.lineWidth = 8;
-    ctx.beginPath(); ctx.moveTo(120, y); ctx.lineTo(cx - r - 20, cy); ctx.stroke();
-    // Arrowhead
-    const dx = cx - r - 20 - 120, dy = cy - y;
+    ctx.strokeStyle = LIME; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(120, y); ctx.lineTo(cx - r - 14, cy); ctx.stroke();
+    const dx = cx - r - 14 - 120, dy = cy - y;
     const ang = Math.atan2(dy, dx);
-    const ex = cx - r - 20, ey = cy;
+    const ex = cx - r - 14, ey = cy;
     ctx.fillStyle = LIME;
     ctx.beginPath();
     ctx.moveTo(ex, ey);
-    ctx.lineTo(ex - 18 * Math.cos(ang - 0.4), ey - 18 * Math.sin(ang - 0.4));
-    ctx.lineTo(ex - 18 * Math.cos(ang + 0.4), ey - 18 * Math.sin(ang + 0.4));
+    ctx.lineTo(ex - 16 * Math.cos(ang - 0.4), ey - 16 * Math.sin(ang - 0.4));
+    ctx.lineTo(ex - 16 * Math.cos(ang + 0.4), ey - 16 * Math.sin(ang + 0.4));
     ctx.closePath(); ctx.fill();
     // Label
     ctx.fillStyle = INK;
-    ctx.font = "500 22px 'JetBrains Mono', monospace";
+    ctx.font = "500 20px 'JetBrains Mono', monospace";
     ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
     ctx.fillText(obj.label, 120, y - 6);
     ctx.fillStyle = GREY;
-    ctx.font = "italic 22px 'Instrument Serif', serif";
+    ctx.font = "italic 20px 'Instrument Serif', serif";
     ctx.textBaseline = 'top';
     ctx.fillText(obj.sub, 120, y + 6);
   });
 
-  // Spend side (right) — ink arrows
+  // Spend side (right)
   const spends = [
-    { label: 'REGULAR  200',      sub: 'mostly commons' },
-    { label: 'RARE  500',         sub: 'legendary odds' },
-    { label: 'MYSTERY  1,969',    sub: 'no commons' },
+    { label: 'REGULAR  200',    sub: 'mostly commons' },
+    { label: 'RARE  500',       sub: 'legendary odds' },
+    { label: 'MYSTERY  1,969',  sub: 'no commons' },
   ];
   spends.forEach((obj, i) => {
-    const y = cy - 180 + i * 180;
-    ctx.strokeStyle = INK; ctx.lineWidth = 8;
-    ctx.beginPath(); ctx.moveTo(cx + r + 20, cy); ctx.lineTo(w - 120, y); ctx.stroke();
-    const dx = (w - 120) - (cx + r + 20), dy = y - cy;
+    const y = cy - armSpan + i * armSpan;
+    ctx.strokeStyle = INK; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(cx + r + 14, cy); ctx.lineTo(w - 120, y); ctx.stroke();
+    const dx = (w - 120) - (cx + r + 14), dy = y - cy;
     const ang = Math.atan2(dy, dx);
     ctx.fillStyle = INK;
     ctx.beginPath();
     ctx.moveTo(w - 120, y);
-    ctx.lineTo(w - 120 - 18 * Math.cos(ang - 0.4), y - 18 * Math.sin(ang - 0.4));
-    ctx.lineTo(w - 120 - 18 * Math.cos(ang + 0.4), y - 18 * Math.sin(ang + 0.4));
+    ctx.lineTo(w - 120 - 16 * Math.cos(ang - 0.4), y - 16 * Math.sin(ang - 0.4));
+    ctx.lineTo(w - 120 - 16 * Math.cos(ang + 0.4), y - 16 * Math.sin(ang + 0.4));
     ctx.closePath(); ctx.fill();
     ctx.fillStyle = INK;
-    ctx.font = "500 22px 'JetBrains Mono', monospace";
+    ctx.font = "500 20px 'JetBrains Mono', monospace";
     ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
     ctx.fillText(obj.label, w - 120, y - 6);
     ctx.fillStyle = GREY;
-    ctx.font = "italic 22px 'Instrument Serif', serif";
+    ctx.font = "italic 20px 'Instrument Serif', serif";
     ctx.textBaseline = 'top';
     ctx.fillText(obj.sub, w - 120, y + 6);
   });
-
-  // Caption centered under
-  ctx.fillStyle = GREY;
-  ctx.font = "italic 30px 'Instrument Serif', serif";
-  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  ctx.fillText('earn by showing up. spend on bigger odds.', cx, cy + r + 80);
 
   drawFooter(ctx, w, h);
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 06 · Gallery rank
+// 06 · Gallery (4×2, real portraits, schematic handles)
 // ══════════════════════════════════════════════════════════════════════
-function draw06() {
+async function draw06() {
   const c = document.getElementById('g06');
   const ctx = c.getContext('2d');
   const w = c.width, h = c.height;
   fillPaper(ctx, w, h);
-  drawKicker(ctx, w, 'THE 1969  ·  GALLERY RANK', 'SORTED BY X FOLLOWERS');
+  drawKicker(ctx, w, 'THE 1969  ·  GALLERY  ·  EXAMPLE LAYOUT', 'SORTED BY X FOLLOWERS');
 
-  const cols = 4, rows = 3;
-  const pad = 40;
-  const gap = 18;
-  const topY = 140;
-  const bottomPad = 140;
+  const cols = 4, rows = 2;
+  const pad = 50;
+  const gap = 16;
+  const topY = 130;
+  const bottomPad = 110;
   const cellW = (w - pad * 2 - gap * (cols - 1)) / cols;
   const cellH = (h - topY - bottomPad - gap * (rows - 1)) / rows;
 
   const data = [
-    ['@elonmusk',     '219M'],
-    ['@realdonald',   '87M'],
-    ['@0xsweep',      '195K'],
-    ['@waleswoosh',   '84K'],
-    ['@jeremybtc',    '78K'],
-    ['@banditxbt',    '51K'],
-    ['@telcier',      '38K'],
-    ['@web3eliza',    '29K'],
-    ['@i_am_vickyd',  '24K'],
-    ['@loshmi',       '14K'],
-    ['@yours',        '...'],
-    ['@next',         '...'],
+    ['@holder_001', '250K'],
+    ['@holder_002', '180K'],
+    ['@holder_003', '95K'],
+    ['@holder_004', '60K'],
+    ['@holder_005', '42K'],
+    ['@holder_006', '28K'],
+    ['@your_next',  '...'],
+    ['@you_later',  '...'],
   ];
-  const variants = [
-    { hair: LIME,    accent: PAPER },
-    { hair: PAPER,   accent: LIME  },
-    { hair: '#333',  accent: LIME  },
-    { hair: LIME,    accent: '#555' },
-    { hair: PAPER,   accent: '#555' },
-    { hair: '#555',  accent: PAPER },
-    { hair: LIME,    accent: LIME  },
-    { hair: PAPER,   accent: LIME  },
-    { hair: '#333',  accent: PAPER },
-    { hair: LIME,    accent: PAPER },
-    { hair: PAPER,   accent: LIME  },
-    { hair: '#555',  accent: LIME  },
-  ];
+
+  const imgs = await Promise.all(PRESETS.slice(0, 8).map((p) => portraitImage(p, 400)));
 
   for (let r = 0; r < rows; r++) {
     for (let co = 0; co < cols; co++) {
       const i = r * cols + co;
       const x = pad + co * (cellW + gap);
       const y = topY + r * (cellH + gap);
-      ctx.fillStyle = SOFT; ctx.fillRect(x, y, cellW, cellH);
-      ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.strokeRect(x, y, cellW, cellH);
 
-      const scale = Math.min(cellW / 30, (cellH - 34) / 28);
+      ctx.fillStyle = SOFT; ctx.fillRect(x, y, cellW, cellH);
+      ctx.strokeStyle = INK; ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, cellW, cellH);
+
+      const artH = cellH - 36;
       ctx.imageSmoothingEnabled = false;
-      drawPixelBust(ctx, x + cellW / 2, y + cellH / 2 - 6, scale, variants[i % variants.length]);
+      ctx.drawImage(imgs[i % imgs.length], x + 2, y + 2, cellW - 4, artH);
       ctx.imageSmoothingEnabled = true;
 
-      // Follower chip top-left
       const [handle, fol] = data[i];
-      ctx.font = "500 13px 'JetBrains Mono', monospace";
+      ctx.font = "500 12px 'JetBrains Mono', monospace";
       ctx.textBaseline = 'middle';
-      const chipPad = 10;
+      const chipPad = 8;
       const chipW = ctx.measureText(fol).width + chipPad * 2;
-      const chipH = 22;
+      const chipH = 20;
       ctx.fillStyle = INK;
-      ctx.fillRect(x + 8, y + 8, chipW, chipH);
+      ctx.fillRect(x + 6, y + 6, chipW, chipH);
       ctx.fillStyle = PAPER;
       ctx.textAlign = 'center';
-      ctx.fillText(fol, x + 8 + chipW / 2, y + 8 + chipH / 2);
+      ctx.fillText(fol, x + 6 + chipW / 2, y + 6 + chipH / 2);
 
-      // Handle on bottom
       ctx.fillStyle = INK;
       ctx.font = "500 12px 'JetBrains Mono', monospace";
       ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
@@ -600,70 +538,114 @@ function draw06() {
     }
   }
 
-  // Caption under the grid
   ctx.fillStyle = GREY;
-  ctx.font = "italic 28px 'Instrument Serif', serif";
+  ctx.font = "italic 22px 'Instrument Serif', serif";
   ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  ctx.fillText('big accounts sit on top. newcomers stack behind them.', w / 2, h - 120);
+  ctx.fillText('ranked by live X follower count. schematic only.', w / 2, h - 94);
 
   drawFooter(ctx, w, h);
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 07 · Utility triptych
+// 07 · The archive (lore): headline left, cascading portraits right
 // ══════════════════════════════════════════════════════════════════════
-function draw07() {
+async function draw07() {
   const c = document.getElementById('g07');
   const ctx = c.getContext('2d');
   const w = c.width, h = c.height;
   fillPaper(ctx, w, h);
-  drawKicker(ctx, w, 'THE 1969  ·  HOLDER UTILITY', 'THREE THINGS · ALL DOABLE');
+  drawKicker(ctx, w, 'THE 1969  ·  THE ARCHIVE', 'LORE · VOL 0');
 
-  const cards = [
-    { stamp: 'HOLDER ONLY',  verb: 'drop',   body: 'Friday hourly windows. Same mechanic, WL wallets only.' },
-    { stamp: 'ARCHETYPE',    verb: 'reveal', body: 'Six archetypes. Operator, Warden, Oracle, Saint, Ghost, Revenant. Baked into metadata at mint.' },
-    { stamp: 'ZINE · VOL 1', verb: 'print',  body: 'Quarterly 12-page PDF. 20 holder portraits, interviews, lore. First issue within 30 days of close.' },
+  // LEFT column · headline + mythic paragraph
+  const leftPad = 70;
+  ctx.fillStyle = INK;
+  ctx.font = "500 84px 'Space Grotesk', sans-serif";
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('THE', leftPad, 130);
+  ctx.fillText('ARCHIVE', leftPad, 210);
+
+  // Mythic paragraph
+  ctx.fillStyle = GREY;
+  ctx.font = "italic 22px 'Instrument Serif', serif";
+  const mythic = [
+    'Somewhere around 1969,',
+    'before the feed, before the handle,',
+    'a room of 1,969 people sat',
+    'for portraits that nobody claimed.',
+    '',
+    'The file stayed in a drawer for decades.',
+    'We are just the ones reopening it.',
   ];
-  const pad = 60;
-  const gap = 20;
-  const cardW = (w - pad * 2 - gap * 2) / 3;
-  const cardY = 140;
-  const cardH = h - cardY - 140;
+  let ly = 330;
+  for (const line of mythic) {
+    ctx.fillText(line, leftPad, ly);
+    ly += 32;
+  }
 
-  cards.forEach((c2, i) => {
-    const x = pad + i * (cardW + gap);
-    ctx.fillStyle = SOFT; ctx.fillRect(x, cardY, cardW, cardH);
-    ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.strokeRect(x, cardY, cardW, cardH);
+  // Small ink rule + metadata
+  ctx.strokeStyle = INK; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(leftPad, ly + 16);
+  ctx.lineTo(leftPad + 200, ly + 16);
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  ctx.font = "500 13px 'JetBrains Mono', monospace";
+  ctx.fillText('OPENED · 2026', leftPad, ly + 30);
 
-    // Stamp
-    drawStamp(ctx, x + cardW / 2, cardY + 42, c2.stamp, 0, 16);
+  // RIGHT column · three cascading portrait cards
+  const rightStartX = w * 0.52;
+  const cardW = 200, cardH = 240;
+  const stepX = 140;
+  const stepY = 30;
+  const baseY = 150;
+  const loreImgs = await Promise.all(
+    [PRESETS[11], PRESETS[7], PRESETS[2]].map((p) => portraitImage(p, 400))
+  );
 
-    // Verb
+  loreImgs.forEach((img, i) => {
+    const x = rightStartX + i * stepX;
+    const y = baseY + i * stepY;
+
+    // Drop shadow
+    ctx.save();
+    ctx.globalAlpha = 0.10;
     ctx.fillStyle = INK;
-    ctx.font = "italic 92px 'Instrument Serif', serif";
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText(c2.verb, x + cardW / 2, cardY + 100);
+    ctx.fillRect(x + 6, y + 6, cardW, cardH);
+    ctx.restore();
 
-    // Body copy
-    ctx.fillStyle = GREY;
-    ctx.font = "500 15px 'JetBrains Mono', monospace";
-    ctx.textBaseline = 'top';
-    wrapText(ctx, c2.body, x + cardW / 2, cardY + 230, cardW - 40, 22);
+    ctx.fillStyle = SOFT; ctx.fillRect(x, y, cardW, cardH);
+    ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, cardW, cardH);
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, x + 6, y + 6, cardW - 12, cardH - 42);
+    ctx.imageSmoothingEnabled = true;
+
+    ctx.fillStyle = INK;
+    ctx.font = "500 13px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('ENTRY · 00' + String(i + 1).padStart(2, '0'), x + cardW / 2, y + cardH - 10);
   });
 
   drawFooter(ctx, w, h);
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// Render all — wait for web fonts
-// ══════════════════════════════════════════════════════════════════════
 async function renderAll() {
   try { if (document.fonts?.ready) await document.fonts.ready; } catch {}
-  draw01(); draw02(); draw03(); draw04(); draw05(); draw06(); draw07();
+  draw01();
+  draw02();
+  draw03();
+  await draw04();
+  draw05();
+  await draw06();
+  await draw07();
   document.getElementById('status').textContent =
-    'Ready. Scroll to any graphic and click Download PNG.';
+    'Ready. Click Download PNG under any graphic.';
 }
-renderAll();
+renderAll().catch((e) => {
+  console.error(e);
+  document.getElementById('status').textContent = 'Render error: ' + (e?.message || e);
+});
 </script>
 </body>
 </html>
