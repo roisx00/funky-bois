@@ -123,6 +123,7 @@ export default function DropPage() {
   const dragStartX  = useRef(0);
   const dragStartAt = useRef(0);
   const draggingRef = useRef(false);
+  const dragSamples = useRef([]); // { x, y } pointer samples during the drag
 
   const onPointerDown = (e) => {
     if (flow !== 'ready') return;
@@ -134,14 +135,19 @@ export default function DropPage() {
     dragStartX.current  = e.clientX;
     dragStartAt.current = Date.now();
     armStartedAt.current = Date.now();
+    dragSamples.current = [{ x: e.clientX, y: e.clientY }];
     setFlow('arming');
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const onPointerMove = (e) => {
     if (!draggingRef.current || !dragRailRef.current) return;
+    // Sample every move so we can measure wobble (humans) vs straight
+    // line (headless scripted drags).
+    dragSamples.current.push({ x: e.clientX, y: e.clientY });
+    if (dragSamples.current.length > 200) dragSamples.current.shift();
     const rail = dragRailRef.current.getBoundingClientRect();
-    const handleW = rail.height; // handle is a square roughly the rail height
+    const handleW = rail.height;
     const maxTravel = rail.width - handleW;
     const travel = Math.max(0, Math.min(maxTravel, e.clientX - rail.left - handleW / 2));
     setDragPct(maxTravel > 0 ? travel / maxTravel : 0);
@@ -182,11 +188,30 @@ export default function DropPage() {
     setFlow('claiming');
     setLastError('');
 
+    // Compute drag-path X and Y variance from the pointer samples we
+    // collected during the arm gesture. A bot doing a programmatic
+    // mouseMove across a straight line gets Y variance ~0; a human's
+    // hand wobbles a few pixels vertically. Server rejects drags with
+    // dragVarY < 2 or dragVarX < 20.
+    const samples = dragSamples.current;
+    let dragVarX = 0, dragVarY = 0;
+    if (samples.length >= 3) {
+      const mean = (arr) => arr.reduce((s, v) => s + v, 0) / arr.length;
+      const variance = (arr) => {
+        const m = mean(arr);
+        return mean(arr.map((v) => (v - m) * (v - m)));
+      };
+      dragVarX = Math.sqrt(variance(samples.map((s) => s.x)));
+      dragVarY = Math.sqrt(variance(samples.map((s) => s.y)));
+    }
+
     const interactionProof = {
       nonce:        armToken.nonce,
       windowOpenMs: Date.now() - windowOpenAt.current,
       moveCount:    moveCount.current,
       pathEntropy:  pathEntropy(movePath.current),
+      dragVarX:     Math.round(dragVarX * 10) / 10,
+      dragVarY:     Math.round(dragVarY * 10) / 10,
       armedMs:      Date.now() - armStartedAt.current,
     };
 

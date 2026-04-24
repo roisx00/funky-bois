@@ -49,20 +49,28 @@ export default async function handler(req, res) {
     return bad(res, 409, 'no_active_session');
   }
 
+  // ── RANDOMIZED ARM DELAY ──
+  // Each arm token picks a random notBefore between 2500 and 5500 ms.
+  // Bots can no longer sync a "fire at exactly :00:00" strategy because
+  // they do not know when their own claim becomes valid until they parse
+  // the response. Humans do not feel the difference because the claim
+  // button already gated on server time via the nbf field.
+  const notBeforeMs = 2500 + Math.floor(Math.random() * 3000);
+
   const nonce = randomNonce();
   const token = await signArmToken({
     userId:       user.id,
     sessionId:    sessId,
     nonce,
-    notBeforeMs:  1500, // client must wait at least 1.5s after arming
-    ttlMs:        20000, // arm token expires after 20s — re-arm if slow
+    notBeforeMs,
+    ttlMs:        20000,
   });
 
   ok(res, {
     token,
     nonce,
     sessId,
-    notValidBeforeMs: Date.now() + 1500,
+    notValidBeforeMs: Date.now() + notBeforeMs,
     expiresAtMs:      Date.now() + 20000,
   });
 }

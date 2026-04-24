@@ -41,12 +41,23 @@ async function logRejection(user, sessId, ip, reason, proofSnapshot) {
 
 function scoreInteraction(proof) {
   if (!proof || typeof proof !== 'object') return { ok: false, reason: 'proof_missing' };
-  const { windowOpenMs, moveCount, pathEntropy, armedMs, nonce } = proof;
+  const { windowOpenMs, moveCount, pathEntropy, armedMs, nonce, dragVarY, dragVarX } = proof;
   if (typeof nonce !== 'string' || !nonce.length) return { ok: false, reason: 'proof_nonce_missing' };
-  if (typeof windowOpenMs !== 'number' || windowOpenMs < 2000) return { ok: false, reason: 'proof_windowopen_too_short' };
-  if (typeof moveCount !== 'number' || moveCount < 5)          return { ok: false, reason: 'proof_movecount_too_low' };
-  if (typeof pathEntropy !== 'number' || pathEntropy < 0.15)   return { ok: false, reason: 'proof_pathentropy_too_low' };
-  if (typeof armedMs !== 'number' || armedMs < 300)            return { ok: false, reason: 'proof_armedms_too_short' };
+  // Raised thresholds. Bots that open the page 2s before :00 now fail:
+  // a real user typically sits on the page for 5+ seconds while reading
+  // the countdown.
+  if (typeof windowOpenMs !== 'number' || windowOpenMs < 4000) return { ok: false, reason: 'proof_windowopen_too_short' };
+  if (typeof moveCount !== 'number' || moveCount < 10)         return { ok: false, reason: 'proof_movecount_too_low' };
+  if (typeof pathEntropy !== 'number' || pathEntropy < 0.20)   return { ok: false, reason: 'proof_pathentropy_too_low' };
+  if (typeof armedMs !== 'number' || armedMs < 500)            return { ok: false, reason: 'proof_armedms_too_short' };
+  // Drag straightness check: a real hand wobbles vertically while
+  // dragging left-to-right. A bot scripting mouse events typically
+  // follows a perfect straight line (Y variance ≈ 0). Require some Y
+  // wobble during the drag.
+  if (typeof dragVarY !== 'number' || dragVarY < 2) return { ok: false, reason: 'proof_drag_too_straight' };
+  // Also require non-trivial X movement (so "clicked the handle and
+  // snapped it across with a keyboard shortcut" attacks fail).
+  if (typeof dragVarX !== 'number' || dragVarX < 20) return { ok: false, reason: 'proof_drag_too_short' };
   return { ok: true };
 }
 
@@ -57,9 +68,12 @@ export default async function handler(req, res) {
   const user = await requireUser(req, res);
   if (!user) return;
 
-  // Per-user: 1 claim per 3s. Per-IP: 5 claims per 30s.
-  if (!(await rateLimit(res, user.id, { name: 'drop_user', max: 1,  windowSecs: 3  }))) return;
-  if (!(await rateLimit(res, ip,       { name: 'drop_ip',   max: 5,  windowSecs: 30 }))) return;
+  // HARDENED RATE LIMITS. A user can claim at most 3 times per 5-minute
+  // session, so one claim per 30s still lets every human get full value.
+  // But it kills the bot-rapid-fire pattern of firing 10 claims/sec.
+  if (!(await rateLimit(res, user.id, { name: 'drop_user', max: 1,  windowSecs: 30 }))) return;
+  // Per-IP: 3 per minute. Real households / VPN users still work.
+  if (!(await rateLimit(res, ip,       { name: 'drop_ip',   max: 3,  windowSecs: 60 }))) return;
 
   const body = await readBody(req) || {};
   const { armToken, interactionProof } = body;
@@ -154,6 +168,13 @@ export default async function handler(req, res) {
       VALUES (${user.id}, ${dailyBonus}, 'Daily drop claim')
     `;
   }
+
+  // ── RESPONSE JITTER ──
+  // Wait 150-600ms before replying. Adds timing noise to foil the
+  // "fire 10 requests at :00.000 and keep whichever wins" strategy.
+  // Costs nothing for humans (the reveal animation still plays after),
+  // but bots relying on sub-100ms response times now miss the window.
+  await new Promise((r) => setTimeout(r, 150 + Math.floor(Math.random() * 450)));
 
   ok(res, {
     element: el,
