@@ -97,9 +97,9 @@ export default function LeaderboardPage() {
             BUSTS <em>top earners.</em>
           </h1>
           <p className="lead-hero-sub">
-            Top 100 holders by BUSTS balance. Only accounts that have
-            claimed a drop, built a portrait, or secured the whitelist
-            appear here — referral-only farms are filtered out.
+            Top 100 real holders. Accounts must have built a portrait, secured
+            the whitelist, or be actively engaged on X — single-drop bot
+            accounts and referral-only farms are filtered out.
           </p>
         </div>
 

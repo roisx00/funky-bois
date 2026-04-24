@@ -18,22 +18,27 @@ export default async function handler(req, res) {
   if (!Number.isFinite(limit) || limit <= 0) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
 
-  // ── Engagement gate ──
-  // A user only appears on the leaderboard if they have taken at least
-  // ONE real in-game action: claimed a drop, built a portrait, or
-  // secured their whitelist. Referral-only farms (sign up, click
-  // "follow", cross-refer 30 bot accounts) can't pass this gate because
-  // they never actually play. Without this filter, bot rings running
-  // cross-referral loops dominate the board even though they've
-  // contributed nothing.
+  // ── Multi-signal engagement gate ──
+  // Earlier rule ("claimed any drop") still let through ~90 farm
+  // accounts that grabbed slots during the pre-jitter :00-sweep era.
+  // Now we require a STRONGER signal:
+  //   A. Built a portrait (end of game loop — strong signal), OR
+  //   B. Whitelisted (portrait + wallet + signed message — strongest), OR
+  //   C. Claimed >= 2 drops AND has >= 20 X followers.
+  //      (Drops alone are farmable; drops + real follower count is not.
+  //      20 is low enough to include real new crypto users but high
+  //      enough to exclude freshly-spun-up bot accounts with 0-5 followers.)
   const rows = await sql`
     SELECT u.x_username, u.x_avatar, u.x_name, u.busts_balance,
            u.is_whitelisted, u.x_followers
       FROM users u
      WHERE (
-           EXISTS (SELECT 1 FROM drop_claims d WHERE d.user_id = u.id)
-        OR EXISTS (SELECT 1 FROM completed_nfts n WHERE n.user_id = u.id)
+           EXISTS (SELECT 1 FROM completed_nfts n WHERE n.user_id = u.id)
         OR u.is_whitelisted = TRUE
+        OR (
+              u.x_followers >= 20
+              AND (SELECT COUNT(*) FROM drop_claims d WHERE d.user_id = u.id) >= 2
+        )
      )
      ORDER BY u.busts_balance DESC NULLS LAST, u.created_at ASC
      LIMIT ${limit}
