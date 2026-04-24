@@ -1423,7 +1423,82 @@ async function drawTweetGraphic(canvas, item) {
   gfxKicker(ctx, w);
 
   try {
-    if (item.triggerType === 'rare_pull') {
+    if (item.triggerType === 'drop_opening') {
+      const p = item.payload || {};
+      const mins = Math.max(1, Number(p.minutesUntil) || 1);
+
+      // Kicker inside the canvas body
+      ctx.fillStyle = GFX_INK;
+      ctx.font = "500 24px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('NEXT HOURLY DROP', w / 2, 160);
+
+      // Countdown numeral
+      ctx.fillStyle = GFX_INK;
+      ctx.font = "500 380px 'Space Grotesk', sans-serif";
+      ctx.fillText(String(mins), w / 2, 220);
+
+      // Unit
+      ctx.fillStyle = GFX_GREY;
+      ctx.font = "italic 74px 'Instrument Serif', serif";
+      ctx.fillText(mins === 1 ? 'minute.' : 'minutes.', w / 2, 650);
+
+      // Rule + bullet copy
+      gfxHairline(ctx, 200, 790, w - 200, 790);
+      ctx.fillStyle = GFX_INK;
+      ctx.font = "500 28px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      const bullets = [
+        '20 traits, one global pool.',
+        '5-minute window. First claim beats the bots.',
+        'Arm the handle before :00 and hit Claim.',
+      ];
+      let by = 820;
+      for (const line of bullets) {
+        ctx.fillText(line, 200, by);
+        by += 44;
+      }
+      gfxStamp(ctx, w - 180, 220, 'DROP OPENS', -0.06);
+    }
+    else if (item.triggerType === 'drop_sealed') {
+      const p = item.payload || {};
+      const secs = Math.max(1, Number(p.secondsToSellOut) || 1);
+      const nextMin = Math.max(1, Number(p.minutesUntilNext) || 60);
+
+      ctx.fillStyle = GFX_INK;
+      ctx.font = "500 24px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('POOL SEALED', w / 2, 160);
+
+      // Big time-to-sell-out
+      ctx.fillStyle = GFX_INK;
+      ctx.font = "500 380px 'Space Grotesk', sans-serif";
+      ctx.fillText(`${secs}s`, w / 2, 220);
+
+      ctx.fillStyle = GFX_GREY;
+      ctx.font = "italic 74px 'Instrument Serif', serif";
+      ctx.fillText('gone that fast.', w / 2, 650);
+
+      // Lime bar with "NEXT :00 in Xmin"
+      const barY = 820, barH = 60;
+      ctx.fillStyle = GFX_LIME;
+      ctx.fillRect(100, barY, w - 200, barH);
+      ctx.strokeStyle = GFX_INK; ctx.lineWidth = 2;
+      ctx.strokeRect(100, barY, w - 200, barH);
+      ctx.fillStyle = GFX_INK;
+      ctx.font = "700 30px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`NEXT WINDOW OPENS IN ${nextMin} MIN`, w / 2, barY + barH / 2);
+
+      // Fine print
+      ctx.fillStyle = GFX_GREY;
+      ctx.font = "500 22px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('20 traits out. 20 holders. The pool refreshes every hour.', w / 2, 920);
+
+      gfxStamp(ctx, w - 180, 220, 'FOMO', -0.08);
+    }
+    else if (item.triggerType === 'rare_pull') {
       const p = item.payload || {};
       const svg = getElementSVG(p.elementType, p.variant);
       const img = await gfxSvgToImage(
