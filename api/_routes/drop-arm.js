@@ -28,10 +28,24 @@ function randomNonce() {
   return Buffer.from(arr).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+const MIN_X_FOLLOWERS = 20;
+
 export default async function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
+
+  // ── Follower gate ──
+  // Accounts with <20 X followers skew heavily to fresh-farm profiles.
+  // Real crypto users on X have at least a small presence; brand-new
+  // accounts created to farm drops typically have 0-5 followers.
+  // Block them BEFORE we waste a rate-limit slot + arm-token issue.
+  if ((user.x_followers || 0) < MIN_X_FOLLOWERS) {
+    return bad(res, 403, 'min_followers_not_met', {
+      required: MIN_X_FOLLOWERS,
+      have: Number(user.x_followers) || 0,
+    });
+  }
 
   // Tight per-user + per-IP limit: even an arm request is expensive to issue,
   // and a bot spamming arm tokens is still a bot.

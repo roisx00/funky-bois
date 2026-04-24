@@ -371,7 +371,12 @@ export function GameProvider({ children }) {
   const armDrop = useCallback(async () => {
     if (!state.authenticated) return { ok: false, reason: 'Sign in with X first' };
     const r = await jpost('/api/drop-arm');
-    if (!r.ok) return { ok: false, reason: r.error || 'Could not arm' };
+    if (!r.ok) {
+      // Pass through the entire server payload so error-mapping on the
+      // client (DropPage) can read fields like `required` / `have` for
+      // the follower gate.
+      return { ok: false, reason: r.error || 'Could not arm', ...r };
+    }
     return {
       ok: true,
       token:              r.token,

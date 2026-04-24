@@ -11,7 +11,7 @@ export async function getSessionUser(req) {
   const row = one(await sql`
     SELECT id, x_id, x_username, x_name, x_avatar, busts_balance,
            is_whitelisted, wallet_address, referral_code, referred_by_user,
-           daily_claimed_on, created_at, is_admin
+           daily_claimed_on, created_at, is_admin, x_followers
     FROM users
     WHERE id = ${payload.sub}
   `);

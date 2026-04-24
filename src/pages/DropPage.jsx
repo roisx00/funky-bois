@@ -26,6 +26,11 @@ function friendlyDropError(r) {
   if (code === 'rate_limited') {
     return 'Slow down a moment — you’re sending too many requests. Try again in a few seconds.';
   }
+  if (code === 'min_followers_not_met') {
+    const need = Number(r.required) || 20;
+    const have = Number(r.have) || 0;
+    return `Drops require at least ${need} followers on X. Your account currently has ${have}. Grow your X account, then try again.`;
+  }
   if (code === 'pool_exhausted')  return 'All slots claimed this session. Next pool opens at the top of the hour.';
   if (code === 'no_active_session') return 'The drop window just closed. Back at the top of the next hour.';
   if (code === 'max_claims_reached') return 'You’ve hit this session’s personal cap. Wait for the next hour.';
@@ -207,7 +212,12 @@ export default function DropPage() {
     }
     const r = await armDrop();
     if (!r?.ok) {
-      toast.error(r?.reason || 'Could not arm');
+      // armDrop surfaces the raw server error code as `reason` — run it
+      // through the same humanizer the claim flow uses so follower gate
+      // / rate-limit responses are readable.
+      const friendly = friendlyDropError(r);
+      toast.error(friendly);
+      setLastError(friendly);
       setDragPct(0);
       setFlow('ready');
       return;
@@ -503,6 +513,7 @@ export default function DropPage() {
           <div className="drop-v2-aside-card">
             <div className="drop-v2-aside-title">How the gate works</div>
             <ol className="drop-v2-howto">
+              <li>Your X account must have at least 20 followers.</li>
               <li>Drag the handle across the rail — mouse, trackpad or touch.</li>
               <li>The server issues a short-lived token bound to you.</li>
               <li>Wait ~2 seconds (anti-bot delay, randomised).</li>

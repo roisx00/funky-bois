@@ -70,12 +70,25 @@ function scoreInteraction(proof) {
   return { ok: true };
 }
 
+const MIN_X_FOLLOWERS = 20;
+
 export default async function handler(req, res) {
   const ip = clientIp(req);
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
 
   const user = await requireUser(req, res);
   if (!user) return;
+
+  // ── Follower gate ──
+  // Same check as drop-arm. Enforced here too so a stale arm token
+  // issued before the gate change can't be used to sneak a claim
+  // through. The client should catch this first via drop-arm.
+  if ((user.x_followers || 0) < MIN_X_FOLLOWERS) {
+    return bad(res, 403, 'min_followers_not_met', {
+      required: MIN_X_FOLLOWERS,
+      have: Number(user.x_followers) || 0,
+    });
+  }
 
   // RATE LIMITS tuned for the slow-release pool.
   // Earlier "1 per 30s per user" was too tight — a user who got
