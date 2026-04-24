@@ -28,6 +28,7 @@ import {
   getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION, DEFAULT_POOL_SIZE, todayKey,
 } from '../_lib/elements.js';
 import { settleReferralIfPending } from '../_lib/referral.js';
+import { getRevealOffsets } from '../_lib/dropSchedule.js';
 
 async function logRejection(user, sessId, ip, reason, proofSnapshot) {
   try {
@@ -124,24 +125,24 @@ export default async function handler(req, res) {
     return bad(res, 429, 'max_claims_reached', { sessionId: sessId });
   }
 
-  // ── 4. Slow-release gate ──
-  // Bots were taking all 20 slots within 3 seconds of each session
+  // ── 4. Slow-release gate (HMAC-jittered schedule) ──
+  // Bots were sweeping all 20 slots within 3 seconds of each session
   // opening (logged: first_claim :00:03, last :00:06, every hour).
-  // Slots now unlock gradually across the 5-minute session window so
-  // an :00 bot can only grab ONE slot and then has to wait like a
-  // human for the next one. With pool=20 and window=5min, that's one
-  // slot every 15 seconds.
+  // Slots now unlock at PER-SESSION randomised times that a bot can't
+  // predict without knowing JWT_SECRET. Average gap ~15s but any
+  // particular gap may be 0-300s — bots can't pre-schedule hits.
   //
-  // First slot (index 0) is available at session_start + 0; i.e. a
-  // prepared user can still claim immediately at :00:00. The bot loses
-  // the advantage of grabbing the other 19 in the same burst.
-  const SESSION_WINDOW_MS_LOCAL = 5 * 60 * 1000;
-  const releaseIntervalMs = Math.floor(SESSION_WINDOW_MS_LOCAL / poolSize);
+  // See api/_lib/dropSchedule.js for the schedule generator. Slot 0
+  // always unlocks at elapsed=0 so a prepared human can still win the
+  // opening tick.
+  const offsets   = getRevealOffsets(sessId, poolSize);
   const elapsedMs = Date.now() - sessId;
-  const revealed = Math.max(
-    1,
-    Math.min(poolSize, 1 + Math.floor(elapsedMs / releaseIntervalMs))
-  );
+  let revealed = 0;
+  for (let i = 0; i < offsets.length; i++) {
+    if (offsets[i] <= elapsedMs) revealed++;
+    else break;
+  }
+  if (revealed < 1) revealed = 1;                 // slot 0 always open
 
   // ── 5. Atomic pool decrement (slot only if already revealed) ──
   const sessRow = one(await sql`
@@ -163,8 +164,10 @@ export default async function handler(req, res) {
     const size  = current?.pool_size ?? poolSize;
     if (taken >= size) return bad(res, 410, 'pool_exhausted');
 
-    // Slot is queued — tell the client when the next one unlocks.
-    const nextRevealAt = sessId + (taken + 1 - 1) * releaseIntervalMs;
+    // Slot #taken (0-indexed) unlocks at sessId + offsets[taken].
+    // We reveal retryAfterMs but NOT the full schedule — leaking the
+    // whole offset array would give bots a cheat sheet for this session.
+    const nextRevealAt = sessId + (offsets[taken] ?? 0);
     const retryAfterMs = Math.max(0, nextRevealAt - Date.now() + 200);
     return bad(res, 425, 'slot_not_yet_revealed', {
       revealed,
