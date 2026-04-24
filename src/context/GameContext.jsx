@@ -483,7 +483,17 @@ export function GameProvider({ children }) {
 
   const claimFollow = useCallback(async () => {
     const r = await jpost('/api/task-follow-claim');
-    if (!r.ok) return { ok: false, reason: r.error || 'follow claim failed' };
+    if (!r.ok) {
+      if (r.error === 'min_followers_not_met') {
+        const need = Number(r.required) || 20;
+        const have = Number(r.have) || 0;
+        return {
+          ok: false,
+          reason: `Follow reward requires at least ${need} followers on X. You have ${have}.`,
+        };
+      }
+      return { ok: false, reason: r.error || 'follow claim failed' };
+    }
     if (r.claimed) {
       dispatch({ type: 'MARK_FOLLOW_CLAIMED', ts: r.claimedAt ? new Date(r.claimedAt).getTime() : Date.now() });
       if (r.reward) dispatch({ type: 'BUMP_BALANCE', amount: r.reward, reason: 'Followed @the1969eth' });

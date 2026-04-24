@@ -774,14 +774,23 @@ function TasksTab() {
       credentials: 'same-origin',
       body: JSON.stringify({ taskId: task.id, action }),
     });
-    const d = r.ok ? await r.json() : { error: 'failed' };
+    // Always try to parse the body — error responses carry useful
+    // payload like required / have for the follower gate.
+    let d = {};
+    try { d = await r.json(); } catch { d = {}; }
     setBusy(null);
     if (d.submitted) {
       toast.success(`Submitted for review · +${d.points} BUSTS pending`);
       refresh();
-    } else {
-      toast.error(d.error || 'Submit failed — try again');
+      return;
     }
+    if (d.error === 'min_followers_not_met') {
+      const need = Number(d.required) || 20;
+      const have = Number(d.have) || 0;
+      toast.error(`Tasks require at least ${need} followers on X. You have ${have}.`);
+      return;
+    }
+    toast.error(d.error || 'Submit failed — try again');
   };
 
   return (

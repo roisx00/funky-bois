@@ -7,6 +7,7 @@ import { readBody, ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
 
 const VALID = new Set(['like', 'rt', 'reply']);
+const MIN_X_FOLLOWERS = 20;
 
 function rewardFor(task, action) {
   if (action === 'like')  return task.reward_like;
@@ -19,6 +20,17 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
+
+  // Same 20-follower floor as the rest of the earn surface. A like/RT
+  // from a zero-follower bot is worth nothing to the project, yet they
+  // earn BUSTS for it — closes the loophole.
+  if ((user.x_followers || 0) < MIN_X_FOLLOWERS) {
+    return bad(res, 403, 'min_followers_not_met', {
+      required: MIN_X_FOLLOWERS,
+      have: Number(user.x_followers) || 0,
+    });
+  }
+
   if (!(await rateLimit(res, user.id, { name: 'task_submit', max: 30, windowSecs: 60 }))) return;
 
   const { taskId, action } = await readBody(req) || {};

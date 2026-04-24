@@ -20,11 +20,22 @@ import { userFollowsTarget } from '../_lib/nitter.js';
 
 const FOLLOW_REWARD = 50;
 const FOLLOW_TARGET = 'the1969eth';
+const MIN_X_FOLLOWERS = 20;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
+
+  // 20-follower floor — same as every other earn surface. A zero-
+  // follower account getting 50 BUSTS for "following" the project
+  // gives the project zero value.
+  if ((user.x_followers || 0) < MIN_X_FOLLOWERS) {
+    return bad(res, 403, 'min_followers_not_met', {
+      required: MIN_X_FOLLOWERS,
+      have: Number(user.x_followers) || 0,
+    });
+  }
 
   // Per-user: stops client loops.
   if (!(await rateLimit(res, user.id, { name: 'follow_claim', max: 3, windowSecs: 60 }))) return;
