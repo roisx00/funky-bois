@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>THE 1969 · article graphics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" />
+<style>
+  :root { --paper:#F9F6F0; --ink:#0E0E0E; --lime:#D7FF3A; }
+  html,body{margin:0;padding:0;background:#1a1a1a;color:#fff;font-family:'JetBrains Mono',ui-monospace,monospace;}
+  header{padding:24px 32px;border-bottom:1px solid #333;}
+  header h1{margin:0;font-family:'Instrument Serif',serif;font-style:italic;font-size:28px;color:var(--lime);}
+  header p{margin:6px 0 0;opacity:.8;font-size:12px;line-height:1.5;}
+  main{display:flex;flex-direction:column;gap:40px;padding:32px;max-width:1400px;margin:0 auto;}
+  section{background:#232323;border:1px solid #333;}
+  .hd{padding:18px 24px;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #333;}
+  h2{margin:0;font-family:'Space Grotesk',sans-serif;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#fff;font-weight:500;}
+  .meta{font-size:10px;color:#888;letter-spacing:.04em;}
+  .stage{background:repeating-conic-gradient(#1e1e1e 0 25%, #171717 0 50%) 50% / 16px 16px;padding:14px;overflow:auto;}
+  canvas{display:block;max-width:100%;height:auto;background:#F9F6F0;}
+  .row{padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #333;}
+  .dim{font-size:10px;color:#777;letter-spacing:.04em;}
+  button{font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 16px;background:var(--lime);color:var(--ink);border:1px solid var(--ink);cursor:pointer;text-transform:uppercase;letter-spacing:.04em;}
+  button:hover{background:#fff;}
+  #status{padding:10px 32px;background:#222;border-bottom:1px solid #333;font-size:11px;color:#aaa;}
+</style>
+</head>
+<body>
+<header>
+  <h1>THE 1969 · article graphics</h1>
+  <p>Seven hand-made editorial graphics for the field-guide thread. Cream paper, ink type, hairlines, stamp badges.</p>
+  <p>Fonts load from Google Fonts — wait ~1 second after page load for a clean first paint, then use the Download PNG buttons.</p>
+</header>
+<div id="status">Loading fonts.</div>
+
+<main>
+
+<section>
+  <div class="hd"><h2>01 · Supply counter</h2><span class="meta">1200 × 675 · landscape</span></div>
+  <div class="stage"><canvas id="g01" width="1200" height="675"></canvas></div>
+  <div class="row"><span class="dim">Drop this in above the fold of the thread.</span><button onclick="dl('g01','the1969-01-supply.png')">Download PNG</button></div>
+</section>
+
+<section>
+  <div class="hd"><h2>02 · Timeline</h2><span class="meta">1200 × 675 · landscape</span></div>
+  <div class="stage"><canvas id="g02" width="1200" height="675"></canvas></div>
+  <div class="row"><span class="dim">Pairs with the "why 1,969" section.</span><button onclick="dl('g02','the1969-02-timeline.png')">Download PNG</button></div>
+</section>
+
+<section>
+  <div class="hd"><h2>03 · Drop flowchart</h2><span class="meta">1200 × 1500 · portrait</span></div>
+  <div class="stage"><canvas id="g03" width="1200" height="1500"></canvas></div>
+  <div class="row"><span class="dim">Anchor image for the hourly drop section.</span><button onclick="dl('g03','the1969-03-drop-flow.png')">Download PNG</button></div>
+</section>
+
+<section>
+  <div class="hd"><h2>04 · Build equation</h2><span class="meta">1200 × 675 · landscape</span></div>
+  <div class="stage"><canvas id="g04" width="1200" height="675"></canvas></div>
+  <div class="row"><span class="dim">8 traits become 1 portrait, forever.</span><button onclick="dl('g04','the1969-04-build.png')">Download PNG</button></div>
+</section>
+
+<section>
+  <div class="hd"><h2>05 · BUSTS economy</h2><span class="meta">1200 × 1200 · square</span></div>
+  <div class="stage"><canvas id="g05" width="1200" height="1200"></canvas></div>
+  <div class="row"><span class="dim">Hub-and-spoke showing earn + spend.</span><button onclick="dl('g05','the1969-05-economy.png')">Download PNG</button></div>
+</section>
+
+<section>
+  <div class="hd"><h2>06 · Gallery rank</h2><span class="meta">1200 × 1200 · square</span></div>
+  <div class="stage"><canvas id="g06" width="1200" height="1200"></canvas></div>
+  <div class="row"><span class="dim">Follower-sorted grid mock with real handles.</span><button onclick="dl('g06','the1969-06-gallery.png')">Download PNG</button></div>
+</section>
+
+<section>
+  <div class="hd"><h2>07 · Utility triptych</h2><span class="meta">1200 × 675 · landscape</span></div>
+  <div class="stage"><canvas id="g07" width="1200" height="675"></canvas></div>
+  <div class="row"><span class="dim">Three holder commitments. Drop / Reveal / Print.</span><button onclick="dl('g07','the1969-07-utility.png')">Download PNG</button></div>
+</section>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// Shared primitives — same editorial system as the tweet-queue graphics
+// ══════════════════════════════════════════════════════════════════════
+const PAPER = '#F9F6F0';
+const INK   = '#0E0E0E';
+const LIME  = '#D7FF3A';
+const GREY  = '#777777';
+const SOFT  = '#ece8de';
+
+function dl(id, filename) {
+  const c = document.getElementById(id);
+  c.toBlob((b) => {
+    const u = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href = u; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(u), 1000);
+  }, 'image/png');
+}
+
+function fillPaper(ctx, w, h) {
+  ctx.fillStyle = PAPER; ctx.fillRect(0, 0, w, h);
+  ctx.save();
+  ctx.globalAlpha = 0.045; ctx.fillStyle = INK;
+  for (let i = 0; i < Math.round(w * h / 1800); i++) {
+    ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+  }
+  ctx.restore();
+}
+
+function drawKicker(ctx, w, leftLabel, rightLabel) {
+  ctx.fillStyle = INK; ctx.fillRect(40, 40, w - 80, 40);
+  ctx.fillStyle = PAPER;
+  ctx.font = "500 14px 'JetBrains Mono', monospace";
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.fillText(leftLabel, 56, 60);
+  if (rightLabel) {
+    ctx.textAlign = 'right';
+    ctx.fillText(rightLabel, w - 56, 60);
+  }
+}
+
+function drawFooter(ctx, w, h, leftLabel = 'the1969.io', rightLabel = '@the1969eth') {
+  ctx.save(); ctx.strokeStyle = INK; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(40, h - 80); ctx.lineTo(w - 40, h - 80); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = INK;
+  ctx.font = "500 16px 'JetBrains Mono', monospace";
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.fillText(leftLabel, 56, h - 52);
+  ctx.textAlign = 'right';
+  ctx.fillText(rightLabel, w - 56, h - 52);
+}
+
+function drawStamp(ctx, cx, cy, text, rotation = -0.08, size = 22) {
+  ctx.save();
+  ctx.translate(cx, cy); ctx.rotate(rotation);
+  ctx.font = `700 ${size}px 'JetBrains Mono', monospace`;
+  const tw = ctx.measureText(text).width;
+  const padX = 16, padY = Math.round(size * 0.5);
+  const boxW = tw + padX * 2;
+  const boxH = size + padY * 2;
+  ctx.fillStyle = LIME;   ctx.fillRect(-boxW / 2, -boxH / 2, boxW, boxH);
+  ctx.strokeStyle = INK;  ctx.lineWidth = 2;
+  ctx.strokeRect(-boxW / 2, -boxH / 2, boxW, boxH);
+  ctx.fillStyle = INK;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 0, 1);
+  ctx.restore();
+}
+
+function drawPixelBust(ctx, cx, cy, s, opts = {}) {
+  const hair   = opts.hair   || PAPER;
+  const face   = opts.face   || '#BBB';
+  const accent = opts.accent || LIME;
+  const px = (gx, gy, w, h, fill) => {
+    ctx.fillStyle = fill;
+    ctx.fillRect(cx + (gx - 12) * s, cy + (gy - 12) * s, w * s, h * s);
+  };
+  px(5, 2, 14, 1, hair);
+  px(4, 3, 16, 1, hair); px(4, 4, 16, 1, hair);
+  px(3, 5, 18, 1, hair); px(3, 6, 18, 1, hair);
+  px(3, 7, 18, 1, INK);
+  for (let y = 8; y <= 14; y++) px(4, y, 16, 1, face);
+  px(5, 15, 14, 1, face); px(6, 16, 12, 1, face);
+  px(7, 10, 3, 2, INK);   px(14, 10, 3, 2, INK);
+  px(9, 14, 6, 1, INK);
+  px(10, 17, 4, 1, face); px(10, 18, 4, 1, face);
+  px(6, 19, 12, 1, accent);
+  px(4, 20, 16, 1, accent);
+  px(2, 21, 20, 1, accent);
+  px(2, 22, 20, 1, accent);
+  px(2, 23, 20, 1, INK);
+}
+
+function wrapText(ctx, text, cx, y, maxW, lineH) {
+  const words = text.split(/\s+/);
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) {
+      lines.push(line); line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  lines.forEach((l, i) => ctx.fillText(l, cx, y + i * lineH));
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 01 · Supply counter
+// ══════════════════════════════════════════════════════════════════════
+function draw01() {
+  const c = document.getElementById('g01');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  fillPaper(ctx, w, h);
+  drawKicker(ctx, w,
+    'THE 1969  ·  SUPPLY COUNTER  ·  LIVE',
+    new Date().toISOString().slice(0, 10).toUpperCase()
+  );
+
+  // Headline above the bar
+  ctx.fillStyle = INK;
+  ctx.font = "500 18px 'JetBrains Mono', monospace";
+  ctx.textBaseline = 'bottom'; ctx.textAlign = 'left';
+  ctx.fillText('BUILT', 80, 200);
+  ctx.textAlign = 'right';
+  ctx.fillText('OPEN', w - 80, 200);
+
+  // The giant bar
+  const barX = 80, barY = 220, barW = w - 160, barH = 90;
+  const BUILT = 100, TOTAL = 1969;
+  const filled = barW * (BUILT / TOTAL);
+  ctx.fillStyle = LIME;
+  ctx.fillRect(barX, barY, filled, barH);
+  ctx.fillStyle = SOFT;
+  ctx.fillRect(barX + filled, barY, barW - filled, barH);
+  ctx.strokeStyle = INK; ctx.lineWidth = 3;
+  ctx.strokeRect(barX, barY, barW, barH);
+
+  // Big numerals under the bar
+  ctx.fillStyle = INK;
+  ctx.font = "500 88px 'Space Grotesk', sans-serif";
+  ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+  ctx.fillText(String(BUILT), 80, barY + barH + 30);
+  ctx.textAlign = 'right';
+  ctx.fillText((TOTAL - BUILT).toLocaleString(), w - 80, barY + barH + 30);
+
+  // Small captions under the big numbers
+  ctx.font = "italic 28px 'Instrument Serif', serif";
+  ctx.fillStyle = GREY;
+  ctx.textAlign = 'left';
+  ctx.fillText('busts earned, recorded.', 80, barY + barH + 130);
+  ctx.textAlign = 'right';
+  ctx.fillText('seats open. one at a time.', w - 80, barY + barH + 130);
+
+  drawFooter(ctx, w, h);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 02 · Timeline
+// ══════════════════════════════════════════════════════════════════════
+function draw02() {
+  const c = document.getElementById('g02');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  fillPaper(ctx, w, h);
+  drawKicker(ctx, w, 'THE 1969  ·  TIMELINE', 'ISSUE 2026');
+
+  const lineY = h / 2;
+
+  // Main ink line across
+  ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(120, lineY); ctx.lineTo(w - 120, lineY); ctx.stroke();
+
+  // Small inner ticks every 60px for paper-texture feel
+  ctx.strokeStyle = INK; ctx.lineWidth = 1;
+  for (let x = 120; x <= w - 120; x += 60) {
+    ctx.beginPath();
+    ctx.moveTo(x, lineY - 6);
+    ctx.lineTo(x, lineY + 6);
+    ctx.stroke();
+  }
+
+  // 1969 marker (left-leaning)
+  const x1 = 260;
+  ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x1, lineY - 28); ctx.lineTo(x1, lineY + 28); ctx.stroke();
+  ctx.fillStyle = INK;
+  ctx.font = "500 104px 'Space Grotesk', sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText('1969', x1, lineY - 60);
+  ctx.font = "italic 26px 'Instrument Serif', serif";
+  ctx.fillStyle = GREY; ctx.textBaseline = 'top';
+  ctx.fillText('the year something started.', x1, lineY + 60);
+
+  // 2026 marker (right)
+  const x2 = w - 260;
+  ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x2, lineY - 28); ctx.lineTo(x2, lineY + 28); ctx.stroke();
+  ctx.fillStyle = INK;
+  ctx.font = "500 104px 'Space Grotesk', sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText('2026', x2, lineY - 60);
+  ctx.font = "italic 26px 'Instrument Serif', serif";
+  ctx.fillStyle = GREY; ctx.textBaseline = 'top';
+  ctx.fillText('the year someone picked it up.', x2, lineY + 60);
+
+  drawFooter(ctx, w, h);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 03 · Drop flowchart (portrait)
+// ══════════════════════════════════════════════════════════════════════
+function draw03() {
+  const c = document.getElementById('g03');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  fillPaper(ctx, w, h);
+  drawKicker(ctx, w,
+    'THE 1969  ·  HOURLY DROP MECHANIC',
+    '20 SLOTS · 5 MIN WINDOW'
+  );
+
+  const boxes = [
+    { title: ':00  WINDOW OPENS',     sub: 'global pool of 20 trait slots' },
+    { title: '/DROP  PAGE OPENED',    sub: 'user lands on the page before :00' },
+    { title: 'DRAG-TO-ARM  GESTURE',  sub: 'anti-bot rail · ≥90% travel, ≥300ms' },
+    { title: '1.5s  ARMING LOCK',     sub: 'server issues a signed token bound to user + session' },
+    { title: 'CLAIM  CLICKED',        sub: 'request fires with interaction proof' },
+    { title: 'SERVER  ROLLS',         sub: 'atomic pool decrement + trait + BUSTS' },
+    { title: 'REVEAL',                sub: 'trait lands in inventory · +5 to +100 BUSTS' },
+  ];
+
+  const topY = 140;
+  const bottomPad = 120;
+  const stepH = (h - topY - bottomPad) / boxes.length;
+  const boxW = 900;
+  const boxH = 92;
+
+  boxes.forEach((b, i) => {
+    const cx = w / 2;
+    const cy = topY + stepH * i + stepH / 2;
+    const isEdge = (i === 0 || i === boxes.length - 1);
+    ctx.fillStyle = isEdge ? LIME : SOFT;
+    ctx.fillRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH);
+    ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.strokeRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH);
+
+    ctx.fillStyle = INK;
+    ctx.font = "500 28px 'Space Grotesk', sans-serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.title, cx, cy - 12);
+
+    ctx.font = "500 14px 'JetBrains Mono', monospace";
+    ctx.fillStyle = GREY;
+    ctx.fillText(b.sub, cx, cy + 20);
+
+    if (i < boxes.length - 1) {
+      const ay1 = cy + boxH / 2 + 8;
+      const ay2 = topY + stepH * (i + 1) + stepH / 2 - boxH / 2 - 8;
+      ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cx, ay1); ctx.lineTo(cx, ay2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx - 9, ay2 - 10);
+      ctx.lineTo(cx, ay2);
+      ctx.lineTo(cx + 9, ay2 - 10);
+      ctx.stroke();
+    }
+  });
+
+  drawFooter(ctx, w, h);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 04 · Build equation (8 traits → 1 portrait)
+// ══════════════════════════════════════════════════════════════════════
+function draw04() {
+  const c = document.getElementById('g04');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  fillPaper(ctx, w, h);
+  drawKicker(ctx, w, 'THE 1969  ·  THE BUILD', '8 TRAITS → 1 PORTRAIT');
+
+  const LABELS = ['BG', 'OUTFIT', 'SKIN', 'EYES', 'FACIAL', 'HAIR', 'HEADWEAR', 'MARK'];
+  const leftX = 70, topY = 160;
+  const cellW = 95, cellH = 95, gap = 14;
+
+  LABELS.forEach((lbl, i) => {
+    const col = i % 4, row = Math.floor(i / 4);
+    const x = leftX + col * (cellW + gap);
+    const y = topY + row * (cellH + gap);
+    ctx.fillStyle = SOFT; ctx.fillRect(x, y, cellW, cellH);
+    ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, cellW, cellH);
+    ctx.fillStyle = INK;
+    ctx.font = "500 15px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(lbl, x + cellW / 2, y + cellH / 2);
+  });
+
+  const tailX = leftX + 4 * (cellW + gap);
+
+  // Arrow spanning the gap
+  const arrY = topY + cellH + gap / 2;
+  const ax1 = tailX + 14;
+  const ax2 = w - 340;
+  ctx.strokeStyle = INK; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(ax1, arrY); ctx.lineTo(ax2, arrY); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(ax2 - 18, arrY - 12);
+  ctx.lineTo(ax2, arrY);
+  ctx.lineTo(ax2 - 18, arrY + 12);
+  ctx.stroke();
+
+  // Portrait block on the right
+  const pbx = w - 300, pby = topY - 10;
+  const pbw = 260, pbh = 260;
+  ctx.fillStyle = SOFT; ctx.fillRect(pbx, pby, pbw, pbh);
+  ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.strokeRect(pbx, pby, pbw, pbh);
+  ctx.imageSmoothingEnabled = false;
+  drawPixelBust(ctx, pbx + pbw / 2, pby + pbh / 2, 8);
+  ctx.imageSmoothingEnabled = true;
+  drawStamp(ctx, pbx + pbw - 30, pby + 32, 'BUILT', -0.08, 18);
+
+  // Caption under the portrait
+  ctx.font = "italic 26px 'Instrument Serif', serif";
+  ctx.fillStyle = GREY;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('one per @handle, forever.', pbx + pbw / 2, pby + pbh + 22);
+
+  // Caption under the trait grid
+  const gridBottom = topY + 2 * (cellH + gap);
+  ctx.font = "italic 24px 'Instrument Serif', serif";
+  ctx.fillStyle = GREY;
+  ctx.textAlign = 'left';
+  ctx.fillText('each earned from the hourly pool.', leftX, gridBottom + 14);
+  ctx.font = "500 14px 'JetBrains Mono', monospace";
+  ctx.fillStyle = INK;
+  ctx.fillText('then consumed, never re-giftable.', leftX, gridBottom + 54);
+
+  drawFooter(ctx, w, h);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 05 · BUSTS economy
+// ══════════════════════════════════════════════════════════════════════
+function draw05() {
+  const c = document.getElementById('g05');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  fillPaper(ctx, w, h);
+  drawKicker(ctx, w, 'THE 1969  ·  BUSTS ECONOMY', 'EARN / SPEND');
+
+  const cx = w / 2, cy = h / 2 - 30;
+  const r = 170;
+
+  // Hub circle
+  ctx.fillStyle = INK;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = LIME;
+  ctx.font = "700 88px 'Space Grotesk', sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('BUSTS', cx, cy);
+
+  // Earn side (left) — lime arrows
+  const earns = [
+    { label: 'DROP claims',     sub: '+5 to +100' },
+    { label: 'SHARE on X',      sub: '+200' },
+    { label: 'TASKS',           sub: '+10 to +50' },
+  ];
+  earns.forEach((obj, i) => {
+    const y = cy - 180 + i * 180;
+    // Arrow
+    ctx.strokeStyle = LIME; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(120, y); ctx.lineTo(cx - r - 20, cy); ctx.stroke();
+    // Arrowhead
+    const dx = cx - r - 20 - 120, dy = cy - y;
+    const ang = Math.atan2(dy, dx);
+    const ex = cx - r - 20, ey = cy;
+    ctx.fillStyle = LIME;
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(ex - 18 * Math.cos(ang - 0.4), ey - 18 * Math.sin(ang - 0.4));
+    ctx.lineTo(ex - 18 * Math.cos(ang + 0.4), ey - 18 * Math.sin(ang + 0.4));
+    ctx.closePath(); ctx.fill();
+    // Label
+    ctx.fillStyle = INK;
+    ctx.font = "500 22px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText(obj.label, 120, y - 6);
+    ctx.fillStyle = GREY;
+    ctx.font = "italic 22px 'Instrument Serif', serif";
+    ctx.textBaseline = 'top';
+    ctx.fillText(obj.sub, 120, y + 6);
+  });
+
+  // Spend side (right) — ink arrows
+  const spends = [
+    { label: 'REGULAR  200',      sub: 'mostly commons' },
+    { label: 'RARE  500',         sub: 'legendary odds' },
+    { label: 'MYSTERY  1,969',    sub: 'no commons' },
+  ];
+  spends.forEach((obj, i) => {
+    const y = cy - 180 + i * 180;
+    ctx.strokeStyle = INK; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(cx + r + 20, cy); ctx.lineTo(w - 120, y); ctx.stroke();
+    const dx = (w - 120) - (cx + r + 20), dy = y - cy;
+    const ang = Math.atan2(dy, dx);
+    ctx.fillStyle = INK;
+    ctx.beginPath();
+    ctx.moveTo(w - 120, y);
+    ctx.lineTo(w - 120 - 18 * Math.cos(ang - 0.4), y - 18 * Math.sin(ang - 0.4));
+    ctx.lineTo(w - 120 - 18 * Math.cos(ang + 0.4), y - 18 * Math.sin(ang + 0.4));
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = INK;
+    ctx.font = "500 22px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText(obj.label, w - 120, y - 6);
+    ctx.fillStyle = GREY;
+    ctx.font = "italic 22px 'Instrument Serif', serif";
+    ctx.textBaseline = 'top';
+    ctx.fillText(obj.sub, w - 120, y + 6);
+  });
+
+  // Caption centered under
+  ctx.fillStyle = GREY;
+  ctx.font = "italic 30px 'Instrument Serif', serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('earn by showing up. spend on bigger odds.', cx, cy + r + 80);
+
+  drawFooter(ctx, w, h);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 06 · Gallery rank
+// ══════════════════════════════════════════════════════════════════════
+function draw06() {
+  const c = document.getElementById('g06');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  fillPaper(ctx, w, h);
+  drawKicker(ctx, w, 'THE 1969  ·  GALLERY RANK', 'SORTED BY X FOLLOWERS');
+
+  const cols = 4, rows = 3;
+  const pad = 40;
+  const gap = 18;
+  const topY = 140;
+  const bottomPad = 140;
+  const cellW = (w - pad * 2 - gap * (cols - 1)) / cols;
+  const cellH = (h - topY - bottomPad - gap * (rows - 1)) / rows;
+
+  const data = [
+    ['@elonmusk',     '219M'],
+    ['@realdonald',   '87M'],
+    ['@0xsweep',      '195K'],
+    ['@waleswoosh',   '84K'],
+    ['@jeremybtc',    '78K'],
+    ['@banditxbt',    '51K'],
+    ['@telcier',      '38K'],
+    ['@web3eliza',    '29K'],
+    ['@i_am_vickyd',  '24K'],
+    ['@loshmi',       '14K'],
+    ['@yours',        '...'],
+    ['@next',         '...'],
+  ];
+  const variants = [
+    { hair: LIME,    accent: PAPER },
+    { hair: PAPER,   accent: LIME  },
+    { hair: '#333',  accent: LIME  },
+    { hair: LIME,    accent: '#555' },
+    { hair: PAPER,   accent: '#555' },
+    { hair: '#555',  accent: PAPER },
+    { hair: LIME,    accent: LIME  },
+    { hair: PAPER,   accent: LIME  },
+    { hair: '#333',  accent: PAPER },
+    { hair: LIME,    accent: PAPER },
+    { hair: PAPER,   accent: LIME  },
+    { hair: '#555',  accent: LIME  },
+  ];
+
+  for (let r = 0; r < rows; r++) {
+    for (let co = 0; co < cols; co++) {
+      const i = r * cols + co;
+      const x = pad + co * (cellW + gap);
+      const y = topY + r * (cellH + gap);
+      ctx.fillStyle = SOFT; ctx.fillRect(x, y, cellW, cellH);
+      ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.strokeRect(x, y, cellW, cellH);
+
+      const scale = Math.min(cellW / 30, (cellH - 34) / 28);
+      ctx.imageSmoothingEnabled = false;
+      drawPixelBust(ctx, x + cellW / 2, y + cellH / 2 - 6, scale, variants[i % variants.length]);
+      ctx.imageSmoothingEnabled = true;
+
+      // Follower chip top-left
+      const [handle, fol] = data[i];
+      ctx.font = "500 13px 'JetBrains Mono', monospace";
+      ctx.textBaseline = 'middle';
+      const chipPad = 10;
+      const chipW = ctx.measureText(fol).width + chipPad * 2;
+      const chipH = 22;
+      ctx.fillStyle = INK;
+      ctx.fillRect(x + 8, y + 8, chipW, chipH);
+      ctx.fillStyle = PAPER;
+      ctx.textAlign = 'center';
+      ctx.fillText(fol, x + 8 + chipW / 2, y + 8 + chipH / 2);
+
+      // Handle on bottom
+      ctx.fillStyle = INK;
+      ctx.font = "500 12px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(handle, x + cellW / 2, y + cellH - 10);
+    }
+  }
+
+  // Caption under the grid
+  ctx.fillStyle = GREY;
+  ctx.font = "italic 28px 'Instrument Serif', serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('big accounts sit on top. newcomers stack behind them.', w / 2, h - 120);
+
+  drawFooter(ctx, w, h);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 07 · Utility triptych
+// ══════════════════════════════════════════════════════════════════════
+function draw07() {
+  const c = document.getElementById('g07');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  fillPaper(ctx, w, h);
+  drawKicker(ctx, w, 'THE 1969  ·  HOLDER UTILITY', 'THREE THINGS · ALL DOABLE');
+
+  const cards = [
+    { stamp: 'HOLDER ONLY',  verb: 'drop',   body: 'Friday hourly windows. Same mechanic, WL wallets only.' },
+    { stamp: 'ARCHETYPE',    verb: 'reveal', body: 'Six archetypes. Operator, Warden, Oracle, Saint, Ghost, Revenant. Baked into metadata at mint.' },
+    { stamp: 'ZINE · VOL 1', verb: 'print',  body: 'Quarterly 12-page PDF. 20 holder portraits, interviews, lore. First issue within 30 days of close.' },
+  ];
+  const pad = 60;
+  const gap = 20;
+  const cardW = (w - pad * 2 - gap * 2) / 3;
+  const cardY = 140;
+  const cardH = h - cardY - 140;
+
+  cards.forEach((c2, i) => {
+    const x = pad + i * (cardW + gap);
+    ctx.fillStyle = SOFT; ctx.fillRect(x, cardY, cardW, cardH);
+    ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.strokeRect(x, cardY, cardW, cardH);
+
+    // Stamp
+    drawStamp(ctx, x + cardW / 2, cardY + 42, c2.stamp, 0, 16);
+
+    // Verb
+    ctx.fillStyle = INK;
+    ctx.font = "italic 92px 'Instrument Serif', serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(c2.verb, x + cardW / 2, cardY + 100);
+
+    // Body copy
+    ctx.fillStyle = GREY;
+    ctx.font = "500 15px 'JetBrains Mono', monospace";
+    ctx.textBaseline = 'top';
+    wrapText(ctx, c2.body, x + cardW / 2, cardY + 230, cardW - 40, 22);
+  });
+
+  drawFooter(ctx, w, h);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Render all — wait for web fonts
+// ══════════════════════════════════════════════════════════════════════
+async function renderAll() {
+  try { if (document.fonts?.ready) await document.fonts.ready; } catch {}
+  draw01(); draw02(); draw03(); draw04(); draw05(); draw06(); draw07();
+  document.getElementById('status').textContent =
+    'Ready. Scroll to any graphic and click Download PNG.';
+}
+renderAll();
+</script>
+</body>
+</html>
