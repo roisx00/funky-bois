@@ -27,6 +27,7 @@ import adminApprove        from './_routes/admin-approve.js';
 import adminScan           from './_routes/admin-scan.js';
 import adminDropConfig     from './_routes/admin-drop-config.js';
 import adminSetFollowers   from './_routes/admin-set-followers.js';
+import adminBuiltNoWallet  from './_routes/admin-built-no-wallet.js';
 import adminDropAudit      from './_routes/admin-drop-audit.js';
 import adminRollbackClaim  from './_routes/admin-rollback-claim.js';
 import dropArm             from './_routes/drop-arm.js';
@@ -63,6 +64,7 @@ const ROUTES = {
   'admin-scan':          adminScan,
   'admin-drop-config':   adminDropConfig,
   'admin-set-followers': adminSetFollowers,
+  'admin-built-no-wallet': adminBuiltNoWallet,
   'admin-drop-audit':    adminDropAudit,
   'admin-rollback-claim': adminRollbackClaim,
   'gallery':             galleryHandler,

@@ -265,6 +265,8 @@ export default function AdminPanel({ onNavigate }) {
         )}
       </section>
 
+      <AdminBuiltNoWallet />
+
       {/* Users table */}
       <section className="admin-roster">
         <div className="admin-roster-head">
@@ -1067,5 +1069,75 @@ function ScrapeFailedFallback({ result }) {
         ))
       )}
     </>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Built-but-no-wallet pending list. These users need to come back + click
+// Connect once so their wallet lands in the whitelist export.
+// ══════════════════════════════════════════════════════════════════════
+function AdminBuiltNoWallet() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const r = await jget('/api/admin-built-no-wallet');
+    if (r.ok) setRows(r.entries || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+      <div className="admin-roster-head">
+        <div>
+          <div className="admin-roster-title">Built · no wallet yet</div>
+          <div className="admin-roster-meta">
+            {rows.length} user{rows.length === 1 ? '' : 's'} · their wallet auto-saves the next
+            time they return with a connected wallet. Ping the big accounts first.
+          </div>
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={load} disabled={loading}>
+          {loading ? 'Loading.' : 'Refresh'}
+        </button>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="admin-roster-empty">
+          {loading ? 'Loading.' : 'Every builder has a wallet saved.'}
+        </div>
+      ) : (
+        <PaginatedList
+          items={rows}
+          render={(r) => (
+            <div key={r.userId} className="admin-roster-row" style={{ gridTemplateColumns: '1.2fr 0.8fr 0.6fr auto' }}>
+              <div>
+                <div className="admin-roster-user">@{r.xUsername}</div>
+                <div className="admin-roster-wallet">
+                  {r.xFollowers ? `${r.xFollowers.toLocaleString()} followers` : 'no followers data'}
+                </div>
+              </div>
+              <div className="admin-roster-wallet">
+                {r.sharedToX ? (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink)' }}>✓ shared</span>
+                ) : (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-4)' }}>not shared</span>
+                )}
+              </div>
+              <div className="admin-roster-time">built {timeAgo(r.builtAt)}</div>
+              <a
+                className="btn btn-ghost btn-sm"
+                href={`https://x.com/${r.xUsername}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open X ↗
+              </a>
+            </div>
+          )}
+        />
+      )}
+    </section>
   );
 }
