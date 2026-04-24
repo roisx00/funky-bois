@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import Skeleton from '../components/Skeleton';
+import { buildNFTSVG, getElementSVG, ELEMENT_LABELS } from '../data/elements';
 
 const PAGE_SIZE = 20;
 
@@ -219,6 +220,8 @@ export default function AdminPanel({ onNavigate }) {
           </div>
         )}
       </section>
+
+      <AdminTweetQueue />
 
       <AdminDropConfig />
 
@@ -1140,4 +1143,374 @@ function AdminBuiltNoWallet() {
       )}
     </section>
   );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Tweet queue. Server watcher pushes drafts into pending_tweets; admin
+// reviews each card, copies the text, downloads a hand-made PNG, and
+// posts manually (or dismisses). No auto-posting.
+// ══════════════════════════════════════════════════════════════════════
+function AdminTweetQueue() {
+  const [items, setItems]   = useState([]);
+  const [loading, setLoad]  = useState(false);
+  const [busyId, setBusyId] = useState(null);
+  const [copied, setCopied] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoad(true);
+    const r = await jget('/api/admin-tweet-queue');
+    if (r.ok) setItems(r.items || []);
+    setLoad(false);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const dismiss = async (id) => {
+    setBusyId(id);
+    await jpost('/api/admin-tweet-queue', { action: 'dismiss', id });
+    setBusyId(null);
+    setItems((prev) => prev.filter((it) => it.id !== id));
+  };
+
+  const copyText = (id, text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(id);
+      setTimeout(() => setCopied(null), 1800);
+    }).catch(() => {});
+  };
+
+  return (
+    <section className="admin-roster" style={{ marginTop: 32, marginBottom: 32 }}>
+      <div className="admin-roster-head">
+        <div>
+          <div className="admin-roster-title">Tweet queue</div>
+          <div className="admin-roster-meta">
+            {items.length} draft{items.length === 1 ? '' : 's'} waiting. Auto-generated from rare pulls, milestones, and big-account builds. Copy the text, download the graphic, post from your account.
+          </div>
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={load} disabled={loading}>
+          {loading ? 'Loading.' : 'Rescan'}
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="admin-roster-empty">
+          {loading ? 'Loading.' : 'No drafts in the queue. Check back after more drops and builds.'}
+        </div>
+      ) : (
+        <PaginatedList
+          items={items}
+          render={(it) => (
+            <TweetQueueCard
+              key={it.id}
+              item={it}
+              busy={busyId === it.id}
+              copied={copied === it.id}
+              onCopy={() => copyText(it.id, it.draftText)}
+              onDismiss={() => dismiss(it.id)}
+            />
+          )}
+        />
+      )}
+    </section>
+  );
+}
+
+function TweetQueueCard({ item, busy, copied, onCopy, onDismiss }) {
+  const typeLabel =
+    item.triggerType === 'rare_pull'   ? 'RARE PULL'
+    : item.triggerType === 'milestone' ? 'MILESTONE'
+    : item.triggerType === 'big_builder' ? 'BIG ACCOUNT'
+    : item.triggerType.toUpperCase();
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'minmax(280px, 360px) 1fr auto',
+      gap: 20,
+      padding: '20px 24px',
+      borderBottom: '1px solid var(--hairline)',
+      alignItems: 'flex-start',
+    }}>
+      <div><TweetGraphic item={item} /></div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em',
+            padding: '3px 8px', border: '1px solid var(--ink)', background: 'var(--accent)', color: 'var(--ink)',
+          }}>{typeLabel}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-4)' }}>
+            queued {timeAgo(item.createdAt)}
+          </span>
+        </div>
+        <pre style={{
+          margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          fontFamily: 'var(--font-sans, system-ui)',
+          fontSize: 13, lineHeight: 1.5, color: 'var(--ink)',
+          background: 'var(--paper-2)', padding: '12px 14px',
+          border: '1px solid var(--hairline)',
+          maxHeight: 260, overflow: 'auto',
+        }}>{item.draftText}</pre>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 140 }}>
+        <button className="btn btn-solid btn-sm" onClick={onCopy}>
+          {copied ? 'Copied' : 'Copy text'}
+        </button>
+        <button
+          className="btn btn-ghost btn-sm"
+          style={{ borderColor: 'var(--red, #c4352b)', color: 'var(--red, #c4352b)' }}
+          onClick={onDismiss}
+          disabled={busy}
+        >
+          {busy ? '...' : 'Dismiss'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TweetGraphic({ item }) {
+  const canvasRef = useRef(null);
+  const rendered = useRef(false);
+
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c || rendered.current) return;
+    rendered.current = true;
+    drawTweetGraphic(c, item);
+  }, [item]);
+
+  const download = () => {
+    const c = canvasRef.current;
+    if (!c) return;
+    c.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safe = (item.payload?.xUsername || item.triggerType).replace(/[^a-z0-9_]/gi, '');
+      a.download = `the1969-${item.triggerType}-${safe}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, 'image/png');
+  };
+
+  return (
+    <div style={{ border: '1px solid var(--hairline)' }}>
+      <canvas
+        ref={canvasRef}
+        width={1200}
+        height={1200}
+        style={{ width: '100%', height: 'auto', display: 'block', background: '#F9F6F0' }}
+      />
+      <div style={{
+        padding: 8, display: 'flex', justifyContent: 'space-between',
+        fontFamily: 'var(--font-mono)', fontSize: 10, background: 'var(--paper-2)',
+        borderTop: '1px solid var(--hairline)',
+      }}>
+        <span>1200 x 1200 png</span>
+        <button className="btn btn-ghost btn-sm" onClick={download}>
+          Download PNG
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// drawTweetGraphic — 1200x1200 PNG per trigger. Hand-made editorial
+// look: cream paper, ink type, hairlines, stamp badges. No gradients,
+// no glow, no emoji. Anything that resembles AI polish is intentional
+// cut.
+// ══════════════════════════════════════════════════════════════════════
+
+const GFX_PAPER = '#F9F6F0';
+const GFX_INK   = '#0E0E0E';
+const GFX_GREY  = '#777777';
+const GFX_LIME  = '#D7FF3A';
+
+function gfxSvgToImage(svgMarkup) {
+  return new Promise((resolve, reject) => {
+    const wrapped = svgMarkup.startsWith('<svg')
+      ? svgMarkup
+      : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" shape-rendering="crispEdges">${svgMarkup}</svg>`;
+    const blob = new Blob([wrapped], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+    img.src = url;
+  });
+}
+
+function gfxDither(ctx, w, h) {
+  ctx.save();
+  ctx.globalAlpha = 0.05;
+  ctx.fillStyle = GFX_INK;
+  for (let i = 0; i < 800; i++) {
+    ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+  }
+  ctx.restore();
+}
+
+function gfxHairline(ctx, x1, y1, x2, y2, opacity = 1) {
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.strokeStyle = GFX_INK;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function gfxKicker(ctx, w) {
+  ctx.fillStyle = GFX_INK;
+  ctx.fillRect(40, 40, w - 80, 40);
+  ctx.fillStyle = GFX_PAPER;
+  ctx.font = "500 14px 'JetBrains Mono', monospace";
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText('THE 1969  ·  MONOCHROME PORTRAITS  ·  ETHEREUM', 56, 60);
+  ctx.textAlign = 'right';
+  ctx.fillText('ISSUE ' + new Date().toISOString().slice(0, 10), w - 56, 60);
+}
+
+function gfxFooter(ctx, w, h) {
+  gfxHairline(ctx, 40, h - 80, w - 40, h - 80);
+  ctx.fillStyle = GFX_INK;
+  ctx.font = "500 16px 'JetBrains Mono', monospace";
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText('the1969.io', 56, h - 52);
+  ctx.textAlign = 'right';
+  ctx.fillText('@the1969eth', w - 56, h - 52);
+}
+
+function gfxStamp(ctx, cx, cy, text, rotation = -0.08) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation);
+  ctx.font = "700 22px 'JetBrains Mono', monospace";
+  const width = ctx.measureText(text).width;
+  const padX = 18, padY = 12;
+  const bw = width + padX * 2;
+  const bh = 22 + padY * 2;
+  ctx.fillStyle = GFX_LIME;
+  ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
+  ctx.strokeStyle = GFX_INK;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-bw / 2, -bh / 2, bw, bh);
+  ctx.fillStyle = GFX_INK;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 0, 1);
+  ctx.restore();
+}
+
+async function drawTweetGraphic(canvas, item) {
+  try { if (document.fonts?.ready) await document.fonts.ready; } catch { /* noop */ }
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+
+  ctx.fillStyle = GFX_PAPER;
+  ctx.fillRect(0, 0, w, h);
+  gfxDither(ctx, w, h);
+  gfxKicker(ctx, w);
+
+  try {
+    if (item.triggerType === 'rare_pull') {
+      const p = item.payload || {};
+      const svg = getElementSVG(p.elementType, p.variant);
+      const img = await gfxSvgToImage(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" shape-rendering="crispEdges" width="800" height="800">${svg}</svg>`
+      );
+      const box = 640, bx = (w - box) / 2, by = 200;
+      ctx.fillStyle = '#ece8de';
+      ctx.fillRect(bx, by, box, box);
+      ctx.strokeStyle = GFX_INK; ctx.lineWidth = 2;
+      ctx.strokeRect(bx, by, box, box);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, bx, by, box, box);
+      ctx.imageSmoothingEnabled = true;
+      gfxStamp(ctx, bx + box - 40, by + 40,
+        p.rarity === 'ultra_rare' ? 'ULTRA RARE · 3%' : 'LEGENDARY · 12%', 0.06);
+
+      const ny = by + box + 60;
+      ctx.fillStyle = GFX_INK;
+      ctx.font = "500 92px 'Space Grotesk', sans-serif";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(p.elementName || '', w / 2, ny);
+      ctx.font = "italic 36px 'Instrument Serif', serif";
+      ctx.fillStyle = GFX_GREY;
+      ctx.fillText((ELEMENT_LABELS[p.elementType] || p.elementType || '').toLowerCase() + ' layer.', w / 2, ny + 106);
+      ctx.font = "500 20px 'JetBrains Mono', monospace";
+      ctx.fillStyle = GFX_INK;
+      ctx.fillText('pulled by @' + (p.xUsername || ''), w / 2, ny + 170);
+    }
+    else if (item.triggerType === 'big_builder') {
+      const p = item.payload || {};
+      const svg = buildNFTSVG(p.elements || {});
+      const img = await gfxSvgToImage(svg);
+      const box = 720, bx = (w - box) / 2, by = 180;
+      ctx.fillStyle = '#ece8de';
+      ctx.fillRect(bx, by, box, box);
+      ctx.strokeStyle = GFX_INK; ctx.lineWidth = 2;
+      ctx.strokeRect(bx, by, box, box);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, bx, by, box, box);
+      ctx.imageSmoothingEnabled = true;
+      const f = Number(p.xFollowers) || 0;
+      const fmt = f >= 1_000_000 ? `${(f / 1_000_000).toFixed(1)}M`
+                : f >= 1000     ? `${Math.round(f / 1000)}K`
+                : String(f);
+      gfxStamp(ctx, bx + 140, by + 42, `${fmt} FOLLOWERS`, -0.06);
+
+      const ty = by + box + 56;
+      ctx.fillStyle = GFX_INK;
+      ctx.font = "500 84px 'Space Grotesk', sans-serif";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('@' + (p.xUsername || ''), w / 2, ty);
+      ctx.font = "italic 36px 'Instrument Serif', serif";
+      ctx.fillStyle = GFX_GREY;
+      ctx.fillText('just built their bust.', w / 2, ty + 98);
+    }
+    else if (item.triggerType === 'milestone') {
+      const p = item.payload || {};
+      const count = Number(p.count) || 0;
+      const remaining = 1969 - count;
+      const pct = Math.max(0, Math.min(1, count / 1969));
+      ctx.fillStyle = GFX_INK;
+      ctx.font = "500 320px 'Space Grotesk', sans-serif";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(String(count), w / 2, 240);
+      gfxHairline(ctx, 200, 620, w - 200, 620);
+      ctx.font = "italic 84px 'Instrument Serif', serif";
+      ctx.fillStyle = GFX_GREY;
+      ctx.fillText('busts built.', w / 2, 660);
+      const barY = 820, barH = 36;
+      ctx.fillStyle = '#e5e0d1';
+      ctx.fillRect(100, barY, w - 200, barH);
+      ctx.fillStyle = GFX_LIME;
+      ctx.fillRect(100, barY, (w - 200) * pct, barH);
+      ctx.strokeStyle = GFX_INK; ctx.lineWidth = 2;
+      ctx.strokeRect(100, barY, w - 200, barH);
+      ctx.fillStyle = GFX_INK;
+      ctx.font = "500 28px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText(`${remaining} slots remain before mint unlocks at 1,969`, w / 2, barY + 80);
+    }
+  } catch (e) {
+    console.warn('[tweet-graphic] render failed:', e);
+    ctx.fillStyle = GFX_INK;
+    ctx.font = "500 18px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText('render error', w / 2, h / 2);
+  }
+
+  gfxFooter(ctx, w, h);
 }
