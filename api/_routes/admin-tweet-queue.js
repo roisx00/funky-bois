@@ -119,12 +119,13 @@ async function scan() {
   let queued = 0;
   const { ELEMENT_VARIANTS } = await import('../_lib/elements.js');
 
-  // ── 1. Drop opening (< 15 min before next :00) ──
+  // ── 1. Drop opening (fires at T minus 10 min) ──
+  // User spec: "post on X when 10 minutes left to drop"
   const now = Date.now();
   const currentSess = getCurrentSessionId();
   const nextSess = currentSess + SESSION_INTERVAL_MS;
   const minutesUntilNext = Math.floor((nextSess - now) / 60000);
-  if (minutesUntilNext >= 0 && minutesUntilNext <= 15) {
+  if (minutesUntilNext >= 0 && minutesUntilNext <= 10) {
     const key = `drop_opening:${nextSess}`;
     if (await queueDraft({
       type: 'drop_opening', key,
@@ -134,7 +135,12 @@ async function scan() {
     })) queued += 1;
   }
 
-  // ── 2. Drop sealed (pool fully drained) ──
+  // ── 2. Drop sealed (pool drained, >= 60s since session opened) ──
+  // User spec: "another one after 1 minute the drop". Ensures the tweet
+  // lands ~1 minute after the session opened, by which time the pool has
+  // usually already drained. Also skips sub-3-second sellouts (those are
+  // bot-dominated and publicising them hurts the brand — we roll those
+  // back via the audit tool separately).
   const sealedSessions = await sql`
     SELECT s.session_id, s.pool_size, s.pool_claimed,
            EXTRACT(EPOCH FROM (MAX(c.claimed_at) - to_timestamp(s.session_id::bigint / 1000)))::int
@@ -143,9 +149,12 @@ async function scan() {
       JOIN drop_claims c ON c.session_id = s.session_id
      WHERE s.pool_claimed >= s.pool_size
        AND s.session_id >= ${(Date.now() - 24 * 60 * 60 * 1000)}
+       AND (${Date.now()} - s.session_id) >= 60000
      GROUP BY s.session_id, s.pool_size, s.pool_claimed
   `;
   for (const row of sealedSessions) {
+    const secs = Math.max(0, row.seconds_to_sell_out || 0);
+    if (secs < 3) continue; // skip bot-speed sellouts — see audit panel
     const next = Number(row.session_id) + SESSION_INTERVAL_MS;
     const minsToNext = Math.max(1, Math.ceil((next - Date.now()) / 60000));
     const key = `drop_sealed:${row.session_id}`;
@@ -154,11 +163,11 @@ async function scan() {
       payload: {
         sessionId: Number(row.session_id),
         poolSize: row.pool_size,
-        secondsToSellOut: Math.max(0, row.seconds_to_sell_out || 0),
+        secondsToSellOut: secs,
         minutesUntilNext: minsToNext,
       },
       text: draftDropSealed({
-        secondsToSellOut: Math.max(1, row.seconds_to_sell_out || 1),
+        secondsToSellOut: secs,
         minutesUntilNext: minsToNext,
       }),
       template: 'drop_card',
