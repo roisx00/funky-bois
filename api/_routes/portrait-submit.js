@@ -17,6 +17,7 @@ import { sql, one } from '../_lib/db.js';
 import { requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { ELEMENT_TYPES, ELEMENT_VARIANTS } from '../_lib/elements.js';
+import { settleReferralIfPending } from '../_lib/referral.js';
 import { randomBytes } from 'crypto';
 
 export default async function handler(req, res) {
@@ -106,6 +107,11 @@ export default async function handler(req, res) {
   await sql`
     UPDATE users SET is_whitelisted = true WHERE id = ${user.id} AND is_whitelisted = false
   `;
+
+  // Unlock any deferred referral bonus — building a portrait is the
+  // strongest signal that this account is a real player.
+  try { await settleReferralIfPending(user.id); }
+  catch (e) { console.warn('[portrait-submit] referral settle error:', e?.message); }
 
   ok(res, {
     id: nft.id,

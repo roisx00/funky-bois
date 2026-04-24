@@ -27,6 +27,7 @@ import {
   pickRandomElement, DROP_BUSTS_REWARD, DAILY_CLAIM_BONUS,
   getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION, DEFAULT_POOL_SIZE, todayKey,
 } from '../_lib/elements.js';
+import { settleReferralIfPending } from '../_lib/referral.js';
 
 async function logRejection(user, sessId, ip, reason, proofSnapshot) {
   try {
@@ -166,6 +167,13 @@ export default async function handler(req, res) {
       VALUES (${user.id}, ${dailyBonus}, 'Daily drop claim')
     `;
   }
+
+  // ── Referral unlock ──
+  // First real in-game action — if this user was referred, unlock the
+  // deferred 50/50 bonus now. Idempotent + no-op if there's nothing
+  // pending, so it's safe to call on every drop claim.
+  try { await settleReferralIfPending(user.id); }
+  catch (e) { console.warn('[drop-claim] referral settle error:', e?.message); }
 
   // ── RESPONSE JITTER ──
   // Wait 150-600ms before replying. Adds timing noise to foil the

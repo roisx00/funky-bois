@@ -18,15 +18,23 @@ export default async function handler(req, res) {
   if (!Number.isFinite(limit) || limit <= 0) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
 
-  // Exclude obvious freshly-signed-up bots — accounts with only the
-  // 50-BUSTS signup bonus and zero ledger activity are filtered out so
-  // the board stays meaningful.
+  // ── Engagement gate ──
+  // A user only appears on the leaderboard if they have taken at least
+  // ONE real in-game action: claimed a drop, built a portrait, or
+  // secured their whitelist. Referral-only farms (sign up, click
+  // "follow", cross-refer 30 bot accounts) can't pass this gate because
+  // they never actually play. Without this filter, bot rings running
+  // cross-referral loops dominate the board even though they've
+  // contributed nothing.
   const rows = await sql`
     SELECT u.x_username, u.x_avatar, u.x_name, u.busts_balance,
            u.is_whitelisted, u.x_followers
       FROM users u
-     WHERE u.busts_balance > 50
-        OR EXISTS (SELECT 1 FROM busts_ledger l WHERE l.user_id = u.id)
+     WHERE (
+           EXISTS (SELECT 1 FROM drop_claims d WHERE d.user_id = u.id)
+        OR EXISTS (SELECT 1 FROM completed_nfts n WHERE n.user_id = u.id)
+        OR u.is_whitelisted = TRUE
+     )
      ORDER BY u.busts_balance DESC NULLS LAST, u.created_at ASC
      LIMIT ${limit}
   `;

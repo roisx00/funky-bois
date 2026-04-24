@@ -2,13 +2,12 @@
 // Uses ONLY free OAuth endpoints:
 //   POST /2/oauth2/token   (exchange code for access token)
 //   GET  /2/users/me       (current signed-in user's own profile)
-// Then upserts the user into our Neon DB, awards referral bonuses,
-// and issues an HttpOnly session JWT cookie.
+// Then upserts the user into our Neon DB, records the referral
+// relation (bonus deferred — see api/_lib/referral.js), and issues an
+// HttpOnly session JWT cookie.
 import { sql, one } from '../_lib/db.js';
 import { signSessionToken, buildSessionCookie } from '../_lib/jwt.js';
 import { readBody, ok, bad } from '../_lib/json.js';
-
-const REFERRAL_BUSTS = 50;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
@@ -74,7 +73,13 @@ export default async function handler(req, res) {
     RETURNING id, x_username, x_avatar, x_name, busts_balance, is_whitelisted, referred_by_user
   `);
 
-  // ── 4. Referral bonus (one-time per referred user) ──
+  // ── 4. Referral relation (PENDING — bonus deferred) ──
+  // We used to pay 50/50 BUSTS instantly at sign-up. A farmer exploited
+  // this by running 30+ X accounts and cross-referring all of them,
+  // compounding 1,800 BUSTS per account without ever playing. Now we
+  // just RECORD the relation; the 50/50 bonus unlocks once the referee
+  // takes a real in-game action (drop claim, portrait build, or WL).
+  // See api/_lib/referral.js settleReferralIfPending().
   if (referral && !upserted.referred_by_user) {
     const cleanRef = String(referral).trim().replace(/^@/, '').toLowerCase();
     if (cleanRef && cleanRef !== xUsername.toLowerCase()) {
@@ -83,27 +88,12 @@ export default async function handler(req, res) {
       `);
       if (referrer && referrer.id !== upserted.id) {
         await sql`
-          UPDATE users
-          SET referred_by_user = ${referrer.id},
-              busts_balance    = busts_balance + ${REFERRAL_BUSTS}
-          WHERE id = ${upserted.id}
-        `;
-        await sql`
-          INSERT INTO busts_ledger (user_id, amount, reason)
-          VALUES (${upserted.id}, ${REFERRAL_BUSTS}, 'Referral join bonus')
-        `;
-        await sql`
-          UPDATE users
-          SET busts_balance = busts_balance + ${REFERRAL_BUSTS}
-          WHERE id = ${referrer.id}
-        `;
-        await sql`
-          INSERT INTO busts_ledger (user_id, amount, reason)
-          VALUES (${referrer.id}, ${REFERRAL_BUSTS}, ${`Referral: @${xUsername} joined via your link`})
+          UPDATE users SET referred_by_user = ${referrer.id}
+           WHERE id = ${upserted.id}
         `;
         await sql`
           INSERT INTO referrals (referrer_user, referred_user, bonus_paid)
-          VALUES (${referrer.id}, ${upserted.id}, true)
+          VALUES (${referrer.id}, ${upserted.id}, FALSE)
           ON CONFLICT (referred_user) DO NOTHING
         `;
       }

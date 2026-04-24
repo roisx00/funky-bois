@@ -10,6 +10,7 @@ import { sql, one } from '../_lib/db.js';
 import { requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { whitelistClaimMessage } from '../_lib/wlMessage.js';
+import { settleReferralIfPending } from '../_lib/referral.js';
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
 const SIG_RE  = /^0x[a-fA-F0-9]+$/;
@@ -82,6 +83,11 @@ export default async function handler(req, res) {
           portrait_id    = EXCLUDED.portrait_id,
           claimed_at     = now()
   `;
+
+  // Securing the whitelist is the hardest real-action signal (requires
+  // portrait + wallet + signed message). Unlock any pending referral.
+  try { await settleReferralIfPending(user.id); }
+  catch (e) { console.warn('[whitelist-record] referral settle error:', e?.message); }
 
   ok(res, { whitelisted: true, walletAddress: walletLc, portraitId: portraitRow.id });
 }

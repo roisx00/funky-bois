@@ -96,70 +96,90 @@
     ctx.fillText('@the1969eth  ·  SHIP LOG 2026-04-24', w - 56, h - 36);
   }
 
-  // One podium column. top is smaller == higher rank (visual pyramid:
-  // 1st column is tallest, 2nd shorter, 3rd shortest).
+  // One podium column. Content is drawn bottom-anchored inside the
+  // column — that way, taller columns get more breathing room on top
+  // but the text always sits flush with the pedestal (no cut-offs when
+  // a column is short).
+  //
+  //  column top (bodyTop)
+  //  ┌─────────────┐
+  //  │   rank      │  — serif italic numeral
+  //  │   ───       │  — hairline divider
+  //  │  @handle    │  — mono
+  //  │  12,345     │  — grotesk big
+  //  │  BUSTS      │  — mono small
+  //  └─────────────┘  ← baseY (pedestal starts here)
+  //  [#01]           ← ink pedestal, pedH tall
   function drawPodiumColumn(ctx, x, baseY, w, colH, rank, handle, busts) {
-    // Column body (ink-filled for rank 1, paper with ink border for 2/3)
     var bodyTop = baseY - colH;
     if (rank === 1) {
       ctx.fillStyle = INK;
       ctx.fillRect(x, bodyTop, w, colH);
-      ctx.strokeStyle = INK; ctx.lineWidth = 2;
-      ctx.strokeRect(x, bodyTop, w, colH);
     } else {
       ctx.fillStyle = SOFT;
       ctx.fillRect(x, bodyTop, w, colH);
-      ctx.strokeStyle = INK; ctx.lineWidth = 2;
-      ctx.strokeRect(x, bodyTop, w, colH);
     }
+    ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.strokeRect(x, bodyTop, w, colH);
 
     var textColor = rank === 1 ? PAPER : INK;
+    var cx = x + w / 2;
 
-    // Rank numeral — huge serif italic
+    // Anchor content from the BOTTOM up, so columns of different heights
+    // all align at the bottom and never overflow the pedestal.
+    var pad = 14;
+
+    // "BUSTS" small label — 14px above the bottom edge
     ctx.fillStyle = textColor;
-    ctx.font = "italic 64px 'Instrument Serif', serif";
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(rank), x + w / 2, bodyTop + 50);
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    ctx.font = "500 10px 'JetBrains Mono', ui-monospace, monospace";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText('BUSTS', cx, baseY - pad);
+    ctx.restore();
 
-    // Divider hairline inside the column
+    // BUSTS big number — sits above the label
+    ctx.fillStyle = textColor;
+    ctx.font = "500 24px 'Space Grotesk', sans-serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(busts.toLocaleString(), cx, baseY - pad - 16);
+
+    // Handle above the number
+    ctx.font = "500 12px 'JetBrains Mono', ui-monospace, monospace";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText('@' + handle, cx, baseY - pad - 44);
+
+    // Hairline divider
     ctx.save();
     ctx.strokeStyle = textColor;
-    ctx.globalAlpha = rank === 1 ? 0.35 : 0.55;
+    ctx.globalAlpha = rank === 1 ? 0.35 : 0.45;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(x + 16, bodyTop + 92);
-    ctx.lineTo(x + w - 16, bodyTop + 92);
+    ctx.moveTo(x + 16, baseY - pad - 58);
+    ctx.lineTo(x + w - 16, baseY - pad - 58);
     ctx.stroke();
     ctx.restore();
 
-    // Handle (mono, smaller)
+    // Rank numeral — serif italic, vertically centred in the remaining
+    // space between the column top and the divider.
+    var numTop = bodyTop + pad;
+    var numBottom = baseY - pad - 70;
+    var numCy = (numTop + numBottom) / 2;
+    // Scale the numeral to the space available, clamped.
+    var numSize = Math.max(36, Math.min(56, numBottom - numTop - 4));
     ctx.fillStyle = textColor;
-    ctx.font = "500 13px 'JetBrains Mono', ui-monospace, monospace";
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText('@' + handle, x + w / 2, bodyTop + 106);
+    ctx.font = "italic " + numSize + "px 'Instrument Serif', serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(rank), cx, numCy);
 
-    // BUSTS big number
-    ctx.font = "500 28px 'Space Grotesk', sans-serif";
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText(busts.toLocaleString(), x + w / 2, bodyTop + 134);
-
-    // Unit label
-    ctx.fillStyle = textColor;
-    ctx.font = "500 10px 'JetBrains Mono', ui-monospace, monospace";
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.save();
-    ctx.globalAlpha = 0.75;
-    ctx.fillText('BUSTS', x + w / 2, bodyTop + 170);
-    ctx.restore();
-
-    // Rank pedestal — a small ink slab under the column with "#01"
+    // Ink pedestal with "#01"
     var pedH = 26;
     ctx.fillStyle = INK;
     ctx.fillRect(x, baseY, w, pedH);
     ctx.fillStyle = PAPER;
     ctx.font = "700 11px 'JetBrains Mono', ui-monospace, monospace";
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('#' + String(rank).padStart(2, '0'), x + w / 2, baseY + pedH / 2 + 1);
+    ctx.fillText('#' + String(rank).padStart(2, '0'), cx, baseY + pedH / 2 + 1);
   }
 
   // A simple table row for ranks 4+ (ink-line separators, small text)
@@ -250,44 +270,55 @@
 
     // ── RIGHT: podium (3 columns) ──
     var colGap = 14;
-    var totalCols = rightW;
-    var colW = Math.floor((totalCols - colGap * 2) / 3);
-    var baseY = headY + 280;       // where all columns sit on their pedestal
-
-    // Rank 2 (left), 1 (middle, tallest), 3 (right)
-    var col1X = rightX;
-    var col2X = rightX + colW + colGap;
-    var col3X = rightX + (colW + colGap) * 2;
-
-    drawPodiumColumn(ctx, col1X, baseY, colW, 176, 2, 'zephmst',  1140);
-    drawPodiumColumn(ctx, col2X, baseY, colW, 212, 1, 'disini_ari', 26550);
-    drawPodiumColumn(ctx, col3X, baseY, colW, 150, 3, 'normexbt',  50100);
+    var colW = Math.floor((rightW - colGap * 2) / 3);
+    // Column heights tuned so content always fits: min 170 for the
+    // shortest column. 1st tallest, 2nd shorter, 3rd shortest.
+    var H1 = 230, H2 = 200, H3 = 175;
+    // All columns share a pedestal baseline. Picked so the tallest
+    // column starts below the "PODIUM · TOP 3" label (y=135).
+    var baseY = headY + 30 + H1;   // 150 + 230 = 380
+    var col2X = rightX;                     // left slot — rank 2
+    var col1X = rightX + colW + colGap;     // centre slot — rank 1
+    var col3X = rightX + (colW + colGap) * 2; // right slot — rank 3
 
     // Label above the podium
     ctx.fillStyle = INK;
     ctx.font = "500 11px 'JetBrains Mono', ui-monospace, monospace";
-    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     ctx.fillText('PODIUM · TOP 3', rightX, headY + 10);
 
-    // ── BELOW PODIUM: hint of ranks 4-6 so the depth is legible ──
-    var rowsY = baseY + 52;
-    var rowH  = 26;
+    // Sample numbers must strictly descend 1 → 5; otherwise the graphic
+    // contradicts its own ranks (#3 > #1, etc.).
+    drawPodiumColumn(ctx, col2X, baseY, colW, H2, 2, 'disini_ari', 32180);
+    drawPodiumColumn(ctx, col1X, baseY, colW, H1, 1, 'normexbt',   49940);
+    drawPodiumColumn(ctx, col3X, baseY, colW, H3, 3, 'zephmst',    18470);
+
+    // Pedestal is 26 tall. Leave at least 28px below it before "NEXT UP".
+    var pedH = 26;
+    var rowsHdrY = baseY + pedH + 34;
     ctx.fillStyle = INK;
     ctx.font = "500 10px 'JetBrains Mono', ui-monospace, monospace";
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText('NEXT UP', rightX, rowsY - 18);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('NEXT UP', rightX, rowsHdrY);
 
-    var rowsX = rightX;
-    var rowsW = rightW;
-    // Separator
+    // Separator under the label
     ctx.strokeStyle = INK; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(rowsX, rowsY - 4); ctx.lineTo(rowsX + rowsW, rowsY - 4); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(rightX, rowsHdrY + 18);
+    ctx.lineTo(rightX + rightW, rowsHdrY + 18);
+    ctx.stroke();
 
-    drawRankRow(ctx, rowsX, rowsY + rowH * 0 + 8, rowsW, 4, 'internxbt', 3373);
-    ctx.save(); ctx.strokeStyle = INK; ctx.globalAlpha = 0.25; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(rowsX, rowsY + rowH + 2); ctx.lineTo(rowsX + rowsW, rowsY + rowH + 2); ctx.stroke();
+    // Two rows of rank 4 / 5
+    var rowGap = 26;
+    drawRankRow(ctx, rightX, rowsHdrY + 18 + rowGap - 4, rightW, 4, 'internxbt', 9340);
+    ctx.save();
+    ctx.strokeStyle = INK; ctx.globalAlpha = 0.22; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(rightX, rowsHdrY + 18 + rowGap + 10);
+    ctx.lineTo(rightX + rightW, rowsHdrY + 18 + rowGap + 10);
+    ctx.stroke();
     ctx.restore();
-    drawRankRow(ctx, rowsX, rowsY + rowH * 1 + 8, rowsW, 5, 'cjxiong_',   2840);
+    drawRankRow(ctx, rightX, rowsHdrY + 18 + rowGap * 2 + 6, rightW, 5, 'cjxiong_', 6220);
 
     drawFooter(ctx, w, h);
   }
