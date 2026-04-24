@@ -1,17 +1,16 @@
 // Send BUSTS points to another @X handle.
 //
-// Two paths:
-//   A. Recipient handle matches a registered user → atomic debit+credit,
-//      two busts_ledger rows. No pending row.
-//   B. Recipient handle has no user yet → debit sender, insert a
-//      pending_busts_transfers row. Recipient claims via
-//      /api/busts-claim on their next dashboard load.
+// Single-path flow: EVERY transfer goes through the claim inbox, even
+// when the recipient is already registered. No silent credits. Reason:
+//   • Recipient sees an explicit "claim" signal they can act on.
+//   • Sender UX is identical whether the handle exists yet or not.
+//   • Simpler mental model for users ("every gift appears in my inbox").
 //
 // Atomicity notes (Neon HTTP driver has no transactions):
 //   • Sender debit is a conditional UPDATE guarded on
 //     busts_balance >= ${amount}. Concurrent sends can't overdraw.
-//   • If any step after the debit fails, we refund the sender with
-//     an inverse UPDATE + compensating ledger row.
+//   • Pending row is inserted AFTER the debit. If the insert fails, we
+//     refund the sender with an inverse UPDATE + compensating ledger row.
 import { sql, one } from '../_lib/db.js';
 import { requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
@@ -48,7 +47,7 @@ export default async function handler(req, res) {
   `);
   if (!debit) return bad(res, 409, 'insufficient_balance');
 
-  // Compensating refund if anything downstream fails.
+  // Compensating refund if the pending insert fails below.
   async function refund(reason) {
     try {
       await sql`UPDATE users SET busts_balance = busts_balance + ${amount} WHERE id = ${user.id}`;
@@ -58,39 +57,8 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── Does the recipient exist? ──
-  const existingRecipient = one(await sql`
-    SELECT id, x_username FROM users
-     WHERE LOWER(x_username) = LOWER(${recipient})
-     LIMIT 1
-  `);
-
-  if (existingRecipient) {
-    // Path A — direct credit.
-    try {
-      await sql`UPDATE users SET busts_balance = busts_balance + ${amount} WHERE id = ${existingRecipient.id}`;
-      await sql`
-        INSERT INTO busts_ledger (user_id, amount, reason)
-        VALUES (${user.id}, ${-amount}, ${'Sent to @' + existingRecipient.x_username})
-      `;
-      await sql`
-        INSERT INTO busts_ledger (user_id, amount, reason)
-        VALUES (${existingRecipient.id}, ${amount}, ${'Received from @' + user.x_username})
-      `;
-    } catch (e) {
-      await refund('credit_failed');
-      console.error('[busts-send] credit path failed:', e?.message);
-      return bad(res, 500, 'credit_failed');
-    }
-    return ok(res, {
-      amount,
-      recipient:  existingRecipient.x_username,
-      delivered:  true,
-      newBalance: debit.busts_balance,
-    });
-  }
-
-  // Path B — pending claim row.
+  // Always pending — the recipient claims from their inbox regardless
+  // of whether they're already a registered user.
   try {
     const pending = one(await sql`
       INSERT INTO pending_busts_transfers
@@ -102,12 +70,12 @@ export default async function handler(req, res) {
     `);
     await sql`
       INSERT INTO busts_ledger (user_id, amount, reason)
-      VALUES (${user.id}, ${-amount}, ${'Reserved for @' + recipient + ' (pending claim)'})
+      VALUES (${user.id}, ${-amount}, ${'Reserved for @' + recipient + ' (awaiting claim)'})
     `;
     return ok(res, {
       amount,
       recipient,
-      delivered:  false,
+      delivered:  false,        // kept for backward-compat with old clients
       transferId: pending.id,
       expiresAt:  pending.expires_at,
       newBalance: debit.busts_balance,

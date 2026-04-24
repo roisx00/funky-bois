@@ -174,7 +174,8 @@ export default function AdminPanel({ onNavigate }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 32 }}>
         <StatCard label="Drop claims"  value={stats?.totalDropClaims} />
         <StatCard label="Box opens"    value={stats?.totalBoxOpens} />
-        <StatCard label="Pending gifts" value={stats?.pendingGifts} />
+        <StatCard label="Pending elements" value={stats?.pendingGifts} />
+        <StatCard label="Pending BUSTS" value={stats?.pendingBustsTransfers} />
         <StatCard label="" value="" cta={
           <button className="btn btn-ghost btn-sm" onClick={refreshAll} disabled={loading}>
             {loading ? 'Refreshing...' : 'Refresh all'}

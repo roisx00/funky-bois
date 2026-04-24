@@ -581,11 +581,7 @@ function BustsTransferSection({
     const r = await sendBusts(clean, amount);
     setSending(false);
     if (r?.ok) {
-      if (r.delivered) {
-        toast.success(`Sent ${r.amount} BUSTS to @${clean}`);
-      } else {
-        toast.success(`Reserved ${r.amount} BUSTS for @${clean} · they claim on sign-in`);
-      }
+      toast.success(`Sent ${r.amount.toLocaleString()} BUSTS to @${clean} · they claim from their inbox`);
       setToUsername('');
       setAmountStr('');
     } else {
@@ -681,8 +677,8 @@ function BustsTransferSection({
       <div className="gift-card">
         <div className="gift-card-title">BUSTS inbox</div>
         <div className="gift-card-sub">
-          BUSTS sent to your @X handle while you weren&apos;t signed up wait here.
-          Claim to credit your balance.
+          BUSTS sent to your @X handle show up here. Claim to credit your balance.
+          Unclaimed sends return to the sender after 30 days.
         </div>
 
         <div className="gift-inbox">

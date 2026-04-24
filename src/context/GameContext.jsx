@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useReducer, useCallback, useState, useRef } from 'react';
 import { ELEMENT_TYPES } from '../data/elements';
+import { useToast } from '../components/Toast';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // THE 1969 — GameContext (server-backed, BUSTS economy)
@@ -251,6 +252,35 @@ async function jget(path) {
 export function GameProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, null, emptyState);
   const dropPollRef = useRef(null);
+  const mePollRef   = useRef(null);
+  const toast = useToast();
+
+  // Set of pending BUSTS transfer IDs we've already told the user about,
+  // so a 30s re-poll doesn't re-toast the same incoming transfer.
+  const seenTransferIdsRef = useRef(null);
+
+  function announceNewTransfers(nextList) {
+    const next = Array.isArray(nextList) ? nextList : [];
+    if (seenTransferIdsRef.current === null) {
+      // First observation — prime the set silently. Otherwise every
+      // reload of a logged-in session would re-toast stale inbox items.
+      seenTransferIdsRef.current = new Set(next.map((t) => t.id));
+      return;
+    }
+    for (const t of next) {
+      if (!seenTransferIdsRef.current.has(t.id)) {
+        seenTransferIdsRef.current.add(t.id);
+        const from = t.fromXUsername ? '@' + t.fromXUsername : 'someone';
+        toast.success(`${from} sent you ${Number(t.amount).toLocaleString()} BUSTS · claim from inbox`);
+      }
+    }
+    // Also drop IDs that have disappeared (claimed/expired) from the set
+    // so the memory doesn't grow forever over a long session.
+    const stillPending = new Set(next.map((t) => t.id));
+    for (const id of Array.from(seenTransferIdsRef.current)) {
+      if (!stillPending.has(id)) seenTransferIdsRef.current.delete(id);
+    }
+  }
 
   // Initial hydrate. Skipped when an OAuth callback is in progress
   // (?code=...) because handleXCallback() will fire and set the session
@@ -265,11 +295,13 @@ export function GameProvider({ children }) {
         const me = await jget('/api/me');
         if (cancelled) return;
         dispatch({ type: 'HYDRATE', payload: me.ok ? me : { authenticated: false } });
+        if (me.ok) announceNewTransfers(me.pendingBustsTransfers);
       }
       const ds = await jget('/api/drop-status');
       if (!cancelled && ds.ok) dispatch({ type: 'SET_DROP_STATUS', payload: ds });
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Poll drop status every 15s while page is open
@@ -281,6 +313,22 @@ export function GameProvider({ children }) {
     }
     dropPollRef.current = setInterval(tick, 15000);
     return () => clearInterval(dropPollRef.current);
+  }, []);
+
+  // Poll /api/me every 30s so an idle recipient sees newly arrived
+  // pending BUSTS transfers without manually refreshing. Also catches
+  // balance drifts (spends/rewards from other devices, etc.).
+  useEffect(() => {
+    function tick() {
+      jget('/api/me').then((me) => {
+        if (!me || !me.ok || !me.authenticated) return;
+        dispatch({ type: 'HYDRATE', payload: me });
+        announceNewTransfers(me.pendingBustsTransfers);
+      }).catch(() => {});
+    }
+    mePollRef.current = setInterval(tick, 30000);
+    return () => clearInterval(mePollRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-render every second so timers update
