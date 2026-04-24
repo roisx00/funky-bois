@@ -36,6 +36,7 @@ import adminDropAudit      from './_routes/admin-drop-audit.js';
 import adminRollbackClaim  from './_routes/admin-rollback-claim.js';
 import dropArm             from './_routes/drop-arm.js';
 import galleryHandler      from './_routes/gallery.js';
+import leaderboardHandler  from './_routes/leaderboard.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
 // regardless of Vercel's catch-all behaviour for nested segments.
@@ -76,6 +77,7 @@ const ROUTES = {
   'admin-drop-audit':    adminDropAudit,
   'admin-rollback-claim': adminRollbackClaim,
   'gallery':             galleryHandler,
+  'leaderboard':         leaderboardHandler,
 
   // slash aliases (backward compat — keep until all callers migrated)
   'gift/send':           giftSendHandler,

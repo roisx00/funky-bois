@@ -11,9 +11,14 @@ const BASE_PAGES = [
   { id: 'drop',    label: 'Drop' },
   { id: 'gallery', label: 'Gallery' },
 ];
+// Leaderboard is publicly viewable but lives between Build and Dashboard
+// in the nav when the user is signed in, so we keep it out of the base
+// list and splice it into the signed-in layout below.
+const LEADERBOARD_PAGE = { id: 'leaderboard', label: 'Leaderboard' };
 const X_PAGES = [
-  { id: 'builder',   label: 'Build',     requiresX: true },
-  { id: 'dashboard', label: 'Dashboard', requiresX: true },
+  { id: 'builder',         label: 'Build',       requiresX: true },
+  LEADERBOARD_PAGE,
+  { id: 'dashboard',       label: 'Dashboard',   requiresX: true },
 ];
 
 function XIcon({ size = 12 }) {
@@ -87,7 +92,12 @@ export default function Nav({ currentPage, onNavigate }) {
     ? `${window.location.origin}?ref=${encodeURIComponent(referralCode)}`
     : null;
 
-  const pages = xUser ? [...BASE_PAGES, ...X_PAGES] : BASE_PAGES;
+  // Non-signed-in users still get the leaderboard link at the end
+  // (it's public), but the "between Build and Dashboard" position only
+  // makes sense once the X-gated pages appear.
+  const pages = xUser
+    ? [...BASE_PAGES, ...X_PAGES]
+    : [...BASE_PAGES, LEADERBOARD_PAGE];
 
   const [copied, setCopied] = useState(null);
   const copyText = (label, text) => {
