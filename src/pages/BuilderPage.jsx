@@ -129,17 +129,47 @@ export default function BuilderPage({ onNavigate }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow, isWalletConnected, walletAddress, xUser?.username]);
 
-  const handleDownloadPortrait = () => {
+  const handleDownloadPortrait = async () => {
+    // Rasterize the SVG portrait to a 1200x1200 PNG — X-friendly square,
+    // high-res enough for the feed, pixel art stays crisp.
+    const size = 1200;
     const svg = buildNFTSVG(selection);
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `the1969-portrait-${builtId?.slice(0, 8) || 'build'}.svg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    try {
+      await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          // Crisp pixel art — disable smoothing so tiny sprites stay sharp
+          ctx.imageSmoothingEnabled = false;
+          // Cream backdrop so transparent backgrounds still look right on X
+          ctx.fillStyle = '#F9F6F0';
+          ctx.fillRect(0, 0, size, size);
+          ctx.drawImage(img, 0, 0, size, size);
+          canvas.toBlob((blob) => {
+            if (!blob) { reject(new Error('toBlob failed')); return; }
+            const pngUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = pngUrl;
+            a.download = `the1969-portrait-${builtId?.slice(0, 8) || 'build'}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+            resolve();
+          }, 'image/png');
+        };
+        img.onerror = () => reject(new Error('SVG load failed'));
+        img.src = svgUrl;
+      });
+    } finally {
+      URL.revokeObjectURL(svgUrl);
+    }
   };
 
   if (inventory.length === 0) {
@@ -332,7 +362,7 @@ export default function BuilderPage({ onNavigate }) {
                   Share on X
                 </button>
                 <button className="btn btn-ghost btn-lg" onClick={handleDownloadPortrait}>
-                  Download SVG
+                  Download PNG
                 </button>
               </div>
             </div>
@@ -430,7 +460,7 @@ export default function BuilderPage({ onNavigate }) {
                   View in gallery
                 </button>
                 <button className="btn btn-ghost btn-lg" onClick={handleDownloadPortrait}>
-                  Download SVG
+                  Download PNG
                 </button>
               </div>
             </div>
