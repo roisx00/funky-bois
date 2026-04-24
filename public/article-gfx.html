@@ -715,117 +715,137 @@ async function draw07() {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 08 · Anti-bot post · 1200 × 675 · code-editor screenshot
+// 08 · Anti-bot post · 1200 × 675 · redacted server-log style
+// Shows the gate working without revealing thresholds, variable names,
+// file paths, reject codes, or commit hashes. Nothing here teaches a
+// reader how to bypass anything.
 // ══════════════════════════════════════════════════════════════════════
 function draw08() {
   const c = document.getElementById('g08');
   const ctx = c.getContext('2d');
   const w = c.width, h = c.height;
 
-  // Editor palette (dark theme matched to brand ink/lime/cream)
-  const EDITOR_BG     = '#0E0E0E';
-  const EDITOR_CHROME = '#1a1a1a';
-  const GUTTER_BG     = '#161616';
-  const GUTTER_FG     = '#555555';
-  const TEXT          = '#E8E5DC'; // cream on dark
-  const MUTED         = '#8a8a85';
-  const STRING        = '#e2c07b'; // warm off-white for strings
-  const KEYWORD       = LIME;
-  const FN            = '#f5efde';
-  const COMMENT       = '#707066';
-  const ACCENT        = LIME;
+  const TERM_BG  = '#0E0E0E';
+  const CHROME   = '#1a1a1a';
+  const TEXT     = '#E8E5DC';
+  const MUTED    = '#8a8a85';
+  const DIM      = '#5a5a56';
+  const BAD      = '#c4352b';
+  const GOOD     = LIME;
 
   // Full dark fill
-  ctx.fillStyle = EDITOR_BG;
+  ctx.fillStyle = TERM_BG;
   ctx.fillRect(0, 0, w, h);
 
-  // ── Top editor chrome (title bar with fake traffic lights) ──
-  ctx.fillStyle = EDITOR_CHROME;
+  // ── Top chrome bar ──
+  ctx.fillStyle = CHROME;
   ctx.fillRect(0, 0, w, 48);
-  // Three chrome dots (grey, no colour — stays B/W-ish)
   for (let i = 0; i < 3; i++) {
     ctx.beginPath();
     ctx.arc(24 + i * 20, 24, 6, 0, Math.PI * 2);
     ctx.fillStyle = ['#3a3a3a', '#4a4a4a', '#5a5a5a'][i];
     ctx.fill();
   }
-  // Filename
   ctx.fillStyle = MUTED;
   ctx.font = "500 14px 'JetBrains Mono', monospace";
   ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-  ctx.fillText('api/_routes/drop-claim.js  ·  main  ·  SECURITY GATE', w / 2, 24);
+  ctx.fillText('drop-window-log  ·  live', w / 2, 24);
 
-  // Subtle separator under chrome
   ctx.fillStyle = '#2a2a2a';
   ctx.fillRect(0, 48, w, 1);
 
-  // ── Gutter (line numbers) ──
-  const codeY0 = 70;     // first line baseline
-  const lineH = 34;
-  const gutterW = 72;
-  ctx.fillStyle = GUTTER_BG;
-  ctx.fillRect(0, 49, gutterW, h - 49 - 56);
+  // ── Redacted block renderer (solid filled bar in place of text) ──
+  function redact(x, y, widthCh, charPx = 11) {
+    const barW = widthCh * charPx;
+    const barH = 16;
+    ctx.fillStyle = DIM;
+    ctx.fillRect(x, y - 2, barW, barH);
+    return barW;
+  }
 
-  // ── Code body ──
-  // Each line is a tuple of segments with colors. Simple tokenizer.
-  const LINES = [
-    [ ['// api/_routes/drop-claim.js — the gate', COMMENT] ],
-    [ ['// ───────────────────────────────────────', COMMENT] ],
-    [],
-    [ ['function ', KEYWORD], ['scoreInteraction', FN], ['(proof) {', TEXT] ],
-    [ ['  const ', KEYWORD], ['{ windowOpenMs, moveCount, pathEntropy,', TEXT] ],
-    [ ['          armedMs, dragVarX, dragVarY, nonce }', TEXT] ],
-    [ ['    = proof;', TEXT] ],
-    [],
-    [ ['  // FUCK YOU BOT', ACCENT] ],
-    [],
-    [ ['  if ', KEYWORD], ['(!nonce)             ', TEXT], ['return ', KEYWORD], ['reject(', TEXT], ['"no_arm_token"', STRING], [');', TEXT] ],
-    [ ['  if ', KEYWORD], ['(windowOpenMs < ', TEXT], ['4000', ACCENT], [') ', TEXT], ['return ', KEYWORD], ['reject(', TEXT], ['"page_too_fresh"', STRING], [');', TEXT] ],
-    [ ['  if ', KEYWORD], ['(armedMs      < ', TEXT], ['500',  ACCENT], [')  ', TEXT], ['return ', KEYWORD], ['reject(', TEXT], ['"flicked_not_dragged"', STRING], [');', TEXT] ],
-    [ ['  if ', KEYWORD], ['(dragVarY     < ', TEXT], ['2',    ACCENT], [')    ', TEXT], ['return ', KEYWORD], ['reject(', TEXT], ['"drag_too_straight"', STRING], [');', TEXT] ],
-    [ ['  if ', KEYWORD], ['(dragVarX     < ', TEXT], ['20',   ACCENT], [')   ', TEXT], ['return ', KEYWORD], ['reject(', TEXT], ['"drag_too_short"', STRING], [');', TEXT] ],
-    [ ['  // mouse AND touch, desktop AND mobile.', COMMENT] ],
-    [],
-    [ ['  return ', KEYWORD], ['{ ok: ', TEXT], ['true ', ACCENT], ['};', TEXT] ],
-    [ ['}', TEXT] ],
-  ];
+  // ── Log body ──
+  const startY = 76;
+  const lineH = 30;
+  const leftPad = 32;
 
-  ctx.font = "500 18px 'JetBrains Mono', monospace";
-  ctx.textBaseline = 'top';
-
-  LINES.forEach((line, i) => {
-    const y = codeY0 + i * lineH;
-
-    // Gutter line number
-    ctx.fillStyle = GUTTER_FG;
-    ctx.textAlign = 'right';
-    ctx.fillText(String(i + 1).padStart(2, ' '), gutterW - 14, y);
-
-    // Highlight the "FUCK YOU BOT" line (line index 8) with a lime bar
-    const isHero = line.length === 1 && line[0][1] === ACCENT && line[0][0].includes('FUCK');
-    if (isHero) {
-      ctx.save();
-      ctx.globalAlpha = 0.10;
-      ctx.fillStyle = ACCENT;
-      ctx.fillRect(gutterW, y - 4, w - gutterW, lineH);
-      ctx.restore();
-    }
-
-    // Segments
+  // Line type helpers
+  function drawRejected(x, y) {
+    ctx.font = "500 16px 'JetBrains Mono', monospace";
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = MUTED;
     ctx.textAlign = 'left';
-    let x = gutterW + 18;
-    for (const [text, color] of line) {
-      ctx.fillStyle = color;
-      // Use bolder weight for the hero line
-      ctx.font = isHero
-        ? "700 22px 'JetBrains Mono', monospace"
-        : "500 18px 'JetBrains Mono', monospace";
-      ctx.fillText(text, x, y);
-      x += ctx.measureText(text).width;
-    }
-  });
+    ctx.fillText('>', x, y);
+    // Redacted actor id
+    let cx = x + 24;
+    cx += redact(cx, y, 14);
+    cx += 16;
+    // bot_rejected label (no reason codes)
+    ctx.fillStyle = BAD;
+    ctx.font = "700 15px 'JetBrains Mono', monospace";
+    ctx.fillText('bot_rejected', cx, y);
+    cx += ctx.measureText('bot_rejected').width;
+    // tiny trailing redaction
+    cx += 20;
+    redact(cx, y, 8);
+  }
+  function drawAccepted(x, y) {
+    ctx.font = "500 16px 'JetBrains Mono', monospace";
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = GOOD;
+    ctx.textAlign = 'left';
+    ctx.fillText('>', x, y);
+    let cx = x + 24;
+    cx += redact(cx, y, 14);
+    cx += 16;
+    ctx.fillStyle = GOOD;
+    ctx.font = "700 15px 'JetBrains Mono', monospace";
+    ctx.fillText('human_accepted   +1', cx, y);
+  }
 
-  // ── Bottom status bar (cream on ink, brand match) ──
+  // Column 1 (left half) · bot rejections cluster tightly at the top
+  const col1X = leftPad;
+  const col2X = w / 2 + 30;
+
+  // LEFT COLUMN
+  for (let i = 0; i < 9; i++) {
+    drawRejected(col1X, startY + i * lineH);
+  }
+  // Hero line mid-left column
+  const heroY = startY + 9 * lineH + 12;
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = GOOD;
+  ctx.fillRect(leftPad - 10, heroY - 6, w / 2 - leftPad, 38);
+  ctx.restore();
+  ctx.fillStyle = GOOD;
+  ctx.font = "700 28px 'JetBrains Mono', monospace";
+  ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+  ctx.fillText('// FUCK YOU BOT', col1X, heroY);
+
+  // Tiny caption below hero
+  ctx.fillStyle = MUTED;
+  ctx.font = "italic 16px 'Instrument Serif', serif";
+  ctx.fillText('the gate was the gate. now it bites.', col1X, heroY + 44);
+
+  // RIGHT COLUMN · a few more rejections, then a pause, then humans
+  let yR = startY;
+  for (let i = 0; i < 5; i++) {
+    drawRejected(col2X, yR);
+    yR += lineH;
+  }
+  // Separator dots
+  ctx.fillStyle = DIM;
+  ctx.font = "500 16px 'JetBrains Mono', monospace";
+  ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+  ctx.fillText('·  ·  ·  ·', col2X + 20, yR + 2);
+  yR += lineH;
+  // Humans accepted
+  for (let i = 0; i < 5; i++) {
+    drawAccepted(col2X, yR);
+    yR += lineH;
+  }
+
+  // ── Bottom status bar (cream paper, brand-matched) ──
   const barY = h - 56;
   ctx.fillStyle = PAPER;
   ctx.fillRect(0, barY, w, 56);
@@ -841,11 +861,11 @@ function draw08() {
   ctx.fillStyle = INK;
   ctx.font = "700 16px 'JetBrains Mono', monospace";
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  ctx.fillText('SHIPPED  ·  5 DEFENSES  ·  GATE CLOSED', 58, barY + 28);
+  ctx.fillText('GATE CLOSED  ·  BOTS OUT  ·  HUMANS IN', 58, barY + 28);
 
   ctx.textAlign = 'right';
   ctx.font = "500 14px 'JetBrains Mono', monospace";
-  ctx.fillText('the1969.io  ·  commit #237d785', w - 32, barY + 28);
+  ctx.fillText('the1969.io  ·  see you at :00', w - 32, barY + 28);
 }
 
 async function renderAll() {
