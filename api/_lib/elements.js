@@ -53,22 +53,53 @@ export const ELEMENT_VARIANTS = {
   ],
 };
 
-const RARITY_WEIGHT = { common: 60, rare: 25, legendary: 12, ultra_rare: 3 };
+// Published drop odds. Exact percentages — we roll rarity first
+// against this table, then pick uniformly among all (type, variant)
+// pairs that match. Mirrors the approach used by pickFromBox for the
+// mystery boxes so drops and boxes feel consistent.
+//
+// Order matters: iterated in insertion order.
+export const DROP_ODDS = {
+  common:     74,
+  rare:       20,
+  legendary:   5,
+  ultra_rare:  1,
+};
+
 export const DROP_BUSTS_REWARD = { common: 5, rare: 15, legendary: 30, ultra_rare: 100 };
 export const DAILY_CLAIM_BONUS = 25;
 
-// Pick a random trait: uniform across types, then rarity-weighted within type.
+// Pick a random trait with exact published rarity odds. First roll
+// the rarity bucket (74 / 20 / 5 / 1), then pick uniformly among
+// every (type, variant) pair in that bucket. That keeps type
+// distribution balanced WITHIN each rarity tier (e.g. commons roll
+// across every type that has commons) instead of depending on how
+// many variants of each rarity a given type happens to contain.
 export function pickRandomElement() {
-  const type = ELEMENT_TYPES[Math.floor(Math.random() * ELEMENT_TYPES.length)];
-  const variants = ELEMENT_VARIANTS[type];
-  const total = variants.reduce((s, v) => s + RARITY_WEIGHT[v.rarity], 0);
-  let r = Math.random() * total;
-  for (let i = 0; i < variants.length; i++) {
-    r -= RARITY_WEIGHT[variants[i].rarity];
-    if (r <= 0) return { type, variant: i, name: variants[i].name, rarity: variants[i].rarity };
+  const r = Math.random() * 100;
+  let rarity = 'common', acc = 0;
+  for (const [k, v] of Object.entries(DROP_ODDS)) {
+    acc += v;
+    if (r < acc) { rarity = k; break; }
   }
-  const fb = variants[0];
-  return { type, variant: 0, name: fb.name, rarity: fb.rarity };
+  const pool = [];
+  for (const t of ELEMENT_TYPES) {
+    ELEMENT_VARIANTS[t].forEach((v, idx) => {
+      if (v.rarity === rarity) pool.push({ type: t, variant: idx, name: v.name, rarity: v.rarity });
+    });
+  }
+  if (pool.length === 0) {
+    // Shouldn't happen — every rarity has variants — but fall back to
+    // the first common so the handler never returns undefined.
+    for (const t of ELEMENT_TYPES) {
+      ELEMENT_VARIANTS[t].forEach((v, idx) => {
+        if (v.rarity === 'common' && pool.length === 0) {
+          pool.push({ type: t, variant: idx, name: v.name, rarity: v.rarity });
+        }
+      });
+    }
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 export const BOX_TIERS = {
@@ -101,8 +132,11 @@ export function pickFromBox(tier) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-// Drop session math (mirrors GameContext)
-const SESSION_INTERVAL_MS = 60 * 60 * 1000;
+// Drop session math (mirrors GameContext).
+// One session every 2 hours with a 5-minute claim window. HMAC-
+// jittered reveal schedule means the 20 slots spread across the full
+// 5-minute window so bots can't sweep at :00:00.
+const SESSION_INTERVAL_MS = 2 * 60 * 60 * 1000;
 const SESSION_WINDOW_MS   = 5 * 60 * 1000;
 export const MAX_CLAIMS_PER_SESSION = 3;
 export const DEFAULT_POOL_SIZE = 20;

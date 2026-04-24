@@ -7,7 +7,7 @@ import { useToast } from '../components/Toast';
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Session constants (mirror server) ───────────────────────────────────────
-const SESSION_INTERVAL_MS    = 60 * 60 * 1000;
+const SESSION_INTERVAL_MS    = 2 * 60 * 60 * 1000;
 const SESSION_WINDOW_MS      = 5 * 60 * 1000;
 const MAX_CLAIMS_PER_SESSION = 3;
 

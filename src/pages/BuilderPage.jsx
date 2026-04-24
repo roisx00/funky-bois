@@ -246,7 +246,7 @@ export default function BuilderPage({ onNavigate }) {
             No traits <em>yet.</em>
           </h1>
           <p className="builder-empty-sub">
-            Claim your first trait from the hourly drop and come back here to start assembling your portrait.
+            Claim your first trait from the drop and come back here to start assembling your portrait.
           </p>
           <button className="btn btn-solid btn-lg btn-arrow btn-lime-dot" onClick={() => onNavigate('drop')}>
             Go to drop

@@ -615,7 +615,7 @@ function AdminDropConfig() {
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 12, paddingTop: 10 }}>
             <input type="checkbox" checked={apply} onChange={(e) => setApply(e.target.checked)} />
-            <span>Overwrite live hourly pool</span>
+            <span>Overwrite live session pool</span>
           </label>
         </div>
         <button className="btn btn-solid btn-arrow" onClick={save} disabled={saving || !size}>
@@ -1463,7 +1463,7 @@ async function drawTweetGraphic(canvas, item) {
       ctx.fillStyle = GFX_INK;
       ctx.font = "500 24px 'JetBrains Mono', monospace";
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText('NEXT HOURLY DROP', w / 2, 160);
+      ctx.fillText('NEXT DROP WINDOW', w / 2, 160);
 
       // Countdown numeral
       ctx.fillStyle = GFX_INK;
@@ -1526,7 +1526,7 @@ async function drawTweetGraphic(canvas, item) {
       ctx.fillStyle = GFX_GREY;
       ctx.font = "500 22px 'JetBrains Mono', monospace";
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText('20 traits out. 20 holders. The pool refreshes every hour.', w / 2, 920);
+      ctx.fillText('20 traits out. 20 holders. The pool refreshes every 2 hours.', w / 2, 920);
 
       gfxStamp(ctx, w - 180, 220, 'FOMO', -0.08);
     }

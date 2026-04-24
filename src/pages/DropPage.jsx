@@ -368,7 +368,7 @@ export default function DropPage() {
                 <div className="drop-v2-action-icon" aria-hidden>◷</div>
                 <div className="drop-v2-action-title">Waiting for the window</div>
                 <div className="drop-v2-action-sub">
-                  New trait pool unlocks at the top of every hour.
+                  New trait pool unlocks every 2 hours.
                   Return before the timer hits zero.
                 </div>
               </div>
@@ -378,11 +378,11 @@ export default function DropPage() {
               <div className="drop-v2-action-idle">
                 <div className="drop-v2-action-icon" aria-hidden>✕</div>
                 <div className="drop-v2-action-title">
-                  {isPoolEmpty ? 'Pool sealed for the hour' : 'Session limit reached'}
+                  {isPoolEmpty ? 'Pool sealed for this window' : 'Session limit reached'}
                 </div>
                 <div className="drop-v2-action-sub">
                   {isPoolEmpty
-                    ? 'The hourly supply is gone. Come back next hour for a fresh pool.'
+                    ? 'The supply is gone. Come back in 2 hours for a fresh pool.'
                     : `You've already claimed ${claimsThisSession}/${maxClaims} for this session.`}
                 </div>
               </div>
