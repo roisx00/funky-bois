@@ -245,7 +245,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
 
       {/* ─── Gift ─── */}
       {tab === 'gift' && (
-        <GiftSection inventory={inventory} pendingGifts={pendingGifts} xUser={xUser} sendGift={sendGift} claimGift={claimGift} />
+        <GiftSection inventory={inventory} pendingGifts={pendingGifts} xUser={xUser} sendGift={sendGift} claimGift={claimGift} completedNFTs={completedNFTs} />
       )}
 
       {/* ─── History ─── */}
@@ -278,12 +278,28 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
   );
 }
 
-function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
+function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, completedNFTs }) {
   const toast = useToast();
   const [toUsername, setToUsername] = useState('');
   const [selected, setSelected]     = useState(null);
   const [sendQty, setSendQty]       = useState(1);
   const [sending, setSending]       = useState(false);
+
+  // Build a Set of "frozen" (type:variant) keys — any trait the user
+  // has already used in their built portrait. Frozen traits cannot be
+  // gifted, even if the user acquires a new copy later. Mirrors the
+  // server-side check in api/_routes/gift-send.js.
+  const frozenKeys = useMemo(() => {
+    const set = new Set();
+    for (const nft of completedNFTs || []) {
+      const els = nft?.elements || {};
+      for (const [type, variant] of Object.entries(els)) {
+        set.add(`${type}:${variant}`);
+      }
+    }
+    return set;
+  }, [completedNFTs]);
+  const isFrozen = (item) => frozenKeys.has(`${item.type}:${item.variant}`);
 
   // Server already filters pending_gifts by the current user's handle +
   // unclaimed-only. No additional filter needed here — the previous code
@@ -299,6 +315,10 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
 
   const handleSend = async () => {
     if (!selected || !toUsername.trim() || sending) return;
+    if (selected && frozenKeys.has(`${selected.type}:${selected.variant}`)) {
+      toast.error('This trait is frozen — you already used it in your portrait.');
+      return;
+    }
     const clean = normalizeXHandle(toUsername);
     if (!clean || !isValidXHandle(clean)) {
       toast.error('Enter a valid X handle (letters, digits, underscore).');
@@ -394,12 +414,21 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
               ) : (
                 inventory.map((item) => {
                   const isSelected = selected?.type === item.type && selected?.variant === item.variant;
+                  const frozen = isFrozen(item);
                   return (
                     <button
                       key={item.id}
                       type="button"
-                      onClick={() => setSelected({ type: item.type, variant: item.variant, name: item.name, rarity: item.rarity })}
-                      className={`gift-trait-card${isSelected ? ' selected' : ''}`}
+                      onClick={() => {
+                        if (frozen) {
+                          toast.error('This trait is frozen — you already used it in your portrait.');
+                          return;
+                        }
+                        setSelected({ type: item.type, variant: item.variant, name: item.name, rarity: item.rarity });
+                      }}
+                      className={`gift-trait-card${isSelected ? ' selected' : ''}${frozen ? ' frozen' : ''}`}
+                      aria-disabled={frozen}
+                      title={frozen ? 'Frozen · used in your built portrait' : undefined}
                     >
                       <div className="gift-trait-art">
                         <svg
@@ -411,10 +440,16 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift }) {
                         {item.quantity > 1 && (
                           <span className="gift-trait-qty">×{item.quantity}</span>
                         )}
+                        {frozen && (
+                          <span className="gift-trait-frozen-badge">FROZEN</span>
+                        )}
                       </div>
                       <div className="gift-trait-info">
                         <div className="gift-trait-type">{(ELEMENT_LABELS[item.type] || item.type).toUpperCase()}</div>
                         <div className="gift-trait-name">{item.name}</div>
+                        {frozen && (
+                          <div className="gift-trait-frozen-note">Used in your bust</div>
+                        )}
                       </div>
                     </button>
                   );
