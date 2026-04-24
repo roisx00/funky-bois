@@ -153,7 +153,13 @@ function reducer(state, action) {
     }
 
     case 'ADD_COMPLETED': {
-      return { ...state, completedNFTs: [action.nft, ...state.completedNFTs] };
+      // Auto-whitelist the moment a portrait is built — server does the
+      // same on its side. Dashboard badge flips to WL without a refetch.
+      return {
+        ...state,
+        completedNFTs: [action.nft, ...state.completedNFTs],
+        isWhitelisted: true,
+      };
     }
 
     case 'MARK_NFT_SHARED': {

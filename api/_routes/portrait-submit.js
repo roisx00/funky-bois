@@ -99,10 +99,19 @@ export default async function handler(req, res) {
     RETURNING id, created_at, share_hash
   `);
 
+  // ── Auto-whitelist on successful build ──
+  // Building is the proof-of-engagement that earns the mint slot. No
+  // extra share-on-X gate needed for the flag itself (the tweet flow
+  // still awards the +200 BUSTS reward separately).
+  await sql`
+    UPDATE users SET is_whitelisted = true WHERE id = ${user.id} AND is_whitelisted = false
+  `;
+
   ok(res, {
     id: nft.id,
     shareHash: nft.share_hash,
     createdAt: nft.created_at,
-    consumed, // useful for the client to update inventory state locally
+    consumed,
+    whitelisted: true,
   });
 }
