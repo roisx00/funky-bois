@@ -47,10 +47,13 @@ export default async function handler(req, res) {
     });
   }
 
-  // Tight per-user + per-IP limit: even an arm request is expensive to issue,
-  // and a bot spamming arm tokens is still a bot.
-  if (!(await rateLimit(res, user.id, { name: 'arm', max: 6, windowSecs: 60 }))) return;
-  if (!(await rateLimit(res, clientIp(req), { name: 'arm_ip', max: 12, windowSecs: 60 }))) return;
+  // Per-user + per-IP arm limits. Raised from 6/60s to 15/60s so a
+  // real user retrying after "slot_not_yet_revealed" / network glitch
+  // / proof rejection doesn't hit 429 on the second attempt. The
+  // downstream slot-reveal schedule + per-session claim cap of 3 mean
+  // extra arms don't translate to extra wins.
+  if (!(await rateLimit(res, user.id, { name: 'arm', max: 15, windowSecs: 60 }))) return;
+  if (!(await rateLimit(res, clientIp(req), { name: 'arm_ip', max: 30, windowSecs: 60 }))) return;
 
   const sessId = getCurrentSessionId();
   if (!isSessionActive(sessId)) {

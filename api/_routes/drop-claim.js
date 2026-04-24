@@ -46,27 +46,25 @@ async function logRejection(user, sessId, ip, reason, proofSnapshot) {
 
 function scoreInteraction(proof) {
   if (!proof || typeof proof !== 'object') return { ok: false, reason: 'proof_missing' };
-  const { windowOpenMs, moveCount, armedMs, nonce, dragVarY, dragVarX } = proof;
+  const { windowOpenMs, moveCount, armedMs, nonce, dragVarX } = proof;
   if (typeof nonce !== 'string' || !nonce.length) return { ok: false, reason: 'proof_nonce_missing' };
-  // Keep the meaningful barriers. Loosen the passive-hover metrics so
-  // touch-only mobile users (who never generate pointer hover events)
-  // still pass; the drag-gesture variance checks below are the real
-  // bot screen and they work identically on touch.
-  if (typeof windowOpenMs !== 'number' || windowOpenMs < 4000) return { ok: false, reason: 'proof_windowopen_too_short' };
-  if (typeof moveCount !== 'number' || moveCount < 3)          return { ok: false, reason: 'proof_movecount_too_low' };
-  if (typeof armedMs !== 'number' || armedMs < 500)            return { ok: false, reason: 'proof_armedms_too_short' };
-  // Path-entropy used to be checked here ("pathEntropy < 0.05") but it
-  // rejected real trackpad / mobile users who drag in smooth, near-
-  // straight lines. The drag-variance checks below are the real bot
-  // screen — they don't care about pre-drag cursor wandering, just
-  // whether the drag itself has realistic geometry.
-  //
-  // Drag path geometry. Works the same for mouse and touch (both emit
-  // pointermove during the gesture). A programmatic drag follows a
-  // straight line with Y variance near 0; a real human finger or mouse
-  // always has some perpendicular jitter.
-  if (typeof dragVarY !== 'number' || dragVarY < 2)  return { ok: false, reason: 'proof_drag_too_straight' };
-  if (typeof dragVarX !== 'number' || dragVarX < 20) return { ok: false, reason: 'proof_drag_too_short' };
+
+  // Minimum viable anti-bot checks. Anything stricter rejected real
+  // users (mobile touch, trackpad, steady hands all drag with low
+  // Y-variance). The real defences now are:
+  //   1. HMAC-signed arm token with randomised 2.5-5.5s not-before
+  //   2. HMAC-jittered per-slot reveal schedule (bots can't predict)
+  //   3. 20-follower X gate
+  //   4. Per-user + per-IP rate limits
+  // The "proof" checks are just a light smell test.
+  if (typeof windowOpenMs !== 'number' || windowOpenMs < 2000) return { ok: false, reason: 'proof_windowopen_too_short' };
+  if (typeof moveCount !== 'number'    || moveCount    < 3)    return { ok: false, reason: 'proof_movecount_too_low' };
+  if (typeof armedMs !== 'number'      || armedMs      < 300)  return { ok: false, reason: 'proof_armedms_too_short' };
+  // Keep dragVarX only — a horizontal drag that moved almost no X
+  // distance is either a tap or a no-op, not a real arm gesture.
+  // dragVarY check removed: real users drag smoothly along the rail
+  // with <2 px vertical wobble.
+  if (typeof dragVarX !== 'number' || dragVarX < 10) return { ok: false, reason: 'proof_drag_too_short' };
   return { ok: true };
 }
 

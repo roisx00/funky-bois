@@ -524,10 +524,10 @@ export default function DropPage() {
           <div className="drop-v2-aside-card">
             <div className="drop-v2-aside-title">Rarity odds</div>
             {[
-              { label: 'Common',     pct: '60%' },
-              { label: 'Rare',       pct: '25%' },
-              { label: 'Legendary',  pct: '12%' },
-              { label: 'Ultra Rare', pct: '3%'  },
+              { label: 'Common',     pct: '74%' },
+              { label: 'Rare',       pct: '20%' },
+              { label: 'Legendary',  pct: '5%'  },
+              { label: 'Ultra Rare', pct: '1%'  },
             ].map((r) => (
               <div key={r.label} className="drop-v2-aside-row">
                 <span>{r.label}</span>
