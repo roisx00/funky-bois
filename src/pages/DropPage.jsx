@@ -14,6 +14,26 @@ const MIN_ARMED_MS = 300;
  * Uses normalised variance of deltas. 0 = all identical, 1 = highly varied.
  * Bots that hard-set cursor to (0,0) score ~0 and get rejected.
  */
+// Map raw server error codes into sentences a human can read.
+// Anything not in the map falls through to the raw code so we
+// still have diagnostics in the UI.
+function friendlyDropError(r) {
+  const code = r?.reason || '';
+  if (code === 'slot_not_yet_revealed') {
+    const secs = Math.max(1, Math.ceil((r.retryAfterMs || 0) / 1000));
+    return `Next slot unlocks in about ${secs}s — hold tight and retry then.`;
+  }
+  if (code === 'rate_limited') {
+    return 'Slow down a moment — you’re sending too many requests. Try again in a few seconds.';
+  }
+  if (code === 'pool_exhausted')  return 'All slots claimed this session. Next pool opens at the top of the hour.';
+  if (code === 'no_active_session') return 'The drop window just closed. Back at the top of the next hour.';
+  if (code === 'max_claims_reached') return 'You’ve hit this session’s personal cap. Wait for the next hour.';
+  if (code.startsWith('arm_'))   return 'Your arm token expired. Drag the handle again to re-arm.';
+  if (code.startsWith('proof_')) return 'Your drag gesture wasn’t recognised. Drag the handle across the rail more deliberately.';
+  return code || 'Claim failed — try again.';
+}
+
 function pathEntropy(samples) {
   if (!Array.isArray(samples) || samples.length < 3) return 0;
   const dxs = [], dys = [];
@@ -231,18 +251,15 @@ export default function DropPage() {
 
     const r = await claimElement({ armToken: armToken.token, interactionProof });
     if (!r.ok) {
-      // Slot hasn't unlocked yet — tell the user when and reset cleanly.
+      // Map raw error codes to human copy. Anything not in the map
+      // falls back to the raw code so we still have diagnostics.
+      const friendly = friendlyDropError(r);
       if (r.reason === 'slot_not_yet_revealed') {
-        const secs = Math.max(1, Math.ceil((r.retryAfterMs || 0) / 1000));
-        toast.info(`Next slot unlocks in ~${secs}s. Try again then.`);
-        setLastError('slot_not_yet_revealed');
-        setArmToken(null);
-        setDragPct(0);
-        setFlow('ready');
-        return;
+        toast.info(friendly);
+      } else {
+        toast.error(friendly);
       }
-      setLastError(r.reason);
-      toast.error(r.reason || 'Claim failed');
+      setLastError(friendly);
       setArmToken(null);
       setDragPct(0);
       setFlow('ready');
@@ -486,10 +503,10 @@ export default function DropPage() {
           <div className="drop-v2-aside-card">
             <div className="drop-v2-aside-title">How the gate works</div>
             <ol className="drop-v2-howto">
-              <li>Drag the handle across the rail (arm gesture).</li>
+              <li>Drag the handle across the rail — mouse, trackpad or touch.</li>
               <li>The server issues a short-lived token bound to you.</li>
-              <li>Wait 1.5 seconds (anti-bot delay).</li>
-              <li>Click CLAIM. Your mouse movement is verified.</li>
+              <li>Wait ~2 seconds (anti-bot delay, randomised).</li>
+              <li>Click CLAIM. Your drag gesture is verified server-side.</li>
             </ol>
           </div>
 

@@ -77,12 +77,18 @@ export default async function handler(req, res) {
   const user = await requireUser(req, res);
   if (!user) return;
 
-  // HARDENED RATE LIMITS. A user can claim at most 3 times per 5-minute
-  // session, so one claim per 30s still lets every human get full value.
-  // But it kills the bot-rapid-fire pattern of firing 10 claims/sec.
-  if (!(await rateLimit(res, user.id, { name: 'drop_user', max: 1,  windowSecs: 30 }))) return;
-  // Per-IP: 3 per minute. Real households / VPN users still work.
-  if (!(await rateLimit(res, ip,       { name: 'drop_ip',   max: 3,  windowSecs: 60 }))) return;
+  // RATE LIMITS tuned for the slow-release pool.
+  // Earlier "1 per 30s per user" was too tight — a user who got
+  // `slot_not_yet_revealed` and retried a few seconds later was
+  // treated as spam and hit `rate_limited`. With the HMAC-jittered
+  // schedule some gaps are as short as 2s, so retries are expected.
+  //
+  // MAX_CLAIMS_PER_SESSION caps the actual successes at 3. Rate
+  // limits just smooth out the spam surface. Bumped per-user to 8/min
+  // (covers retries + all 3 legit claims) and per-IP to 20/min
+  // (a household or a shared VPN can have multiple real users).
+  if (!(await rateLimit(res, user.id, { name: 'drop_user', max: 8,  windowSecs: 60 }))) return;
+  if (!(await rateLimit(res, ip,       { name: 'drop_ip',   max: 20, windowSecs: 60 }))) return;
 
   const body = await readBody(req) || {};
   const { armToken, interactionProof } = body;
