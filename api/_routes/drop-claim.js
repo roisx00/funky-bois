@@ -7,10 +7,13 @@
 //   3. Wait at least 1.5s after arming (token's notBefore). Bots that
 //      arm → immediately claim in the same tick fail here.
 //   4. Submit an `interactionProof` proving real human activity:
-//        - windowOpenMs   ≥ 2000   (page has been open at least 2s)
-//        - moveCount      ≥ 5      (mousemove events fired)
-//        - pathEntropy    ≥ 0.15   (mouse actually moved, not a static dot)
-//        - armedMs        ≥ 300    (arm gesture lasted at least 300ms)
+//        - windowOpenMs   ≥ 4000   (page has been open at least 4s)
+//        - moveCount      ≥ 3      (pointer moved at least 3 times)
+//        - armedMs        ≥ 500    (arm gesture lasted at least 500ms)
+//        - dragVarX       ≥ 20     (drag actually traversed horizontally)
+//        - dragVarY       ≥ 2      (drag has some vertical jitter — bots
+//                                   that programmatically drag a straight
+//                                   line fail here)
 //   5. Pass the per-user (1 claim / 3s) and per-IP (5 claims / 30s)
 //      rate limits.
 //
@@ -43,7 +46,7 @@ async function logRejection(user, sessId, ip, reason, proofSnapshot) {
 
 function scoreInteraction(proof) {
   if (!proof || typeof proof !== 'object') return { ok: false, reason: 'proof_missing' };
-  const { windowOpenMs, moveCount, pathEntropy, armedMs, nonce, dragVarY, dragVarX } = proof;
+  const { windowOpenMs, moveCount, armedMs, nonce, dragVarY, dragVarX } = proof;
   if (typeof nonce !== 'string' || !nonce.length) return { ok: false, reason: 'proof_nonce_missing' };
   // Keep the meaningful barriers. Loosen the passive-hover metrics so
   // touch-only mobile users (who never generate pointer hover events)
@@ -51,11 +54,17 @@ function scoreInteraction(proof) {
   // bot screen and they work identically on touch.
   if (typeof windowOpenMs !== 'number' || windowOpenMs < 4000) return { ok: false, reason: 'proof_windowopen_too_short' };
   if (typeof moveCount !== 'number' || moveCount < 3)          return { ok: false, reason: 'proof_movecount_too_low' };
-  if (typeof pathEntropy !== 'number' || pathEntropy < 0.05)   return { ok: false, reason: 'proof_pathentropy_too_low' };
   if (typeof armedMs !== 'number' || armedMs < 500)            return { ok: false, reason: 'proof_armedms_too_short' };
-  // The real bot-screen: drag path geometry. Works the same for mouse
-  // and touch (both emit pointermove during the gesture). A programmatic
-  // drag follows a straight line with Y variance near 0.
+  // Path-entropy used to be checked here ("pathEntropy < 0.05") but it
+  // rejected real trackpad / mobile users who drag in smooth, near-
+  // straight lines. The drag-variance checks below are the real bot
+  // screen — they don't care about pre-drag cursor wandering, just
+  // whether the drag itself has realistic geometry.
+  //
+  // Drag path geometry. Works the same for mouse and touch (both emit
+  // pointermove during the gesture). A programmatic drag follows a
+  // straight line with Y variance near 0; a real human finger or mouse
+  // always has some perpendicular jitter.
   if (typeof dragVarY !== 'number' || dragVarY < 2)  return { ok: false, reason: 'proof_drag_too_straight' };
   if (typeof dragVarX !== 'number' || dragVarX < 20) return { ok: false, reason: 'proof_drag_too_short' };
   return { ok: true };
