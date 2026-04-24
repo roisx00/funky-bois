@@ -539,10 +539,11 @@ export default function DropPage() {
           <div className="drop-v2-aside-card">
             <div className="drop-v2-aside-title">Rules</div>
             <ul className="drop-v2-rules">
-              <li>1-hour cycle · 5-minute window</li>
-              <li>Limited slots each hour</li>
+              <li>2-hour cycle · 5-minute window</li>
+              <li>Limited slots each window · staggered reveal</li>
               <li>Max {maxClaims} claims per session</li>
-              <li>Token + mouse-proof gate blocks automation</li>
+              <li>Min 20 X followers to claim</li>
+              <li>Token + drag-gesture gate blocks automation</li>
               {adminPool ? <li style={{ opacity: 0.7 }}>ADMIN · pool {adminPool.poolSize}</li> : null}
             </ul>
           </div>
