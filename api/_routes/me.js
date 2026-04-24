@@ -10,10 +10,12 @@ export default async function handler(req, res) {
   }
 
   // Hydrate full state in parallel
-  const [inventory, ledger, completed, gifts, wl] = await Promise.all([
+  const [inventory, ledger, completed, gifts, wl, bustInbox, bustOutbox] = await Promise.all([
     sql`SELECT element_type, variant, quantity, obtained_at FROM inventory WHERE user_id = ${user.id}`,
     sql`SELECT amount, reason, created_at FROM busts_ledger WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 50`,
-    sql`SELECT id, elements, tweet_url, shared_to_x, created_at FROM completed_nfts WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 20`,
+    sql`SELECT id, elements, tweet_url, shared_to_x, created_at,
+               gifted_from_user_id, transfer_count, in_transit
+          FROM completed_nfts WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 20`,
     sql`SELECT g.id, g.element_type, g.variant, g.element_name, g.element_rarity,
                g.created_at, g.claimed, g.to_x_username,
                u.x_username AS from_x_username
@@ -21,6 +23,18 @@ export default async function handler(req, res) {
      LEFT JOIN users u ON u.id = g.from_user_id
          WHERE LOWER(g.to_x_username) = LOWER(${user.x_username}) AND g.claimed = false`,
     sql`SELECT wallet_address, claimed_at FROM whitelist WHERE user_id = ${user.id}`,
+    sql`SELECT b.id, b.nft_id, b.created_at, b.expires_at, b.to_x_username,
+               n.elements, n.share_hash,
+               u.x_username AS from_x_username, u.x_avatar AS from_x_avatar
+          FROM pending_bust_gifts b
+          JOIN completed_nfts n ON n.id = b.nft_id
+     LEFT JOIN users u ON u.id = b.from_user_id
+         WHERE LOWER(b.to_x_username) = LOWER(${user.x_username})
+           AND b.expires_at > now()`,
+    sql`SELECT b.id, b.nft_id, b.to_x_username, b.created_at, b.expires_at
+          FROM pending_bust_gifts b
+         WHERE b.from_user_id = ${user.id}
+           AND b.expires_at > now()`,
   ]);
 
   ok(res, {
@@ -55,6 +69,9 @@ export default async function handler(req, res) {
     completedNFTs: completed.map((r) => ({
       id: r.id, elements: r.elements, tweetUrl: r.tweet_url, sharedToX: r.shared_to_x,
       createdAt: new Date(r.created_at).getTime(),
+      giftedFromUserId: r.gifted_from_user_id || null,
+      transferCount:    r.transfer_count || 0,
+      inTransit:        !!r.in_transit,
     })),
     pendingGifts: gifts.map((r) => ({
       id: r.id, elementType: r.element_type, variant: r.variant,
@@ -62,6 +79,24 @@ export default async function handler(req, res) {
       ts: new Date(r.created_at).getTime(), claimed: r.claimed,
       fromXUsername: r.from_x_username,
       toXUsername:   r.to_x_username,
+    })),
+    pendingBustGiftsIn: bustInbox.map((r) => ({
+      id:            r.id,
+      nftId:         r.nft_id,
+      elements:      r.elements,
+      shareHash:     r.share_hash,
+      fromXUsername: r.from_x_username,
+      fromXAvatar:   r.from_x_avatar,
+      toXUsername:   r.to_x_username,
+      ts:            new Date(r.created_at).getTime(),
+      expiresAt:     new Date(r.expires_at).getTime(),
+    })),
+    pendingBustGiftsOut: bustOutbox.map((r) => ({
+      id:          r.id,
+      nftId:       r.nft_id,
+      toXUsername: r.to_x_username,
+      ts:          new Date(r.created_at).getTime(),
+      expiresAt:   new Date(r.expires_at).getTime(),
     })),
     whitelistWallet: wl[0]?.wallet_address || null,
   });

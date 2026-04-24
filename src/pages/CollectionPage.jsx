@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import ElementCard from '../components/ElementCard';
+import NFTCanvas from '../components/NFTCanvas';
 import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
 import { MysteryBoxOpener } from '../components/MysteryBox';
 import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
@@ -21,6 +22,8 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
     bustsBalance, bustsHistory,
     completedNFTs, isWhitelisted,
     pendingGifts, claimGift, sendGift,
+    pendingBustGiftsIn, pendingBustGiftsOut,
+    sendBust, claimBustGift, cancelBustGift, declineBustGift,
     xUser, referralCount,
   } = useGame();
   const normalized = initialTab === 'elements' ? 'inventory' : initialTab;
@@ -245,7 +248,19 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
 
       {/* ─── Gift ─── */}
       {tab === 'gift' && (
-        <GiftSection inventory={inventory} pendingGifts={pendingGifts} xUser={xUser} sendGift={sendGift} claimGift={claimGift} completedNFTs={completedNFTs} />
+        <>
+          <GiftSection inventory={inventory} pendingGifts={pendingGifts} xUser={xUser} sendGift={sendGift} claimGift={claimGift} completedNFTs={completedNFTs} />
+          <BustGiftSection
+            completedNFTs={completedNFTs}
+            pendingBustGiftsIn={pendingBustGiftsIn}
+            pendingBustGiftsOut={pendingBustGiftsOut}
+            sendBust={sendBust}
+            claimBustGift={claimBustGift}
+            cancelBustGift={cancelBustGift}
+            declineBustGift={declineBustGift}
+            xUser={xUser}
+          />
+        </>
       )}
 
       {/* ─── History ─── */}
@@ -529,6 +544,233 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
         </div>
       </div>
 
+    </div>
+  );
+}
+
+function BustGiftSection({
+  completedNFTs,
+  pendingBustGiftsIn,
+  pendingBustGiftsOut,
+  sendBust,
+  claimBustGift,
+  cancelBustGift,
+  declineBustGift,
+  xUser,
+}) {
+  const toast = useToast();
+  const [toUsername, setToUsername] = useState('');
+  const [selectedBustId, setSelectedBustId] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [busyGiftId, setBusyGiftId] = useState(null);
+
+  const sendable = (completedNFTs || []).filter((n) =>
+    !n.sharedToX && !n.inTransit && (n.transferCount || 0) < 1
+  );
+
+  // Derive effective selection — if the selected bust just became
+  // ineligible (sent, cancelled, etc.), treat as unselected without
+  // reaching for useEffect + setState.
+  const effectiveSelectedBustId =
+    selectedBustId && sendable.some((b) => b.id === selectedBustId)
+      ? selectedBustId
+      : null;
+
+  const handleSend = async () => {
+    if (!effectiveSelectedBustId || !toUsername.trim() || sending) return;
+    const clean = normalizeXHandle(toUsername);
+    if (!clean || !isValidXHandle(clean)) {
+      toast.error('Enter a valid X handle.');
+      return;
+    }
+    if (xUser?.username && clean === normalizeXHandle(xUser.username)) {
+      toast.error('You cannot gift yourself.');
+      return;
+    }
+    setSending(true);
+    const r = await sendBust(clean, effectiveSelectedBustId);
+    setSending(false);
+    if (r?.ok) {
+      toast.success(`Bust sent to @${clean}`);
+      setToUsername('');
+      setSelectedBustId(null);
+    } else {
+      toast.error(`Bust send failed (${r?.reason || 'unknown'})`);
+    }
+  };
+
+  const handleClaim = async (gift) => {
+    setBusyGiftId(gift.id);
+    const r = await claimBustGift(gift.id);
+    setBusyGiftId(null);
+    if (r?.ok) toast.success('Bust claimed. Whitelist secured.');
+    else toast.error(r?.reason || 'Claim failed');
+  };
+
+  const handleDecline = (gift) => {
+    declineBustGift(gift.id);
+    toast.info('Bust hidden from inbox.');
+  };
+
+  const handleCancel = async (gift) => {
+    setBusyGiftId(gift.id);
+    const r = await cancelBustGift(gift.id, gift.nftId);
+    setBusyGiftId(null);
+    if (r?.ok) toast.success('Bust gift cancelled.');
+    else toast.error(r?.reason || 'Cancel failed');
+  };
+
+  const hasInbox   = (pendingBustGiftsIn  || []).length > 0;
+  const hasOutbox  = (pendingBustGiftsOut || []).length > 0;
+
+  if (!completedNFTs?.length && !hasInbox && !hasOutbox) return null;
+
+  return (
+    <div className="gift-section" style={{ marginTop: 24 }}>
+      <div className="gift-card">
+        <div className="gift-card-title">Send your bust</div>
+        <div className="gift-card-sub">
+          Transfer your completed portrait to another @X handle. The recipient must not already own a bust.
+          Tweeted, whitelisted, or previously-transferred busts cannot be sent. A bust can only be transferred once.
+        </div>
+
+        {sendable.length === 0 ? (
+          <div className="gift-row-empty">
+            {completedNFTs?.length
+              ? 'No busts eligible to send right now.'
+              : 'You have not built a bust yet.'}
+          </div>
+        ) : (
+          <div className="gift-form">
+            <div>
+              <label>Recipient @username</label>
+              <input
+                type="text"
+                value={toUsername}
+                onChange={(e) => setToUsername(e.target.value)}
+                placeholder="@vitalik"
+                style={{ marginTop: 6, width: '100%' }}
+              />
+              {toUsername.trim() && (() => {
+                const preview = normalizeXHandle(toUsername);
+                if (!preview) return null;
+                const valid = isValidXHandle(preview);
+                return (
+                  <div style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6,
+                    color: valid ? 'var(--text-3)' : 'var(--red, #c4352b)',
+                  }}>
+                    {valid ? `Will send to @${preview}` : 'Not a valid handle'}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div>
+              <label>Bust to send</label>
+              <div className="gift-trait-grid">
+                {sendable.map((bust) => {
+                  const isSelected = effectiveSelectedBustId === bust.id;
+                  return (
+                    <button
+                      key={bust.id}
+                      type="button"
+                      onClick={() => setSelectedBustId(bust.id)}
+                      className={`gift-trait-card${isSelected ? ' selected' : ''}`}
+                    >
+                      <div className="gift-trait-art" style={{ padding: 8 }}>
+                        <NFTCanvas elements={bust.elements} size={140} />
+                      </div>
+                      <div className="gift-trait-info">
+                        <div className="gift-trait-type">PORTRAIT</div>
+                        <div className="gift-trait-name">#{String(bust.id).slice(0, 6)}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button
+              className="btn btn-solid btn-arrow"
+              disabled={!effectiveSelectedBustId || !toUsername.trim() || sending}
+              onClick={handleSend}
+            >
+              {sending ? 'Sending.' : 'Send Bust'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="gift-card">
+        <div className="gift-card-title">Bust inbox</div>
+        <div className="gift-card-sub">
+          Busts sent to your @X handle appear here. Claiming auto-secures your whitelist.
+          You cannot claim if you already own a bust.
+        </div>
+
+        <div className="gift-inbox">
+          {!hasInbox ? (
+            <div className="gift-row-empty">Nothing pending.</div>
+          ) : (
+            pendingBustGiftsIn.map((gift) => (
+              <div key={gift.id} className="gift-row">
+                <div className="gift-row-art" style={{ width: 72, height: 90 }}>
+                  <NFTCanvas elements={gift.elements} size={72} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="gift-row-name">Portrait #{String(gift.nftId).slice(0, 6)}</div>
+                  <div className="gift-row-from">
+                    From @{gift.fromXUsername || 'anon'} · expires {timeAgo(gift.expiresAt)}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    className="btn btn-solid btn-sm"
+                    onClick={() => handleClaim(gift)}
+                    disabled={busyGiftId === gift.id}
+                  >
+                    {busyGiftId === gift.id ? 'Claiming.' : 'Claim'}
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => handleDecline(gift)}
+                    disabled={busyGiftId === gift.id}
+                  >
+                    Hide
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {hasOutbox && (
+        <div className="gift-card">
+          <div className="gift-card-title">Bust outbox</div>
+          <div className="gift-card-sub">Busts you have sent that are still pending. Cancel to return it to yourself.</div>
+          <div className="gift-inbox">
+            {pendingBustGiftsOut.map((gift) => (
+              <div key={gift.id} className="gift-row">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="gift-row-name">Portrait #{String(gift.nftId).slice(0, 6)}</div>
+                  <div className="gift-row-from">
+                    To @{gift.toXUsername} · expires {timeAgo(gift.expiresAt)}
+                  </div>
+                </div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => handleCancel(gift)}
+                  disabled={busyGiftId === gift.id}
+                >
+                  {busyGiftId === gift.id ? 'Cancelling.' : 'Cancel'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

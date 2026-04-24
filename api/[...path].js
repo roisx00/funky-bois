@@ -10,6 +10,9 @@ import dropStatusHandler   from './_routes/drop-status.js';
 import boxOpenHandler      from './_routes/box-open.js';
 import giftSendHandler     from './_routes/gift-send.js';
 import giftClaimHandler    from './_routes/gift-claim.js';
+import bustSendHandler     from './_routes/bust-send.js';
+import bustClaimHandler    from './_routes/bust-claim.js';
+import bustCancelHandler   from './_routes/bust-cancel.js';
 import usersExistsHandler  from './_routes/users-exists.js';
 import portraitSubmit      from './_routes/portrait-submit.js';
 import portraitShare       from './_routes/portrait-share.js';
@@ -49,6 +52,9 @@ const ROUTES = {
   'box-open':            boxOpenHandler,
   'gift-send':           giftSendHandler,
   'gift-claim':          giftClaimHandler,
+  'bust-send':           bustSendHandler,
+  'bust-claim':          bustClaimHandler,
+  'bust-cancel':         bustCancelHandler,
   'users-exists':        usersExistsHandler,
   'portrait-submit':     portraitSubmit,
   'portrait-share':      portraitShare,
