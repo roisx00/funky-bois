@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useGame, simulateNFTCount } from '../context/GameContext';
+import { useGame } from '../context/GameContext';
 import NFTCanvas from '../components/NFTCanvas';
 import { buildNFTSVG, ELEMENT_LABELS, ELEMENT_TYPES, ELEMENT_VARIANTS } from '../data/elements';
 import Timer from '../components/Timer';
@@ -88,10 +88,15 @@ const ARCHETYPES = [
 ];
 
 export default function LandingPage({ onNavigate }) {
-  const { progressCount, sessionStatus } = useGame();
-  const nftCount  = simulateNFTCount();
-  const pct       = Math.min(100, (nftCount / 1969) * 100);
-  const remaining = 1969 - nftCount;
+  const { progressCount, sessionStatus, portraitsBuilt, supplyCap } = useGame();
+  const cap       = supplyCap || 1969;
+  // Real count from /api/drop-status, polled every 15s. Used to be
+  // a fake time-based simulator that had already climbed to
+  // 1,969/1,969 — literally showing mint-unlocked when the DB only
+  // had ~48 real portraits.
+  const nftCount  = Math.min(cap, Number(portraitsBuilt) || 0);
+  const pct       = Math.min(100, (nftCount / cap) * 100);
+  const remaining = Math.max(0, cap - nftCount);
   const stripItems = useMemo(() => makeStripPortraits(16), []);
 
   // Reveal-on-scroll

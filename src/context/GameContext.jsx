@@ -40,10 +40,19 @@ function deriveSessionStatus(serverStatus, claimsThisSession) {
   };
 }
 
-export function simulateNFTCount() {
-  const LAUNCH_MS = 1735689600000;
-  const hours = Math.max(0, (Date.now() - LAUNCH_MS) / 3600000);
-  return Math.min(1969, Math.floor(100 + hours * 0.45));
+// DEPRECATED fake-progress simulator kept only so any legacy callers
+// don't crash. Landing page now reads the REAL count from
+// /api/drop-status via useLivePortraitCount() below.
+export function simulateNFTCount() { return 0; }
+
+// Convenience: pull the authoritative portrait count from drop-status
+// on the landing page. Polls every 30s so long-open tabs stay current.
+export function useLivePortraitCount() {
+  const game = useGame();
+  return {
+    portraitsBuilt: game.portraitsBuilt || 0,
+    supplyCap:      game.supplyCap || 1969,
+  };
 }
 
 // ─── State shape (server-hydrated, with offline cache fallback) ─────────────
@@ -70,6 +79,8 @@ function emptyState() {
     sessionStatus:   deriveSessionStatus(null, 0),
     serverDropStatus: null,
     mySessionClaims: 0,
+    portraitsBuilt:   0,
+    supplyCap:        1969,
   };
 }
 
@@ -117,6 +128,8 @@ function reducer(state, action) {
         serverDropStatus: s,
         mySessionClaims:  s?.mySessionClaims ?? state.mySessionClaims,
         sessionStatus:    deriveSessionStatus(s, s?.mySessionClaims ?? state.mySessionClaims),
+        portraitsBuilt:   typeof s?.portraitsBuilt === 'number' ? s.portraitsBuilt : state.portraitsBuilt,
+        supplyCap:        typeof s?.supplyCap      === 'number' ? s.supplyCap      : state.supplyCap,
       };
     }
 
