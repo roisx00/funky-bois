@@ -24,6 +24,22 @@ export default function BuilderPage({ onNavigate }) {
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState(null);
 
+  // One portrait per X account — hard lock. If the user has ever built,
+  // jump straight to the celebration view with THEIR existing portrait.
+  // No picker, no second submit. Covers refresh-mid-flow too.
+  useEffect(() => {
+    if (flow !== 'picking') return;
+    if (!completedNFTs.length) return;
+    const existing = completedNFTs[0]; // server orders by created_at DESC
+    setBuiltId(existing.id);
+    setSelection(existing.elements || {});
+    // Surface the most advanced stage so the UI shows the right CTA
+    const next = existing.sharedToX
+      ? (game.isWhitelisted ? 'wl-secured' : 'shared')
+      : 'submitted';
+    setFlow(next);
+  }, [completedNFTs, flow, game.isWhitelisted]);
+
   const ownedByType = useMemo(() => {
     const map = {};
     for (const type of ELEMENT_TYPES) {
@@ -49,8 +65,18 @@ export default function BuilderPage({ onNavigate }) {
 
   const handleSubmit = async () => {
     if (!isComplete) return;
+    // Belt-and-suspenders: if they've already built, the server will
+    // reject anyway, but catching it client-side avoids flash-of-error.
+    if (completedNFTs.length > 0) {
+      toast.error('You already built your portrait. One per account.');
+      return;
+    }
     const r = await completeNFT(selection);
     if (r && r.ok === false) {
+      if (r.reason === 'already_built') {
+        toast.error('Portrait already exists for this X account.');
+        return;
+      }
       toast.error(r.reason || 'Portrait submit failed');
       return;
     }
@@ -379,19 +405,15 @@ export default function BuilderPage({ onNavigate }) {
                     Download PNG
                   </button>
                 </div>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  style={{ width: '100%', marginTop: 14 }}
-                  onClick={() => {
-                    setSelection({});
-                    setFlow('picking');
-                    setBuiltId(null);
-                    setTweetUrl('');
-                    setVerifyResult(null);
-                  }}
-                >
-                  Build another bust ↻
-                </button>
+                <div style={{
+                  marginTop: 14, padding: '10px 14px',
+                  fontFamily: 'var(--font-mono)', fontSize: 11,
+                  color: 'var(--text-4)', letterSpacing: '0.04em',
+                  background: 'var(--paper-2)', border: '1px solid var(--hairline)',
+                  textAlign: 'center',
+                }}>
+                  One portrait per @handle · this is yours forever
+                </div>
               </div>
             )}
           </div>

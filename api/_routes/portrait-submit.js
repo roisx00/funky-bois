@@ -27,6 +27,22 @@ export default async function handler(req, res) {
   const { elements } = await readBody(req) || {};
   if (!elements || typeof elements !== 'object') return bad(res, 400, 'missing_elements');
 
+  // ── HARD LOCK: one portrait per X account, ever ──
+  // Checked BEFORE consuming traits so a rejected second-attempt doesn't
+  // burn inventory. The DB also has UNIQUE(user_id) as a second line of
+  // defence — even if this check races, the INSERT below will fail.
+  const existing = one(await sql`
+    SELECT id, share_hash, shared_to_x FROM completed_nfts
+    WHERE user_id = ${user.id} LIMIT 1
+  `);
+  if (existing) {
+    return bad(res, 409, 'already_built', {
+      existingId: existing.id,
+      shareHash: existing.share_hash,
+      sharedToX: existing.shared_to_x,
+    });
+  }
+
   // ── Validate every type is filled with a real variant ──
   for (const type of ELEMENT_TYPES) {
     const v = elements[type];

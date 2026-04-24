@@ -1,13 +1,13 @@
-// Public read-only gallery feed. Lists EVERY built portrait (shared or
-// not) with their maker's X handle + follower count. Default sort is
-// by X followers DESC so bigger accounts get top visibility — free
-// marketing loop (people see their favourite accounts made one, they
-// want one too).
+// Public read-only gallery feed. ONE tile per user (DB has
+// UNIQUE(user_id) as of the one-portrait-per-user migration; DISTINCT
+// ON keeps the query correct even if a race ever sneaks a dupe in).
+// Default sort: by X follower count DESC — bigger accounts bubble to
+// the top for maximum marketing pull.
 //
-// ?sort=recent   — newest first (fallback)
-// ?sort=oldest   — oldest first
-// ?sort=top      — (default) by follower count DESC, tie-break newest
-// ?filter=mine   — only the signed-in user's portraits
+// ?sort=top     — (default) followers DESC, then recency
+// ?sort=recent  — newest first
+// ?sort=oldest  — oldest first
+// ?filter=mine  — only the signed-in user's portrait
 import { sql } from '../_lib/db.js';
 import { getSessionUser } from '../_lib/auth.js';
 import { ok } from '../_lib/json.js';
@@ -18,13 +18,11 @@ export default async function handler(req, res) {
   const filter = (req.query?.filter || '').toString();
   const sort   = (req.query?.sort   || 'top').toString();
 
-  let rows;
+  // 'mine' bypass — a signed-in user's one portrait, no distinct needed.
   if (filter === 'mine') {
     const user = await getSessionUser(req);
-    if (!user) {
-      return ok(res, { total: 0, entries: [] });
-    }
-    rows = await sql`
+    if (!user) return ok(res, { total: 0, entries: [] });
+    const rows = await sql`
       SELECT n.id, n.elements, n.tweet_url, n.shared_to_x, n.created_at,
              u.x_username, u.x_avatar, u.x_followers
       FROM completed_nfts n
@@ -33,47 +31,73 @@ export default async function handler(req, res) {
       ORDER BY n.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
-  } else if (sort === 'oldest') {
+    return ok(res, {
+      total: rows.length,
+      entries: rows.map(mapRow),
+    });
+  }
+
+  // Public view — DISTINCT ON keeps one row per user regardless of DB state.
+  // We pick the latest portrait per user inside the CTE, then sort the
+  // outer query by whichever order the caller asked for.
+  let rows;
+  if (sort === 'oldest') {
     rows = await sql`
-      SELECT n.id, n.elements, n.tweet_url, n.shared_to_x, n.created_at,
-             u.x_username, u.x_avatar, u.x_followers
-      FROM completed_nfts n
-      JOIN users u ON u.id = n.user_id
-      ORDER BY n.created_at ASC
+      WITH one_per_user AS (
+        SELECT DISTINCT ON (n.user_id)
+               n.id, n.elements, n.tweet_url, n.shared_to_x, n.created_at,
+               u.x_username, u.x_avatar, u.x_followers
+        FROM completed_nfts n
+        JOIN users u ON u.id = n.user_id
+        ORDER BY n.user_id, n.created_at DESC
+      )
+      SELECT * FROM one_per_user
+      ORDER BY created_at ASC
       LIMIT ${limit} OFFSET ${offset}
     `;
   } else if (sort === 'recent') {
     rows = await sql`
-      SELECT n.id, n.elements, n.tweet_url, n.shared_to_x, n.created_at,
-             u.x_username, u.x_avatar, u.x_followers
-      FROM completed_nfts n
-      JOIN users u ON u.id = n.user_id
-      ORDER BY n.created_at DESC
+      WITH one_per_user AS (
+        SELECT DISTINCT ON (n.user_id)
+               n.id, n.elements, n.tweet_url, n.shared_to_x, n.created_at,
+               u.x_username, u.x_avatar, u.x_followers
+        FROM completed_nfts n
+        JOIN users u ON u.id = n.user_id
+        ORDER BY n.user_id, n.created_at DESC
+      )
+      SELECT * FROM one_per_user
+      ORDER BY created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
   } else {
-    // Default: TOP by follower count — bigger accounts rise to the top.
+    // Default TOP: biggest X accounts first.
     rows = await sql`
-      SELECT n.id, n.elements, n.tweet_url, n.shared_to_x, n.created_at,
-             u.x_username, u.x_avatar, u.x_followers
-      FROM completed_nfts n
-      JOIN users u ON u.id = n.user_id
-      ORDER BY COALESCE(u.x_followers, 0) DESC, n.created_at DESC
+      WITH one_per_user AS (
+        SELECT DISTINCT ON (n.user_id)
+               n.id, n.elements, n.tweet_url, n.shared_to_x, n.created_at,
+               u.x_username, u.x_avatar, u.x_followers
+        FROM completed_nfts n
+        JOIN users u ON u.id = n.user_id
+        ORDER BY n.user_id, n.created_at DESC
+      )
+      SELECT * FROM one_per_user
+      ORDER BY COALESCE(x_followers, 0) DESC, created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
   }
 
-  ok(res, {
-    total: rows.length,
-    entries: rows.map((r) => ({
-      id:         r.id,
-      elements:   r.elements,
-      xUsername:  r.x_username,
-      xAvatar:    r.x_avatar,
-      xFollowers: Number(r.x_followers) || 0,
-      tweetUrl:   r.tweet_url,
-      sharedToX:  r.shared_to_x,
-      createdAt:  new Date(r.created_at).getTime(),
-    })),
-  });
+  ok(res, { total: rows.length, entries: rows.map(mapRow) });
+}
+
+function mapRow(r) {
+  return {
+    id:         r.id,
+    elements:   r.elements,
+    xUsername:  r.x_username,
+    xAvatar:    r.x_avatar,
+    xFollowers: Number(r.x_followers) || 0,
+    tweetUrl:   r.tweet_url,
+    sharedToX:  r.shared_to_x,
+    createdAt:  new Date(r.created_at).getTime(),
+  };
 }
