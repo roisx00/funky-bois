@@ -186,15 +186,12 @@
     ctx.restore();
   }
 
-  function drawPayloadStack(ctx, x, y, w, rowH) {
-    // two rows: "TRAIT" on top, "BUST" below. Each row is a pill: ink bar
-    // with paper text inside, plus a mono label above the pill.
-    var rows = [
-      { label: 'ITEM 01',  tag: 'TRAIT' },
-      { label: 'ITEM 02',  tag: 'BUST'  },
-    ];
+  function drawPayloadStack(ctx, x, y, w, rowH, rows) {
+    // Each row is a pill: ink bar with paper text inside, plus a small
+    // mono label above the pill. Labels stop 6px above the pill top so
+    // they never collide with the pill below them.
     for (var i = 0; i < rows.length; i++) {
-      var ry = y + i * (rowH + 14);
+      var ry = y + i * (rowH + 28);
       ctx.fillStyle = INK;
       ctx.font = "500 11px 'JetBrains Mono', ui-monospace, monospace";
       ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
@@ -202,14 +199,14 @@
 
       ctx.fillStyle = INK; ctx.fillRect(x, ry, w, rowH);
       ctx.fillStyle = PAPER;
-      ctx.font = "700 22px 'Space Grotesk', sans-serif";
+      ctx.font = "700 20px 'Space Grotesk', sans-serif";
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.fillText(rows[i].tag, x + 18, ry + rowH / 2 + 1);
 
       ctx.fillStyle = PAPER;
       ctx.font = "500 11px 'JetBrains Mono', ui-monospace, monospace";
       ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-      ctx.fillText('→ GIFTABLE', x + w - 18, ry + rowH / 2 + 1);
+      ctx.fillText(rows[i].note || '→ GIFTABLE', x + w - 18, ry + rowH / 2 + 1);
     }
   }
 
@@ -222,88 +219,98 @@
     var today = new Date().toISOString().slice(0, 10).toUpperCase();
     drawKicker(ctx, w, 'THE 1969  ·  GIFTING  ·  NOW LIVE', today);
 
+    // Canvas split: LEFT column for headline+copy, RIGHT column for
+    // the diagram. Columns sized so the 70px headline never overflows
+    // into the diagram zone.
+    var leftPad    = 64;
+    var leftMaxX   = 600;            // headline + copy stop here
+    var rightX     = 660;            // diagram starts here
+    var rightMaxX  = w - 40;         // 1160
+
     // ── LEFT: headline block ──────────────────────────────────────────
-    var leftPad = 72;
-    var headY = 122;
+    var headY = 118;
 
     ctx.fillStyle = INK;
     ctx.font = "500 13px 'JetBrains Mono', ui-monospace, monospace";
     ctx.textBaseline = 'top'; ctx.textAlign = 'left';
     ctx.fillText('FEATURE · 001', leftPad, headY);
 
-    // Line 1: italic "Send" + bold "TRAITS."
+    // "Send TRAITS." — italic "Send" + grotesk bold word
+    // Sized so the longer word ("TRAITS.") comfortably fits the column.
+    var hSize = 70;
     ctx.fillStyle = INK;
-    ctx.font = "italic 92px 'Instrument Serif', serif";
+
+    ctx.font = "italic " + hSize + "px 'Instrument Serif', serif";
     ctx.textBaseline = 'top';
-    ctx.fillText('Send', leftPad, headY + 30);
+    var sendW = ctx.measureText('Send').width;
 
-    ctx.font = "500 92px 'Space Grotesk', sans-serif";
-    // measure to offset "TRAITS."
-    ctx.font = "italic 92px 'Instrument Serif', serif";
-    var sendWidth = ctx.measureText('Send').width;
-    ctx.font = "500 92px 'Space Grotesk', sans-serif";
-    ctx.fillText('TRAITS.', leftPad + sendWidth + 24, headY + 30);
+    ctx.fillText('Send', leftPad, headY + 28);
+    ctx.font = "500 " + hSize + "px 'Space Grotesk', sans-serif";
+    ctx.fillText('TRAITS.', leftPad + sendW + 16, headY + 28);
 
-    // Line 2
-    ctx.font = "italic 92px 'Instrument Serif', serif";
-    ctx.fillText('Send', leftPad, headY + 134);
-    ctx.font = "500 92px 'Space Grotesk', sans-serif";
-    ctx.fillText('BUSTS.', leftPad + sendWidth + 24, headY + 134);
+    ctx.font = "italic " + hSize + "px 'Instrument Serif', serif";
+    ctx.fillText('Send', leftPad, headY + 28 + hSize + 14);
+    ctx.font = "500 " + hSize + "px 'Space Grotesk', sans-serif";
+    ctx.fillText('BUSTS.', leftPad + sendW + 16, headY + 28 + hSize + 14);
 
-    // ink rule
+    // rule under headline
+    var ruleY = headY + 28 + hSize * 2 + 30;
     ctx.strokeStyle = INK; ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(leftPad, headY + 260);
-    ctx.lineTo(leftPad + 440, headY + 260);
+    ctx.moveTo(leftPad, ruleY);
+    ctx.lineTo(leftMaxX - 60, ruleY);
     ctx.stroke();
 
     // deck
     ctx.fillStyle = GREY;
     ctx.font = "500 14px 'JetBrains Mono', ui-monospace, monospace";
     ctx.textBaseline = 'top';
-    ctx.fillText('GIFT ANY TRAIT OR YOUR COMPLETED BUST',       leftPad, headY + 276);
-    ctx.fillText('TO ANOTHER @X HANDLE · RECIPIENT CLAIMS',      leftPad, headY + 296);
-    ctx.fillText('FROM THEIR DASHBOARD · GIFT TAB',              leftPad, headY + 316);
+    ctx.fillText('SEND TRAITS OR BUSTS POINTS TO ANY',   leftPad, ruleY + 18);
+    ctx.fillText('@X HANDLE · RECIPIENT CLAIMS FROM',    leftPad, ruleY + 38);
+    ctx.fillText('THEIR DASHBOARD · GIFT TAB',           leftPad, ruleY + 58);
 
     // rules band
-    ctx.fillStyle = INK; ctx.fillRect(leftPad, headY + 360, 440, 1);
+    var rulesY = ruleY + 96;
+    ctx.fillStyle = INK; ctx.fillRect(leftPad, rulesY, leftMaxX - leftPad - 60, 1);
     ctx.fillStyle = INK;
     ctx.font = "500 11px 'JetBrains Mono', ui-monospace, monospace";
     ctx.textBaseline = 'top';
-    ctx.fillText('RULES',                                        leftPad, headY + 372);
+    ctx.fillText('RULES', leftPad, rulesY + 10);
     ctx.fillStyle = GREY;
-    ctx.fillText('— ONE BUST, ONE TRANSFER',                     leftPad, headY + 392);
-    ctx.fillText('— 7-DAY EXPIRY ON UNCLAIMED GIFTS',            leftPad, headY + 410);
-    ctx.fillText('— TWEETED / WL’D BUSTS ARE LOCKED',       leftPad, headY + 428);
+    ctx.fillText('— MIN 1 BUSTS · MAX = YOUR BALANCE',  leftPad, rulesY + 28);
+    ctx.fillText('— EXISTING USERS CREDITED INSTANTLY', leftPad, rulesY + 46);
+    ctx.fillText('— NEW HANDLES CLAIM ON SIGN-IN',      leftPad, rulesY + 64);
 
     // ── RIGHT: sender → gift → recipient diagram ──────────────────────
-    var rightX   = 670;
-    var cardW    = 200;
-    var cardH    = 200;
-    var senderY  = 142;
+    var rightW   = rightMaxX - rightX;      // 500
+    var cardW    = 180;
+    var cardH    = 180;
+    var gap      = rightW - cardW * 2;      // ~140
+    var senderY  = 148;
 
-    // Sender card
     drawHandleCard(ctx, rightX, senderY, cardW, cardH, 'SENDER', '@you', 'A');
 
-    // Recipient card
-    var recipX = rightX + cardW + 130;
+    var recipX = rightX + cardW + gap;
     drawHandleCard(ctx, recipX, senderY, cardW, cardH, 'RECIPIENT', '@friend', 'B');
 
     // Arrow + stamp between them
     var arrowY = senderY + cardH / 2;
+    var arrowPadding = 18;
     drawArrow(ctx,
-      rightX + cardW + 20, arrowY,
-      rightX + cardW + 110, arrowY
+      rightX + cardW + arrowPadding, arrowY,
+      recipX - arrowPadding, arrowY
     );
     drawStampMono(ctx,
-      rightX + cardW + 65, arrowY - 44,
-      '→ GIFT', -0.14, 16
+      rightX + cardW + gap / 2, arrowY - 40,
+      '→ GIFT', -0.14, 15
     );
 
-    // Payload stack under the diagram — the two items that can move
-    var payloadY = senderY + cardH + 90;
-    var payloadW = cardW * 2 + 130;
-    drawPayloadStack(ctx, rightX, payloadY, payloadW, 44);
+    // Payload stack under the diagram — TRAIT + BUSTS pills
+    var payloadY = senderY + cardH + 80;
+    drawPayloadStack(ctx, rightX, payloadY, rightW, 40, [
+      { label: 'ITEM 01', tag: 'TRAIT', note: '→ GIFTABLE' },
+      { label: 'ITEM 02', tag: 'BUSTS', note: '→ GIFTABLE' },
+    ]);
 
     drawFooter(ctx, w, h);
   }

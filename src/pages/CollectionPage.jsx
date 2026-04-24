@@ -326,7 +326,7 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
   const handleSend = async () => {
     if (!selected || !toUsername.trim() || sending) return;
     if (selected && frozenKeys.has(`${selected.type}:${selected.variant}`)) {
-      toast.error('This trait is frozen — you already used it in your portrait.');
+      toast.error('This element is frozen — you already used it in your portrait.');
       return;
     }
     const clean = normalizeXHandle(toUsername);
@@ -388,8 +388,8 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
   return (
     <div className="gift-section">
       <div className="gift-card">
-        <div className="gift-card-title">Send a gift</div>
-        <div className="gift-card-sub">Pick a trait from your inventory and send it to an @X username. They claim it from their Dashboard.</div>
+        <div className="gift-card-title">Send elements</div>
+        <div className="gift-card-sub">Pick an element (trait) from your inventory and send it to an @X username. They claim it from their Dashboard.</div>
 
         <div className="gift-form">
           <div>
@@ -417,10 +417,10 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
           </div>
 
           <div>
-            <label>Trait to send</label>
+            <label>Element to send</label>
             <div className="gift-trait-grid">
               {inventory.length === 0 ? (
-                <div className="gift-row-empty" style={{ gridColumn: '1/-1' }}>No traits to send.</div>
+                <div className="gift-row-empty" style={{ gridColumn: '1/-1' }}>No elements to send.</div>
               ) : (
                 inventory.map((item) => {
                   const isSelected = selected?.type === item.type && selected?.variant === item.variant;
@@ -431,7 +431,7 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
                       type="button"
                       onClick={() => {
                         if (frozen) {
-                          toast.error('This trait is frozen — you already used it in your portrait.');
+                          toast.error('This element is frozen — you already used it in your portrait.');
                           return;
                         }
                         setSelected({ type: item.type, variant: item.variant, name: item.name, rarity: item.rarity });
@@ -473,7 +473,7 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
               <div>
                 <div className="gift-qty-label">How many to send</div>
                 <div className="gift-qty-sub">
-                  You own {maxQty}× {selected.name}. Choose how many copies to gift.
+                  You own {maxQty}× {selected.name}. Choose how many copies to send.
                 </div>
               </div>
               <div className="gift-qty-stepper">
@@ -500,14 +500,14 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
             disabled={!selected || !toUsername.trim() || sending}
             onClick={handleSend}
           >
-            {sending ? 'Sending.' : sendQty > 1 ? `Send ${sendQty} gifts` : 'Send Gift'}
+            {sending ? 'Sending.' : sendQty > 1 ? `Send ${sendQty} elements` : 'Send Element'}
           </button>
         </div>
       </div>
 
       <div className="gift-card">
-        <div className="gift-card-title">Gift inbox</div>
-        <div className="gift-card-sub">Traits sent to your @X username show up here. Claim to add to your inventory.</div>
+        <div className="gift-card-title">Element inbox</div>
+        <div className="gift-card-sub">Elements (traits) sent to your @X username show up here. Claim to add them to your inventory.</div>
 
         <div className="gift-inbox">
           {myInbox.length === 0 ? (

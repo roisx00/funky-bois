@@ -245,7 +245,7 @@ export default function BuilderPage({ onNavigate }) {
       .filter(Boolean);
 
     const headlines = {
-      submitted:   { kicker: 'Bust submitted · step 1 of 3', h1: 'Your bust is',   em: 'ready to shine.',   sub: 'Post it on X to lock in your spot and unlock +200 BUSTS.' },
+      submitted:   { kicker: 'Portrait submitted · step 1 of 3', h1: 'Your portrait is',   em: 'ready to shine.',   sub: 'Post it on X to lock in your spot and unlock +200 BUSTS.' },
       shared:      { kicker: 'Tweet out · step 2 of 3',      h1: 'The feed',       em: 'has it.',           sub: 'Paste your tweet URL to verify, then secure your whitelist with a wallet.' },
       'wl-secured':{ kicker: 'Whitelist secured · complete', h1: 'You’re in.', em: 'Welcome to the vault.', sub: 'Your portrait is logged, your tweet is archived, and your wallet has a reserved mint spot.' },
     };
