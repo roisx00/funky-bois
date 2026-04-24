@@ -103,6 +103,12 @@ export default function BuilderPage({ onNavigate }) {
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`,
       '_blank'
     );
+    // The moment the user opens the X intent, mark the portrait as
+    // shared. We can't verify the tweet was actually posted (Nitter is
+    // dead), so we trust the intent-click as the share signal. Server
+    // sets shared_to_x = true, credits +200 BUSTS, flips WL badge.
+    // Idempotent — spamming the button doesn't double-credit.
+    markShared(builtId, null);
     setFlow('shared');
   };
 
