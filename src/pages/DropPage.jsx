@@ -231,6 +231,16 @@ export default function DropPage() {
 
     const r = await claimElement({ armToken: armToken.token, interactionProof });
     if (!r.ok) {
+      // Slot hasn't unlocked yet — tell the user when and reset cleanly.
+      if (r.reason === 'slot_not_yet_revealed') {
+        const secs = Math.max(1, Math.ceil((r.retryAfterMs || 0) / 1000));
+        toast.info(`Next slot unlocks in ~${secs}s. Try again then.`);
+        setLastError('slot_not_yet_revealed');
+        setArmToken(null);
+        setDragPct(0);
+        setFlow('ready');
+        return;
+      }
       setLastError(r.reason);
       toast.error(r.reason || 'Claim failed');
       setArmToken(null);

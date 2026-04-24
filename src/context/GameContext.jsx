@@ -390,7 +390,22 @@ export function GameProvider({ children }) {
       return { ok: false, reason: 'Missing arm token or interaction proof' };
     }
     const r = await jpost('/api/drop-claim', { armToken, interactionProof });
-    if (!r.ok) return { ok: false, reason: r.error || 'Drop claim failed' };
+    if (!r.ok) {
+      // Slow-release pool: the slot we wanted hasn't unlocked yet.
+      // Surface the retry-after hint so the DropPage can show a
+      // friendly "next slot opens in Xs" state instead of erroring.
+      if (r.error === 'slot_not_yet_revealed') {
+        return {
+          ok: false,
+          reason: 'slot_not_yet_revealed',
+          retryAfterMs: Number(r.retryAfterMs) || 0,
+          nextRevealAtMs: Number(r.nextRevealAtMs) || 0,
+          claimed: r.claimed,
+          revealed: r.revealed,
+        };
+      }
+      return { ok: false, reason: r.error || 'Drop claim failed' };
+    }
     dispatch({ type: 'ADD_INVENTORY', element: r.element });
     dispatch({ type: 'BUMP_BALANCE', amount: r.bustsReward, reason: `Drop reward: ${r.element.name}` });
     if (r.dailyBonus) dispatch({ type: 'BUMP_BALANCE', amount: r.dailyBonus, reason: 'Daily drop claim' });

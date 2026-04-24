@@ -124,15 +124,55 @@ export default async function handler(req, res) {
     return bad(res, 429, 'max_claims_reached', { sessionId: sessId });
   }
 
-  // ── 4. Atomic pool decrement ──
+  // ── 4. Slow-release gate ──
+  // Bots were taking all 20 slots within 3 seconds of each session
+  // opening (logged: first_claim :00:03, last :00:06, every hour).
+  // Slots now unlock gradually across the 5-minute session window so
+  // an :00 bot can only grab ONE slot and then has to wait like a
+  // human for the next one. With pool=20 and window=5min, that's one
+  // slot every 15 seconds.
+  //
+  // First slot (index 0) is available at session_start + 0; i.e. a
+  // prepared user can still claim immediately at :00:00. The bot loses
+  // the advantage of grabbing the other 19 in the same burst.
+  const SESSION_WINDOW_MS_LOCAL = 5 * 60 * 1000;
+  const releaseIntervalMs = Math.floor(SESSION_WINDOW_MS_LOCAL / poolSize);
+  const elapsedMs = Date.now() - sessId;
+  const revealed = Math.max(
+    1,
+    Math.min(poolSize, 1 + Math.floor(elapsedMs / releaseIntervalMs))
+  );
+
+  // ── 5. Atomic pool decrement (slot only if already revealed) ──
   const sessRow = one(await sql`
     UPDATE drop_sessions
        SET pool_claimed = pool_claimed + 1
      WHERE session_id = ${sessId}
        AND pool_claimed < pool_size
+       AND pool_claimed < ${revealed}
     RETURNING pool_claimed, pool_size
   `);
-  if (!sessRow) return bad(res, 410, 'pool_exhausted');
+  if (!sessRow) {
+    // Distinguish "pool exhausted" from "slot not yet revealed" so the
+    // UI can tell the user to wait N seconds instead of giving up.
+    const current = one(await sql`
+      SELECT pool_claimed, pool_size
+        FROM drop_sessions WHERE session_id = ${sessId}
+    `);
+    const taken = current?.pool_claimed ?? 0;
+    const size  = current?.pool_size ?? poolSize;
+    if (taken >= size) return bad(res, 410, 'pool_exhausted');
+
+    // Slot is queued — tell the client when the next one unlocks.
+    const nextRevealAt = sessId + (taken + 1 - 1) * releaseIntervalMs;
+    const retryAfterMs = Math.max(0, nextRevealAt - Date.now() + 200);
+    return bad(res, 425, 'slot_not_yet_revealed', {
+      revealed,
+      claimed: taken,
+      retryAfterMs,
+      nextRevealAtMs: nextRevealAt,
+    });
+  }
 
   // ── 5. Pick, write inventory + ledger ──
   const el = pickRandomElement();
