@@ -197,6 +197,209 @@ export default function BuilderPage({ onNavigate }) {
   const showPicker = flow === 'picking';
   const showConfirm = flow !== 'picking';
 
+  // ═══════════════════════════════════════════════════════════════════
+  // CELEBRATION VIEW — once the user has submitted, take over the whole
+  // page with a hero layout. Portrait front and centre, their @username
+  // on top, step progress + context-aware CTA. No "fresh build" clutter.
+  // ═══════════════════════════════════════════════════════════════════
+  if (flow !== 'picking') {
+    const selectedTraitChips = ELEMENT_TYPES
+      .map((type) => {
+        const v = selection[type];
+        if (v == null) return null;
+        const info = ELEMENT_VARIANTS[type]?.[v];
+        return info ? { type, label: ELEMENT_LABELS[type], name: info.name, rarity: info.rarity } : null;
+      })
+      .filter(Boolean);
+
+    const headlines = {
+      submitted:   { kicker: 'Bust submitted · step 1 of 3', h1: 'Your bust is',   em: 'ready to shine.',   sub: 'Post it on X to lock in your spot and unlock +200 BUSTS.' },
+      shared:      { kicker: 'Tweet out · step 2 of 3',      h1: 'The feed',       em: 'has it.',           sub: 'Paste your tweet URL to verify, then secure your whitelist with a wallet.' },
+      'wl-secured':{ kicker: 'Whitelist secured · complete', h1: 'You’re in.', em: 'Welcome to the vault.', sub: 'Your portrait is logged, your tweet is archived, and your wallet has a reserved mint spot.' },
+    };
+    const H = headlines[flow] || headlines.submitted;
+
+    return (
+      <div className="builder-page builder-celebration">
+        <header className="builder-celebrate-head">
+          <div className="builder-celebrate-kicker">
+            <span className="hero-eyebrow-dot" />
+            {H.kicker}
+          </div>
+          <h1 className="builder-celebrate-title">
+            {H.h1} <em>{H.em}</em>
+          </h1>
+          <p className="builder-celebrate-sub">{H.sub}</p>
+        </header>
+
+        <div className="builder-celebrate-grid">
+          {/* LEFT: portrait hero */}
+          <div className="builder-celebrate-portrait">
+            <div className="builder-celebrate-art">
+              <NFTCanvas elements={selection} size={560} />
+              {flow === 'wl-secured' && (
+                <span className="builder-celebrate-seal">✓ WHITELISTED</span>
+              )}
+            </div>
+            <div className="builder-celebrate-attrib">
+              <div className="builder-celebrate-attrib-who">
+                {xUser?.avatar ? (
+                  <img src={xUser.avatar} alt="" />
+                ) : (
+                  <span className="builder-celebrate-avatar-fallback">
+                    {xUser?.username?.[0]?.toUpperCase() || '?'}
+                  </span>
+                )}
+                <div>
+                  <div className="builder-celebrate-handle">@{xUser?.username || 'anon'}</div>
+                  <div className="builder-celebrate-id">
+                    #{(builtId || '').slice(0, 8).toUpperCase() || '--------'}
+                  </div>
+                </div>
+              </div>
+              <div className="builder-celebrate-traitchips">
+                {selectedTraitChips.map((t) => (
+                  <span key={t.type} className={`gallery-trait-chip rarity-${t.rarity}`}>
+                    <span className="gallery-trait-name">{t.name}</span>
+                    <span className="gallery-trait-type">{t.label}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: context-aware actions */}
+          <div className="builder-celebrate-actions">
+            <div className="builder-celebrate-steps">
+              <Step num="01" title="Submitted" done active={flow === 'submitted'} />
+              <Step num="02" title="Shared on X" done={flow === 'shared' || flow === 'wl-secured'} active={flow === 'shared'} />
+              <Step num="03" title="Whitelist secured" done={flow === 'wl-secured'} active={flow === 'wl-secured'} />
+            </div>
+
+            {flow === 'submitted' && (
+              <div className="builder-celebrate-cta">
+                <div className="builder-celebrate-cta-kicker">Next step</div>
+                <h3 className="builder-celebrate-cta-title">Share on X to unlock <em>+200 BUSTS.</em></h3>
+                <p className="builder-celebrate-cta-body">
+                  Your tweet will tag {X_HANDLE} and carry your portrait id (<span className="mono">{shareHash || '—'}</span>).
+                  We use it to verify and drop the reward.
+                </p>
+                <div className="builder-celebrate-btns">
+                  <button className="btn btn-solid btn-lg btn-arrow btn-lime-dot" onClick={handleShare}>
+                    Share on X
+                  </button>
+                  <button className="btn btn-ghost btn-lg" onClick={handleDownloadPortrait}>
+                    Download PNG
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {flow === 'shared' && (
+              <div className="builder-celebrate-cta">
+                <div className="builder-celebrate-cta-kicker">Almost there</div>
+                <h3 className="builder-celebrate-cta-title">Verify and secure <em>whitelist.</em></h3>
+                <p className="builder-celebrate-cta-body">
+                  Paste the tweet URL to verify (<span className="mono">{shareHash || '—'}</span>) then connect a wallet to reserve your mint spot.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                  <input
+                    type="url"
+                    value={tweetUrl}
+                    onChange={(e) => setTweetUrl(e.target.value)}
+                    placeholder="https://x.com/you/status/1234567890"
+                    style={{
+                      width: '100%', padding: '12px 14px',
+                      border: '1px solid var(--hairline)', background: 'var(--paper)',
+                      fontFamily: 'var(--font-mono)', fontSize: 12, borderRadius: 4,
+                    }}
+                  />
+                  <div className="builder-celebrate-btns">
+                    <button
+                      className="btn btn-solid btn-lg btn-arrow btn-lime-dot"
+                      onClick={handleConfirmShared}
+                      disabled={verifying || !tweetUrl.trim()}
+                    >
+                      {verifying ? 'Verifying.' : 'Verify tweet'}
+                    </button>
+                    {isWalletConnected ? (
+                      <button className="btn btn-ghost btn-lg" onClick={handleClaimWL}>
+                        Secure whitelist
+                      </button>
+                    ) : (
+                      <button className="btn btn-ghost btn-lg" onClick={handleConnectWallet}>
+                        Connect wallet
+                      </button>
+                    )}
+                  </div>
+                  {verifyResult && (
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 11, padding: '8px 12px',
+                        border: '1px solid var(--hairline)', background: 'var(--paper-2)',
+                        color: verifyResult.ok ? 'var(--text-1)' : 'var(--red, #c00)',
+                      }}
+                    >
+                      {verifyResult.ok
+                        ? verifyResult.verified
+                          ? 'Tweet verified. BUSTS credited.'
+                          : 'Marked shared. Server will re-check the tweet in the background.'
+                        : `Could not verify: ${verifyResult.reason}`}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {flow === 'wl-secured' && (
+              <div className="builder-celebrate-cta success">
+                <div className="builder-celebrate-cta-kicker">Whitelist confirmed</div>
+                <h3 className="builder-celebrate-cta-title">Portrait logged, wallet reserved.</h3>
+                <div className="builder-confirm-ledger">
+                  <div className="builder-confirm-ledger-row">
+                    <span>X handle</span>
+                    <strong>@{xUser?.username || '—'}</strong>
+                  </div>
+                  <div className="builder-confirm-ledger-row">
+                    <span>Wallet</span>
+                    <strong className="mono">
+                      {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : '—'}
+                    </strong>
+                  </div>
+                  <div className="builder-confirm-ledger-row">
+                    <span>Portrait ID</span>
+                    <strong className="mono">#{(builtId || '').slice(0, 8).toUpperCase()}</strong>
+                  </div>
+                </div>
+                <div className="builder-celebrate-btns">
+                  <button className="btn btn-solid btn-lg btn-arrow" onClick={() => onNavigate('gallery')}>
+                    View in gallery
+                  </button>
+                  <button className="btn btn-ghost btn-lg" onClick={handleDownloadPortrait}>
+                    Download PNG
+                  </button>
+                </div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ width: '100%', marginTop: 14 }}
+                  onClick={() => {
+                    setSelection({});
+                    setFlow('picking');
+                    setBuiltId(null);
+                    setTweetUrl('');
+                    setVerifyResult(null);
+                  }}
+                >
+                  Build another bust ↻
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="builder-page">
       {/* ── HEADER ── */}

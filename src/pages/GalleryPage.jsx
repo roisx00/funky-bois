@@ -29,33 +29,39 @@ function timeAgo(ts) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function formatFollowers(n) {
+  if (!n || n < 1000) return String(n || 0);
+  if (n < 1_000_000)  return `${(n / 1000).toFixed(n < 10000 ? 1 : 0)}K`.replace('.0K', 'K');
+  return `${(n / 1_000_000).toFixed(1)}M`.replace('.0M', 'M');
+}
+
 export default function GalleryPage() {
   const { xUser } = useGame();
   const [entries, setEntries] = useState([]);
   const [filter, setFilter]   = useState('all');
-  const [sort, setSort]       = useState('recent');
+  const [sort, setSort]       = useState('top'); // 'top' | 'recent' | 'oldest'
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const url = filter === 'mine' ? '/api/gallery?filter=mine&limit=100' : '/api/gallery?limit=120';
+    const params = new URLSearchParams();
+    if (filter === 'mine') params.set('filter', 'mine');
+    params.set('sort', sort);
+    params.set('limit', filter === 'mine' ? '100' : '120');
     try {
-      const r = await fetch(url, { credentials: 'same-origin' });
+      const r = await fetch(`/api/gallery?${params}`, { credentials: 'same-origin' });
       const d = r.ok ? await r.json() : { entries: [] };
       setEntries(d.entries || []);
     } catch {
       setEntries([]);
     }
     setLoading(false);
-  }, [filter]);
+  }, [filter, sort]);
 
   useEffect(() => { load(); }, [load]);
 
-  const sorted = [...entries].sort((a, b) => sort === 'oldest'
-    ? a.createdAt - b.createdAt
-    : b.createdAt - a.createdAt
-  );
-
+  // Server already sorts — just use entries as-is
+  const sorted = entries;
   const totalCount = entries.length;
 
   return (
@@ -93,6 +99,9 @@ export default function GalleryPage() {
         </div>
 
         <div className="gallery-filter-group">
+          <button className={`gallery-filter-btn${sort === 'top' ? ' active' : ''}`} onClick={() => setSort('top')}>
+            Top
+          </button>
           <button className={`gallery-filter-btn${sort === 'recent' ? ' active' : ''}`} onClick={() => setSort('recent')}>
             Newest
           </button>
@@ -124,8 +133,8 @@ export default function GalleryPage() {
           </div>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.04em', color: 'var(--text-4)' }}>
             {filter === 'mine'
-              ? 'Build your first portrait and share it on X.'
-              : 'Gallery fills up as the community shares their portraits.'}
+              ? 'Head to /build and assemble your first one.'
+              : 'Gallery fills up as the community builds their portraits.'}
           </p>
         </div>
       ) : (
@@ -145,10 +154,26 @@ function GalleryTile({ nft, isMine }) {
     <article className={`gallery-tile${isMine ? ' mine' : ''}`}>
       <div className="gallery-tile-art">
         <NFTCanvas elements={nft.elements} size={280} />
+        {nft.sharedToX && (
+          <span className="gallery-tile-badge shared" title="Shared on X">✓ shared</span>
+        )}
+        {nft.xFollowers > 0 && (
+          <span className="gallery-tile-badge followers" title={`${nft.xFollowers.toLocaleString()} followers on X`}>
+            {formatFollowers(nft.xFollowers)} followers
+          </span>
+        )}
       </div>
       <div className="gallery-tile-info">
         <span className="gallery-tile-id">#{String(nft.id).slice(-6).toUpperCase()}</span>
-        <span className="gallery-tile-name">@{nft.xUsername}</span>
+        <a
+          className="gallery-tile-name"
+          href={`https://x.com/${nft.xUsername}`}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+        >
+          @{nft.xUsername}
+        </a>
         <span className="gallery-tile-time">{timeAgo(nft.createdAt)}</span>
         {topTraits.length > 0 && (
           <div className="gallery-tile-traits">

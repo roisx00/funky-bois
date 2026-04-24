@@ -4162,7 +4162,120 @@ section { background: var(--bg); }
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
+.gallery-tile-badge {
+  position: absolute;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--ink);
+  z-index: 1;
+  line-height: 1;
+  background: var(--paper);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.gallery-tile-badge.shared   { top: 10px; right: 10px; background: var(--accent); }
+.gallery-tile-badge.followers { top: 10px; left: 10px; background: var(--ink); color: var(--paper); font-weight: 500; }
+.gallery-tile-name { cursor: pointer; text-decoration: none; color: inherit; }
+.gallery-tile-name:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*  Builder celebration — shown once user has submitted their portrait.    */
+/* ═══════════════════════════════════════════════════════════════════════ */
+.builder-celebration { max-width: 1240px; margin: 0 auto; padding: 48px 24px 96px; }
+.builder-celebrate-head { text-align: center; max-width: 720px; margin: 0 auto 48px; }
+.builder-celebrate-kicker {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 18px;
+}
+.builder-celebrate-title {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: clamp(42px, 7vw, 88px); letter-spacing: -0.035em;
+  line-height: 1; margin: 0 0 20px; color: var(--ink);
+}
+.builder-celebrate-title em { font-family: var(--font-serif, 'Instrument Serif', serif); font-style: italic; font-weight: 400; }
+.builder-celebrate-sub {
+  max-width: 560px; margin: 0 auto; font-size: 16px; line-height: 1.55; color: var(--text-3);
+}
+.builder-celebrate-grid {
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 32px; align-items: start;
+}
+@media (max-width: 960px) { .builder-celebrate-grid { grid-template-columns: 1fr; gap: 24px; } }
+.builder-celebrate-portrait {
+  background: var(--surface); border: 1px solid var(--ink);
+  box-shadow: 8px 8px 0 var(--ink); overflow: hidden;
+}
+.builder-celebrate-art {
+  position: relative; background: var(--paper-2);
+  border-bottom: 1px solid var(--hairline);
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+}
+.builder-celebrate-art .nft-canvas-wrap { width: 88% !important; max-width: 560px !important; height: auto; aspect-ratio: 1; }
+.builder-celebrate-seal {
+  position: absolute; top: 18px; right: 18px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
+  padding: 6px 12px; background: var(--accent); color: var(--ink);
+  border: 1px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+}
+.builder-celebrate-attrib { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+.builder-celebrate-attrib-who { display: flex; align-items: center; gap: 14px; }
+.builder-celebrate-attrib-who img {
+  width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--ink);
+}
+.builder-celebrate-avatar-fallback {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--paper-2); border: 1px solid var(--ink);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 18px; color: var(--ink);
+}
+.builder-celebrate-handle {
+  font-family: var(--font-display); font-size: 20px; font-weight: 500;
+  color: var(--ink); letter-spacing: -0.01em;
+}
+.builder-celebrate-id {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+  color: var(--text-4); margin-top: 2px;
+}
+.builder-celebrate-traitchips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding-top: 16px; border-top: 1px solid var(--hairline);
+}
+.builder-celebrate-actions { display: flex; flex-direction: column; gap: 20px; }
+.builder-celebrate-steps {
+  background: var(--surface); border: 1px solid var(--hairline);
+  padding: 16px 20px; display: flex; flex-direction: column; gap: 12px;
+}
+.builder-celebrate-cta {
+  background: var(--surface); border: 1px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink); padding: 24px 26px;
+}
+.builder-celebrate-cta.success { background: color-mix(in srgb, var(--accent) 20%, var(--surface)); }
+.builder-celebrate-cta-kicker {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-4); margin-bottom: 10px;
+}
+.builder-celebrate-cta-title {
+  font-family: var(--font-display); font-size: 24px; font-weight: 500;
+  letter-spacing: -0.02em; line-height: 1.15; color: var(--ink); margin: 0 0 12px;
+}
+.builder-celebrate-cta-title em {
+  font-family: var(--font-serif, 'Instrument Serif', serif); font-style: italic;
+}
+.builder-celebrate-cta-body {
+  font-size: 14px; line-height: 1.55; color: var(--text-3); margin: 0 0 20px;
+}
+.builder-celebrate-cta-body .mono {
+  font-family: var(--font-mono); font-size: 12px;
+  background: var(--paper-2); padding: 1px 6px; border: 1px solid var(--hairline); color: var(--ink);
+}
+.builder-celebrate-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.builder-celebrate-btns .btn { flex: 1 1 auto; min-width: 140px; }
 .gallery-tile-art .nft-canvas-wrap { width: 100%; height: 100%; }
 .gallery-tile-art svg { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; border: none !important; }
 .gallery-tile-info {

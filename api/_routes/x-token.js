@@ -43,9 +43,11 @@ export default async function handler(req, res) {
     return bad(res, 401, 'token_exchange_failed', { detail: tokenData });
   }
 
-  // ── 2. Fetch the signed-in user's own profile ──
+  // ── 2. Fetch the signed-in user's own profile + public metrics ──
+  // public_metrics gives us followers_count — we sort the gallery by it
+  // so bigger accounts get top visibility (free marketing loop).
   const meResp = await fetch(
-    'https://api.twitter.com/2/users/me?user.fields=profile_image_url,name',
+    'https://api.twitter.com/2/users/me?user.fields=profile_image_url,name,public_metrics',
     { headers: { Authorization: `Bearer ${tokenData.access_token}` } }
   );
   const meData = await meResp.json();
@@ -53,19 +55,21 @@ export default async function handler(req, res) {
     return bad(res, 401, 'me_failed', { detail: meData });
   }
   const x = meData.data;
-  const xId       = x.id;
-  const xUsername = x.username;
-  const xName     = x.name || null;
-  const xAvatar   = x.profile_image_url || null;
+  const xId        = x.id;
+  const xUsername  = x.username;
+  const xName      = x.name || null;
+  const xAvatar    = x.profile_image_url || null;
+  const xFollowers = Number(x.public_metrics?.followers_count) || 0;
 
   // ── 3. Upsert user ──
   const upserted = one(await sql`
-    INSERT INTO users (x_id, x_username, x_name, x_avatar, referral_code)
-    VALUES (${xId}, ${xUsername}, ${xName}, ${xAvatar}, ${xUsername})
+    INSERT INTO users (x_id, x_username, x_name, x_avatar, referral_code, x_followers)
+    VALUES (${xId}, ${xUsername}, ${xName}, ${xAvatar}, ${xUsername}, ${xFollowers})
     ON CONFLICT (x_id) DO UPDATE
       SET x_username = EXCLUDED.x_username,
           x_name     = EXCLUDED.x_name,
           x_avatar   = EXCLUDED.x_avatar,
+          x_followers = EXCLUDED.x_followers,
           updated_at = now()
     RETURNING id, x_username, x_avatar, x_name, busts_balance, is_whitelisted, referred_by_user
   `);

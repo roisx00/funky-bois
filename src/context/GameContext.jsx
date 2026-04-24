@@ -370,6 +370,14 @@ export function GameProvider({ children }) {
       type: 'ADD_COMPLETED',
       nft: { id: r.id, elements, shareHash: r.shareHash, sharedToX: false, createdAt: Date.now() },
     });
+    // Server consumed the 8 traits atomically — mirror that in local
+    // inventory state so the UI (Gift tab, Build picker) updates
+    // instantly without waiting for a /api/me refetch.
+    if (Array.isArray(r.consumed)) {
+      for (const c of r.consumed) {
+        dispatch({ type: 'REMOVE_INVENTORY', elementType: c.type, variant: c.variant });
+      }
+    }
     return { ok: true, id: r.id, shareHash: r.shareHash };
   }, []);
 
