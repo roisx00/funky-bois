@@ -62,8 +62,7 @@ function emptyState() {
     followClaimedAt: null,
     pendingGifts:    [],
     pendingInbox:    [],
-    pendingBustGiftsIn:  [],
-    pendingBustGiftsOut: [],
+    pendingBustsTransfers: [],
     referralCode:    null,
     referralCount:   0,
     isAdmin:         false,
@@ -103,8 +102,7 @@ function reducer(state, action) {
         completedNFTs:    me.completedNFTs,
         pendingGifts:     me.pendingGifts || [],
         pendingInbox:     me.pendingGifts || [], // legacy alias
-        pendingBustGiftsIn:  me.pendingBustGiftsIn  || [],
-        pendingBustGiftsOut: me.pendingBustGiftsOut || [],
+        pendingBustsTransfers: me.pendingBustsTransfers || [],
       };
     }
 
@@ -188,59 +186,11 @@ function reducer(state, action) {
         pendingInbox: state.pendingInbox.filter((g) => g.id !== action.giftId),
       };
 
-    case 'MARK_BUST_IN_TRANSIT':
+    case 'REMOVE_BUSTS_TRANSFER':
       return {
         ...state,
-        completedNFTs: state.completedNFTs.map((n) =>
-          n.id === action.bustId ? { ...n, inTransit: true } : n
-        ),
-        pendingBustGiftsOut: [
-          {
-            id:          action.bustGiftId,
-            nftId:       action.bustId,
-            toXUsername: action.toXUsername,
-            ts:          Date.now(),
-            expiresAt:   action.expiresAt,
-          },
-          ...state.pendingBustGiftsOut,
-        ],
-      };
-
-    case 'RELEASE_BUST_RESERVATION':
-      return {
-        ...state,
-        completedNFTs: state.completedNFTs.map((n) =>
-          n.id === action.bustId ? { ...n, inTransit: false } : n
-        ),
-        pendingBustGiftsOut: state.pendingBustGiftsOut.filter(
-          (g) => g.id !== action.bustGiftId
-        ),
-      };
-
-    case 'REMOVE_BUST_SENT_AWAY':
-      return {
-        ...state,
-        completedNFTs: state.completedNFTs.filter((n) => n.id !== action.bustId),
-        pendingBustGiftsOut: state.pendingBustGiftsOut.filter(
-          (g) => g.nftId !== action.bustId
-        ),
-      };
-
-    case 'REMOVE_BUST_INBOX':
-      return {
-        ...state,
-        pendingBustGiftsIn: state.pendingBustGiftsIn.filter(
-          (g) => g.id !== action.bustGiftId
-        ),
-      };
-
-    case 'ADD_CLAIMED_BUST':
-      return {
-        ...state,
-        completedNFTs: [action.bust, ...state.completedNFTs],
-        isWhitelisted: true,
-        pendingBustGiftsIn: state.pendingBustGiftsIn.filter(
-          (g) => g.id !== action.bustGiftId
+        pendingBustsTransfers: state.pendingBustsTransfers.filter(
+          (t) => t.id !== action.transferId
         ),
       };
 
@@ -428,50 +378,26 @@ export function GameProvider({ children }) {
     return { ok: true, element: r.element };
   }, []);
 
-  const sendBust = useCallback(async (toXUsername, bustId) => {
-    const r = await jpost('/api/bust-send', { toXUsername, bustId });
-    if (!r.ok) return { ok: false, reason: r.error || r.message || 'Bust send failed', status: r.status };
-    dispatch({
-      type: 'MARK_BUST_IN_TRANSIT',
-      bustId,
-      bustGiftId: r.bustGiftId,
-      toXUsername,
-      expiresAt: r.expiresAt ? new Date(r.expiresAt).getTime() : null,
-    });
-    return { ok: true, bustGiftId: r.bustGiftId, recipient: r.recipient, expiresAt: r.expiresAt };
+  const sendBusts = useCallback(async (toXUsername, amount) => {
+    const r = await jpost('/api/busts-send', { toXUsername, amount });
+    if (!r.ok) return { ok: false, reason: r.error || r.message || 'BUSTS send failed', status: r.status };
+    // Server already deducted; mirror locally and append a ledger row.
+    dispatch({ type: 'BUMP_BALANCE', amount: -Number(r.amount), reason: `Sent ${r.amount} BUSTS to @${r.recipient}` });
+    return {
+      ok: true,
+      amount:   Number(r.amount),
+      recipient: r.recipient,
+      delivered: !!r.delivered,      // true if recipient exists; false → pending
+      transferId: r.transferId || null,
+    };
   }, []);
 
-  const cancelBustGift = useCallback(async (bustGiftId, bustId) => {
-    const r = await jpost('/api/bust-cancel', { bustGiftId });
-    if (!r.ok) return { ok: false, reason: r.error || 'Cancel failed' };
-    dispatch({ type: 'RELEASE_BUST_RESERVATION', bustId, bustGiftId });
-    return { ok: true };
-  }, []);
-
-  const claimBustGift = useCallback(async (bustGiftId) => {
-    const r = await jpost('/api/bust-claim', { bustGiftId });
+  const claimBustsTransfer = useCallback(async (transferId) => {
+    const r = await jpost('/api/busts-claim', { transferId });
     if (!r.ok) return { ok: false, reason: r.error || 'Claim failed' };
-    dispatch({
-      type: 'ADD_CLAIMED_BUST',
-      bust: {
-        id:            r.bust.id,
-        elements:      r.bust.elements,
-        shareHash:     r.bust.shareHash,
-        sharedToX:     false,
-        createdAt:     r.bust.createdAt ? new Date(r.bust.createdAt).getTime() : Date.now(),
-        transferCount: r.bust.transferCount,
-        inTransit:     false,
-      },
-      bustGiftId,
-    });
-    return { ok: true, bust: r.bust };
-  }, []);
-
-  const declineBustGift = useCallback(async (bustGiftId) => {
-    // Decline is just the recipient removing it from their inbox view;
-    // the pending row continues to exist until expiry or sender cancel.
-    // Client-side only — server needs no extra endpoint.
-    dispatch({ type: 'REMOVE_BUST_INBOX', bustGiftId });
+    dispatch({ type: 'BUMP_BALANCE', amount: Number(r.amount), reason: `Received ${r.amount} BUSTS from @${r.fromXUsername}` });
+    dispatch({ type: 'REMOVE_BUSTS_TRANSFER', transferId });
+    return { ok: true, amount: Number(r.amount), fromXUsername: r.fromXUsername };
   }, []);
 
   const claimFollow = useCallback(async () => {
@@ -604,10 +530,8 @@ export function GameProvider({ children }) {
     addGiftedElement,
     sendGift,
     claimGift,
-    sendBust,
-    claimBustGift,
-    cancelBustGift,
-    declineBustGift,
+    sendBusts,
+    claimBustsTransfer,
     checkUserExists,
     claimFollow,
     earnReferralBonus,
