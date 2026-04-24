@@ -35,7 +35,7 @@
 <div id="status">Loading art + fonts.</div>
 
 <main>
-<section><div class="hd"><h2>00 · Article headline</h2><span class="meta">1500 × 500 · banner</span></div><div class="stage"><canvas id="g00" width="1500" height="500"></canvas></div><div class="row"><span class="dim">Cover card. Strict black and white. Attach as the lead image of the thread.</span><button onclick="dl('g00','the1969-00-headline.png')">Download PNG</button></div></section>
+<section><div class="hd"><h2>00 · Article headline</h2><span class="meta">1500 × 600 · 5:2 banner</span></div><div class="stage"><canvas id="g00" width="1500" height="600"></canvas></div><div class="row"><span class="dim">Cover card. Strict black and white. Attach as the lead image of the thread.</span><button onclick="dl('g00','the1969-00-headline.png')">Download PNG</button></div></section>
 <section><div class="hd"><h2>01 · Supply counter</h2><span class="meta">1200 × 675</span></div><div class="stage"><canvas id="g01" width="1200" height="675"></canvas></div><div class="row"><span class="dim">Pair with section 01 of the article.</span><button onclick="dl('g01','the1969-01-supply.png')">Download PNG</button></div></section>
 <section><div class="hd"><h2>02 · Timeline</h2><span class="meta">1200 × 675</span></div><div class="stage"><canvas id="g02" width="1200" height="675"></canvas></div><div class="row"><span class="dim">Pair with section 02 · Why 1,969.</span><button onclick="dl('g02','the1969-02-timeline.png')">Download PNG</button></div></section>
 <section><div class="hd"><h2>03 · Drop flowchart</h2><span class="meta">1200 × 675</span></div><div class="stage"><canvas id="g03" width="1200" height="675"></canvas></div><div class="row"><span class="dim">Pair with section 03 · The hourly drop.</span><button onclick="dl('g03','the1969-03-drop-flow.png')">Download PNG</button></div></section>
@@ -146,85 +146,85 @@ const PRESETS = [
 ];
 
 // ══════════════════════════════════════════════════════════════════════
-// 00 · Article headline · 1500 × 500 · strict black + white + cream
+// 00 · Article headline · 1500 × 600 · 5:2 banner · strict B + W + cream
 // ══════════════════════════════════════════════════════════════════════
 async function draw00() {
   const c = document.getElementById('g00');
   const ctx = c.getContext('2d');
   const w = c.width, h = c.height;
 
-  // Cream paper + dither grain
   fillPaper(ctx, w, h);
 
-  // Top ink ticker bar (same geometry as other graphics, stretched)
-  ctx.fillStyle = INK; ctx.fillRect(40, 40, w - 80, 34);
+  // Top ink ticker
+  ctx.fillStyle = INK; ctx.fillRect(40, 40, w - 80, 36);
   ctx.fillStyle = PAPER;
   ctx.font = "500 13px 'JetBrains Mono', monospace";
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  ctx.fillText('FIELD GUIDE  ·  VOL 0  ·  PORTRAITS ON ETHEREUM', 56, 57);
+  ctx.fillText('FIELD GUIDE  ·  VOL 0  ·  PORTRAITS ON ETHEREUM', 56, 58);
   ctx.textAlign = 'right';
-  ctx.fillText('ISSUE ' + new Date().toISOString().slice(0, 10).toUpperCase(), w - 56, 57);
+  ctx.fillText('ISSUE ' + new Date().toISOString().slice(0, 10).toUpperCase(), w - 56, 58);
 
-  // ── Two-column composition: headline on the left, portrait on the right
-  // Portrait card
-  const pbSize = 330;
+  // ── Portrait card on the right ──────────────────────────────────────
+  const pbSize = 420;
   const pbx = w - pbSize - 80;
-  const pby = (h - pbSize) / 2 + 10;
+  const pby = (h - pbSize) / 2 + 12;
+
   // Drop shadow
   ctx.save();
   ctx.globalAlpha = 0.12;
   ctx.fillStyle = INK;
-  ctx.fillRect(pbx + 8, pby + 8, pbSize, pbSize);
+  ctx.fillRect(pbx + 10, pby + 10, pbSize, pbSize);
   ctx.restore();
-  // Portrait frame
+
   ctx.fillStyle = SOFT; ctx.fillRect(pbx, pby, pbSize, pbSize);
   ctx.strokeStyle = INK; ctx.lineWidth = 3;
   ctx.strokeRect(pbx, pby, pbSize, pbSize);
-  // Real art (pick the darkest ultra-rare preset for drama)
-  const img = await portraitImage(PRESETS[0], 600);
+
+  const img = await portraitImage(PRESETS[0], 800);
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(img, pbx + 6, pby + 6, pbSize - 12, pbSize - 12);
   ctx.imageSmoothingEnabled = true;
 
-  // ── Left block: headline
-  const leftPad = 80;
+  // ── Left column: headline block ─────────────────────────────────────
+  const leftPad = 90;
   const leftBlockY = 130;
 
-  // Small kicker above THE
+  // "THE" small kicker
   ctx.fillStyle = INK;
-  ctx.font = "500 16px 'JetBrains Mono', monospace";
+  ctx.font = "500 20px 'JetBrains Mono', monospace";
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   ctx.fillText('THE', leftPad, leftBlockY);
 
-  // "1969" the hero numeral
-  ctx.font = "500 200px 'Space Grotesk', sans-serif";
+  // "1969" hero numeral
+  ctx.font = "500 240px 'Space Grotesk', sans-serif";
   ctx.fillText('1969', leftPad, leftBlockY + 34);
 
   // Thin ink underline under the numeral
   ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  const ruleY = leftBlockY + 34 + 250;
   ctx.beginPath();
-  ctx.moveTo(leftPad, leftBlockY + 34 + 210);
-  ctx.lineTo(leftPad + 320, leftBlockY + 34 + 210);
+  ctx.moveTo(leftPad, ruleY);
+  ctx.lineTo(leftPad + 360, ruleY);
   ctx.stroke();
 
-  // Italic serif tagline wrapped across 2 lines
+  // Italic serif tagline · 2 lines
   ctx.fillStyle = GREY;
-  ctx.font = "italic 28px 'Instrument Serif', serif";
+  ctx.font = "italic 30px 'Instrument Serif', serif";
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  const taglineY = leftBlockY + 34 + 230;
-  ctx.fillText('a field guide to a 1,969-supply portrait', leftPad, taglineY);
-  ctx.fillText('collective that nobody can buy into.', leftPad, taglineY + 36);
+  const tY = ruleY + 22;
+  ctx.fillText('a field guide to a 1,969-supply portrait', leftPad, tY);
+  ctx.fillText('collective that nobody can buy into.', leftPad, tY + 40);
 
-  // Bottom hairline + meta
+  // ── Bottom hairline + meta ──────────────────────────────────────────
   ctx.save(); ctx.strokeStyle = INK; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(40, h - 56); ctx.lineTo(w - 40, h - 56); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(40, h - 58); ctx.lineTo(w - 40, h - 58); ctx.stroke();
   ctx.restore();
   ctx.fillStyle = INK;
   ctx.font = "500 14px 'JetBrains Mono', monospace";
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  ctx.fillText('the1969.io', 56, h - 34);
+  ctx.fillText('the1969.io', 56, h - 36);
   ctx.textAlign = 'right';
-  ctx.fillText('@the1969eth  ·  TURN THE PAGE →', w - 56, h - 34);
+  ctx.fillText('@the1969eth  ·  TURN THE PAGE →', w - 56, h - 36);
 }
 
 // ══════════════════════════════════════════════════════════════════════
