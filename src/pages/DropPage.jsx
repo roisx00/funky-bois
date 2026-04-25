@@ -32,7 +32,9 @@ export default function DropPage() {
   const poolState      = sessionStatus.poolState;
   const poolSize       = sessionStatus.poolSize;
   const poolClaimed    = sessionStatus.poolClaimed;
+  const prewlApproved  = sessionStatus.prewlApproved;
   const prewlWaiting   = sessionStatus.prewlWaiting;
+  const prewlOnline    = sessionStatus.prewlOnline;
   const claimsThisSession = sessionStatus.claimsThisSession ?? 0;
   const maxClaims         = sessionStatus.maxClaims ?? 1;
   const msUntilNext       = sessionStatus.msUntilNext;
@@ -124,7 +126,9 @@ export default function DropPage() {
           mood={moodLabel}
           isPoolEmpty={isPoolEmpty}
           windowOpen={windowOpen}
+          prewlApproved={prewlApproved}
           prewlWaiting={prewlWaiting}
+          prewlOnline={prewlOnline}
         />
         {latest && <RecentTicker latest={latest} />}
       </div>
@@ -465,7 +469,7 @@ function DropCountdown({ ms, live }) {
 // SLOT METER — 20 dots: filled = claimed, hollow = open. Replaces the
 // thin progress bar with something you can read at a glance.
 // ─────────────────────────────────────────────────────────────────────
-function SlotMeter({ taken, size, mood, isPoolEmpty, windowOpen, prewlWaiting }) {
+function SlotMeter({ taken, size, mood, isPoolEmpty, windowOpen, prewlApproved, prewlWaiting, prewlOnline }) {
   // Pool size is admin-controlled and can be > 20. Cap the dots we
   // render at 60 so an admin who sets a huge pool doesn't break the
   // layout — the count text still shows the real number.
@@ -497,8 +501,8 @@ function SlotMeter({ taken, size, mood, isPoolEmpty, windowOpen, prewlWaiting })
         <div className="drop-v3-slot-dots">{dotsFor(safeTaken)}</div>
         <div className="drop-v3-slot-mood">
           {mood}
-          {prewlWaiting > 0 && (
-            <> · <strong>{prewlWaiting}</strong> pre-WL waiting</>
+          {(prewlOnline > 0 || prewlWaiting > 0 || prewlApproved > 0) && (
+            <> · <strong>{prewlOnline}</strong> online · <strong>{prewlWaiting}</strong> eligible · {prewlApproved} approved</>
           )}
         </div>
       </div>
@@ -526,8 +530,8 @@ function SlotMeter({ taken, size, mood, isPoolEmpty, windowOpen, prewlWaiting })
         <div className="drop-v3-slot-dots">{dotsFor(0)}</div>
         <div className="drop-v3-slot-mood">
           Opens at the top of the next 2-hour cycle
-          {prewlWaiting > 0 && (
-            <> · <strong>{prewlWaiting}</strong> pre-WL waiting</>
+          {(prewlOnline > 0 || prewlWaiting > 0 || prewlApproved > 0) && (
+            <> · <strong>{prewlOnline}</strong> online · <strong>{prewlWaiting}</strong> eligible · {prewlApproved} approved</>
           )}
         </div>
       </div>

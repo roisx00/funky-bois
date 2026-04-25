@@ -2,11 +2,20 @@ import { sql } from '../_lib/db.js';
 import { getSessionUser, isAdminUser } from '../_lib/auth.js';
 import { ok } from '../_lib/json.js';
 import { ELEMENT_VARIANTS } from '../_lib/elements.js';
+import { markOnline } from '../_lib/presence.js';
 
 export default async function handler(req, res) {
   const user = await getSessionUser(req);
   if (!user) {
     return ok(res, { authenticated: false });
+  }
+
+  // Presence heartbeat. Only count drop-eligible, non-suspended users
+  // toward the "online" count so the number on the drop page maps to
+  // "people who could actually claim if a window were open." Fire-
+  // and-forget so /api/me latency isn't affected by Redis.
+  if (user.drop_eligible === true && user.suspended !== true) {
+    markOnline(user.id).catch(() => {});
   }
 
   // Hydrate full state in parallel

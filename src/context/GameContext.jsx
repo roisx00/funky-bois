@@ -45,7 +45,9 @@ function deriveSessionStatus(serverStatus, claimsThisSession) {
     poolSize:      Number(serverStatus?.poolSize)      || 20,
     poolClaimed:   Number(serverStatus?.poolClaimed)   || 0,
     poolRemaining: Number(serverStatus?.poolRemaining) || 0,
+    prewlApproved: Number(serverStatus?.prewlApproved) || 0,
     prewlWaiting:  Number(serverStatus?.prewlWaiting)  || 0,
+    prewlOnline:   Number(serverStatus?.prewlOnline)   || 0,
     // legacy "admin" block kept for back-compat; same numbers are public now
     admin:        serverStatus?.admin ?? null,
     claimsThisSession,

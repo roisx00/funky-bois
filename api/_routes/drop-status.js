@@ -7,6 +7,7 @@ import { sql, one } from '../_lib/db.js';
 import { ok } from '../_lib/json.js';
 import { getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION, DEFAULT_POOL_SIZE } from '../_lib/elements.js';
 import { getSessionUser, isAdminUser } from '../_lib/auth.js';
+import { markOnline, countOnline } from '../_lib/presence.js';
 
 const SESSION_INTERVAL_MS = 2 * 60 * 60 * 1000;
 const SESSION_WINDOW_MS   = 5 * 60 * 1000;
@@ -24,7 +25,7 @@ export default async function handler(req, res) {
   const sessId = getCurrentSessionId();
 
   // Run all read-only queries in parallel so the 15s poll stays cheap.
-  const [sess, portraitsRow, recentRows, waitingRow] = await Promise.all([
+  const [sess, portraitsRow, recentRows, waitingRow, approvedRow] = await Promise.all([
     one(await sql`SELECT pool_size, pool_claimed FROM drop_sessions WHERE session_id = ${sessId}`),
     one(await sql`SELECT COUNT(*)::int AS c FROM completed_nfts`),
     sql`
@@ -36,8 +37,8 @@ export default async function handler(req, res) {
        ORDER BY dc.claimed_at DESC
        LIMIT 5
     `,
-    // Pre-whitelisted users waiting to claim THIS session (not yet
-    // built, not yet claimed in this session_id, not suspended).
+    // Pre-whitelisted users still ELIGIBLE to claim this window:
+    // approved + not suspended + no portrait yet + no claim this session.
     one(await sql`
       SELECT COUNT(*)::int AS c
         FROM users u
@@ -48,6 +49,15 @@ export default async function handler(req, res) {
            SELECT 1 FROM drop_claims
             WHERE user_id = u.id AND session_id = ${sessId}
          )
+    `),
+    // Total approved (lifetime, regardless of build/claim state) — so
+    // the UI can show "189 of 226 eligible" and the math reads cleanly
+    // against the admin "approved" tab count.
+    one(await sql`
+      SELECT COUNT(*)::int AS c
+        FROM users
+       WHERE drop_eligible = TRUE
+         AND suspended = FALSE
     `),
   ]);
   const poolSize    = sess?.pool_size ?? DEFAULT_POOL_SIZE;
@@ -67,7 +77,8 @@ export default async function handler(req, res) {
   const active     = windowOpen && poolClaimed < poolSize;
 
   const portraitsBuilt = Math.min(SUPPLY_CAP, portraitsRow?.c || 0);
-  const prewlWaiting   = Number(waitingRow?.c) || 0;
+  const prewlWaiting   = Number(waitingRow?.c)  || 0;
+  const prewlApproved  = Number(approvedRow?.c) || 0;
 
   let mySessionClaims = 0;
   const user = await getSessionUser(req);
@@ -78,6 +89,14 @@ export default async function handler(req, res) {
     `);
     mySessionClaims = row?.cnt ?? 0;
   }
+
+  // Presence: only mark drop-eligible, non-suspended users so the
+  // "online" count maps directly to "could-claim users actually here".
+  // Fire-and-forget — don't block the response on Redis.
+  if (user && user.drop_eligible === true && user.suspended !== true) {
+    markOnline(user.id).catch(() => {});
+  }
+  const prewlOnline = await countOnline();
 
   const base = {
     sessId,
@@ -99,9 +118,17 @@ export default async function handler(req, res) {
     msUntilClose: Math.max(0, SESSION_WINDOW_MS   - (Date.now() - sessId)),
     maxClaims: MAX_CLAIMS_PER_SESSION,
     mySessionClaims,
-    // Pre-whitelisted users who haven't claimed this session yet.
-    // Surfaces "23 holders waiting to claim this window" anticipation.
+    // Pre-whitelist counters. Three numbers, three meanings:
+    //   prewlApproved — total ever approved (lifetime, not suspended).
+    //                   Matches the admin queue "approved" tab count.
+    //   prewlWaiting  — eligible to claim THIS window (approved AND
+    //                   not built AND no claim in current session).
+    //                   prewlWaiting <= prewlApproved by definition.
+    //   prewlOnline   — heart-beated in the last 90s via /api/drop-
+    //                   status or /api/me. Real-time live audience.
+    prewlApproved,
     prewlWaiting,
+    prewlOnline,
     // Real-time supply counters
     portraitsBuilt,
     supplyCap: SUPPLY_CAP,
