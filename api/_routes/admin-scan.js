@@ -115,7 +115,16 @@ export default async function handler(req, res) {
   const task = one(await sql`SELECT * FROM tasks WHERE id = ${taskId} LIMIT 1`);
   if (!task) return bad(res, 404, 'task_not_found');
 
-  const eng = await scrapeTweetEngagement(task.tweet_id);
+  // Wrapped so a Nitter mirror throwing mid-scrape doesn't 500 the
+  // admin endpoint. On error we treat all engagement lists as null,
+  // which the manual-review fallback below already handles.
+  let eng;
+  try {
+    eng = await scrapeTweetEngagement(task.tweet_id);
+  } catch (e) {
+    console.warn('[admin-scan] scrape threw:', e?.message);
+    eng = { likes: null, retweets: null, replies: null, diag: [], counts: null };
+  }
 
   // If Nitter is entirely unreachable (all mirrors dead), eng.likes etc
   // will be null. Surface that clearly instead of silently approving 0.

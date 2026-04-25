@@ -36,12 +36,19 @@ export default async function handler(req, res) {
   if (!nft) return bad(res, 404, 'portrait_not_found');
   if (nft.shared_to_x) return ok(res, { credited: false, alreadyShared: true });
 
-  // Best-effort hash verification
+  // Best-effort hash verification — wrapped so a misbehaving Nitter
+  // mirror can never 500 the share endpoint. False just means
+  // "couldn't verify"; we still credit the user as before.
   let verified = false;
   if (tweetUrl) {
     const tweetId = parseTweetId(tweetUrl);
     if (tweetId && nft.share_hash) {
-      verified = await tweetContainsHash(tweetId, nft.share_hash);
+      try {
+        verified = await tweetContainsHash(tweetId, nft.share_hash);
+      } catch (e) {
+        console.warn('[portrait-share] verify failed:', e?.message);
+        verified = false;
+      }
     }
   }
 

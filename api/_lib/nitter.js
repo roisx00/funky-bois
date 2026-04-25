@@ -138,10 +138,17 @@ async function fetchSyndicationCounts(tweetId, diag) {
 
 export async function tweetContainsHash(tweetId, hash) {
   if (!tweetId || !hash) return false;
+  const needle = String(hash).toLowerCase();
   for (const host of NITTER_HOSTS) {
-    const html = await tryFetch(`https://${host}/i/status/${tweetId}`);
-    if (!html) continue;
-    if (html.toLowerCase().includes(hash.toLowerCase())) return true;
+    try {
+      const r = await tryFetch(`https://${host}/i/status/${tweetId}`);
+      if (!r?.ok || !r.text) continue;
+      if (r.text.toLowerCase().includes(needle)) return true;
+    } catch (e) {
+      // Per-mirror failure must not abort the loop or bubble up to
+      // the caller — every nitter scrape is best-effort.
+      console.warn('[nitter] tweetContainsHash error on', host, e?.message);
+    }
   }
   return false;
 }
