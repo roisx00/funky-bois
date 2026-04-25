@@ -23,9 +23,8 @@ function poolStateFor(pct) {
 export default async function handler(req, res) {
   const sessId = getCurrentSessionId();
 
-  // Run the session lookup, public portrait count, AND a tiny live-
-  // ticker query in parallel so the existing 15s poll stays cheap.
-  const [sess, portraitsRow, recentRows] = await Promise.all([
+  // Run all read-only queries in parallel so the 15s poll stays cheap.
+  const [sess, portraitsRow, recentRows, waitingRow] = await Promise.all([
     one(await sql`SELECT pool_size, pool_claimed FROM drop_sessions WHERE session_id = ${sessId}`),
     one(await sql`SELECT COUNT(*)::int AS c FROM completed_nfts`),
     sql`
@@ -37,14 +36,38 @@ export default async function handler(req, res) {
        ORDER BY dc.claimed_at DESC
        LIMIT 5
     `,
+    // Pre-whitelisted users waiting to claim THIS session (not yet
+    // built, not yet claimed in this session_id, not suspended).
+    one(await sql`
+      SELECT COUNT(*)::int AS c
+        FROM users u
+       WHERE u.drop_eligible = TRUE
+         AND u.suspended = FALSE
+         AND NOT EXISTS (SELECT 1 FROM completed_nfts WHERE user_id = u.id)
+         AND NOT EXISTS (
+           SELECT 1 FROM drop_claims
+            WHERE user_id = u.id AND session_id = ${sessId}
+         )
+    `),
   ]);
-  const poolSize = sess?.pool_size ?? DEFAULT_POOL_SIZE;
+  const poolSize    = sess?.pool_size ?? DEFAULT_POOL_SIZE;
   const poolClaimed = sess?.pool_claimed ?? 0;
   const poolRemaining = Math.max(0, poolSize - poolClaimed);
   const poolPct = poolSize > 0 ? poolRemaining / poolSize : 0;
   const poolState = poolStateFor(poolPct);
-  const active = isSessionActive(sessId) && poolClaimed < poolSize;
+
+  // Two separate booleans now:
+  //   windowOpen — the 5-minute claim window is still open (regardless
+  //                of pool fill). Drives the LIVE label + countdown.
+  //   active     — windowOpen AND pool has slots remaining. Used by
+  //                claim handlers + "can claim" UI gates.
+  // Previously these were collapsed, so a sealed pool flipped the
+  // page from "LIVE" to "waiting for the next window" mid-cycle.
+  const windowOpen = isSessionActive(sessId);
+  const active     = windowOpen && poolClaimed < poolSize;
+
   const portraitsBuilt = Math.min(SUPPLY_CAP, portraitsRow?.c || 0);
+  const prewlWaiting   = Number(waitingRow?.c) || 0;
 
   let mySessionClaims = 0;
   const user = await getSessionUser(req);
@@ -59,20 +82,30 @@ export default async function handler(req, res) {
   const base = {
     sessId,
     isActive: active,
-    // Mood + percentage only — no raw counts in the public shape
+    // windowOpen tracks the 5-minute claim window strictly. The UI
+    // uses this to keep the LIVE label up for the full window even
+    // after the pool seals.
+    windowOpen,
     poolState,
     poolPct: Number(poolPct.toFixed(2)),
+    // Real pool numbers — were admin-only, now public. Pool size is
+    // operational metadata (admin can change it) so revealing it has
+    // no downside, and it lets the slot meter render the correct
+    // number of dots when admins bump the pool above the default 20.
+    poolSize,
+    poolClaimed,
+    poolRemaining,
     msUntilNext:  Math.max(0, SESSION_INTERVAL_MS - (Date.now() - sessId)),
     msUntilClose: Math.max(0, SESSION_WINDOW_MS   - (Date.now() - sessId)),
     maxClaims: MAX_CLAIMS_PER_SESSION,
     mySessionClaims,
-    // Real-time supply counters — safe to expose publicly. Anyone can
-    // also count by hitting /api/gallery, but this is cheap.
+    // Pre-whitelisted users who haven't claimed this session yet.
+    // Surfaces "23 holders waiting to claim this window" anticipation.
+    prewlWaiting,
+    // Real-time supply counters
     portraitsBuilt,
     supplyCap: SUPPLY_CAP,
-    // Live ticker: most recent claims across the whole project. UI
-    // shows a single-line "@handle pulled <name> (rarity) · Nm ago"
-    // at the top of the drop-page action card.
+    // Live ticker: most recent claims across the whole project.
     recentClaims: (recentRows || []).map((r) => ({
       xUsername:    r.x_username,
       xAvatar:      r.x_avatar,
@@ -83,7 +116,7 @@ export default async function handler(req, res) {
     })),
   };
 
-  // Admins additionally see the raw pool numbers
+  // Admin block kept for legacy compatibility; same numbers now public.
   if (user && isAdminUser(user)) {
     base.admin = { poolSize, poolClaimed, poolRemaining };
   }

@@ -20,25 +20,37 @@ function getCurrentSessionId() {
 function deriveSessionStatus(serverStatus, claimsThisSession) {
   const sessId = serverStatus?.sessId ?? getCurrentSessionId();
   const elapsed = Date.now() - sessId;
-  // Server intentionally hides raw pool counts from the public response.
-  // We only get a mood label + percentage. Admin responses additionally
-  // expose raw numbers under `admin` — we surface those for the admin UI.
+
   const poolState   = serverStatus?.poolState ?? 'stocked';
   const poolPct     = typeof serverStatus?.poolPct === 'number' ? serverStatus.poolPct : 1;
   const isPoolEmpty = poolState === 'sealed' || poolPct <= 0;
-  const isActive    = (serverStatus?.isActive ?? (elapsed < SESSION_WINDOW_MS)) && !isPoolEmpty;
+
+  // Two booleans, one purpose each:
+  //   windowOpen — strict 5-minute window check; LIVE label + countdown
+  //                stay tied to wall-clock time, even if the pool seals.
+  //   isActive   — windowOpen AND there are slots remaining; gates the
+  //                claim button + "active" UI states.
+  const windowOpen = serverStatus?.windowOpen ?? (elapsed < SESSION_WINDOW_MS);
+  const isActive   = windowOpen && !isPoolEmpty;
+
   return {
     sessId,
+    windowOpen,
     isActive,
     isPoolEmpty,
     msUntilNext:  Math.max(0, SESSION_INTERVAL_MS - elapsed),
     msUntilClose: Math.max(0, SESSION_WINDOW_MS - elapsed),
-    poolState,     // 'stocked' | 'flowing' | 'thinning' | 'low' | 'sealed'
-    poolPct,       // 0..1 (for the meter bar, no raw numbers)
-    admin:        serverStatus?.admin ?? null, // raw {poolSize, poolClaimed, poolRemaining} — admins only
+    poolState,
+    poolPct,
+    poolSize:      Number(serverStatus?.poolSize)      || 20,
+    poolClaimed:   Number(serverStatus?.poolClaimed)   || 0,
+    poolRemaining: Number(serverStatus?.poolRemaining) || 0,
+    prewlWaiting:  Number(serverStatus?.prewlWaiting)  || 0,
+    // legacy "admin" block kept for back-compat; same numbers are public now
+    admin:        serverStatus?.admin ?? null,
     claimsThisSession,
     canClaimThisSession: claimsThisSession < MAX_CLAIMS_PER_SESSION,
-    maxClaims: MAX_CLAIMS_PER_SESSION,
+    maxClaims:    Number(serverStatus?.maxClaims) || MAX_CLAIMS_PER_SESSION,
   };
 }
 

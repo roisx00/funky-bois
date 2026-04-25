@@ -27,10 +27,12 @@ export default function DropPage() {
   const toast = useToast();
 
   const isActive       = sessionStatus.isActive;
+  const windowOpen     = sessionStatus.windowOpen;
   const isPoolEmpty    = sessionStatus.isPoolEmpty;
   const poolState      = sessionStatus.poolState;
-  const poolPct        = sessionStatus.poolPct;
-  const adminPool      = sessionStatus.admin || null;
+  const poolSize       = sessionStatus.poolSize;
+  const poolClaimed    = sessionStatus.poolClaimed;
+  const prewlWaiting   = sessionStatus.prewlWaiting;
   const claimsThisSession = sessionStatus.claimsThisSession ?? 0;
   const maxClaims         = sessionStatus.maxClaims ?? 1;
   const msUntilNext       = sessionStatus.msUntilNext;
@@ -87,8 +89,6 @@ export default function DropPage() {
     refreshMe();
   };
 
-  const poolSizeRaw = adminPool?.poolSize    ?? 20;
-  const poolTaken   = adminPool?.poolClaimed ?? Math.round((1 - poolPct) * poolSizeRaw);
   const moodLabel = (
     poolState === 'stocked'  ? 'Fresh session' :
     poolState === 'flowing'  ? 'Healthy flow'   :
@@ -104,26 +104,27 @@ export default function DropPage() {
       <div className="drop-v3-hero">
         <div className="drop-v3-hero-left">
           <div className="drop-v3-hero-eyebrow">
-            <span className={`drop-v3-dot ${isActive ? 'live' : ''}`} />
-            {isActive ? 'Drop window is LIVE' : 'Waiting for the next window'}
+            <span className={`drop-v3-dot ${windowOpen ? 'live' : ''}`} />
+            {windowOpen ? 'Drop window is LIVE' : 'Waiting for the next window'}
           </div>
           <h1 className="drop-v3-hero-title">
             The drop. <em>Real users only.</em>
           </h1>
         </div>
         <div className="drop-v3-hero-right">
-          <DropCountdown ms={isActive ? msUntilClose : msUntilNext} live={isActive} />
+          <DropCountdown ms={windowOpen ? msUntilClose : msUntilNext} live={windowOpen} />
         </div>
       </div>
 
       {/* ────────── STAT BAND ────────── */}
       <div className="drop-v3-stat-band">
         <SlotMeter
-          taken={poolTaken}
-          size={poolSizeRaw}
+          taken={poolClaimed}
+          size={poolSize}
           mood={moodLabel}
           isPoolEmpty={isPoolEmpty}
-          isActive={isActive}
+          windowOpen={windowOpen}
+          prewlWaiting={prewlWaiting}
         />
         {latest && <RecentTicker latest={latest} />}
       </div>
@@ -464,8 +465,11 @@ function DropCountdown({ ms, live }) {
 // SLOT METER — 20 dots: filled = claimed, hollow = open. Replaces the
 // thin progress bar with something you can read at a glance.
 // ─────────────────────────────────────────────────────────────────────
-function SlotMeter({ taken, size, mood, isPoolEmpty, isActive }) {
-  const safeSize  = Math.max(1, Math.min(40, size  || 20));
+function SlotMeter({ taken, size, mood, isPoolEmpty, windowOpen, prewlWaiting }) {
+  // Pool size is admin-controlled and can be > 20. Cap the dots we
+  // render at 60 so an admin who sets a huge pool doesn't break the
+  // layout — the count text still shows the real number.
+  const safeSize  = Math.max(1, Math.min(60, size  || 20));
   const safeTaken = Math.max(0, Math.min(safeSize, taken || 0));
 
   function dotsFor(filledCount) {
@@ -476,22 +480,32 @@ function SlotMeter({ taken, size, mood, isPoolEmpty, isActive }) {
     return out;
   }
 
-  // Live window: show ONE row — the active pool draining in real time.
-  if (isActive) {
+  // Window-open: ONE row showing the active pool. The label stays
+  // POOL · LIVE for the full 5-minute window, even after the pool seals
+  // — the countdown still ticks and users still want to see the meter
+  // at its final state. Only flips to "LAST POOL / NEXT POOL" once the
+  // window itself closes.
+  if (windowOpen) {
     return (
       <div className="drop-v3-slot-meter">
         <div className="drop-v3-slot-head">
-          <span className="drop-v3-slot-label">POOL · LIVE</span>
+          <span className="drop-v3-slot-label">
+            {isPoolEmpty ? 'POOL · LIVE · SEALED' : 'POOL · LIVE'}
+          </span>
           <span className="drop-v3-slot-count">{safeTaken}/{safeSize}</span>
         </div>
         <div className="drop-v3-slot-dots">{dotsFor(safeTaken)}</div>
-        <div className="drop-v3-slot-mood">{mood}</div>
+        <div className="drop-v3-slot-mood">
+          {mood}
+          {prewlWaiting > 0 && (
+            <> · <strong>{prewlWaiting}</strong> pre-WL waiting</>
+          )}
+        </div>
       </div>
     );
   }
 
-  // Closed window: show TWO rows — the just-finished pool and a preview
-  // of the next 20-slot window (all hollow, fresh).
+  // Window closed: stacked LAST + NEXT.
   return (
     <div className="drop-v3-slot-meter drop-v3-slot-meter-double">
       <div className="drop-v3-slot-row">
@@ -510,7 +524,12 @@ function SlotMeter({ taken, size, mood, isPoolEmpty, isActive }) {
           <span className="drop-v3-slot-count">0/{safeSize}</span>
         </div>
         <div className="drop-v3-slot-dots">{dotsFor(0)}</div>
-        <div className="drop-v3-slot-mood">Opens at the top of the next 2-hour cycle</div>
+        <div className="drop-v3-slot-mood">
+          Opens at the top of the next 2-hour cycle
+          {prewlWaiting > 0 && (
+            <> · <strong>{prewlWaiting}</strong> pre-WL waiting</>
+          )}
+        </div>
       </div>
     </div>
   );
