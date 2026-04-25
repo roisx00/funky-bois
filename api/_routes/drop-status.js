@@ -58,18 +58,16 @@ export default async function handler(req, res) {
          claimed_at DESC
        LIMIT 10
     `,
-    // Pre-whitelisted users still ELIGIBLE to claim this window:
-    // approved + not suspended + no portrait yet + no claim this session.
+    // Pre-whitelisted users still ELIGIBLE to claim drops: approved +
+    // not suspended + portrait not yet built. The per-session "already
+    // claimed this window" filter was removed — eligibility is the
+    // long-term right to participate, which only ends on build.
     one(await sql`
       SELECT COUNT(*)::int AS c
         FROM users u
        WHERE u.drop_eligible = TRUE
          AND u.suspended = FALSE
          AND NOT EXISTS (SELECT 1 FROM completed_nfts WHERE user_id = u.id)
-         AND NOT EXISTS (
-           SELECT 1 FROM drop_claims
-            WHERE user_id = u.id AND session_id = ${sessId}
-         )
     `),
     // Total approved (lifetime, regardless of build/claim state) — so
     // the UI can show "189 of 226 eligible" and the math reads cleanly
