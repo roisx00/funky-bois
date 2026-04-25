@@ -6,16 +6,31 @@ import { readBody, ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
 import { BOX_TIERS, ELEMENT_TYPES, ELEMENT_VARIANTS } from '../_lib/elements.js';
 
-// Box reward selector. Server-side rarity policy is held here so the
-// payout pool can be tuned without touching the displayed tier odds.
-function pickBoxReward(_tier) {
+// Box reward selector. Server-side payout policy is held here so it
+// can be tuned without touching the displayed tier odds. The element
+// pool is restricted to a configured subset of trait categories.
+const BOX_ELIGIBLE_TYPES = ELEMENT_TYPES.filter((t) => t !== 'skin' && t !== 'eyes');
+
+function pickBoxReward(tier) {
+  const odds = tier.odds || { common: 100 };
+  const r = Math.random() * 100;
+  let rarity = 'common', acc = 0;
+  for (const [k, v] of Object.entries(odds)) {
+    acc += v;
+    if (r < acc) { rarity = k; break; }
+  }
   const pool = [];
-  for (const t of ELEMENT_TYPES) {
+  for (const t of BOX_ELIGIBLE_TYPES) {
     ELEMENT_VARIANTS[t].forEach((v, idx) => {
-      if (v.rarity === 'common') {
-        pool.push({ type: t, variant: idx, name: v.name, rarity: v.rarity });
-      }
+      if (v.rarity === rarity) pool.push({ type: t, variant: idx, name: v.name, rarity: v.rarity });
     });
+  }
+  if (pool.length === 0) {
+    for (const t of BOX_ELIGIBLE_TYPES) {
+      ELEMENT_VARIANTS[t].forEach((v, idx) => {
+        if (v.rarity === 'common') pool.push({ type: t, variant: idx, name: v.name, rarity: v.rarity });
+      });
+    }
   }
   return pool[Math.floor(Math.random() * pool.length)];
 }
