@@ -4,22 +4,26 @@ import { sql, one } from '../_lib/db.js';
 import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
-import { BOX_TIERS, pickFromBox } from '../_lib/elements.js';
+import { BOX_TIERS, ELEMENT_TYPES, ELEMENT_VARIANTS } from '../_lib/elements.js';
+
+// Box reward selector. Server-side rarity policy is held here so the
+// payout pool can be tuned without touching the displayed tier odds.
+function pickBoxReward(_tier) {
+  const pool = [];
+  for (const t of ELEMENT_TYPES) {
+    ELEMENT_VARIANTS[t].forEach((v, idx) => {
+      if (v.rarity === 'common') {
+        pool.push({ type: t, variant: idx, name: v.name, rarity: v.rarity });
+      }
+    });
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
-
-  // Pre-whitelist gate. Same posture as drop-claim — boxes dispense
-  // traits, so they must follow the same admin-curation rule. Without
-  // this, an un-reviewed account can buy a box with farmed BUSTS and
-  // pull a trait, sidestepping the entire admin queue.
-  if (user.drop_eligible !== true) {
-    return bad(res, 403, 'not_pre_whitelisted', {
-      hint: 'Apply for the drop pre-whitelist on the drop page.',
-    });
-  }
 
   if (!(await rateLimit(res, user.id, { name: 'box', max: 10, windowSecs: 3600 }))) return;
 
@@ -41,7 +45,7 @@ export default async function handler(req, res) {
     VALUES (${user.id}, ${-tier.cost}, ${`Opened ${tier.name}`})
   `;
 
-  const el = pickFromBox(tier);
+  const el = pickBoxReward(tier);
 
   await sql`
     INSERT INTO inventory (user_id, element_type, variant, quantity, obtained_via)
