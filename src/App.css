@@ -6354,20 +6354,69 @@ section { background: var(--bg); }
   color: var(--text-3);
 }
 
-/* ─── LIVE TICKER ─── */
-.drop-v3-ticker {
+/* ─── AUDIENCE TRIO (online · eligible · approved) ─── */
+.drop-v3-audience {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--hairline);
+  background: var(--hairline);
+}
+.drop-v3-audience-cell {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px 4px 0;
+  background: var(--paper-2);
+}
+.drop-v3-audience-num {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+}
+.drop-v3-audience-pulse {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1px solid var(--ink);
+  flex-shrink: 0;
+  animation: drop-v3-pulse 1.5s ease-in-out infinite;
+}
+.drop-v3-audience-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+
+/* ─── RECENT PULLS LIST ─── */
+.drop-v3-recent {
+  display: flex;
+  flex-direction: column;
   padding: 14px 16px;
   border: 1px solid var(--hairline);
   background: var(--paper-1);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-2);
   min-width: 0;
 }
-.drop-v3-ticker-pulse {
+.drop-v3-recent-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed var(--hairline);
+}
+.drop-v3-recent-pulse {
   width: 8px; height: 8px;
   border-radius: 50%;
   background: var(--accent);
@@ -6375,18 +6424,63 @@ section { background: var(--bg); }
   flex-shrink: 0;
   animation: drop-v3-pulse 1.5s ease-in-out infinite;
 }
-.drop-v3-ticker-text {
+.drop-v3-recent-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
   flex: 1;
+}
+.drop-v3-recent-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+.drop-v3-recent-empty {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-4);
+  padding: 12px 0;
+}
+.drop-v3-recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.drop-v3-recent-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-2);
+  border-bottom: 1px dotted var(--hairline);
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+.drop-v3-recent-row:last-child { border-bottom: none; }
+.drop-v3-recent-user {
+  color: var(--ink);
+  font-weight: 600;
   white-space: nowrap;
 }
-.drop-v3-ticker-text strong { color: var(--ink); }
-.drop-v3-ticker-rarity { color: var(--ink); }
-.drop-v3-ticker-rarity-tag {
+.drop-v3-recent-arrow { color: var(--text-4); }
+.drop-v3-recent-pull {
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.drop-v3-recent-tag {
   display: inline-block;
-  margin-left: 6px;
   padding: 2px 6px;
   font-size: 9px;
   font-weight: 700;
@@ -6394,18 +6488,23 @@ section { background: var(--bg); }
   background: var(--paper-2);
   border: 1px solid var(--ink);
   color: var(--ink);
+  white-space: nowrap;
 }
-.drop-v3-ticker-rarity.legendary  ~ .drop-v3-ticker-rarity-tag,
-.drop-v3-ticker-rarity-tag:has(+ .legendary) {} /* no-op safety */
-.drop-v3-ticker-ago {
+.drop-v3-recent-tag.legendary  { background: var(--ink); color: var(--paper-1); }
+.drop-v3-recent-tag.ultra_rare { background: var(--accent); color: var(--ink); }
+.drop-v3-recent-ago {
   color: var(--text-4);
   font-size: 11px;
   letter-spacing: 0.04em;
-  flex-shrink: 0;
+  white-space: nowrap;
 }
-
-/* Style legendary / ultra in the ticker text */
-.drop-v3-ticker .drop-v3-ticker-rarity { font-weight: 500; }
+@media (max-width: 720px) {
+  .drop-v3-recent-row {
+    grid-template-columns: auto 1fr auto;
+  }
+  .drop-v3-recent-arrow,
+  .drop-v3-recent-tag { display: none; }
+}
 
 /* SlotMeter — two-row "last pool + next pool" variant when closed */
 .drop-v3-slot-meter-double {

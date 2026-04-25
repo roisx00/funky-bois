@@ -98,7 +98,7 @@ export default function DropPage() {
     poolState === 'low'      ? 'Final slots'    :
                                'Sealed for this window'
   );
-  const latest = (recentClaims || [])[0];
+  const recent = (recentClaims || []).slice(0, 5);
 
   return (
     <div className="page drop-v2-page">
@@ -130,7 +130,7 @@ export default function DropPage() {
           prewlWaiting={prewlWaiting}
           prewlOnline={prewlOnline}
         />
-        {latest && <RecentTicker latest={latest} />}
+        <RecentList items={recent} />
       </div>
 
       {/* ────────── MAIN GRID ────────── */}
@@ -484,6 +484,26 @@ function SlotMeter({ taken, size, mood, isPoolEmpty, windowOpen, prewlApproved, 
     return out;
   }
 
+  const audience = (
+    <div className="drop-v3-audience">
+      <div className="drop-v3-audience-cell">
+        <span className="drop-v3-audience-num">
+          <span className="drop-v3-audience-pulse" />
+          {prewlOnline}
+        </span>
+        <span className="drop-v3-audience-label">online</span>
+      </div>
+      <div className="drop-v3-audience-cell">
+        <span className="drop-v3-audience-num">{prewlWaiting}</span>
+        <span className="drop-v3-audience-label">eligible</span>
+      </div>
+      <div className="drop-v3-audience-cell">
+        <span className="drop-v3-audience-num">{prewlApproved}</span>
+        <span className="drop-v3-audience-label">approved</span>
+      </div>
+    </div>
+  );
+
   // Window-open: ONE row showing the active pool. The label stays
   // POOL · LIVE for the full 5-minute window, even after the pool seals
   // — the countdown still ticks and users still want to see the meter
@@ -499,12 +519,8 @@ function SlotMeter({ taken, size, mood, isPoolEmpty, windowOpen, prewlApproved, 
           <span className="drop-v3-slot-count">{safeTaken}/{safeSize}</span>
         </div>
         <div className="drop-v3-slot-dots">{dotsFor(safeTaken)}</div>
-        <div className="drop-v3-slot-mood">
-          {mood}
-          {(prewlOnline > 0 || prewlWaiting > 0 || prewlApproved > 0) && (
-            <> · <strong>{prewlOnline}</strong> online · <strong>{prewlWaiting}</strong> eligible · {prewlApproved} approved</>
-          )}
-        </div>
+        <div className="drop-v3-slot-mood">{mood}</div>
+        {audience}
       </div>
     );
   }
@@ -528,46 +544,60 @@ function SlotMeter({ taken, size, mood, isPoolEmpty, windowOpen, prewlApproved, 
           <span className="drop-v3-slot-count">0/{safeSize}</span>
         </div>
         <div className="drop-v3-slot-dots">{dotsFor(0)}</div>
-        <div className="drop-v3-slot-mood">
-          Opens at the top of the next 2-hour cycle
-          {(prewlOnline > 0 || prewlWaiting > 0 || prewlApproved > 0) && (
-            <> · <strong>{prewlOnline}</strong> online · <strong>{prewlWaiting}</strong> eligible · {prewlApproved} approved</>
-          )}
-        </div>
+        <div className="drop-v3-slot-mood">Opens at the top of the next 2-hour cycle</div>
+        {audience}
       </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// RECENT TICKER — single line showing the most recent global drop pull.
-// Fed by drop-status.recentClaims (top of array = newest).
+// RECENT LIST — vertical list of the latest global drop pulls. Fed by
+// drop-status.recentClaims (top of array = newest, max 5).
 // ─────────────────────────────────────────────────────────────────────
-function RecentTicker({ latest }) {
-  if (!latest) return null;
-  const info = ELEMENT_VARIANTS?.[latest.elementType]?.[latest.variant];
-  const name = info?.name || `${latest.elementType} ${latest.variant}`;
-  const typeLabel = ELEMENT_LABELS?.[latest.elementType] || latest.elementType;
-  const ago = (() => {
-    const ms = Date.now() - (latest.claimedAt || Date.now());
-    const m = Math.floor(ms / 60000);
-    if (m < 1) return 'just now';
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h / 24)}d ago`;
-  })();
+function timeAgo(ts) {
+  const ms = Date.now() - (ts || Date.now());
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function RecentList({ items }) {
+  const safe = Array.isArray(items) ? items : [];
   return (
-    <div className="drop-v3-ticker">
-      <span className="drop-v3-ticker-pulse" />
-      <span className="drop-v3-ticker-text">
-        Last pull: <strong>@{latest.xUsername}</strong> →{' '}
-        <span className={`drop-v3-ticker-rarity ${latest.rarity}`}>
-          {typeLabel} · {name}
-        </span>{' '}
-        <span className="drop-v3-ticker-rarity-tag">{String(latest.rarity).replace('_', ' ').toUpperCase()}</span>
-      </span>
-      <span className="drop-v3-ticker-ago">{ago}</span>
+    <div className="drop-v3-recent">
+      <div className="drop-v3-recent-head">
+        <span className="drop-v3-recent-pulse" />
+        <span className="drop-v3-recent-title">Recent pulls</span>
+        <span className="drop-v3-recent-meta">live</span>
+      </div>
+      {safe.length === 0 ? (
+        <div className="drop-v3-recent-empty">No claims yet this window.</div>
+      ) : (
+        <ul className="drop-v3-recent-list">
+          {safe.map((it, i) => {
+            const info = ELEMENT_VARIANTS?.[it.elementType]?.[it.variant];
+            const name = info?.name || `${it.elementType} ${it.variant}`;
+            const typeLabel = ELEMENT_LABELS?.[it.elementType] || it.elementType;
+            return (
+              <li key={`${it.xUsername}-${it.claimedAt}-${i}`} className="drop-v3-recent-row">
+                <span className="drop-v3-recent-user">@{it.xUsername}</span>
+                <span className="drop-v3-recent-arrow">→</span>
+                <span className={`drop-v3-recent-pull ${it.rarity}`}>
+                  {typeLabel} · {name}
+                </span>
+                <span className={`drop-v3-recent-tag ${it.rarity}`}>
+                  {String(it.rarity).replace('_', ' ').toUpperCase()}
+                </span>
+                <span className="drop-v3-recent-ago">{timeAgo(it.claimedAt)}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

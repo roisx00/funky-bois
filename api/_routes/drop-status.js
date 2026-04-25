@@ -90,11 +90,12 @@ export default async function handler(req, res) {
     mySessionClaims = row?.cnt ?? 0;
   }
 
-  // Presence: only mark drop-eligible, non-suspended users so the
-  // "online" count maps directly to "could-claim users actually here".
-  // Fire-and-forget — don't block the response on Redis.
+  // Presence: mark drop-eligible, non-suspended users so the "online"
+  // count maps directly to "could-claim users actually here". Awaited
+  // (not fire-and-forget) so the viewer's OWN heartbeat lands BEFORE
+  // we count — otherwise a single user opening the page sees 0.
   if (user && user.drop_eligible === true && user.suspended !== true) {
-    markOnline(user.id).catch(() => {});
+    try { await markOnline(user.id); } catch {}
   }
   const prewlOnline = await countOnline();
 
