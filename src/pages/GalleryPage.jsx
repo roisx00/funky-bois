@@ -1,7 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import NFTCanvas from '../components/NFTCanvas';
 import { ELEMENT_TYPES, ELEMENT_LABELS, ELEMENT_VARIANTS } from '../data/elements';
+
+const PAGE_SIZE = 100;
 
 const RARITY_RANK = { common: 0, rare: 1, legendary: 2, ultra_rare: 3 };
 
@@ -42,26 +44,82 @@ export default function GalleryPage() {
   const [filter, setFilter]   = useState('all');
   const [sort, setSort]       = useState('top'); // 'top' | 'recent' | 'oldest'
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const sentinelRef = useRef(null);
+  // Bumped on each filter/sort change so an in-flight request from
+  // the previous query can't race with the new one and append stale
+  // rows. Compared inside fetchPage before we touch state.
+  const queryIdRef = useRef(0);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const fetchPage = useCallback(async (offset, queryId) => {
     const params = new URLSearchParams();
     if (filter === 'mine') params.set('filter', 'mine');
     params.set('sort', sort);
-    params.set('limit', filter === 'mine' ? '100' : '120');
-    try {
-      const r = await fetch(`/api/gallery?${params}`, { credentials: 'same-origin' });
-      const d = r.ok ? await r.json() : { entries: [], total: 0 };
-      setEntries(d.entries || []);
-      setTotal(Number(d.total) || (d.entries || []).length);
-    } catch {
-      setEntries([]);
-      setTotal(0);
-    }
-    setLoading(false);
+    params.set('limit', String(PAGE_SIZE));
+    params.set('offset', String(offset));
+    const r = await fetch(`/api/gallery?${params}`, { credentials: 'same-origin' });
+    const d = r.ok ? await r.json() : { entries: [], total: 0 };
+    if (queryId !== queryIdRef.current) return null; // superseded
+    return d;
   }, [filter, sort]);
 
-  useEffect(() => { load(); }, [load]);
+  // Initial load — resets the list when filter/sort changes.
+  useEffect(() => {
+    const qid = ++queryIdRef.current;
+    setLoading(true);
+    setEntries([]);
+    setHasMore(false);
+    (async () => {
+      try {
+        const d = await fetchPage(0, qid);
+        if (!d) return;
+        const list = d.entries || [];
+        setEntries(list);
+        setTotal(Number(d.total) || list.length);
+        setHasMore(list.length >= PAGE_SIZE && list.length < (Number(d.total) || list.length));
+      } catch {
+        setEntries([]);
+        setTotal(0);
+        setHasMore(false);
+      }
+      setLoading(false);
+    })();
+  }, [fetchPage]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const qid = queryIdRef.current;
+    try {
+      const d = await fetchPage(entries.length, qid);
+      if (!d) return;
+      const list = d.entries || [];
+      setEntries((prev) => {
+        // De-dupe in case the server window shifted between pages.
+        const seen = new Set(prev.map((e) => e.id));
+        return prev.concat(list.filter((e) => !seen.has(e.id)));
+      });
+      const newTotal = Number(d.total) || total;
+      setTotal(newTotal);
+      setHasMore(list.length >= PAGE_SIZE && (entries.length + list.length) < newTotal);
+    } catch {
+      setHasMore(false);
+    }
+    setLoadingMore(false);
+  }, [fetchPage, entries.length, hasMore, loadingMore, total]);
+
+  // IntersectionObserver — auto-load when the sentinel scrolls into view.
+  useEffect(() => {
+    if (!hasMore || loading || loadingMore) return;
+    const node = sentinelRef.current;
+    if (!node) return;
+    const io = new IntersectionObserver((entries_) => {
+      if (entries_.some((e) => e.isIntersecting)) loadMore();
+    }, { rootMargin: '600px' });
+    io.observe(node);
+    return () => io.disconnect();
+  }, [hasMore, loading, loadingMore, loadMore]);
 
   // Server already sorts — just use entries as-is
   const sorted = entries;
@@ -145,11 +203,30 @@ export default function GalleryPage() {
           </p>
         </div>
       ) : (
-        <div className="gallery-grid-premium">
-          {sorted.map((nft) => (
-            <GalleryTile key={nft.id} nft={nft} isMine={xUser && nft.xUsername === xUser.username} />
-          ))}
-        </div>
+        <>
+          <div className="gallery-grid-premium">
+            {sorted.map((nft) => (
+              <GalleryTile key={nft.id} nft={nft} isMine={xUser && nft.xUsername === xUser.username} />
+            ))}
+          </div>
+          {hasMore && (
+            <div ref={sentinelRef} style={{ display: 'flex', justifyContent: 'center', padding: '40px 0 80px' }}>
+              <button
+                className="gallery-filter-btn"
+                onClick={loadMore}
+                disabled={loadingMore}
+                style={{ minWidth: 180 }}
+              >
+                {loadingMore ? 'Loading.' : `Load more (${total - entries.length} left)`}
+              </button>
+            </div>
+          )}
+          {!hasMore && entries.length >= PAGE_SIZE && (
+            <div style={{ textAlign: 'center', padding: '32px 0 64px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-4)' }}>
+              End of gallery · {entries.length} of {total}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
