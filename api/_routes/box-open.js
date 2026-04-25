@@ -11,9 +11,15 @@ export default async function handler(req, res) {
   const user = await requireUser(req, res);
   if (!user) return;
 
-  // Follower gate removed — see comment in drop-claim.js. The
-  // suspension system + admin manual review of suspicious behaviour
-  // are the anti-farm posture now.
+  // Pre-whitelist gate. Same posture as drop-claim — boxes dispense
+  // traits, so they must follow the same admin-curation rule. Without
+  // this, an un-reviewed account can buy a box with farmed BUSTS and
+  // pull a trait, sidestepping the entire admin queue.
+  if (user.drop_eligible !== true) {
+    return bad(res, 403, 'not_pre_whitelisted', {
+      hint: 'Apply for the drop pre-whitelist on the drop page.',
+    });
+  }
 
   if (!(await rateLimit(res, user.id, { name: 'box', max: 10, windowSecs: 3600 }))) return;
 
