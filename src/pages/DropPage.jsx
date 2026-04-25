@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
-import Timer from '../components/Timer';
+import { ELEMENT_LABELS, ELEMENT_VARIANTS } from '../data/elements';
 
 // Map raw server error codes to sentences a human can read.
 function friendlyDropError(r) {
@@ -22,7 +22,7 @@ export default function DropPage() {
     bustsBalance,
     authenticated, xUser, suspended,
     dropEligible, preWhitelist, completedNFTs, isAdmin,
-    refreshMe, loginWithX,
+    refreshMe, loginWithX, recentClaims,
   } = useGame();
   const toast = useToast();
 
@@ -87,51 +87,44 @@ export default function DropPage() {
     refreshMe();
   };
 
+  const poolSizeRaw = adminPool?.poolSize    ?? 20;
+  const poolTaken   = adminPool?.poolClaimed ?? Math.round((1 - poolPct) * poolSizeRaw);
+  const moodLabel = (
+    poolState === 'stocked'  ? 'Fresh session' :
+    poolState === 'flowing'  ? 'Healthy flow'   :
+    poolState === 'thinning' ? 'Pool thinning'  :
+    poolState === 'low'      ? 'Final slots'    :
+                               'Sealed for this window'
+  );
+  const latest = (recentClaims || [])[0];
+
   return (
     <div className="page drop-v2-page">
-      {/* ────────── HERO ────────── */}
-      <div className="drop-v2-hero">
-        <div className="drop-v2-hero-eyebrow">
-          <span className={`drop-v2-eyebrow-dot ${isActive ? 'live' : ''}`} />
-          {isActive ? 'Drop window is live' : 'Waiting for the next window'}
+      {/* ────────── HERO STRIP ────────── */}
+      <div className="drop-v3-hero">
+        <div className="drop-v3-hero-left">
+          <div className="drop-v3-hero-eyebrow">
+            <span className={`drop-v3-dot ${isActive ? 'live' : ''}`} />
+            {isActive ? 'Drop window is LIVE' : 'Waiting for the next window'}
+          </div>
+          <h1 className="drop-v3-hero-title">
+            The drop. <em>Real users only.</em>
+          </h1>
         </div>
-        <h1 className="drop-v2-hero-title">
-          The drop. <em>Real users only.</em>
-        </h1>
+        <div className="drop-v3-hero-right">
+          <DropCountdown ms={isActive ? msUntilClose : msUntilNext} live={isActive} />
+        </div>
+      </div>
+
+      {/* ────────── STAT BAND ────────── */}
+      <div className="drop-v3-stat-band">
+        <SlotMeter taken={poolTaken} size={poolSizeRaw} mood={moodLabel} isPoolEmpty={isPoolEmpty} />
+        {latest && <RecentTicker latest={latest} />}
       </div>
 
       {/* ────────── MAIN GRID ────────── */}
       <div className="drop-v2-main">
         <div className="drop-v2-action-card">
-
-          {/* Pool meter (always shown) */}
-          <div className="drop-v2-pool-row">
-            <div className="drop-v2-pool-label">
-              {isPoolEmpty
-                ? 'POOL SEALED'
-                : isActive ? 'POOL OPEN' : 'CLOSED'}
-            </div>
-            <div className="drop-v2-pool-bar">
-              <div className="drop-v2-pool-fill" style={{ width: `${Math.round(poolPct * 100)}%` }} />
-            </div>
-            <div className="drop-v2-pool-meta">
-              {poolState === 'stocked'  ? 'Fresh session'    :
-               poolState === 'flowing'  ? 'Healthy flow'      :
-               poolState === 'thinning' ? 'Pool thinning'     :
-               poolState === 'low'      ? 'Final slots'       :
-                                          'Gone for this window'}
-              {adminPool ? ` · ADMIN ${adminPool.poolClaimed}/${adminPool.poolSize}` : null}
-            </div>
-          </div>
-
-          {/* Countdown */}
-          <div className="drop-v2-timer-row">
-            <div className="drop-v2-timer-label">
-              {isActive ? 'CLOSES IN' : 'NEXT WINDOW IN'}
-            </div>
-            <Timer ms={isActive ? msUntilClose : msUntilNext} />
-          </div>
-
           {/* ─── State-specific body ─── */}
           <div className="drop-v2-stage">
             {stage === 'signed_out' && (
@@ -407,6 +400,119 @@ function ApprovedStage({ isActive, isPoolEmpty, claimsThisSession, maxClaims, bu
       <div className="drop-v2-claims-note">
         Claims this session: {claimsThisSession}/{maxClaims}
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// HERO COUNTDOWN — split-flap-feel tile pair (HRS:MIN:SEC). The clock
+// is the hero of the page when the window is closed; gets a red urgency
+// tint when the window is live and the countdown is running down.
+// ─────────────────────────────────────────────────────────────────────
+function DropCountdown({ ms, live }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  // Re-base the absolute end-time once and tick relative to that, so
+  // the displayed countdown is monotonically decreasing.
+  const endRef = useState(() => Date.now() + Math.max(0, ms))[0];
+  void now;
+  const remaining = Math.max(0, (endRef ? endRef - Date.now() : ms));
+
+  const totalSec = Math.floor(remaining / 1000);
+  const hrs = Math.floor(totalSec / 3600);
+  const min = Math.floor((totalSec % 3600) / 60);
+  const sec = totalSec % 60;
+
+  const showHours = hrs > 0;
+  const urgent    = live && remaining < 60_000;
+
+  const Tile = ({ value, label }) => (
+    <div className={`drop-v3-clock-tile${urgent ? ' urgent' : ''}`}>
+      <div className="drop-v3-clock-num">{String(value).padStart(2, '0')}</div>
+      <div className="drop-v3-clock-lbl">{label}</div>
+    </div>
+  );
+
+  return (
+    <div className="drop-v3-clock">
+      <div className="drop-v3-clock-kicker">
+        {live ? (urgent ? 'CLOSING NOW' : 'CLOSES IN') : 'NEXT WINDOW IN'}
+      </div>
+      <div className="drop-v3-clock-row">
+        {showHours && <>
+          <Tile value={hrs} label="hrs" />
+          <span className="drop-v3-clock-sep">:</span>
+        </>}
+        <Tile value={min} label="min" />
+        <span className="drop-v3-clock-sep">:</span>
+        <Tile value={sec} label="sec" />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// SLOT METER — 20 dots: filled = claimed, hollow = open. Replaces the
+// thin progress bar with something you can read at a glance.
+// ─────────────────────────────────────────────────────────────────────
+function SlotMeter({ taken, size, mood, isPoolEmpty }) {
+  const dots = [];
+  const safeSize = Math.max(1, Math.min(40, size || 20));
+  const safeTaken = Math.max(0, Math.min(safeSize, taken || 0));
+  for (let i = 0; i < safeSize; i++) {
+    dots.push(
+      <span
+        key={i}
+        className={`drop-v3-slot-dot${i < safeTaken ? ' filled' : ''}`}
+      />
+    );
+  }
+  return (
+    <div className="drop-v3-slot-meter">
+      <div className="drop-v3-slot-head">
+        <span className="drop-v3-slot-label">
+          {isPoolEmpty ? 'POOL SEALED' : 'POOL'}
+        </span>
+        <span className="drop-v3-slot-count">{safeTaken}/{safeSize}</span>
+      </div>
+      <div className="drop-v3-slot-dots">{dots}</div>
+      <div className="drop-v3-slot-mood">{mood}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// RECENT TICKER — single line showing the most recent global drop pull.
+// Fed by drop-status.recentClaims (top of array = newest).
+// ─────────────────────────────────────────────────────────────────────
+function RecentTicker({ latest }) {
+  if (!latest) return null;
+  const info = ELEMENT_VARIANTS?.[latest.elementType]?.[latest.variant];
+  const name = info?.name || `${latest.elementType} ${latest.variant}`;
+  const typeLabel = ELEMENT_LABELS?.[latest.elementType] || latest.elementType;
+  const ago = (() => {
+    const ms = Date.now() - (latest.claimedAt || Date.now());
+    const m = Math.floor(ms / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  })();
+  return (
+    <div className="drop-v3-ticker">
+      <span className="drop-v3-ticker-pulse" />
+      <span className="drop-v3-ticker-text">
+        Last pull: <strong>@{latest.xUsername}</strong> →{' '}
+        <span className={`drop-v3-ticker-rarity ${latest.rarity}`}>
+          {typeLabel} · {name}
+        </span>{' '}
+        <span className="drop-v3-ticker-rarity-tag">{String(latest.rarity).replace('_', ' ').toUpperCase()}</span>
+      </span>
+      <span className="drop-v3-ticker-ago">{ago}</span>
     </div>
   );
 }

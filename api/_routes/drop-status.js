@@ -23,13 +23,20 @@ function poolStateFor(pct) {
 export default async function handler(req, res) {
   const sessId = getCurrentSessionId();
 
-  // Run the session lookup + the public portrait count in parallel so
-  // landing-page polling stays cheap. Portraits-built is what the
-  // landing "community supply" ribbon reads — previously that was a
-  // fake time-based simulator that had already climbed to 1,969/1,969.
-  const [sess, portraitsRow] = await Promise.all([
+  // Run the session lookup, public portrait count, AND a tiny live-
+  // ticker query in parallel so the existing 15s poll stays cheap.
+  const [sess, portraitsRow, recentRows] = await Promise.all([
     one(await sql`SELECT pool_size, pool_claimed FROM drop_sessions WHERE session_id = ${sessId}`),
     one(await sql`SELECT COUNT(*)::int AS c FROM completed_nfts`),
+    sql`
+      SELECT dc.element_type, dc.variant, dc.rarity, dc.claimed_at,
+             u.x_username, u.x_avatar
+        FROM drop_claims dc
+        JOIN users u ON u.id = dc.user_id
+       WHERE u.suspended = FALSE
+       ORDER BY dc.claimed_at DESC
+       LIMIT 5
+    `,
   ]);
   const poolSize = sess?.pool_size ?? DEFAULT_POOL_SIZE;
   const poolClaimed = sess?.pool_claimed ?? 0;
@@ -63,6 +70,17 @@ export default async function handler(req, res) {
     // also count by hitting /api/gallery, but this is cheap.
     portraitsBuilt,
     supplyCap: SUPPLY_CAP,
+    // Live ticker: most recent claims across the whole project. UI
+    // shows a single-line "@handle pulled <name> (rarity) · Nm ago"
+    // at the top of the drop-page action card.
+    recentClaims: (recentRows || []).map((r) => ({
+      xUsername:    r.x_username,
+      xAvatar:      r.x_avatar,
+      elementType:  r.element_type,
+      variant:      r.variant,
+      rarity:       r.rarity,
+      claimedAt:    new Date(r.claimed_at).getTime(),
+    })),
   };
 
   // Admins additionally see the raw pool numbers

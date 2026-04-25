@@ -86,6 +86,7 @@ function emptyState() {
     mySessionClaims: 0,
     portraitsBuilt:   0,
     supplyCap:        1969,
+    recentClaims:     [],
   };
 }
 
@@ -138,6 +139,7 @@ function reducer(state, action) {
         sessionStatus:    deriveSessionStatus(s, s?.mySessionClaims ?? state.mySessionClaims),
         portraitsBuilt:   typeof s?.portraitsBuilt === 'number' ? s.portraitsBuilt : state.portraitsBuilt,
         supplyCap:        typeof s?.supplyCap      === 'number' ? s.supplyCap      : state.supplyCap,
+        recentClaims:     Array.isArray(s?.recentClaims) ? s.recentClaims : state.recentClaims,
       };
     }
 
