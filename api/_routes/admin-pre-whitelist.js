@@ -5,7 +5,7 @@
 // it and eyeball the account before deciding.
 import { sql } from '../_lib/db.js';
 import { requireAdmin } from '../_lib/auth.js';
-import { ok, bad } from '../_lib/json.js';
+import { ok } from '../_lib/json.js';
 
 const VALID_STATUS = new Set(['pending', 'approved', 'rejected', 'all']);
 
@@ -16,6 +16,19 @@ export default async function handler(req, res) {
   const wanted = String(req.query?.status || 'pending');
   const status = VALID_STATUS.has(wanted) ? wanted : 'pending';
   const limit  = Math.min(200, Math.max(1, parseInt(req.query?.limit, 10) || 100));
+
+  // Always return totals so the admin UI can show counts per tab
+  // without having to hit the endpoint three times. Cheap COUNT()s
+  // — pre_whitelist_requests has a partial index on status.
+  const countRows = await sql`
+    SELECT status, COUNT(*)::int AS c
+      FROM pre_whitelist_requests
+     GROUP BY status
+  `;
+  const counts = { pending: 0, approved: 0, rejected: 0 };
+  for (const r of countRows) {
+    if (counts[r.status] !== undefined) counts[r.status] = Number(r.c) || 0;
+  }
 
   const rows = status === 'all'
     ? await sql`
@@ -44,6 +57,7 @@ export default async function handler(req, res) {
 
   ok(res, {
     status,
+    counts,
     entries: rows.map((r) => ({
       id:               r.id,
       userId:           r.user_id,

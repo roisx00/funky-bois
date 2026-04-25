@@ -1642,6 +1642,7 @@ async function drawTweetGraphic(canvas, item) {
 function PreWhitelistQueue() {
   const [tab, setTab] = useState('pending');
   const [entries, setEntries] = useState([]);
+  const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [noteFor, setNoteFor] = useState({});
@@ -1654,6 +1655,11 @@ function PreWhitelistQueue() {
       const r = await fetch(`/api/admin-pre-whitelist?status=${encodeURIComponent(statusKey)}`, { credentials: 'same-origin' });
       const d = r.ok ? await r.json() : { entries: [] };
       setEntries(d.entries || []);
+      if (d.counts) setCounts({
+        pending:  Number(d.counts.pending)  || 0,
+        approved: Number(d.counts.approved) || 0,
+        rejected: Number(d.counts.rejected) || 0,
+      });
     } catch (e) {
       setError(e?.message || 'load failed');
       setEntries([]);
@@ -1677,9 +1683,17 @@ function PreWhitelistQueue() {
       if (d.error) {
         setError(d.error);
       } else {
-        // Optimistic: drop the row from the current view
+        // Optimistic: drop the row from the current view + adjust the
+        // pill counts. A pending -> approved/rejected decision moves
+        // the count from the pending bucket to the target bucket.
         setEntries((prev) => prev.filter((e) => e.id !== id));
         setNoteFor((prev) => { const n = { ...prev }; delete n[id]; return n; });
+        setCounts((prev) => ({
+          ...prev,
+          [tab]: Math.max(0, (prev[tab] || 0) - 1),
+          [decision === 'approve' ? 'approved' : 'rejected']:
+            (prev[decision === 'approve' ? 'approved' : 'rejected'] || 0) + 1,
+        }));
       }
     } finally {
       setBusyId(null);
@@ -1704,7 +1718,7 @@ function PreWhitelistQueue() {
               className={`btn btn-sm ${tab === s ? 'btn-solid' : 'btn-ghost'}`}
               onClick={() => setTab(s)}
             >
-              {s} {tab === s && entries.length > 0 ? `(${entries.length})` : ''}
+              {s} ({counts[s] || 0})
             </button>
           ))}
           <button className="btn btn-ghost btn-sm" onClick={() => load(tab)} disabled={loading}>
