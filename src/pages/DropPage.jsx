@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
-import { ELEMENT_LABELS, ELEMENT_VARIANTS } from '../data/elements';
+import { ELEMENT_LABELS, ELEMENT_VARIANTS, getElementSVG } from '../data/elements';
 
 // Map raw server error codes to sentences a human can read.
 function friendlyDropError(r) {
@@ -240,24 +240,117 @@ export default function DropPage() {
 
       {/* ────────── REVEAL OVERLAY ────────── */}
       {revealed && (
-        <div className="reveal-animation" onClick={() => setRevealed(null)}>
-          <div className="reveal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="reveal-card-kicker">YOU PULLED</div>
-            <div className="reveal-card-rarity">{(revealed.rarity || '').replace('_', ' ').toUpperCase()}</div>
-            <div className="reveal-card-name">{revealed.name}</div>
-            <div className="reveal-card-meta">
-              +{revealed.bustsReward} BUSTS · position #{revealed.position}
-            </div>
-            <button
-              className="btn btn-solid btn-arrow"
-              onClick={() => setRevealed(null)}
-              style={{ marginTop: 24 }}
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <RevealOverlay revealed={revealed} onClose={() => setRevealed(null)} />
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// REVEAL OVERLAY — shown after a successful drop claim. Lets the user
+// see the pulled trait, download a 1200×1200 PNG of it, and pre-fill
+// a tweet so they can share to X with the image attached.
+// ─────────────────────────────────────────────────────────────────────
+function RevealOverlay({ revealed, onClose }) {
+  const elementType = revealed.elementType || revealed.type;
+  const variant     = revealed.variant ?? 0;
+  const typeLabel   = ELEMENT_LABELS?.[elementType] || elementType;
+  const rarityText  = (revealed.rarity || '').replace('_', ' ').toUpperCase();
+
+  // Per-element SVG inner string + a proper viewBox wrapper so the
+  // browser can render it standalone for download or preview.
+  const innerSvg = useMemo(() => getElementSVG(elementType, variant), [elementType, variant]);
+  const fullSvg  = useMemo(
+    () => `<svg viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" width="100%" height="100%">${innerSvg}</svg>`,
+    [innerSvg]
+  );
+
+  const fileBase = `the1969-${elementType}-${revealed.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || variant}`;
+
+  const handleDownload = async () => {
+    const size = 1200;
+    const svgBlob = new Blob([fullSvg], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    try {
+      await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          ctx.fillStyle = '#F9F6F0';
+          ctx.fillRect(0, 0, size, size);
+          ctx.drawImage(img, 0, 0, size, size);
+          canvas.toBlob((blob) => {
+            if (!blob) { reject(new Error('toBlob failed')); return; }
+            const pngUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = pngUrl;
+            a.download = `${fileBase}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+            resolve();
+          }, 'image/png');
+        };
+        img.onerror = () => reject(new Error('SVG load failed'));
+        img.src = svgUrl;
+      });
+    } finally {
+      URL.revokeObjectURL(svgUrl);
+    }
+  };
+
+  const handleShare = () => {
+    const rarityWord = rarityText
+      ? rarityText.charAt(0) + rarityText.slice(1).toLowerCase()
+      : 'New';
+    const text = `Just pulled a ${rarityWord} ${typeLabel} · ${revealed.name} from @the1969eth\n\nReal users only · pre-whitelist gated · the1969.io`;
+    const url  = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  return (
+    <div className="reveal-animation" onClick={onClose}>
+      <div className="reveal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="reveal-card-kicker">YOU PULLED</div>
+
+        <div
+          className="reveal-card-art"
+          style={{
+            width: 220, height: 220, margin: '14px auto 18px', border: '1px solid var(--ink)',
+            background: 'var(--paper-2)', imageRendering: 'pixelated',
+          }}
+          dangerouslySetInnerHTML={{ __html: fullSvg }}
+        />
+
+        <div className="reveal-card-rarity">{rarityText}</div>
+        <div className="reveal-card-name">{revealed.name}</div>
+        <div className="reveal-card-meta">
+          {typeLabel} · +{revealed.bustsReward} BUSTS · position #{revealed.position}
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 22, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button className="btn btn-accent btn-arrow" onClick={handleShare}>
+            Share to X
+          </button>
+          <button className="btn btn-solid" onClick={handleDownload}>
+            Download image
+          </button>
+          <button className="btn btn-ghost" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <p style={{
+          marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 11,
+          letterSpacing: '0.04em', color: 'var(--text-4)', textAlign: 'center',
+        }}>
+          Tip: download first, then attach to your tweet.
+        </p>
+      </div>
     </div>
   );
 }
