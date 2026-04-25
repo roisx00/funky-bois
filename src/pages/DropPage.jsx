@@ -118,7 +118,13 @@ export default function DropPage() {
 
       {/* ────────── STAT BAND ────────── */}
       <div className="drop-v3-stat-band">
-        <SlotMeter taken={poolTaken} size={poolSizeRaw} mood={moodLabel} isPoolEmpty={isPoolEmpty} />
+        <SlotMeter
+          taken={poolTaken}
+          size={poolSizeRaw}
+          mood={moodLabel}
+          isPoolEmpty={isPoolEmpty}
+          isActive={isActive}
+        />
         {latest && <RecentTicker latest={latest} />}
       </div>
 
@@ -458,28 +464,54 @@ function DropCountdown({ ms, live }) {
 // SLOT METER — 20 dots: filled = claimed, hollow = open. Replaces the
 // thin progress bar with something you can read at a glance.
 // ─────────────────────────────────────────────────────────────────────
-function SlotMeter({ taken, size, mood, isPoolEmpty }) {
-  const dots = [];
-  const safeSize = Math.max(1, Math.min(40, size || 20));
+function SlotMeter({ taken, size, mood, isPoolEmpty, isActive }) {
+  const safeSize  = Math.max(1, Math.min(40, size  || 20));
   const safeTaken = Math.max(0, Math.min(safeSize, taken || 0));
-  for (let i = 0; i < safeSize; i++) {
-    dots.push(
-      <span
-        key={i}
-        className={`drop-v3-slot-dot${i < safeTaken ? ' filled' : ''}`}
-      />
+
+  function dotsFor(filledCount) {
+    const out = [];
+    for (let i = 0; i < safeSize; i++) {
+      out.push(<span key={i} className={`drop-v3-slot-dot${i < filledCount ? ' filled' : ''}`} />);
+    }
+    return out;
+  }
+
+  // Live window: show ONE row — the active pool draining in real time.
+  if (isActive) {
+    return (
+      <div className="drop-v3-slot-meter">
+        <div className="drop-v3-slot-head">
+          <span className="drop-v3-slot-label">POOL · LIVE</span>
+          <span className="drop-v3-slot-count">{safeTaken}/{safeSize}</span>
+        </div>
+        <div className="drop-v3-slot-dots">{dotsFor(safeTaken)}</div>
+        <div className="drop-v3-slot-mood">{mood}</div>
+      </div>
     );
   }
+
+  // Closed window: show TWO rows — the just-finished pool and a preview
+  // of the next 20-slot window (all hollow, fresh).
   return (
-    <div className="drop-v3-slot-meter">
-      <div className="drop-v3-slot-head">
-        <span className="drop-v3-slot-label">
-          {isPoolEmpty ? 'POOL SEALED' : 'POOL'}
-        </span>
-        <span className="drop-v3-slot-count">{safeTaken}/{safeSize}</span>
+    <div className="drop-v3-slot-meter drop-v3-slot-meter-double">
+      <div className="drop-v3-slot-row">
+        <div className="drop-v3-slot-head">
+          <span className="drop-v3-slot-label">
+            {isPoolEmpty ? 'LAST POOL · SEALED' : 'LAST POOL'}
+          </span>
+          <span className="drop-v3-slot-count">{safeTaken}/{safeSize}</span>
+        </div>
+        <div className="drop-v3-slot-dots">{dotsFor(safeTaken)}</div>
+        <div className="drop-v3-slot-mood">{mood}</div>
       </div>
-      <div className="drop-v3-slot-dots">{dots}</div>
-      <div className="drop-v3-slot-mood">{mood}</div>
+      <div className="drop-v3-slot-row drop-v3-slot-row-next">
+        <div className="drop-v3-slot-head">
+          <span className="drop-v3-slot-label">NEXT POOL</span>
+          <span className="drop-v3-slot-count">0/{safeSize}</span>
+        </div>
+        <div className="drop-v3-slot-dots">{dotsFor(0)}</div>
+        <div className="drop-v3-slot-mood">Opens at the top of the next 2-hour cycle</div>
+      </div>
     </div>
   );
 }

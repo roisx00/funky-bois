@@ -6406,3 +6406,27 @@ section { background: var(--bg); }
 
 /* Style legendary / ultra in the ticker text */
 .drop-v3-ticker .drop-v3-ticker-rarity { font-weight: 500; }
+
+/* SlotMeter — two-row "last pool + next pool" variant when closed */
+.drop-v3-slot-meter-double {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+.drop-v3-slot-meter-double .drop-v3-slot-row {
+  padding: 14px 16px;
+}
+.drop-v3-slot-meter-double .drop-v3-slot-row + .drop-v3-slot-row {
+  border-top: 1px dashed var(--hairline);
+}
+.drop-v3-slot-row-next .drop-v3-slot-label {
+  color: var(--ink);
+}
+.drop-v3-slot-row-next .drop-v3-slot-dot {
+  border-style: dashed;
+  background: transparent;
+}
+.drop-v3-slot-row-next .drop-v3-slot-mood {
+  color: var(--text-4);
+}
