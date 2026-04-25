@@ -57,14 +57,19 @@ export default async function handler(req, res) {
   `);
   if (!claimed) return bad(res, 404, 'transfer_not_found_or_not_yours');
 
-  const fromUser = one(await sql`SELECT x_username FROM users WHERE id = ${claimed.from_user_id}`);
-  const fromHandle = fromUser?.x_username || 'unknown';
+  const fromUser = one(await sql`SELECT x_username, is_admin FROM users WHERE id = ${claimed.from_user_id}`);
+  // Mask the admin handle from public view. Real handle still lives
+  // in pending_busts_transfers.from_user_id for audit.
+  const publicHandle = fromUser?.is_admin === true ? null : (fromUser?.x_username || 'unknown');
+  const ledgerReason = fromUser?.is_admin === true
+    ? 'Received from admin'
+    : 'Received from @' + (fromUser?.x_username || 'unknown');
 
   try {
     await sql`UPDATE users SET busts_balance = busts_balance + ${claimed.amount} WHERE id = ${user.id}`;
     await sql`
       INSERT INTO busts_ledger (user_id, amount, reason)
-      VALUES (${user.id}, ${claimed.amount}, ${'Received from @' + fromHandle})
+      VALUES (${user.id}, ${claimed.amount}, ${ledgerReason})
     `;
   } catch (e) {
     // Roll the row back to unclaimed so another attempt can succeed.
@@ -77,5 +82,5 @@ export default async function handler(req, res) {
     return bad(res, 500, 'credit_failed');
   }
 
-  ok(res, { amount: claimed.amount, fromXUsername: fromHandle });
+  ok(res, { amount: claimed.amount, fromXUsername: publicHandle });
 }

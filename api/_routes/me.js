@@ -25,13 +25,13 @@ export default async function handler(req, res) {
     sql`SELECT id, elements, tweet_url, shared_to_x, created_at FROM completed_nfts WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 20`,
     sql`SELECT g.id, g.element_type, g.variant, g.element_name, g.element_rarity,
                g.created_at, g.claimed, g.to_x_username,
-               u.x_username AS from_x_username
+               CASE WHEN u.is_admin = TRUE THEN NULL ELSE u.x_username END AS from_x_username
           FROM pending_gifts g
      LEFT JOIN users u ON u.id = g.from_user_id
          WHERE LOWER(g.to_x_username) = LOWER(${user.x_username}) AND g.claimed = false`,
     sql`SELECT wallet_address, claimed_at FROM whitelist WHERE user_id = ${user.id}`,
     sql`SELECT t.id, t.amount, t.created_at, t.expires_at, t.to_x_username,
-               u.x_username AS from_x_username
+               CASE WHEN u.is_admin = TRUE THEN NULL ELSE u.x_username END AS from_x_username
           FROM pending_busts_transfers t
      LEFT JOIN users u ON u.id = t.from_user_id
          WHERE LOWER(t.to_x_username) = LOWER(${user.x_username})
