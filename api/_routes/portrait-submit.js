@@ -14,7 +14,7 @@
 // retry. Postgres' conditional UPDATE keeps this race-safe because
 // `quantity >= 1` is checked in the UPDATE itself.
 import { sql, one } from '../_lib/db.js';
-import { requireUser } from '../_lib/auth.js';
+import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { ELEMENT_TYPES, ELEMENT_VARIANTS } from '../_lib/elements.js';
 import { settleReferralIfPending } from '../_lib/referral.js';

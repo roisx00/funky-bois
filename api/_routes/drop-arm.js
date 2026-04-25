@@ -10,7 +10,7 @@
 // The client sends this request only after the user performs a real
 // interaction (drag-to-arm gesture). The server additionally logs any
 // rejection to `bot_rejections` for forensics.
-import { requireUser } from '../_lib/auth.js';
+import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { ok, bad } from '../_lib/json.js';
 import { rateLimit, clientIp } from '../_lib/ratelimit.js';
 import { signArmToken } from '../_lib/jwt.js';

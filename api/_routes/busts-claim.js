@@ -8,7 +8,7 @@
 // a user opening their inbox also garbage-collects their own stale
 // pending rows.
 import { sql, one } from '../_lib/db.js';
-import { requireUser } from '../_lib/auth.js';
+import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 
 async function sweepExpired() {

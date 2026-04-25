@@ -44,6 +44,7 @@ export default async function handler(req, res) {
       dailyClaimedOn:  user.daily_claimed_on,
       followClaimedAt: user.follow_claimed_at ? new Date(user.follow_claimed_at).getTime() : null,
       isAdmin:         isAdminUser(user),
+      suspended:       user.suspended === true,
     },
     inventory: inventory.map((r) => {
       const info = ELEMENT_VARIANTS[r.element_type]?.[r.variant];

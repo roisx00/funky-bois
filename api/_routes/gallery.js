@@ -39,7 +39,10 @@ export default async function handler(req, res) {
 
   // Public view — DISTINCT ON keeps one row per user regardless of DB state.
   // We pick the latest portrait per user inside the CTE, then sort the
-  // outer query by whichever order the caller asked for.
+  // outer query by whichever order the caller asked for. Suspended
+  // users are excluded (they shouldn't appear here, and the cleanup
+  // SQL deletes their portraits anyway, but the filter is belt-and-
+  // suspenders for any future suspensions).
   let rows;
   if (sort === 'oldest') {
     rows = await sql`
@@ -49,6 +52,7 @@ export default async function handler(req, res) {
                u.x_username, u.x_avatar, u.x_followers
         FROM completed_nfts n
         JOIN users u ON u.id = n.user_id
+        WHERE u.suspended = FALSE
         ORDER BY n.user_id, n.created_at DESC
       )
       SELECT * FROM one_per_user
@@ -63,6 +67,7 @@ export default async function handler(req, res) {
                u.x_username, u.x_avatar, u.x_followers
         FROM completed_nfts n
         JOIN users u ON u.id = n.user_id
+        WHERE u.suspended = FALSE
         ORDER BY n.user_id, n.created_at DESC
       )
       SELECT * FROM one_per_user
@@ -78,6 +83,7 @@ export default async function handler(req, res) {
                u.x_username, u.x_avatar, u.x_followers
         FROM completed_nfts n
         JOIN users u ON u.id = n.user_id
+        WHERE u.suspended = FALSE
         ORDER BY n.user_id, n.created_at DESC
       )
       SELECT * FROM one_per_user

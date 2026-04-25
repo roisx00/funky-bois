@@ -11,7 +11,7 @@ export async function getSessionUser(req) {
   const row = one(await sql`
     SELECT id, x_id, x_username, x_name, x_avatar, busts_balance,
            is_whitelisted, wallet_address, referral_code, referred_by_user,
-           daily_claimed_on, created_at, is_admin, x_followers
+           daily_claimed_on, created_at, is_admin, x_followers, suspended
     FROM users
     WHERE id = ${payload.sub}
   `);
@@ -22,6 +22,22 @@ export async function requireUser(req, res) {
   const u = await getSessionUser(req);
   if (!u) {
     res.status(401).json({ error: 'unauthorized' });
+    return null;
+  }
+  return u;
+}
+
+// Use this on every "earn" or "spend" route. Suspended accounts can
+// still load /api/me (so the client can show them why) but cannot
+// claim drops, open boxes, build, claim WL, send gifts, etc.
+export async function requireActiveUser(req, res) {
+  const u = await requireUser(req, res);
+  if (!u) return null;
+  if (u.suspended === true) {
+    res.status(403).json({
+      error: 'account_suspended',
+      message: 'This account has been suspended for violating the anti-farm policy.',
+    });
     return null;
   }
   return u;

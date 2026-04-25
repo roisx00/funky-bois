@@ -32,7 +32,8 @@ export default async function handler(req, res) {
     SELECT u.x_username, u.x_avatar, u.x_name, u.busts_balance,
            u.is_whitelisted, u.x_followers
       FROM users u
-     WHERE (
+     WHERE u.suspended = FALSE
+       AND (
            EXISTS (SELECT 1 FROM completed_nfts n WHERE n.user_id = u.id)
         OR u.is_whitelisted = TRUE
         OR (

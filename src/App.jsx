@@ -136,6 +136,7 @@ function AppInner() {
     <>
       <WalletBridge />
       <Nav currentPage={page} onNavigate={navigate} />
+      <SuspendedBanner />
 
       {page === 'home' && <LandingPage onNavigate={navigate} />}
       {page === 'drop' && <DropPage />}
@@ -149,6 +150,34 @@ function AppInner() {
       {page === 'leaderboard' && <LeaderboardPage onNavigate={navigate} />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}
     </>
+  );
+}
+
+// Persistent banner for suspended accounts. They can still load the
+// public site so they understand WHY they can't claim/build/etc.
+function SuspendedBanner() {
+  const { suspended, authenticated } = useGame();
+  if (!authenticated || !suspended) return null;
+  return (
+    <div style={{
+      background:    '#0E0E0E',
+      color:         '#F9F6F0',
+      padding:       '14px 24px',
+      fontFamily:    'var(--font-mono)',
+      fontSize:      13,
+      lineHeight:    1.55,
+      letterSpacing: '0.02em',
+      borderTop:    '1px solid var(--ink)',
+      borderBottom: '1px solid var(--ink)',
+    }}>
+      <strong style={{ letterSpacing: '0.14em', fontSize: 11, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>
+        ACCOUNT SUSPENDED
+      </strong>
+      This account has been flagged for violating the anti-farm policy. You
+      cannot claim drops, open boxes, build a portrait, or transfer BUSTS.
+      If you believe this is a mistake, contact{' '}
+      <a href="https://x.com/the1969eth" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>@the1969eth</a> on X.
+    </div>
   );
 }
 

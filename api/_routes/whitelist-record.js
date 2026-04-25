@@ -7,7 +7,7 @@
 // gate for the whitelist row.
 import { verifyMessage } from 'viem';
 import { sql, one } from '../_lib/db.js';
-import { requireUser } from '../_lib/auth.js';
+import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { whitelistClaimMessage } from '../_lib/wlMessage.js';
 import { settleReferralIfPending } from '../_lib/referral.js';

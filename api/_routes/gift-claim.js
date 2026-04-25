@@ -1,6 +1,6 @@
 // Claim an incoming gift. Recipient identified by current X session.
 import { sql, one } from '../_lib/db.js';
-import { requireUser } from '../_lib/auth.js';
+import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 
 export default async function handler(req, res) {

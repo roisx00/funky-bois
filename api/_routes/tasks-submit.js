@@ -2,7 +2,7 @@
 // pending_verifications (status='pending'). Admin approves later.
 // On the same request the row is upserted, so spamming the button is idempotent.
 import { sql, one } from '../_lib/db.js';
-import { requireUser } from '../_lib/auth.js';
+import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
 

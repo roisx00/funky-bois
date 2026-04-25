@@ -21,7 +21,7 @@
 // admins can review and roll back suspicious approved claims.
 
 import { sql, one } from '../_lib/db.js';
-import { requireUser } from '../_lib/auth.js';
+import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { rateLimit, clientIp } from '../_lib/ratelimit.js';
 import { getConfigInt } from '../_lib/config.js';

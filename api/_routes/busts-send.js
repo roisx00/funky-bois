@@ -12,7 +12,7 @@
 //   • Pending row is inserted AFTER the debit. If the insert fails, we
 //     refund the sender with an inverse UPDATE + compensating ledger row.
 import { sql, one } from '../_lib/db.js';
-import { requireUser } from '../_lib/auth.js';
+import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
 import { normalizeXHandle } from '../_lib/xHandle.js';

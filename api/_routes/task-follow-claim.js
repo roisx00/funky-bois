@@ -13,7 +13,7 @@
 //      If Nitter is flaky (null), fall back to honor system and tag
 //      the ledger row so admins can audit later.
 import { sql, one } from '../_lib/db.js';
-import { requireUser } from '../_lib/auth.js';
+import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { ok, bad } from '../_lib/json.js';
 import { rateLimit, clientIp } from '../_lib/ratelimit.js';
 import { userFollowsTarget } from '../_lib/nitter.js';
