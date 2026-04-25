@@ -7,7 +7,7 @@ import { sql, one } from '../_lib/db.js';
 import { ok } from '../_lib/json.js';
 import { getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION, DEFAULT_POOL_SIZE } from '../_lib/elements.js';
 import { getSessionUser, isAdminUser } from '../_lib/auth.js';
-import { markOnline, countOnline } from '../_lib/presence.js';
+import { markOnline, countOnline, debugSnapshot, isPresenceConfigured } from '../_lib/presence.js';
 import { getConfigInt } from '../_lib/config.js';
 
 const SESSION_INTERVAL_MS = 2 * 60 * 60 * 1000;
@@ -117,8 +117,10 @@ export default async function handler(req, res) {
   // Presence: any signed-in non-suspended user counts. Awaited (not
   // fire-and-forget) so the viewer's OWN heartbeat lands BEFORE we
   // count — otherwise a single user opening the page sees 0.
+  let presenceWriteResult = null;
   if (user && user.suspended !== true) {
-    try { await markOnline(user.id); } catch {}
+    try { presenceWriteResult = await markOnline(user.id); }
+    catch (e) { presenceWriteResult = { ok: false, reason: 'throw', error: e?.message }; }
   }
   const prewlOnline = await countOnline();
 
@@ -170,7 +172,15 @@ export default async function handler(req, res) {
 
   // Admin block kept for legacy compatibility; same numbers now public.
   if (user && isAdminUser(user)) {
-    base.admin = { poolSize, poolClaimed, poolRemaining };
+    base.admin = {
+      poolSize, poolClaimed, poolRemaining,
+      presence: {
+        envConfigured:   isPresenceConfigured(),
+        viewerWrote:     presenceWriteResult,
+        countAfterWrite: prewlOnline,
+        snapshot:        await debugSnapshot(),
+      },
+    };
   }
 
   ok(res, base);
