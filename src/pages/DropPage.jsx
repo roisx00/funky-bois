@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import Timer from '../components/Timer';
+import NFTCanvas from '../components/NFTCanvas';
+import { ELEMENT_TYPES, ELEMENT_LABELS, ELEMENT_VARIANTS } from '../data/elements';
 
 // Map raw server error codes to sentences a human can read.
 function friendlyDropError(r) {
@@ -151,9 +153,11 @@ export default function DropPage() {
             )}
 
             {stage === 'built' && (
-              <BlockedStage
-                title="Your portrait is complete"
-                body="The drop is for users still collecting traits. You can still earn BUSTS, open mystery boxes, and gift / receive in the dashboard."
+              <BuiltStage
+                portrait={(completedNFTs || [])[0]}
+                xUsername={xUser?.username}
+                bustsBalance={bustsBalance}
+                isWL={true}
               />
             )}
 
@@ -273,6 +277,129 @@ function SignedOutStage({ onSignIn }) {
       <button className="btn btn-solid btn-lg" onClick={onSignIn}>
         Sign in with X
       </button>
+    </div>
+  );
+}
+
+function BuiltStage({ portrait, xUsername, bustsBalance, isWL }) {
+  if (!portrait) {
+    return (
+      <div className="drop-v2-stage-blocked">
+        <div className="drop-v2-stage-title">Your portrait is complete</div>
+        <p className="drop-v2-stage-sub">Whitelist secured.</p>
+      </div>
+    );
+  }
+
+  const builtAt = portrait.createdAt
+    ? new Date(portrait.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
+  // Resolve trait names + rarities for the 8 layers.
+  const traits = (ELEMENT_TYPES || []).map((type) => {
+    const variant = portrait.elements?.[type];
+    const info    = ELEMENT_VARIANTS?.[type]?.[variant];
+    return {
+      type,
+      label:   ELEMENT_LABELS?.[type] || type,
+      name:    info?.name   || `Variant ${variant}`,
+      rarity:  info?.rarity || 'common',
+      variant,
+    };
+  }).filter((t) => t.variant != null);
+
+  const tweetText = encodeURIComponent(
+    `I just built my portrait on THE 1969. 8/8 traits locked in. Whitelist secured. Mint unlocks at 1,969.\n\n@the1969eth #THE1969`
+  );
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${tweetText}`;
+
+  const handleDownload = async () => {
+    try {
+      const { buildNFTSVG } = await import('../data/elements');
+      const svg = buildNFTSVG(portrait.elements);
+      const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `the1969-${xUsername || 'portrait'}.svg`;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+    } catch (e) { console.warn('[download portrait]', e); }
+  };
+
+  return (
+    <div className="drop-v2-stage-built">
+      <div className="drop-v2-built-grid">
+        {/* LEFT — portrait */}
+        <div className="drop-v2-built-portrait">
+          <div className="drop-v2-built-portrait-frame">
+            <NFTCanvas elements={portrait.elements} size={520} />
+          </div>
+          {portrait.shareHash && (
+            <div className="drop-v2-built-id">
+              <span className="drop-v2-built-id-label">PORTRAIT ID</span>
+              <span className="drop-v2-built-id-value">#{String(portrait.shareHash).slice(0, 8)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT — meta + traits + actions */}
+        <div className="drop-v2-built-meta">
+          <div className="drop-v2-built-kicker">
+            <span className="drop-v2-built-pill">PORTRAIT COMPLETE</span>
+            {isWL && <span className="drop-v2-built-pill drop-v2-built-pill-wl">WL SECURED</span>}
+          </div>
+
+          <h2 className="drop-v2-built-title">
+            8/8 traits locked. <em>Mint unlocks at 1,969.</em>
+          </h2>
+
+          {builtAt && <div className="drop-v2-built-date">Built {builtAt}</div>}
+
+          <div className="drop-v2-built-stats">
+            <div>
+              <div className="drop-v2-built-stat-label">Holder</div>
+              <div className="drop-v2-built-stat-value">@{xUsername || 'you'}</div>
+            </div>
+            <div>
+              <div className="drop-v2-built-stat-label">BUSTS balance</div>
+              <div className="drop-v2-built-stat-value">{(bustsBalance || 0).toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="drop-v2-built-stat-label">Drop slot</div>
+              <div className="drop-v2-built-stat-value drop-v2-built-stat-released">released</div>
+            </div>
+          </div>
+
+          {traits.length === 8 && (
+            <div className="drop-v2-built-traits">
+              <div className="drop-v2-built-traits-head">8 LAYERS</div>
+              <div className="drop-v2-built-traits-grid">
+                {traits.map((t) => (
+                  <div key={t.type} className={`drop-v2-built-trait drop-v2-built-trait-${t.rarity}`}>
+                    <div className="drop-v2-built-trait-type">{t.label}</div>
+                    <div className="drop-v2-built-trait-name">{t.name}</div>
+                    <div className="drop-v2-built-trait-rarity">{String(t.rarity).replace('_', ' ').toUpperCase()}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="drop-v2-built-actions">
+            <a className="btn btn-solid btn-arrow" href={tweetUrl} target="_blank" rel="noreferrer">
+              Share on X
+            </a>
+            <button className="btn btn-ghost" onClick={handleDownload}>
+              Download SVG
+            </button>
+          </div>
+
+          <p className="drop-v2-built-foot">
+            Drop access ends after a build — others get a turn at the 20-slot pool.
+            You can still earn BUSTS, open mystery boxes, and send / receive gifts in the dashboard.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
