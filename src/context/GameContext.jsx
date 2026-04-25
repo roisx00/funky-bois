@@ -155,6 +155,14 @@ function reducer(state, action) {
         pendingGifts:     me.pendingGifts || [],
         pendingInbox:     me.pendingGifts || [], // legacy alias
         pendingBustsTransfers: me.pendingBustsTransfers || [],
+        // mySessionClaims now arrives on /api/me (was on /api/drop-
+        // status until that endpoint went CDN-cacheable). Keep the
+        // existing local optimistic increment after a successful
+        // claim — we just won't overwrite it with a stale 0 if /api/me
+        // races behind a fresh claim.
+        mySessionClaims: typeof me.mySessionClaims === 'number'
+          ? Math.max(me.mySessionClaims, state.mySessionClaims)
+          : state.mySessionClaims,
       };
     }
 
@@ -162,12 +170,13 @@ function reducer(state, action) {
       return { ...emptyState(), hydrated: true };
 
     case 'SET_DROP_STATUS': {
+      // Public payload only — mySessionClaims is no longer carried
+      // here. The /api/me handler updates it via HYDRATE.
       const s = action.payload;
       return {
         ...state,
         serverDropStatus: s,
-        mySessionClaims:  s?.mySessionClaims ?? state.mySessionClaims,
-        sessionStatus:    deriveSessionStatus(s, s?.mySessionClaims ?? state.mySessionClaims),
+        sessionStatus:    deriveSessionStatus(s, state.mySessionClaims),
         portraitsBuilt:   typeof s?.portraitsBuilt === 'number' ? s.portraitsBuilt : state.portraitsBuilt,
         supplyCap:        typeof s?.supplyCap      === 'number' ? s.supplyCap      : state.supplyCap,
         recentClaims:     Array.isArray(s?.recentClaims) ? s.recentClaims : state.recentClaims,
@@ -358,32 +367,55 @@ export function GameProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Poll drop status every 15s while page is open. Also fires an
-  // EXTRA poll the instant the local clock crosses a session boundary
-  // (top of every 2nd hour) so the cached payload — which is for the
-  // previous session — gets replaced before the user reaches for the
-  // claim button. Without this, polls landing 14s before :00 leave
-  // the UI showing stale "sealed" state for up to 15s after the new
-  // window opens, exactly the gap reported by users having to refresh.
+  // Adaptive poll for /api/drop-status:
+  //   • 60s during the long "waiting for next window" gap (1h55m of
+  //     every cycle). Nothing changes during this period — pool stays
+  //     sealed, audience numbers drift slowly. 4× lower load.
+  //   • 15s during the live 5-min window when claims are landing.
+  //
+  // At session boundaries we ALSO fire a one-off poll, but each client
+  // jitters by 0–2s so 888 viewers don't hammer the origin in the same
+  // 50ms. The endpoint is CDN-cached at s-maxage=5 anyway, so most of
+  // these requests are served by the edge — the jitter is belt-and-
+  // suspenders for the small fraction that miss the cache.
   useEffect(() => {
     function tick() {
       jget('/api/drop-status').then((ds) => {
         if (ds.ok) dispatch({ type: 'SET_DROP_STATUS', payload: ds });
       });
     }
-    dropPollRef.current = setInterval(tick, 15000);
 
-    // Boundary watcher: every second, check if the live session id
-    // has changed from what the server cache thinks; if so, kick off
-    // an immediate poll (and a follow-up after 1.5s in case the first
-    // one races the server's own boundary handler).
+    function pollIntervalMs() {
+      const elapsed = Date.now() - getCurrentSessionId();
+      return elapsed < SESSION_WINDOW_MS ? 15000 : 60000;
+    }
+
+    // Re-arm the timer when the active interval changes.
+    let currentInterval = pollIntervalMs();
+    function arm() {
+      dropPollRef.current = setInterval(() => {
+        const target = pollIntervalMs();
+        if (target !== currentInterval) {
+          clearInterval(dropPollRef.current);
+          currentInterval = target;
+          arm();
+        }
+        tick();
+      }, currentInterval);
+    }
+    arm();
+
+    // Boundary watcher with random 0–2000ms jitter.
     let lastSeenSess = getCurrentSessionId();
     const boundaryId = setInterval(() => {
       const now = getCurrentSessionId();
       if (now !== lastSeenSess) {
         lastSeenSess = now;
-        tick();
-        setTimeout(tick, 1500);
+        const jitter = Math.floor(Math.random() * 2000);
+        setTimeout(tick, jitter);
+        // One follow-up ~1.5s after the jittered first poll, in case
+        // the first request hit the edge cache mid-revalidate.
+        setTimeout(tick, jitter + 1500);
       }
     }, 1000);
 

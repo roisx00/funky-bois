@@ -1,7 +1,7 @@
-import { sql } from '../_lib/db.js';
+import { sql, one } from '../_lib/db.js';
 import { getSessionUser, isAdminUser } from '../_lib/auth.js';
 import { ok } from '../_lib/json.js';
-import { ELEMENT_VARIANTS } from '../_lib/elements.js';
+import { ELEMENT_VARIANTS, getCurrentSessionId } from '../_lib/elements.js';
 import { markOnline } from '../_lib/presence.js';
 
 export default async function handler(req, res) {
@@ -18,8 +18,12 @@ export default async function handler(req, res) {
     markOnline(user.id).catch(() => {});
   }
 
+  // Per-user drop session count — moved off /api/drop-status so that
+  // endpoint can be CDN-cached. Cheap (single COUNT on indexed cols).
+  const sessId = getCurrentSessionId();
+
   // Hydrate full state in parallel
-  const [inventory, ledger, completed, gifts, wl, bustsInbox, prewlReq] = await Promise.all([
+  const [inventory, ledger, completed, gifts, wl, bustsInbox, prewlReq, myClaimsRow] = await Promise.all([
     sql`SELECT element_type, variant, quantity, obtained_at FROM inventory WHERE user_id = ${user.id}`,
     sql`SELECT amount, reason, created_at FROM busts_ledger WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 50`,
     sql`SELECT id, elements, tweet_url, shared_to_x, created_at FROM completed_nfts WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 20`,
@@ -41,11 +45,16 @@ export default async function handler(req, res) {
           FROM pre_whitelist_requests
          WHERE user_id = ${user.id}
          ORDER BY id DESC LIMIT 1`,
+    sql`SELECT COUNT(*)::int AS cnt FROM drop_claims
+         WHERE user_id = ${user.id} AND session_id = ${sessId}`,
   ]);
   const myPrewl = prewlReq?.[0] || null;
+  const mySessionClaims = one(myClaimsRow)?.cnt ?? 0;
 
   ok(res, {
     authenticated: true,
+    sessId,
+    mySessionClaims,
     user: {
       id:              user.id,
       xUsername:       user.x_username,

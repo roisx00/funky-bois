@@ -1,13 +1,15 @@
-// Read-only: current session metadata.
-// Public response intentionally HIDES raw pool_size / pool_claimed /
-// pool_remaining — we expose only a mood label + a rough pct so the UI
-// can hint at urgency without leaking the exact supply. Admins get
-// the raw numbers via a separate admin endpoint.
+// Read-only: current session metadata. PURELY PUBLIC — no per-user
+// fields. The response is identical for everyone, so it can be CDN-
+// cached at the edge. Per-user fields like mySessionClaims live on
+// /api/me which is cookie-bound and never cached.
+//
+// Cache strategy: s-maxage=5 + stale-while-revalidate=10. At 888
+// concurrent viewers polling every 15s, this turns ~3,500 origin
+// hits/min into ~12/min. Edge serves the rest.
 import { sql, one } from '../_lib/db.js';
 import { ok } from '../_lib/json.js';
 import { getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION, DEFAULT_POOL_SIZE } from '../_lib/elements.js';
-import { getSessionUser, isAdminUser } from '../_lib/auth.js';
-import { markOnline, countOnline } from '../_lib/presence.js';
+import { countOnline } from '../_lib/presence.js';
 import { getConfigInt } from '../_lib/config.js';
 
 const SESSION_INTERVAL_MS = 2 * 60 * 60 * 1000;
@@ -104,22 +106,9 @@ export default async function handler(req, res) {
   const prewlWaiting   = Number(waitingRow?.c)  || 0;
   const prewlApproved  = Number(approvedRow?.c) || 0;
 
-  let mySessionClaims = 0;
-  const user = await getSessionUser(req);
-  if (user) {
-    const row = one(await sql`
-      SELECT COUNT(*)::int AS cnt FROM drop_claims
-      WHERE user_id = ${user.id} AND session_id = ${sessId}
-    `);
-    mySessionClaims = row?.cnt ?? 0;
-  }
-
-  // Presence: any signed-in non-suspended user counts. Awaited (not
-  // fire-and-forget) so the viewer's OWN heartbeat lands BEFORE we
-  // count — otherwise a single user opening the page sees 0.
-  if (user && user.suspended !== true) {
-    try { await markOnline(user.id); } catch {}
-  }
+  // No per-user data here. mySessionClaims now lives on /api/me so
+  // this response stays purely public and CDN-cacheable. Heartbeat
+  // also moved to /api/me so the heavy cookie read isn't required.
   const prewlOnline = await countOnline();
 
   const base = {
@@ -142,7 +131,6 @@ export default async function handler(req, res) {
     msUntilNext:  Math.max(0, SESSION_INTERVAL_MS - (Date.now() - sessId)),
     msUntilClose: Math.max(0, SESSION_WINDOW_MS   - (Date.now() - sessId)),
     maxClaims: MAX_CLAIMS_PER_SESSION,
-    mySessionClaims,
     // Pre-whitelist counters. Three numbers, three meanings:
     //   prewlApproved — total ever approved (lifetime, not suspended).
     //                   Matches the admin queue "approved" tab count.
@@ -168,10 +156,12 @@ export default async function handler(req, res) {
     })),
   };
 
-  // Admin block kept for legacy compatibility; same numbers now public.
-  if (user && isAdminUser(user)) {
-    base.admin = { poolSize, poolClaimed, poolRemaining };
-  }
-
+  // CDN cache: every viewer gets the same JSON, so the edge can serve
+  // it. s-maxage=5 means the edge holds the fresh response for 5s;
+  // stale-while-revalidate=10 lets it serve a 5-15s-old copy while a
+  // background refresh runs. Origin sees ~12 hits/min regardless of
+  // audience size. The 5s lag matches the 1Hz UI tick — users won't
+  // perceive it.
+  res.setHeader('Cache-Control', 'public, s-maxage=5, stale-while-revalidate=10');
   ok(res, base);
 }
