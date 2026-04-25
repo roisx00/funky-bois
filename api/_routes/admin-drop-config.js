@@ -5,7 +5,7 @@ import { sql, one } from '../_lib/db.js';
 import { requireAdmin } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { getConfigInt, setConfig } from '../_lib/config.js';
-import { getCurrentSessionId, DEFAULT_POOL_SIZE } from '../_lib/elements.js';
+import { getCurrentSessionId, isSessionActive, DEFAULT_POOL_SIZE } from '../_lib/elements.js';
 
 export default async function handler(req, res) {
   const user = await requireAdmin(req, res);
@@ -38,12 +38,17 @@ export default async function handler(req, res) {
     let updatedCurrent = null;
     if (applyToCurrentSession) {
       const sessId = getCurrentSessionId();
-      updatedCurrent = one(await sql`
-        UPDATE drop_sessions
-           SET pool_size = ${size}
-         WHERE session_id = ${sessId}
-         RETURNING session_id, pool_size, pool_claimed
-      `);
+      // Only mutate the live session row. Once the 5-minute window has
+      // closed, the session is historical — rewriting its pool_size
+      // would retroactively change "LAST POOL N/M" on the public UI.
+      if (isSessionActive(sessId)) {
+        updatedCurrent = one(await sql`
+          UPDATE drop_sessions
+             SET pool_size = ${size}
+           WHERE session_id = ${sessId}
+           RETURNING session_id, pool_size, pool_claimed
+        `);
+      }
     }
     return ok(res, {
       defaultPoolSize: size,

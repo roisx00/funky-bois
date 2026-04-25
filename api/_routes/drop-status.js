@@ -8,6 +8,7 @@ import { ok } from '../_lib/json.js';
 import { getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION, DEFAULT_POOL_SIZE } from '../_lib/elements.js';
 import { getSessionUser, isAdminUser } from '../_lib/auth.js';
 import { markOnline, countOnline } from '../_lib/presence.js';
+import { getConfigInt } from '../_lib/config.js';
 
 const SESSION_INTERVAL_MS = 2 * 60 * 60 * 1000;
 const SESSION_WINDOW_MS   = 5 * 60 * 1000;
@@ -65,6 +66,11 @@ export default async function handler(req, res) {
   const poolRemaining = Math.max(0, poolSize - poolClaimed);
   const poolPct = poolSize > 0 ? poolRemaining / poolSize : 0;
   const poolState = poolStateFor(poolPct);
+  // Size of the NEXT pool — driven by the admin-configured default and
+  // separate from the historical session row. Used by the UI's
+  // "NEXT POOL" row so editing the default doesn't visually rewrite
+  // the just-closed pool's size.
+  const nextPoolSize = await getConfigInt('default_pool_size', DEFAULT_POOL_SIZE);
 
   // Two separate booleans now:
   //   windowOpen — the 5-minute claim window is still open (regardless
@@ -115,6 +121,7 @@ export default async function handler(req, res) {
     poolSize,
     poolClaimed,
     poolRemaining,
+    nextPoolSize,
     msUntilNext:  Math.max(0, SESSION_INTERVAL_MS - (Date.now() - sessId)),
     msUntilClose: Math.max(0, SESSION_WINDOW_MS   - (Date.now() - sessId)),
     maxClaims: MAX_CLAIMS_PER_SESSION,

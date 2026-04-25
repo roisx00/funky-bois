@@ -32,6 +32,7 @@ export default function DropPage() {
   const poolState      = sessionStatus.poolState;
   const poolSize       = sessionStatus.poolSize;
   const poolClaimed    = sessionStatus.poolClaimed;
+  const nextPoolSize   = sessionStatus.nextPoolSize;
   const prewlApproved  = sessionStatus.prewlApproved;
   const prewlWaiting   = sessionStatus.prewlWaiting;
   const prewlOnline    = sessionStatus.prewlOnline;
@@ -123,6 +124,7 @@ export default function DropPage() {
         <SlotMeter
           taken={poolClaimed}
           size={poolSize}
+          nextSize={nextPoolSize}
           mood={moodLabel}
           isPoolEmpty={isPoolEmpty}
           windowOpen={windowOpen}
@@ -469,16 +471,17 @@ function DropCountdown({ ms, live }) {
 // SLOT METER — 20 dots: filled = claimed, hollow = open. Replaces the
 // thin progress bar with something you can read at a glance.
 // ─────────────────────────────────────────────────────────────────────
-function SlotMeter({ taken, size, mood, isPoolEmpty, windowOpen, prewlApproved, prewlWaiting, prewlOnline }) {
+function SlotMeter({ taken, size, nextSize, mood, isPoolEmpty, windowOpen, prewlApproved, prewlWaiting, prewlOnline }) {
   // Pool size is admin-controlled and can be > 20. Cap the dots we
   // render at 60 so an admin who sets a huge pool doesn't break the
   // layout — the count text still shows the real number.
-  const safeSize  = Math.max(1, Math.min(60, size  || 20));
-  const safeTaken = Math.max(0, Math.min(safeSize, taken || 0));
+  const safeSize     = Math.max(1, Math.min(60, size     || 20));
+  const safeNextSize = Math.max(1, Math.min(60, nextSize || size || 20));
+  const safeTaken    = Math.max(0, Math.min(safeSize, taken || 0));
 
-  function dotsFor(filledCount) {
+  function dotsFor(filledCount, total = safeSize) {
     const out = [];
-    for (let i = 0; i < safeSize; i++) {
+    for (let i = 0; i < total; i++) {
       out.push(<span key={i} className={`drop-v3-slot-dot${i < filledCount ? ' filled' : ''}`} />);
     }
     return out;
@@ -541,9 +544,9 @@ function SlotMeter({ taken, size, mood, isPoolEmpty, windowOpen, prewlApproved, 
       <div className="drop-v3-slot-row drop-v3-slot-row-next">
         <div className="drop-v3-slot-head">
           <span className="drop-v3-slot-label">NEXT POOL</span>
-          <span className="drop-v3-slot-count">0/{safeSize}</span>
+          <span className="drop-v3-slot-count">0/{safeNextSize}</span>
         </div>
-        <div className="drop-v3-slot-dots">{dotsFor(0)}</div>
+        <div className="drop-v3-slot-dots">{dotsFor(0, safeNextSize)}</div>
         <div className="drop-v3-slot-mood">Opens at the top of the next 2-hour cycle</div>
         {audience}
       </div>

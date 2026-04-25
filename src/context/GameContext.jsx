@@ -45,6 +45,7 @@ function deriveSessionStatus(serverStatus, claimsThisSession) {
     poolSize:      Number(serverStatus?.poolSize)      || 20,
     poolClaimed:   Number(serverStatus?.poolClaimed)   || 0,
     poolRemaining: Number(serverStatus?.poolRemaining) || 0,
+    nextPoolSize:  Number(serverStatus?.nextPoolSize)  || Number(serverStatus?.poolSize) || 20,
     prewlApproved: Number(serverStatus?.prewlApproved) || 0,
     prewlWaiting:  Number(serverStatus?.prewlWaiting)  || 0,
     prewlOnline:   Number(serverStatus?.prewlOnline)   || 0,
