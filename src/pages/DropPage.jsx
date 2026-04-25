@@ -99,7 +99,7 @@ export default function DropPage() {
     poolState === 'low'      ? 'Final slots'    :
                                'Sealed for this window'
   );
-  const recent = (recentClaims || []).slice(0, 5);
+  const recent = (recentClaims || []).slice(0, 10);
 
   return (
     <div className="page drop-v2-page">

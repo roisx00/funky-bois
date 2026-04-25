@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       )
       SELECT element_type, variant, rarity, claimed_at, x_username, x_avatar
         FROM ranked
-       WHERE rn_rarity <= 2
+       WHERE rn_rarity <= 3
        ORDER BY
          CASE rarity
            WHEN 'ultra_rare' THEN 0
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
            ELSE 3
          END,
          claimed_at DESC
-       LIMIT 5
+       LIMIT 10
     `,
     // Pre-whitelisted users still ELIGIBLE to claim this window:
     // approved + not suspended + no portrait yet + no claim this session.
