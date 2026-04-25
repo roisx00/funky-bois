@@ -29,13 +29,31 @@ export default async function handler(req, res) {
   const [sess, portraitsRow, recentRows, waitingRow, approvedRow] = await Promise.all([
     one(await sql`SELECT pool_size, pool_claimed FROM drop_sessions WHERE session_id = ${sessId}`),
     one(await sql`SELECT COUNT(*)::int AS c FROM completed_nfts`),
+    // Recent pulls — feature higher-rarity claims so the ticker
+    // doesn't read "common · common · common". Take the latest claim
+    // in each rarity tier (deduped by user) plus the latest overall,
+    // then sort by rarity rank and recency so ultra/legendary/rare
+    // float to the top.
     sql`
-      SELECT dc.element_type, dc.variant, dc.rarity, dc.claimed_at,
-             u.x_username, u.x_avatar
-        FROM drop_claims dc
-        JOIN users u ON u.id = dc.user_id
-       WHERE u.suspended = FALSE
-       ORDER BY dc.claimed_at DESC
+      WITH ranked AS (
+        SELECT dc.element_type, dc.variant, dc.rarity, dc.claimed_at,
+               u.x_username, u.x_avatar,
+               ROW_NUMBER() OVER (PARTITION BY dc.rarity ORDER BY dc.claimed_at DESC) AS rn_rarity
+          FROM drop_claims dc
+          JOIN users u ON u.id = dc.user_id
+         WHERE u.suspended = FALSE
+      )
+      SELECT element_type, variant, rarity, claimed_at, x_username, x_avatar
+        FROM ranked
+       WHERE rn_rarity <= 2
+       ORDER BY
+         CASE rarity
+           WHEN 'ultra_rare' THEN 0
+           WHEN 'legendary'  THEN 1
+           WHEN 'rare'       THEN 2
+           ELSE 3
+         END,
+         claimed_at DESC
        LIMIT 5
     `,
     // Pre-whitelisted users still ELIGIBLE to claim this window:
@@ -96,11 +114,10 @@ export default async function handler(req, res) {
     mySessionClaims = row?.cnt ?? 0;
   }
 
-  // Presence: mark drop-eligible, non-suspended users so the "online"
-  // count maps directly to "could-claim users actually here". Awaited
-  // (not fire-and-forget) so the viewer's OWN heartbeat lands BEFORE
-  // we count — otherwise a single user opening the page sees 0.
-  if (user && user.drop_eligible === true && user.suspended !== true) {
+  // Presence: any signed-in non-suspended user counts. Awaited (not
+  // fire-and-forget) so the viewer's OWN heartbeat lands BEFORE we
+  // count — otherwise a single user opening the page sees 0.
+  if (user && user.suspended !== true) {
     try { await markOnline(user.id); } catch {}
   }
   const prewlOnline = await countOnline();

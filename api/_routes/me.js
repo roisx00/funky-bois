@@ -10,11 +10,11 @@ export default async function handler(req, res) {
     return ok(res, { authenticated: false });
   }
 
-  // Presence heartbeat. Only count drop-eligible, non-suspended users
-  // toward the "online" count so the number on the drop page maps to
-  // "people who could actually claim if a window were open." Fire-
-  // and-forget so /api/me latency isn't affected by Redis.
-  if (user.drop_eligible === true && user.suspended !== true) {
+  // Presence heartbeat. Counts any signed-in non-suspended user as
+  // "online" so the drop-page audience reflects live viewers, not
+  // just pre-WL holders. Fire-and-forget so /api/me latency isn't
+  // affected by Redis.
+  if (user.suspended !== true) {
     markOnline(user.id).catch(() => {});
   }
 
