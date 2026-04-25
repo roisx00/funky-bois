@@ -38,6 +38,7 @@ function formatFollowers(n) {
 export default function GalleryPage() {
   const { xUser } = useGame();
   const [entries, setEntries] = useState([]);
+  const [total, setTotal]     = useState(0);
   const [filter, setFilter]   = useState('all');
   const [sort, setSort]       = useState('top'); // 'top' | 'recent' | 'oldest'
   const [loading, setLoading] = useState(true);
@@ -50,10 +51,12 @@ export default function GalleryPage() {
     params.set('limit', filter === 'mine' ? '100' : '120');
     try {
       const r = await fetch(`/api/gallery?${params}`, { credentials: 'same-origin' });
-      const d = r.ok ? await r.json() : { entries: [] };
+      const d = r.ok ? await r.json() : { entries: [], total: 0 };
       setEntries(d.entries || []);
+      setTotal(Number(d.total) || (d.entries || []).length);
     } catch {
       setEntries([]);
+      setTotal(0);
     }
     setLoading(false);
   }, [filter, sort]);
@@ -62,7 +65,11 @@ export default function GalleryPage() {
 
   // Server already sorts — just use entries as-is
   const sorted = entries;
-  const totalCount = entries.length;
+  // Hero number = real total from API (count of distinct users with
+  // a portrait, regardless of page LIMIT). Was entries.length, which
+  // capped at the page limit (120) and looked like the gallery had
+  // stopped growing.
+  const totalCount = total;
 
   return (
     <div className="page gallery-page">

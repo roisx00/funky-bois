@@ -8,7 +8,7 @@
 // ?sort=recent  — newest first
 // ?sort=oldest  — oldest first
 // ?filter=mine  — only the signed-in user's portrait
-import { sql } from '../_lib/db.js';
+import { sql, one } from '../_lib/db.js';
 import { getSessionUser } from '../_lib/auth.js';
 import { ok } from '../_lib/json.js';
 
@@ -36,6 +36,17 @@ export default async function handler(req, res) {
       entries: rows.map(mapRow),
     });
   }
+
+  // Real total count of distinct users with portraits (excludes
+  // suspended). Independent of LIMIT so the gallery hero number
+  // keeps climbing past the page size.
+  const totalRow = one(await sql`
+    SELECT COUNT(DISTINCT n.user_id)::int AS c
+      FROM completed_nfts n
+      JOIN users u ON u.id = n.user_id
+     WHERE u.suspended = FALSE
+  `);
+  const totalDistinct = Number(totalRow?.c) || 0;
 
   // Public view — DISTINCT ON keeps one row per user regardless of DB state.
   // We pick the latest portrait per user inside the CTE, then sort the
@@ -92,7 +103,7 @@ export default async function handler(req, res) {
     `;
   }
 
-  ok(res, { total: rows.length, entries: rows.map(mapRow) });
+  ok(res, { total: totalDistinct, returned: rows.length, entries: rows.map(mapRow) });
 }
 
 function mapRow(r) {
