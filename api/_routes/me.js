@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   // Hydrate full state in parallel
-  const [inventory, ledger, completed, gifts, wl, bustsInbox] = await Promise.all([
+  const [inventory, ledger, completed, gifts, wl, bustsInbox, prewlReq] = await Promise.all([
     sql`SELECT element_type, variant, quantity, obtained_at FROM inventory WHERE user_id = ${user.id}`,
     sql`SELECT amount, reason, created_at FROM busts_ledger WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 50`,
     sql`SELECT id, elements, tweet_url, shared_to_x, created_at FROM completed_nfts WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 20`,
@@ -28,7 +28,12 @@ export default async function handler(req, res) {
          WHERE LOWER(t.to_x_username) = LOWER(${user.x_username})
            AND t.claimed = false
            AND t.expires_at > now()`,
+    sql`SELECT id, status, message, admin_note, created_at, updated_at
+          FROM pre_whitelist_requests
+         WHERE user_id = ${user.id}
+         ORDER BY id DESC LIMIT 1`,
   ]);
+  const myPrewl = prewlReq?.[0] || null;
 
   ok(res, {
     authenticated: true,
@@ -45,7 +50,16 @@ export default async function handler(req, res) {
       followClaimedAt: user.follow_claimed_at ? new Date(user.follow_claimed_at).getTime() : null,
       isAdmin:         isAdminUser(user),
       suspended:       user.suspended === true,
+      dropEligible:    user.drop_eligible === true,
     },
+    preWhitelist: myPrewl ? {
+      id:        myPrewl.id,
+      status:    myPrewl.status,         // 'pending' | 'approved' | 'rejected'
+      message:   myPrewl.message,
+      adminNote: myPrewl.admin_note,
+      createdAt: new Date(myPrewl.created_at).getTime(),
+      updatedAt: new Date(myPrewl.updated_at).getTime(),
+    } : null,
     inventory: inventory.map((r) => {
       const info = ELEMENT_VARIANTS[r.element_type]?.[r.variant];
       return {

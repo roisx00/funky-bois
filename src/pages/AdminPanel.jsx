@@ -183,6 +183,9 @@ export default function AdminPanel({ onNavigate }) {
         } />
       </div>
 
+      {/* Pre-whitelist queue (highest priority — the human gate) */}
+      <PreWhitelistQueue />
+
       {/* Credit form */}
       <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
         <div className="admin-roster-head">
@@ -1629,4 +1632,162 @@ async function drawTweetGraphic(canvas, item) {
   }
 
   gfxFooter(ctx, w, h);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// PRE-WHITELIST QUEUE — admin reviews drop applications.
+// One section, three buckets (pending / approved / rejected), inline
+// approve/reject actions. Click the X profile link, eyeball, decide.
+// ─────────────────────────────────────────────────────────────────────
+function PreWhitelistQueue() {
+  const [tab, setTab] = useState('pending');
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+  const [noteFor, setNoteFor] = useState({});
+  const [error, setError] = useState(null);
+
+  const load = async (statusKey) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const r = await fetch(`/api/admin-pre-whitelist?status=${encodeURIComponent(statusKey)}`, { credentials: 'same-origin' });
+      const d = r.ok ? await r.json() : { entries: [] };
+      setEntries(d.entries || []);
+    } catch (e) {
+      setError(e?.message || 'load failed');
+      setEntries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(tab); /* eslint-disable-line */ }, [tab]);
+
+  const decide = async (id, decision) => {
+    setBusyId(id);
+    try {
+      const r = await fetch('/api/admin-pre-whitelist-decide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ id, decision, note: noteFor[id] || '' }),
+      });
+      const d = r.ok ? await r.json() : { error: 'failed' };
+      if (d.error) {
+        setError(d.error);
+      } else {
+        // Optimistic: drop the row from the current view
+        setEntries((prev) => prev.filter((e) => e.id !== id));
+        setNoteFor((prev) => { const n = { ...prev }; delete n[id]; return n; });
+      }
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const setNote = (id, val) => setNoteFor((prev) => ({ ...prev, [id]: val }));
+
+  return (
+    <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+      <div className="admin-roster-head">
+        <div>
+          <div className="admin-roster-title">Drop pre-whitelist queue</div>
+          <div className="admin-roster-meta">
+            Approve real users for the drop pool. Click @handle to eyeball their X profile first.
+          </div>
+        </div>
+        <div className="admin-roster-actions" style={{ display: 'flex', gap: 6 }}>
+          {['pending', 'approved', 'rejected'].map((s) => (
+            <button
+              key={s}
+              className={`btn btn-sm ${tab === s ? 'btn-solid' : 'btn-ghost'}`}
+              onClick={() => setTab(s)}
+            >
+              {s} {tab === s && entries.length > 0 ? `(${entries.length})` : ''}
+            </button>
+          ))}
+          <button className="btn btn-ghost btn-sm" onClick={() => load(tab)} disabled={loading}>
+            {loading ? '...' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ padding: 12, color: 'var(--red, #c4352b)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+          Error: {error}
+        </div>
+      )}
+
+      {!loading && entries.length === 0 && (
+        <div className="admin-roster-empty">No {tab} applications.</div>
+      )}
+
+      {entries.map((e) => (
+        <div key={e.id} className="admin-roster-row" style={{ alignItems: 'flex-start', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+            {e.xAvatar ? (
+              <img src={e.xAvatar} alt={e.xUsername} style={{ width: 40, height: 40, borderRadius: '50%', border: '1px solid var(--hairline)' }} />
+            ) : null}
+            <div style={{ minWidth: 0 }}>
+              <div className="admin-roster-user">
+                <a href={e.xProfileUrl} target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+                  @{e.xUsername} ↗
+                </a>
+                {e.suspended ? <span style={{ marginLeft: 8, fontSize: 10, color: 'var(--red, #c4352b)' }}>SUSPENDED</span> : null}
+              </div>
+              <div className="admin-roster-wallet" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <span>{e.xFollowers.toLocaleString()} followers</span>
+                <span>·</span>
+                <span>{e.bustsBalance.toLocaleString()} BUSTS</span>
+                <span>·</span>
+                <span>{new Date(e.createdAt).toLocaleString()}</span>
+              </div>
+              {e.message ? (
+                <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-3)', maxWidth: 560 }}>
+                  &ldquo;{e.message}&rdquo;
+                </div>
+              ) : null}
+              {e.adminNote ? (
+                <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-4)' }}>
+                  Admin note: {e.adminNote} {e.reviewedByHandle ? `· @${e.reviewedByHandle}` : ''}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {tab === 'pending' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 240 }}>
+              <input
+                type="text"
+                value={noteFor[e.id] || ''}
+                onChange={(ev) => setNote(e.id, ev.target.value)}
+                placeholder="Optional note (shown to user)"
+                maxLength={240}
+                style={{ width: '100%', fontSize: 11 }}
+              />
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  className="btn btn-solid btn-sm"
+                  onClick={() => decide(e.id, 'approve')}
+                  disabled={busyId === e.id}
+                  style={{ flex: 1 }}
+                >
+                  {busyId === e.id ? '...' : 'Approve'}
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => decide(e.id, 'reject')}
+                  disabled={busyId === e.id}
+                  style={{ flex: 1 }}
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </section>
+  );
 }

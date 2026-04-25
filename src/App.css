@@ -6063,3 +6063,103 @@ section { background: var(--bg); }
   font-weight: 400;
   color: var(--text-3);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Drop page v3 — pre-whitelist model
+   ══════════════════════════════════════════════════════════════════════ */
+
+.drop-v2-stage {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--hairline);
+}
+
+.drop-v2-stage-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.drop-v2-stage-sub {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-3);
+  margin: 0 0 12px;
+  max-width: 560px;
+}
+
+.drop-v2-stage-kicker { margin-bottom: 8px; }
+.drop-v2-stage-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--accent);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.drop-v2-stage-blocked,
+.drop-v2-stage-signed-out,
+.drop-v2-stage-pending,
+.drop-v2-stage-rejected,
+.drop-v2-stage-apply,
+.drop-v2-stage-approved {
+  padding: 8px 0;
+}
+
+.drop-v2-pending-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-4);
+  letter-spacing: 0.04em;
+  margin-top: 16px;
+}
+
+.drop-v2-form-row { margin: 16px 0 0; }
+.drop-v2-form-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-4);
+  margin-bottom: 6px;
+}
+.drop-v2-form-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  background: var(--paper-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  resize: vertical;
+  min-height: 76px;
+}
+.drop-v2-form-textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+  background: var(--paper-1);
+}
+.drop-v2-form-help {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-4);
+  text-align: right;
+  margin-top: 4px;
+  letter-spacing: 0.04em;
+}
+
+.drop-v2-claims-note {
+  margin-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-4);
+  letter-spacing: 0.04em;
+}

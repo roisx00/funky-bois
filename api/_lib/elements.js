@@ -138,7 +138,11 @@ export function pickFromBox(tier) {
 // 5-minute window so bots can't sweep at :00:00.
 const SESSION_INTERVAL_MS = 2 * 60 * 60 * 1000;
 const SESSION_WINDOW_MS   = 5 * 60 * 1000;
-export const MAX_CLAIMS_PER_SESSION = 3;
+// One claim per user per session. Pre-whitelist gates pool access,
+// so the per-user cap only needs to ensure no single approved user
+// can drain a whole window. With 20 slots and 1-per-user, every
+// session reaches 20 distinct claimers.
+export const MAX_CLAIMS_PER_SESSION = 1;
 export const DEFAULT_POOL_SIZE = 20;
 
 export function getCurrentSessionId() {

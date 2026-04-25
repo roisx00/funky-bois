@@ -34,9 +34,11 @@ import adminTweetQueue     from './_routes/admin-tweet-queue.js';
 import taskFollowClaim     from './_routes/task-follow-claim.js';
 import adminDropAudit      from './_routes/admin-drop-audit.js';
 import adminRollbackClaim  from './_routes/admin-rollback-claim.js';
-import dropArm             from './_routes/drop-arm.js';
 import galleryHandler      from './_routes/gallery.js';
 import leaderboardHandler  from './_routes/leaderboard.js';
+import preWhitelistApply   from './_routes/pre-whitelist-apply.js';
+import adminPreWhitelist   from './_routes/admin-pre-whitelist.js';
+import adminPreWhitelistDecide from './_routes/admin-pre-whitelist-decide.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
 // regardless of Vercel's catch-all behaviour for nested segments.
@@ -48,7 +50,6 @@ const ROUTES = {
   'sign-out':            signOutHandler,
   'drop-claim':          dropClaimHandler,
   'drop-status':         dropStatusHandler,
-  'drop-arm':            dropArm,
   'box-open':            boxOpenHandler,
   'gift-send':           giftSendHandler,
   'gift-claim':          giftClaimHandler,
@@ -78,6 +79,9 @@ const ROUTES = {
   'admin-rollback-claim': adminRollbackClaim,
   'gallery':             galleryHandler,
   'leaderboard':         leaderboardHandler,
+  'pre-whitelist-apply': preWhitelistApply,
+  'admin-pre-whitelist': adminPreWhitelist,
+  'admin-pre-whitelist-decide': adminPreWhitelistDecide,
 
   // slash aliases (backward compat — keep until all callers migrated)
   'gift/send':           giftSendHandler,

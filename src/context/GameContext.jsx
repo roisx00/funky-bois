@@ -77,6 +77,8 @@ function emptyState() {
     referralCount:   0,
     isAdmin:         false,
     suspended:       false,
+    dropEligible:    false,
+    preWhitelist:    null,        // { id, status, message, adminNote, createdAt, updatedAt } | null
     sessionStatus:   deriveSessionStatus(null, 0),
     serverDropStatus: null,
     mySessionClaims: 0,
@@ -111,6 +113,8 @@ function reducer(state, action) {
         referralCode:     me.user.referralCode,
         isAdmin:          me.user.isAdmin,
         suspended:        me.user.suspended === true,
+        dropEligible:     me.user.dropEligible === true,
+        preWhitelist:     me.preWhitelist || null,
         bustsHistory:     me.bustsHistory,
         inventory:        me.inventory,
         completedNFTs:    me.completedNFTs,
@@ -381,51 +385,13 @@ export function GameProvider({ children }) {
     dispatch({ type: 'CLEAR_USER' });
   }, []);
 
-  // Step 1 of the claim flow — request an arm token from the server.
-  // Token binds to (userId, sessId, nonce) and has a 1.5s not-before.
-  const armDrop = useCallback(async () => {
+  // Drop claim — single click. No captcha, no arm token, no jitter.
+  // Pre-whitelist is the only gate: admin-approved users only.
+  // One claim per user per session.
+  const claimElement = useCallback(async () => {
     if (!state.authenticated) return { ok: false, reason: 'Sign in with X first' };
-    const r = await jpost('/api/drop-arm');
-    if (!r.ok) {
-      // Pass through the entire server payload so error-mapping on the
-      // client (DropPage) can read fields like `required` / `have` for
-      // the follower gate.
-      return { ok: false, reason: r.error || 'Could not arm', ...r };
-    }
-    return {
-      ok: true,
-      token:              r.token,
-      nonce:              r.nonce,
-      notValidBeforeMs:   r.notValidBeforeMs,
-      expiresAtMs:        r.expiresAtMs,
-    };
-  }, [state.authenticated]);
-
-  // Step 2 — submit the claim with the arm token + human-interaction proof.
-  // Callers must pass { armToken, interactionProof } where interactionProof
-  // carries the ACTUAL measurements of this user's arming session.
-  const claimElement = useCallback(async ({ armToken, interactionProof } = {}) => {
-    if (!state.authenticated) return { ok: false, reason: 'Sign in with X first' };
-    if (!armToken || !interactionProof) {
-      return { ok: false, reason: 'Missing arm token or interaction proof' };
-    }
-    const r = await jpost('/api/drop-claim', { armToken, interactionProof });
-    if (!r.ok) {
-      // Slow-release pool: the slot we wanted hasn't unlocked yet.
-      // Surface the retry-after hint so the DropPage can show a
-      // friendly "next slot opens in Xs" state instead of erroring.
-      if (r.error === 'slot_not_yet_revealed') {
-        return {
-          ok: false,
-          reason: 'slot_not_yet_revealed',
-          retryAfterMs: Number(r.retryAfterMs) || 0,
-          nextRevealAtMs: Number(r.nextRevealAtMs) || 0,
-          claimed: r.claimed,
-          revealed: r.revealed,
-        };
-      }
-      return { ok: false, reason: r.error || 'Drop claim failed' };
-    }
+    const r = await jpost('/api/drop-claim');
+    if (!r.ok) return { ok: false, reason: r.error || 'Drop claim failed', ...r };
     dispatch({ type: 'ADD_INVENTORY', element: r.element });
     dispatch({ type: 'BUMP_BALANCE', amount: r.bustsReward, reason: `Drop reward: ${r.element.name}` });
     if (r.dailyBonus) dispatch({ type: 'BUMP_BALANCE', amount: r.dailyBonus, reason: 'Daily drop claim' });
@@ -433,6 +399,19 @@ export function GameProvider({ children }) {
     jget('/api/drop-status').then((ds) => ds.ok && dispatch({ type: 'SET_DROP_STATUS', payload: ds }));
     return { ok: true, element: r.element, bustsReward: r.bustsReward, position: r.position };
   }, [state.authenticated]);
+
+  // Submit (or re-submit) a pre-whitelist application for the drop.
+  const applyForDrop = useCallback(async (message) => {
+    if (!state.authenticated) return { ok: false, reason: 'Sign in with X first' };
+    const r = await jpost('/api/pre-whitelist-apply', { message: message || '' });
+    if (!r.ok) return { ok: false, reason: r.error || 'apply_failed', ...r };
+    refreshMe();
+    return { ok: true, status: r.status, alreadyApproved: !!r.alreadyApproved };
+  }, [state.authenticated, refreshMe]);
+
+  // Back-compat shim: the old DropPage state machine called armDrop.
+  // It's a no-op now; the new DropPage doesn't use it.
+  const armDrop = useCallback(async () => ({ ok: true }), []);
 
   const openMysteryBox = useCallback(async (tier) => {
     if (!state.authenticated) return { ok: false, reason: 'Sign in with X first' };
@@ -626,6 +605,7 @@ export function GameProvider({ children }) {
     setReferredBy,
     claimElement,
     armDrop,
+    applyForDrop,
     openMysteryBox,
     claimConsolation,
     addBusts,

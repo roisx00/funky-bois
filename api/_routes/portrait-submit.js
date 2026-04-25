@@ -118,8 +118,15 @@ export default async function handler(req, res) {
   // Building is the proof-of-engagement that earns the mint slot. No
   // extra share-on-X gate needed for the flag itself (the tweet flow
   // still awards the +200 BUSTS reward separately).
+  //
+  // Also flip drop_eligible = FALSE — they've completed the loop, so
+  // they no longer occupy a slot in the drop pool. They keep all their
+  // BUSTS, traits, and the right to open boxes / send gifts / etc.
   await sql`
-    UPDATE users SET is_whitelisted = true WHERE id = ${user.id} AND is_whitelisted = false
+    UPDATE users
+       SET is_whitelisted = TRUE,
+           drop_eligible  = FALSE
+     WHERE id = ${user.id}
   `;
 
   // Unlock any deferred referral bonus — building a portrait is the

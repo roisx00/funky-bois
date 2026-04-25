@@ -1,641 +1,425 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import Timer from '../components/Timer';
-import { ELEMENT_LABELS, getElementSVG } from '../data/elements';
 
-// Client-side minimum drag-arm duration. Mirrors MIN_ARMED_MS on the
-// server in api/_routes/drop-claim.js — flicks under this threshold get
-// rejected both here and at the API.
-const MIN_ARMED_MS = 300;
-
-/**
- * Compute a simple path-entropy score from a list of (x,y) samples.
- * Uses normalised variance of deltas. 0 = all identical, 1 = highly varied.
- * Bots that hard-set cursor to (0,0) score ~0 and get rejected.
- */
-// Map raw server error codes into sentences a human can read.
-// Anything not in the map falls through to the raw code so we
-// still have diagnostics in the UI.
+// Map raw server error codes to sentences a human can read.
 function friendlyDropError(r) {
-  const code = r?.reason || '';
-  if (code === 'slot_not_yet_revealed') {
-    const secs = Math.max(1, Math.ceil((r.retryAfterMs || 0) / 1000));
-    return `Next slot unlocks in about ${secs}s — hold tight and retry then.`;
-  }
-  if (code === 'rate_limited') {
-    return 'Slow down a moment — you’re sending too many requests. Try again in a few seconds.';
-  }
+  const code = r?.reason || r?.error || '';
   if (code === 'min_followers_not_met') {
     const need = Number(r.required) || 20;
     const have = Number(r.have) || 0;
-    // Follower count is captured at X sign-in time and never auto-refreshed.
-    // Users who've grown their account since signing up need to re-auth.
     return (
       `Drops require at least ${need} followers on X. We recorded ${have} for you at sign-in. ` +
-      `If you've gained followers since, sign out and sign back in to refresh the count, ` +
-      `then try again.`
+      `If you've gained followers since, sign out and sign back in to refresh the count.`
     );
   }
-  if (code === 'pool_exhausted')  return 'All slots claimed this session. Next pool opens at the top of the hour.';
-  if (code === 'no_active_session') return 'The drop window just closed. Back at the top of the next hour.';
-  if (code === 'max_claims_reached') return 'You’ve hit this session’s personal cap. Wait for the next hour.';
-  if (code.startsWith('arm_'))   return 'Your arm token expired. Drag the handle again to re-arm.';
-  if (code.startsWith('proof_')) return 'Your drag gesture wasn’t recognised. Drag the handle across the rail more deliberately.';
+  if (code === 'not_pre_whitelisted')   return 'Your account isn’t on the drop pre-whitelist yet. Apply below — admin will review.';
+  if (code === 'already_built_portrait') return 'You’ve already built your portrait. The drop is for users still collecting traits.';
+  if (code === 'pool_exhausted')        return 'All slots claimed this window. Next pool opens at the top of the next 2-hour cycle.';
+  if (code === 'no_active_session')     return 'The drop window just closed. Back when the next session opens.';
+  if (code === 'max_claims_reached')    return 'You’ve already claimed in this session. One claim per user per window.';
+  if (code === 'rate_limited')          return 'Slow down a moment, then try again.';
+  if (code === 'account_suspended')     return 'This account is suspended.';
   return code || 'Claim failed — try again.';
-}
-
-function pathEntropy(samples) {
-  if (!Array.isArray(samples) || samples.length < 3) return 0;
-  const dxs = [], dys = [];
-  for (let i = 1; i < samples.length; i++) {
-    dxs.push(samples[i].x - samples[i - 1].x);
-    dys.push(samples[i].y - samples[i - 1].y);
-  }
-  const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
-  const variance = (a) => {
-    const m = mean(a);
-    return mean(a.map((v) => (v - m) * (v - m)));
-  };
-  const vx = variance(dxs);
-  const vy = variance(dys);
-  // Normalise against 100px^2 so a gentle wiggle still scores decently.
-  return Math.min(1, (vx + vy) / 200);
 }
 
 export default function DropPage() {
   const {
-    sessionStatus, armDrop, claimElement,
-    progressCount, bustsBalance,
-    authenticated,
+    sessionStatus, claimElement, applyForDrop,
+    bustsBalance,
+    authenticated, xUser, suspended,
+    dropEligible, preWhitelist, completedNFTs, isAdmin,
+    refreshMe, loginWithX,
   } = useGame();
   const toast = useToast();
 
-  const {
-    isActive, isPoolEmpty, msUntilNext, msUntilClose,
-    claimsThisSession, canClaimThisSession, maxClaims,
-    poolPct, poolState, admin: adminPool,
-  } = sessionStatus;
+  const isActive       = sessionStatus.isActive;
+  const isPoolEmpty    = sessionStatus.isPoolEmpty;
+  const poolState      = sessionStatus.poolState;
+  const poolPct        = sessionStatus.poolPct;
+  const adminPool      = sessionStatus.admin || null;
+  const claimsThisSession = sessionStatus.claimsThisSession ?? 0;
+  const maxClaims         = sessionStatus.maxClaims ?? 1;
+  const msUntilNext       = sessionStatus.msUntilNext;
+  const msUntilClose      = sessionStatus.msUntilClose;
 
-  // ── Flow state machine ────────────────────────────────────────────
-  // 'idle'    → session not live yet (or already consumed)
-  // 'ready'   → session live, waiting for user to start arming
-  // 'arming'  → drag-to-arm gesture in progress (or completed, awaiting server token)
-  // 'armed'   → server issued token, waiting for claim window (1.5s nbf)
-  // 'ready_to_claim' → token valid, user can hit CLAIM
-  // 'claiming' → request in flight
-  // 'revealed' → trait shown
-  const [flow, setFlow] = useState('idle');
-  const [dragPct, setDragPct] = useState(0);       // 0..1 drag progress
-  const [armToken, setArmToken] = useState(null);   // { token, nonce, notValidBeforeMs }
+  const hasBuilt = (completedNFTs || []).length > 0;
+  const status   = preWhitelist?.status || null;
+
+  // Derived top-level state
+  const stage = useMemo(() => {
+    if (!authenticated)            return 'signed_out';
+    if (suspended)                 return 'suspended';
+    if (hasBuilt)                  return 'built';
+    if (dropEligible)              return 'approved';
+    if (status === 'pending')      return 'pending';
+    if (status === 'rejected')     return 'rejected';
+    return 'not_applied';
+  }, [authenticated, suspended, hasBuilt, dropEligible, status]);
+
+  const [busy, setBusy]       = useState(false);
   const [revealed, setRevealed] = useState(null);
-  const [lastError, setLastError] = useState('');
+  const [message, setMessage]   = useState('');
 
-  // ── Human-interaction tracking ────────────────────────────────────
-  const windowOpenAt = useRef(Date.now());
-  const moveCount    = useRef(0);
-  const movePath     = useRef([]);
-  const armStartedAt = useRef(0);
-
-  // Reset when session transitions
   useEffect(() => {
-    if (!isActive) {
-      setFlow('idle');
-      setArmToken(null);
-      setDragPct(0);
-      setLastError('');
-    } else if (flow === 'idle') {
-      setFlow(canClaimThisSession && !isPoolEmpty ? 'ready' : 'idle');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, isPoolEmpty, canClaimThisSession]);
+    setMessage(preWhitelist?.message || '');
+  }, [preWhitelist?.id]);
 
-  // ── Track pointer movement globally while the user is on this page ──
-  // Uses pointermove (NOT mousemove) so touch devices register activity
-  // too. Also attaches touchmove as a belt-and-suspenders fallback for
-  // older mobile browsers that don't fully implement pointer events.
-  useEffect(() => {
-    const onMove = (e) => {
-      moveCount.current += 1;
-      movePath.current.push({ x: e.clientX, y: e.clientY });
-      if (movePath.current.length > 60) movePath.current.shift();
-    };
-    const onTouch = (e) => {
-      const t = e.touches && e.touches[0];
-      if (!t) return;
-      moveCount.current += 1;
-      movePath.current.push({ x: t.clientX, y: t.clientY });
-      if (movePath.current.length > 60) movePath.current.shift();
-    };
-    window.addEventListener('pointermove', onMove, { passive: true });
-    window.addEventListener('touchmove',   onTouch, { passive: true });
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('touchmove',   onTouch);
-    };
-  }, []);
-
-  // ── Countdown re-render tick ──────────────────────────────────────
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), 250);
-    return () => clearInterval(id);
-  }, []);
-
-  // ── When arm token's not-before passes, promote to ready_to_claim ─
-  useEffect(() => {
-    if (flow !== 'armed' || !armToken) return;
-    const delay = Math.max(0, armToken.notValidBeforeMs - Date.now());
-    const t = setTimeout(() => setFlow('ready_to_claim'), delay + 50);
-    return () => clearTimeout(t);
-  }, [flow, armToken]);
-
-  // ── Also invalidate the token if it expires before user claims ────
-  useEffect(() => {
-    if (flow !== 'armed' && flow !== 'ready_to_claim') return;
-    if (!armToken) return;
-    const delay = Math.max(0, armToken.expiresAtMs - Date.now());
-    const t = setTimeout(() => {
-      setArmToken(null);
-      setFlow('ready');
-      toast.info('Arm expired. Re-arm to claim.');
-    }, delay);
-    return () => clearTimeout(t);
-  }, [flow, armToken, toast]);
-
-  // ── Drag handler (pointer events = works with mouse + touch) ──────
-  const dragRailRef = useRef(null);
-  const dragStartX  = useRef(0);
-  const dragStartAt = useRef(0);
-  const draggingRef = useRef(false);
-  const dragSamples = useRef([]); // { x, y } pointer samples during the drag
-
-  const onPointerDown = (e) => {
-    if (flow !== 'ready') return;
-    if (!authenticated) { toast.error('Sign in with X first.'); return; }
-    if (!canClaimThisSession) { toast.error('Session limit reached.'); return; }
-    if (isPoolEmpty) { toast.error('Pool sealed for this hour.'); return; }
-
-    draggingRef.current = true;
-    dragStartX.current  = e.clientX;
-    dragStartAt.current = Date.now();
-    armStartedAt.current = Date.now();
-    dragSamples.current = [{ x: e.clientX, y: e.clientY }];
-    setFlow('arming');
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  const onPointerMove = (e) => {
-    if (!draggingRef.current || !dragRailRef.current) return;
-    // Sample every move so we can measure wobble (humans) vs straight
-    // line (headless scripted drags).
-    dragSamples.current.push({ x: e.clientX, y: e.clientY });
-    if (dragSamples.current.length > 200) dragSamples.current.shift();
-    const rail = dragRailRef.current.getBoundingClientRect();
-    const handleW = rail.height;
-    const maxTravel = rail.width - handleW;
-    const travel = Math.max(0, Math.min(maxTravel, e.clientX - rail.left - handleW / 2));
-    setDragPct(maxTravel > 0 ? travel / maxTravel : 0);
-  };
-
-  const onPointerUp = async (e) => {
-    if (!draggingRef.current) return;
-    draggingRef.current = false;
-    e.currentTarget.releasePointerCapture?.(e.pointerId);
-    if (dragPct < 0.9) {
-      setDragPct(0);
-      setFlow('ready');
+  const handleClaim = async () => {
+    if (busy) return;
+    setBusy(true);
+    const r = await claimElement();
+    setBusy(false);
+    if (!r.ok) {
+      toast.error(friendlyDropError(r));
       return;
     }
-    // Drag reached the end — request an arm token.
-    setDragPct(1);
-    const armedMs = Date.now() - armStartedAt.current;
-    if (armedMs < MIN_ARMED_MS) {
-      toast.error('Hold and drag across, do not flick.');
-      setDragPct(0);
-      setFlow('ready');
-      return;
-    }
-    const r = await armDrop();
-    if (!r?.ok) {
-      // armDrop surfaces the raw server error code as `reason` — run it
-      // through the same humanizer the claim flow uses so follower gate
-      // / rate-limit responses are readable.
-      const friendly = friendlyDropError(r);
-      toast.error(friendly);
-      setLastError(friendly);
-      setDragPct(0);
-      setFlow('ready');
-      return;
-    }
-    setArmToken(r);
-    setFlow('armed');
+    setRevealed({ ...r.element, position: r.position, bustsReward: r.bustsReward });
   };
 
-  // ── Claim click ───────────────────────────────────────────────────
-  const handleClaim = useCallback(async () => {
-    if (flow !== 'ready_to_claim' || !armToken) return;
-    setFlow('claiming');
-    setLastError('');
-
-    // Compute drag-path X and Y variance from the pointer samples we
-    // collected during the arm gesture. A bot doing a programmatic
-    // mouseMove across a straight line gets Y variance ~0; a human's
-    // hand wobbles a few pixels vertically. Server rejects drags with
-    // dragVarY < 2 or dragVarX < 20.
-    const samples = dragSamples.current;
-    let dragVarX = 0, dragVarY = 0;
-    if (samples.length >= 3) {
-      const mean = (arr) => arr.reduce((s, v) => s + v, 0) / arr.length;
-      const variance = (arr) => {
-        const m = mean(arr);
-        return mean(arr.map((v) => (v - m) * (v - m)));
-      };
-      dragVarX = Math.sqrt(variance(samples.map((s) => s.x)));
-      dragVarY = Math.sqrt(variance(samples.map((s) => s.y)));
+  const handleApply = async () => {
+    if (busy) return;
+    setBusy(true);
+    const r = await applyForDrop(message);
+    setBusy(false);
+    if (!r.ok) {
+      toast.error(friendlyDropError(r));
+      return;
     }
-
-    const interactionProof = {
-      nonce:        armToken.nonce,
-      windowOpenMs: Date.now() - windowOpenAt.current,
-      moveCount:    moveCount.current,
-      pathEntropy:  pathEntropy(movePath.current),
-      dragVarX:     Math.round(dragVarX * 10) / 10,
-      dragVarY:     Math.round(dragVarY * 10) / 10,
-      armedMs:      Date.now() - armStartedAt.current,
-    };
-
-    // ── Silent retry loop ──────────────────────────────────────────
-    // Soft errors (slot_not_yet_revealed, rate_limited) are absorbed
-    // here and retried with a visible "queuing your slot…" spinner.
-    // The user never sees raw errors for these — they either get a
-    // trait or hit a TERMINAL error (pool_exhausted, no_active_session,
-    // min_followers_not_met, arm_expired). Max 60s total wait so we
-    // don't hang forever.
-    const startedAt = Date.now();
-    const TERMINAL = new Set([
-      'pool_exhausted',
-      'no_active_session',
-      'min_followers_not_met',
-      'max_claims_reached',
-      'arm_expired',
-    ]);
-    let attempt = 0;
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      attempt++;
-      const r = await claimElement({ armToken: armToken.token, interactionProof });
-      if (r.ok) {
-        setRevealed({ ...r.element, position: r.position, bustsReward: r.bustsReward });
-        setFlow('revealed');
-        setArmToken(null);
-        setDragPct(0);
-        return;
-      }
-      const reason = r.reason || '';
-      const isSoft = reason === 'slot_not_yet_revealed' || reason === 'rate_limited';
-      const exceeded = Date.now() - startedAt > 60_000;
-      const armDead  = reason.startsWith('arm_');
-
-      if (!isSoft || exceeded || armDead) {
-        // Terminal or timed out — surface a real error. Only show a
-        // toast when it's something actionable for the user.
-        const friendly = friendlyDropError(r);
-        if (TERMINAL.has(reason) || armDead) {
-          toast.error(friendly);
-          setLastError(friendly);
-        } else if (exceeded) {
-          toast.error('Could not grab a slot in time — try again.');
-          setLastError('Could not grab a slot in time — try again.');
-        } else {
-          toast.error(friendly);
-          setLastError(friendly);
-        }
-        setArmToken(null);
-        setDragPct(0);
-        setFlow('ready');
-        return;
-      }
-
-      // Soft error — silently wait and retry.
-      const waitMs = reason === 'slot_not_yet_revealed'
-        ? Math.min(20_000, Math.max(800, Number(r.retryAfterMs) || 3000))
-        : 4000;      // rate_limited backoff
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
-      // Keep flow = 'claiming' so the UI stays in the "queuing…" state.
-      if (attempt > 20) {
-        toast.error('Something went wrong — try again.');
-        setArmToken(null);
-        setDragPct(0);
-        setFlow('ready');
-        return;
-      }
+    if (r.alreadyApproved) {
+      toast.success('You’re already approved — claim away.');
+    } else {
+      toast.success('Application submitted. Admin will review.');
     }
-  }, [flow, armToken, claimElement, toast]);
-
-  // ── Urgency tier ───────────────────────────────────────────────────
-  const urgency = useMemo(() => {
-    if (poolState === 'sealed' || poolState === 'low') return 'critical';
-    if (poolState === 'thinning')                       return 'low';
-    return 'normal';
-  }, [poolState]);
-
-  const POOL_COPY = {
-    stocked:  { head: 'Pool open',     foot: 'Fresh session' },
-    flowing:  { head: 'Pool open',     foot: 'Healthy flow' },
-    thinning: { head: 'Pool thinning', foot: 'Fewer left than before' },
-    low:      { head: 'Nearly sealed', foot: 'Final slots' },
-    sealed:   { head: 'Pool sealed',   foot: 'Gone for the hour' },
+    refreshMe();
   };
-  const poolCopy = POOL_COPY[poolState] || POOL_COPY.stocked;
 
-  // ── Render ────────────────────────────────────────────────────────
   return (
-    <div className="page drop-page drop-page-v2">
-      {/* ─── Stage header ─── */}
-      <div className="drop-v2-header">
-        <div className="drop-v2-kicker">
-          <span className={`drop-v2-dot urgency-${urgency}`} />
-          {isActive
-            ? 'Drop window is live'
-            : isPoolEmpty
-              ? 'Pool sealed'
-              : 'Next drop arriving'}
+    <div className="page drop-v2-page">
+      {/* ────────── HERO ────────── */}
+      <div className="drop-v2-hero">
+        <div className="drop-v2-hero-eyebrow">
+          <span className={`drop-v2-eyebrow-dot ${isActive ? 'live' : ''}`} />
+          {isActive ? 'DROP WINDOW IS LIVE' : 'WAITING FOR THE NEXT WINDOW'}
         </div>
-        <h1 className="drop-v2-title">
-          {isActive
-            ? <>Arm, aim, <em>claim.</em></>
-            : isPoolEmpty
-              ? <>This hour is <em>gone.</em></>
-              : <>The window <em>will open.</em></>}
+        <h1 className="drop-v2-hero-title">
+          Real users only. <em>Apply once. Claim every 2 hours.</em>
         </h1>
-        <p className="drop-v2-sub">
-          {isActive
-            ? 'Drag the handle all the way across to arm. Hold for 1.5 seconds, then hit Claim. Bots can’t pass this gate.'
-            : 'Each hour a limited pool of traits drops. Arm within the 5-minute window to pull one.'}
+        <p className="drop-v2-hero-sub">
+          Drops moved to a pre-whitelist model. Admins review your X
+          profile and approve real users. Bots can&rsquo;t pass a human
+          eye on a profile, so you don&rsquo;t have to pass a captcha.
         </p>
       </div>
 
+      {/* ────────── MAIN GRID ────────── */}
       <div className="drop-v2-main">
-        {/* ─── LEFT: stage panel ─── */}
-        <div className="drop-v2-stage">
+        <div className="drop-v2-action-card">
 
-          {/* Timer + pool mood */}
+          {/* Pool meter (always shown) */}
+          <div className="drop-v2-pool-row">
+            <div className="drop-v2-pool-label">
+              {isPoolEmpty
+                ? 'POOL SEALED'
+                : isActive ? 'POOL OPEN' : 'CLOSED'}
+            </div>
+            <div className="drop-v2-pool-bar">
+              <div className="drop-v2-pool-fill" style={{ width: `${Math.round(poolPct * 100)}%` }} />
+            </div>
+            <div className="drop-v2-pool-meta">
+              {poolState === 'stocked'  ? 'Fresh session'    :
+               poolState === 'flowing'  ? 'Healthy flow'      :
+               poolState === 'thinning' ? 'Pool thinning'     :
+               poolState === 'low'      ? 'Final slots'       :
+                                          'Gone for this window'}
+              {adminPool ? ` · ADMIN ${adminPool.poolClaimed}/${adminPool.poolSize}` : null}
+            </div>
+          </div>
+
+          {/* Countdown */}
           <div className="drop-v2-timer-row">
-            {isActive ? (
-              <div className="drop-v2-timer-block">
-                <div className="drop-v2-timer-label">Closes in</div>
-                <div className="drop-v2-timer-value">
-                  <Timer ms={msUntilClose} inline />
-                </div>
-              </div>
-            ) : (
-              <div className="drop-v2-timer-block">
-                <div className="drop-v2-timer-label">Opens in</div>
-                <div className="drop-v2-timer-value">
-                  <Timer ms={msUntilNext} inline />
-                </div>
-              </div>
-            )}
-            <div className={`drop-v2-mood urgency-${urgency}`}>
-              <div className="drop-v2-mood-label">{poolCopy.head}</div>
-              <div className="drop-v2-mood-bar">
-                <div className="drop-v2-mood-fill" style={{ width: `${poolPct * 100}%` }} />
-              </div>
-              <div className="drop-v2-mood-foot">
-                <span>{poolCopy.foot}</span>
-                {adminPool ? (
-                  <span title="Admin only — live counts">
-                    · ADMIN {adminPool.poolRemaining}/{adminPool.poolSize}
-                  </span>
-                ) : null}
-              </div>
+            <div className="drop-v2-timer-label">
+              {isActive ? 'CLOSES IN' : 'NEXT WINDOW IN'}
             </div>
+            <Timer ms={isActive ? msUntilClose : msUntilNext} />
           </div>
 
-          {/* Main action area — drives the flow */}
-          <div className="drop-v2-action">
-            {flow === 'idle' && !isActive && (
-              <div className="drop-v2-action-idle">
-                <div className="drop-v2-action-icon" aria-hidden>◷</div>
-                <div className="drop-v2-action-title">Waiting for the window</div>
-                <div className="drop-v2-action-sub">
-                  New trait pool unlocks every 2 hours.
-                  Return before the timer hits zero.
-                </div>
-              </div>
+          {/* ─── State-specific body ─── */}
+          <div className="drop-v2-stage">
+            {stage === 'signed_out' && (
+              <SignedOutStage onSignIn={() => loginWithX && loginWithX()} />
             )}
 
-            {flow === 'idle' && isActive && (isPoolEmpty || !canClaimThisSession) && (
-              <div className="drop-v2-action-idle">
-                <div className="drop-v2-action-icon" aria-hidden>✕</div>
-                <div className="drop-v2-action-title">
-                  {isPoolEmpty ? 'Pool sealed for this window' : 'Session limit reached'}
-                </div>
-                <div className="drop-v2-action-sub">
-                  {isPoolEmpty
-                    ? 'The supply is gone. Come back in 2 hours for a fresh pool.'
-                    : `You've already claimed ${claimsThisSession}/${maxClaims} for this session.`}
-                </div>
-              </div>
+            {stage === 'suspended' && (
+              <BlockedStage
+                title="Account suspended"
+                body="This account has been suspended for violating the anti-farm policy."
+              />
             )}
 
-            {(flow === 'ready' || flow === 'arming') && (
-              <>
-                <div className="drop-v2-step-head">
-                  <span className="drop-v2-step-num">01</span>
-                  <div>
-                    <div className="drop-v2-step-title">Arm the claim</div>
-                    <div className="drop-v2-step-sub">Drag the handle all the way across.</div>
-                  </div>
-                </div>
-
-                <div
-                  ref={dragRailRef}
-                  className={`drop-v2-drag-rail${flow === 'arming' ? ' arming' : ''}`}
-                  onPointerDown={onPointerDown}
-                  onPointerMove={onPointerMove}
-                  onPointerUp={onPointerUp}
-                  onPointerCancel={onPointerUp}
-                >
-                  <div
-                    className="drop-v2-drag-fill"
-                    style={{ width: `calc(${dragPct * 100}% + 0px)` }}
-                  />
-                  <div
-                    className="drop-v2-drag-handle"
-                    style={{ left: `calc(${dragPct * 100}% - ${dragPct * 56}px)` }}
-                  >
-                    ⇢
-                  </div>
-                  <div className="drop-v2-drag-label">
-                    {dragPct < 0.1 ? 'Hold & drag to arm' :
-                     dragPct < 0.9 ? 'Keep going.' : 'Release to arm'}
-                  </div>
-                </div>
-              </>
+            {stage === 'built' && (
+              <BlockedStage
+                title="Your portrait is complete"
+                body="The drop is for users still collecting traits. You can still earn BUSTS, open mystery boxes, and gift / receive in the dashboard."
+              />
             )}
 
-            {flow === 'armed' && armToken && (
-              <>
-                <div className="drop-v2-step-head">
-                  <span className="drop-v2-step-num">02</span>
-                  <div>
-                    <div className="drop-v2-step-title">Arming&hellip;</div>
-                    <div className="drop-v2-step-sub">
-                      Anti-bot delay: {Math.max(0, Math.ceil((armToken.notValidBeforeMs - Date.now()) / 100) / 10).toFixed(1)}s
-                    </div>
-                  </div>
-                </div>
-                <button type="button" className="drop-v2-claim-btn locked" disabled>
-                  <span className="drop-v2-claim-inner">ARMING</span>
-                  <span className="drop-v2-claim-sub">locked for a moment</span>
-                </button>
-              </>
+            {stage === 'not_applied' && (
+              <ApplyStage
+                xUser={xUser}
+                message={message}
+                setMessage={setMessage}
+                busy={busy}
+                onApply={handleApply}
+              />
             )}
 
-            {flow === 'ready_to_claim' && armToken && (
-              <>
-                <div className="drop-v2-step-head">
-                  <span className="drop-v2-step-num">03</span>
-                  <div>
-                    <div className="drop-v2-step-title">Claim unlocked</div>
-                    <div className="drop-v2-step-sub">
-                      Token expires in {Math.max(0, Math.ceil((armToken.expiresAtMs - Date.now()) / 1000))}s
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="drop-v2-claim-btn live"
-                  onClick={handleClaim}
-                >
-                  <span className="drop-v2-claim-inner">CLAIM</span>
-                  <span className="drop-v2-claim-sub">pull a trait from the pool</span>
-                </button>
-              </>
+            {stage === 'pending' && (
+              <PendingStage preWhitelist={preWhitelist} onRefresh={refreshMe} />
             )}
 
-            {flow === 'claiming' && (
-              <>
-                <div className="drop-v2-step-head">
-                  <span className="drop-v2-step-num">04</span>
-                  <div>
-                    <div className="drop-v2-step-title">Queuing your slot&hellip;</div>
-                    <div className="drop-v2-step-sub">
-                      Slots unlock on a jittered schedule. Holding your
-                      place — you&apos;ll get the next one.
-                    </div>
-                  </div>
-                </div>
-                <button type="button" className="drop-v2-claim-btn locked" disabled>
-                  <span className="drop-v2-claim-inner">CLAIMING</span>
-                </button>
-              </>
+            {stage === 'rejected' && (
+              <RejectedStage
+                preWhitelist={preWhitelist}
+                message={message}
+                setMessage={setMessage}
+                busy={busy}
+                onReapply={handleApply}
+              />
             )}
 
-            {lastError && flow !== 'claiming' && (
-              <div className="drop-v2-alert error">{lastError}</div>
+            {stage === 'approved' && (
+              <ApprovedStage
+                isActive={isActive}
+                isPoolEmpty={isPoolEmpty}
+                claimsThisSession={claimsThisSession}
+                maxClaims={maxClaims}
+                busy={busy}
+                onClaim={handleClaim}
+                bustsBalance={bustsBalance}
+              />
             )}
-          </div>
-
-          {/* Your claims dots */}
-          <div className="drop-v2-claims-row">
-            <span className="drop-v2-claims-label">Your claims this session</span>
-            <div className="drop-v2-claims-dots">
-              {Array.from({ length: maxClaims }).map((_, i) => (
-                <span key={i} className={`drop-v2-dot-ch${i < claimsThisSession ? ' on' : ''}`} />
-              ))}
-              <span className="drop-v2-claims-count">{claimsThisSession}/{maxClaims}</span>
-            </div>
           </div>
         </div>
 
-        {/* ─── RIGHT: sidebar ─── */}
+        {/* ────────── SIDEBAR ────────── */}
         <aside className="drop-v2-aside">
           <div className="drop-v2-aside-card">
-            <div className="drop-v2-aside-title">Your stats</div>
-            <div className="drop-v2-aside-row">
-              <span>Balance</span>
-              <strong>{bustsBalance.toLocaleString()} BUSTS</strong>
-            </div>
-            <div className="drop-v2-aside-row">
-              <span>Trait types owned</span>
-              <strong>{progressCount}/8</strong>
-            </div>
-          </div>
-
-          <div className="drop-v2-aside-card">
-            <div className="drop-v2-aside-title">How the gate works</div>
+            <div className="drop-v2-aside-title">How it works</div>
             <ol className="drop-v2-howto">
-              <li>Your X account must have at least 20 followers.</li>
-              <li>Drag the handle across the rail — mouse, trackpad or touch.</li>
-              <li>The server issues a short-lived token bound to you.</li>
-              <li>Wait ~2 seconds (anti-bot delay, randomised).</li>
-              <li>Click CLAIM. Your drag gesture is verified server-side.</li>
+              <li>Sign in with X.</li>
+              <li>Apply for the drop pre-whitelist.</li>
+              <li>Admin reviews your X profile and approves real users.</li>
+              <li>Once approved, hit <strong>Claim</strong> every 2 hours.</li>
+              <li>Build your portrait when you have all 8 traits.</li>
             </ol>
-          </div>
-
-          <div className="drop-v2-aside-card">
-            <div className="drop-v2-aside-title">Rarity odds</div>
-            {[
-              { label: 'Common',     pct: '74%' },
-              { label: 'Rare',       pct: '20%' },
-              { label: 'Legendary',  pct: '5%'  },
-              { label: 'Ultra Rare', pct: '1%'  },
-            ].map((r) => (
-              <div key={r.label} className="drop-v2-aside-row">
-                <span>{r.label}</span>
-                <strong>{r.pct}</strong>
-              </div>
-            ))}
           </div>
 
           <div className="drop-v2-aside-card">
             <div className="drop-v2-aside-title">Rules</div>
             <ul className="drop-v2-rules">
-              <li>2-hour cycle · 5-minute window</li>
-              <li>Limited slots each window · staggered reveal</li>
-              <li>Max {maxClaims} claims per session</li>
-              <li>Min 20 X followers to claim</li>
-              <li>Token + drag-gesture gate blocks automation</li>
-              {adminPool ? <li style={{ opacity: 0.7 }}>ADMIN · pool {adminPool.poolSize}</li> : null}
+              <li>Pre-whitelist required to claim.</li>
+              <li>Min 20 X followers.</li>
+              <li>1 claim per user per 2-hour session.</li>
+              <li>Pool: 20 slots per window.</li>
+              <li>After you build, drop access ends — others get a turn.</li>
+              {isAdmin ? <li style={{ opacity: 0.7 }}>ADMIN · review queue in /admin</li> : null}
+            </ul>
+          </div>
+
+          <div className="drop-v2-aside-card">
+            <div className="drop-v2-aside-title">Rarity odds</div>
+            <ul className="drop-v2-rarity">
+              {[
+                { label: 'Common',     pct: '74%' },
+                { label: 'Rare',       pct: '20%' },
+                { label: 'Legendary',  pct: '5%'  },
+                { label: 'Ultra Rare', pct: '1%'  },
+              ].map((r) => (
+                <li key={r.label}>
+                  <span>{r.label}</span><span>{r.pct}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </aside>
       </div>
 
-      {/* ─── Reveal overlay ─── */}
+      {/* ────────── REVEAL OVERLAY ────────── */}
       {revealed && (
-        <div className="reveal-animation" onClick={() => { setRevealed(null); setFlow('ready'); }}>
+        <div className="reveal-animation" onClick={() => setRevealed(null)}>
           <div className="reveal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="reveal-label">You pulled</div>
-            <div className="reveal-element-art">
-              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
-                dangerouslySetInnerHTML={{ __html: getElementSVG(revealed.type, revealed.variant) }} />
+            <div className="reveal-card-kicker">YOU PULLED</div>
+            <div className="reveal-card-rarity">{(revealed.rarity || '').replace('_', ' ').toUpperCase()}</div>
+            <div className="reveal-card-name">{revealed.name}</div>
+            <div className="reveal-card-meta">
+              +{revealed.bustsReward} BUSTS · position #{revealed.position}
             </div>
-            <h2 className="reveal-element-name">{revealed.name}</h2>
-            <div style={{ marginBottom: 14 }}>
-              <span className={`badge badge-${revealed.rarity}`}>
-                {String(revealed.rarity).replace('_', ' ')}
-              </span>
-            </div>
-            <p style={{
-              fontSize: 13, color: 'var(--text-3)',
-              fontFamily: 'var(--font-mono)', letterSpacing: '0.04em',
-            }}>
-              {ELEMENT_LABELS[revealed.type] || revealed.type} · position #{revealed.position}
-              {' · '}+{revealed.bustsReward} BUSTS
-            </p>
             <button
-              className="btn btn-solid"
-              style={{ width: '100%', marginTop: 20 }}
-              onClick={() => { setRevealed(null); setFlow('ready'); }}
-            >Close</button>
+              className="btn btn-solid btn-arrow"
+              onClick={() => setRevealed(null)}
+              style={{ marginTop: 24 }}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ────────── STATE STAGES ──────────
+
+function SignedOutStage({ onSignIn }) {
+  return (
+    <div className="drop-v2-stage-signed-out">
+      <div className="drop-v2-stage-title">Sign in to continue</div>
+      <p className="drop-v2-stage-sub">
+        The drop is for verified X accounts only. Sign in to apply.
+      </p>
+      <button className="btn btn-solid btn-lg" onClick={onSignIn}>
+        Sign in with X
+      </button>
+    </div>
+  );
+}
+
+function BlockedStage({ title, body }) {
+  return (
+    <div className="drop-v2-stage-blocked">
+      <div className="drop-v2-stage-title">{title}</div>
+      <p className="drop-v2-stage-sub">{body}</p>
+    </div>
+  );
+}
+
+function ApplyStage({ xUser, message, setMessage, busy, onApply }) {
+  return (
+    <div className="drop-v2-stage-apply">
+      <div className="drop-v2-stage-title">Apply for the drop pre-whitelist</div>
+      <p className="drop-v2-stage-sub">
+        Click below to submit your X profile (<strong>@{xUser?.username || 'you'}</strong>) for review.
+        Admins will eyeball your account and approve real users. Approval is one-time — after that,
+        you can claim every 2 hours until you finish your portrait.
+      </p>
+      <div className="drop-v2-form-row">
+        <label className="drop-v2-form-label">Optional note for admin</label>
+        <textarea
+          className="drop-v2-form-textarea"
+          rows={3}
+          maxLength={240}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="e.g. I&rsquo;ve been following on-chain art for years — happy to grow this collection."
+        />
+        <div className="drop-v2-form-help">{message.length}/240</div>
+      </div>
+      <button
+        className="btn btn-solid btn-lg btn-arrow"
+        onClick={onApply}
+        disabled={busy}
+        style={{ marginTop: 18 }}
+      >
+        {busy ? 'Submitting...' : 'Apply for pre-whitelist'}
+      </button>
+    </div>
+  );
+}
+
+function PendingStage({ preWhitelist, onRefresh }) {
+  return (
+    <div className="drop-v2-stage-pending">
+      <div className="drop-v2-stage-title">Application under review</div>
+      <p className="drop-v2-stage-sub">
+        Admins are reviewing your X profile. This usually takes a few hours.
+        You’ll see a green &ldquo;Approved&rdquo; state here once a decision is made.
+      </p>
+      <div className="drop-v2-pending-meta">
+        Submitted {preWhitelist?.createdAt ? new Date(preWhitelist.createdAt).toLocaleString() : 'recently'}
+      </div>
+      <button className="btn btn-ghost btn-sm" onClick={onRefresh} style={{ marginTop: 12 }}>
+        Refresh status
+      </button>
+    </div>
+  );
+}
+
+function RejectedStage({ preWhitelist, message, setMessage, busy, onReapply }) {
+  return (
+    <div className="drop-v2-stage-rejected">
+      <div className="drop-v2-stage-title">Application not approved</div>
+      <p className="drop-v2-stage-sub">
+        {preWhitelist?.adminNote
+          ? <>Admin note: <em>{preWhitelist.adminNote}</em></>
+          : <>Your application wasn&rsquo;t approved this round. You can edit the note below and re-apply.</>}
+      </p>
+      <div className="drop-v2-form-row">
+        <label className="drop-v2-form-label">Update your note</label>
+        <textarea
+          className="drop-v2-form-textarea"
+          rows={3}
+          maxLength={240}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <div className="drop-v2-form-help">{message.length}/240</div>
+      </div>
+      <button
+        className="btn btn-solid btn-lg"
+        onClick={onReapply}
+        disabled={busy}
+        style={{ marginTop: 18 }}
+      >
+        {busy ? 'Submitting...' : 'Re-apply'}
+      </button>
+    </div>
+  );
+}
+
+function ApprovedStage({ isActive, isPoolEmpty, claimsThisSession, maxClaims, busy, onClaim }) {
+  const alreadyClaimed = claimsThisSession >= maxClaims;
+  const canClaim = isActive && !isPoolEmpty && !alreadyClaimed && !busy;
+
+  return (
+    <div className="drop-v2-stage-approved">
+      <div className="drop-v2-stage-kicker">
+        <span className="drop-v2-stage-pill">PRE-WHITELISTED</span>
+      </div>
+      <div className="drop-v2-stage-title">
+        {alreadyClaimed
+          ? 'You’ve claimed this window'
+          : isActive
+            ? 'Pool is open — claim your trait'
+            : 'Waiting for the next window'}
+      </div>
+      <p className="drop-v2-stage-sub">
+        {alreadyClaimed
+          ? 'One claim per user per session. Come back at the top of the next 2-hour cycle.'
+          : isActive
+            ? 'One click. The server picks a random trait weighted by published rarity odds.'
+            : 'The drop window is closed. The next 20-slot pool opens at the top of the next 2-hour cycle.'}
+      </p>
+      <button
+        className="btn btn-accent btn-lg btn-arrow"
+        onClick={onClaim}
+        disabled={!canClaim}
+        style={{ marginTop: 16, minWidth: 240 }}
+      >
+        {busy
+          ? 'Pulling...'
+          : alreadyClaimed
+            ? 'Already claimed'
+            : isPoolEmpty
+              ? 'Pool sealed'
+              : isActive
+                ? 'Claim a trait'
+                : 'Window closed'}
+      </button>
+      <div className="drop-v2-claims-note">
+        Claims this session: {claimsThisSession}/{maxClaims}
+      </div>
     </div>
   );
 }
