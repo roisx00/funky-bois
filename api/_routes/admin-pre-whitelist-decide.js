@@ -50,8 +50,8 @@ export default async function handler(req, res) {
 
   // Audit ledger. Amount 0 — it's a state change, not a credit.
   const ledgerReason = decision === 'approve'
-    ? `Drop pre-whitelist approved by @${admin.x_username}`
-    : `Drop pre-whitelist rejected by @${admin.x_username}`;
+    ? 'Drop pre-whitelist approved by admin'
+    : 'Drop pre-whitelist rejected by admin';
   await sql`
     INSERT INTO busts_ledger (user_id, amount, reason)
     VALUES (${row.user_id}, 0, ${ledgerReason})

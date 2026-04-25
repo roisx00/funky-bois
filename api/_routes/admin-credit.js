@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   `);
   await sql`
     INSERT INTO busts_ledger (user_id, amount, reason)
-    VALUES (${target.id}, ${Math.trunc(amt)}, ${reason || `Admin credit by @${admin.x_username}`})
+    VALUES (${target.id}, ${Math.trunc(amt)}, ${reason || 'Admin credit'})
   `;
 
   ok(res, { user: target.x_username, newBalance: updated.busts_balance, delta: Math.trunc(amt) });
