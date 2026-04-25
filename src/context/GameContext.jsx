@@ -18,34 +18,50 @@ function getCurrentSessionId() {
 }
 
 function deriveSessionStatus(serverStatus, claimsThisSession) {
-  const sessId = serverStatus?.sessId ?? getCurrentSessionId();
-  const elapsed = Date.now() - sessId;
+  // Always recompute sessId from the local clock so window state flips
+  // the moment the boundary is crossed — don't wait on the next poll.
+  // The cached serverStatus.sessId may be the PREVIOUS session for up
+  // to one poll cycle (15s) after :00; using it for timing causes the
+  // claim UI to lag, with users having to hard-refresh to claim.
+  const liveSessId = getCurrentSessionId();
+  const liveElapsed = Date.now() - liveSessId;
+  const sessId = liveSessId;
 
-  const poolState   = serverStatus?.poolState ?? 'stocked';
-  const poolPct     = typeof serverStatus?.poolPct === 'number' ? serverStatus.poolPct : 1;
+  // If the cached serverStatus is for a previous session, treat the
+  // pool as freshly opened — its claimed/sealed fields are stale and
+  // would otherwise hide the claim button until the next poll lands.
+  const serverIsCurrent = serverStatus?.sessId === liveSessId;
+
+  const poolState   = serverIsCurrent ? (serverStatus?.poolState ?? 'stocked') : 'stocked';
+  const poolPct     = serverIsCurrent && typeof serverStatus?.poolPct === 'number' ? serverStatus.poolPct : 1;
   const isPoolEmpty = poolState === 'sealed' || poolPct <= 0;
 
-  // Two booleans, one purpose each:
-  //   windowOpen — strict 5-minute window check; LIVE label + countdown
-  //                stay tied to wall-clock time, even if the pool seals.
-  //   isActive   — windowOpen AND there are slots remaining; gates the
-  //                claim button + "active" UI states.
-  const windowOpen = serverStatus?.windowOpen ?? (elapsed < SESSION_WINDOW_MS);
+  // Window-open is now driven by the wall clock, not the cached server
+  // boolean. The 5-minute window math is identical client-side and
+  // server-side, so the local computation is authoritative.
+  const windowOpen = liveElapsed < SESSION_WINDOW_MS;
   const isActive   = windowOpen && !isPoolEmpty;
+
+  // When the cached payload is from the previous session, surface a
+  // fresh-pool view: 0 claimed, full size = the admin's "next" size.
+  const nextSize     = Number(serverStatus?.nextPoolSize) || Number(serverStatus?.poolSize) || 20;
+  const poolSize     = serverIsCurrent ? (Number(serverStatus?.poolSize) || nextSize) : nextSize;
+  const poolClaimed  = serverIsCurrent ? (Number(serverStatus?.poolClaimed) || 0) : 0;
+  const poolRem      = serverIsCurrent ? (Number(serverStatus?.poolRemaining) || (poolSize - poolClaimed)) : poolSize;
 
   return {
     sessId,
     windowOpen,
     isActive,
     isPoolEmpty,
-    msUntilNext:  Math.max(0, SESSION_INTERVAL_MS - elapsed),
-    msUntilClose: Math.max(0, SESSION_WINDOW_MS - elapsed),
+    msUntilNext:  Math.max(0, SESSION_INTERVAL_MS - liveElapsed),
+    msUntilClose: Math.max(0, SESSION_WINDOW_MS - liveElapsed),
     poolState,
     poolPct,
-    poolSize:      Number(serverStatus?.poolSize)      || 20,
-    poolClaimed:   Number(serverStatus?.poolClaimed)   || 0,
-    poolRemaining: Number(serverStatus?.poolRemaining) || 0,
-    nextPoolSize:  Number(serverStatus?.nextPoolSize)  || Number(serverStatus?.poolSize) || 20,
+    poolSize,
+    poolClaimed,
+    poolRemaining: poolRem,
+    nextPoolSize:  nextSize,
     prewlApproved: Number(serverStatus?.prewlApproved) || 0,
     prewlWaiting:  Number(serverStatus?.prewlWaiting)  || 0,
     prewlOnline:   Number(serverStatus?.prewlOnline)   || 0,
@@ -342,7 +358,13 @@ export function GameProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Poll drop status every 15s while page is open
+  // Poll drop status every 15s while page is open. Also fires an
+  // EXTRA poll the instant the local clock crosses a session boundary
+  // (top of every 2nd hour) so the cached payload — which is for the
+  // previous session — gets replaced before the user reaches for the
+  // claim button. Without this, polls landing 14s before :00 leave
+  // the UI showing stale "sealed" state for up to 15s after the new
+  // window opens, exactly the gap reported by users having to refresh.
   useEffect(() => {
     function tick() {
       jget('/api/drop-status').then((ds) => {
@@ -350,7 +372,25 @@ export function GameProvider({ children }) {
       });
     }
     dropPollRef.current = setInterval(tick, 15000);
-    return () => clearInterval(dropPollRef.current);
+
+    // Boundary watcher: every second, check if the live session id
+    // has changed from what the server cache thinks; if so, kick off
+    // an immediate poll (and a follow-up after 1.5s in case the first
+    // one races the server's own boundary handler).
+    let lastSeenSess = getCurrentSessionId();
+    const boundaryId = setInterval(() => {
+      const now = getCurrentSessionId();
+      if (now !== lastSeenSess) {
+        lastSeenSess = now;
+        tick();
+        setTimeout(tick, 1500);
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(dropPollRef.current);
+      clearInterval(boundaryId);
+    };
   }, []);
 
   // Poll /api/me every 30s so an idle recipient sees newly arrived
