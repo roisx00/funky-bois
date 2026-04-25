@@ -14,22 +14,13 @@ import { settleReferralIfPending } from '../_lib/referral.js';
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
 const SIG_RE  = /^0x[a-fA-F0-9]+$/;
-const MIN_X_FOLLOWERS = 20;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
 
-  // Same follower gate as the rest of the game loop. Defence-in-depth
-  // against edge cases where someone's built a portrait under the old
-  // rules and now attempts to secure WL from a low-follower account.
-  if ((user.x_followers || 0) < MIN_X_FOLLOWERS) {
-    return bad(res, 403, 'min_followers_not_met', {
-      required: MIN_X_FOLLOWERS,
-      have: Number(user.x_followers) || 0,
-    });
-  }
+  // Follower gate removed — see drop-claim.js.
 
   const { walletAddress, portraitId, signature } = await readBody(req) || {};
   if (!walletAddress || !ADDR_RE.test(walletAddress)) return bad(res, 400, 'invalid_wallet');

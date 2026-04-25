@@ -15,8 +15,6 @@ import { requireActiveUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
 
-const MIN_X_FOLLOWERS = 20;
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireActiveUser(req, res);
@@ -25,12 +23,9 @@ export default async function handler(req, res) {
   // Soft per-user rate limit so someone can't spam the queue.
   if (!(await rateLimit(res, user.id, { name: 'prewl_apply', max: 3, windowSecs: 3600 }))) return;
 
-  if ((user.x_followers || 0) < MIN_X_FOLLOWERS) {
-    return bad(res, 403, 'min_followers_not_met', {
-      required: MIN_X_FOLLOWERS,
-      have: Number(user.x_followers) || 0,
-    });
-  }
+  // Follower gate removed. The whole point of this route is to let
+  // admins eyeball the X profile manually — they can use the follower
+  // count as one signal among many in the queue.
 
   // Already approved? Tell them so the UI can skip the apply step.
   if (user.drop_eligible === true) {

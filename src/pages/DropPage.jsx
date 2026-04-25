@@ -6,14 +6,6 @@ import Timer from '../components/Timer';
 // Map raw server error codes to sentences a human can read.
 function friendlyDropError(r) {
   const code = r?.reason || r?.error || '';
-  if (code === 'min_followers_not_met') {
-    const need = Number(r.required) || 20;
-    const have = Number(r.have) || 0;
-    return (
-      `Drops require at least ${need} followers on X. We recorded ${have} for you at sign-in. ` +
-      `If you've gained followers since, sign out and sign back in to refresh the count.`
-    );
-  }
   if (code === 'not_pre_whitelisted')   return 'Your account isn’t on the drop pre-whitelist yet. Apply below — admin will review.';
   if (code === 'already_built_portrait') return 'You’ve already built your portrait. The drop is for users still collecting traits.';
   if (code === 'pool_exhausted')        return 'All slots claimed this window. Next pool opens at the top of the next 2-hour cycle.';
@@ -220,7 +212,6 @@ export default function DropPage() {
             <div className="drop-v2-aside-title">Rules</div>
             <ul className="drop-v2-rules">
               <li>Pre-whitelist required to claim.</li>
-              <li>Min 20 X followers.</li>
               <li>1 claim per user per 2-hour session.</li>
               <li>Pool: 20 slots per window.</li>
               <li>After you build, drop access ends — others get a turn.</li>

@@ -97,8 +97,8 @@ export default function LeaderboardPage() {
             BUSTS <em>top earners.</em>
           </h1>
           <p className="lead-hero-sub">
-            Top 100 real holders. To keep the board clean we filter out
-            bot-farm accounts — see eligibility below.
+            Top 100 real holders. Only admin-approved (pre-whitelist),
+            portrait-built, or whitelisted accounts appear here.
           </p>
         </div>
 
@@ -263,11 +263,10 @@ export default function LeaderboardPage() {
             connected a wallet, and signed the ownership message.
           </li>
           <li>
-            <strong>Claimed 2+ drops AND has at least 20 X followers.</strong>
-            Drops alone are farmable; drops + a real X presence is not.
-            If your X account has fewer than 20 followers you won&apos;t
-            appear even with drops claimed — build a portrait instead and
-            you&apos;re in.
+            <strong>Claimed at least one drop.</strong> Drops require
+            pre-whitelist approval, which means an admin has reviewed
+            your X profile and approved you as a real user. There is no
+            cap on pre-whitelist approvals — anyone real can be in.
           </li>
         </ul>
         <p className="lead-eligibility-foot">

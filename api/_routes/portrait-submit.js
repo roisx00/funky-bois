@@ -20,24 +20,14 @@ import { ELEMENT_TYPES, ELEMENT_VARIANTS } from '../_lib/elements.js';
 import { settleReferralIfPending } from '../_lib/referral.js';
 import { randomBytes } from 'crypto';
 
-const MIN_X_FOLLOWERS = 20;
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
 
-  // ── Follower gate ──
-  // Same floor as /api/drop-arm, /api/drop-claim, /api/box-open.
-  // Farms that already stockpiled traits before the drop gate shipped
-  // would otherwise still be able to build a portrait AND auto-
-  // whitelist themselves. Block at the build step too.
-  if ((user.x_followers || 0) < MIN_X_FOLLOWERS) {
-    return bad(res, 403, 'min_followers_not_met', {
-      required: MIN_X_FOLLOWERS,
-      have: Number(user.x_followers) || 0,
-    });
-  }
+  // Follower gate removed — see drop-claim.js. Real protection is
+  // now: pre-whitelist admin review for drops + suspension system
+  // for ad-hoc bot bans.
 
   const { elements } = await readBody(req) || {};
   if (!elements || typeof elements !== 'object') return bad(res, 400, 'missing_elements');

@@ -30,8 +30,6 @@ import {
 } from '../_lib/elements.js';
 import { settleReferralIfPending } from '../_lib/referral.js';
 
-const MIN_X_FOLLOWERS = 20;
-
 export default async function handler(req, res) {
   const ip = clientIp(req);
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
@@ -40,12 +38,10 @@ export default async function handler(req, res) {
   if (!user) return;
 
   // ── Gates ──
-  if ((user.x_followers || 0) < MIN_X_FOLLOWERS) {
-    return bad(res, 403, 'min_followers_not_met', {
-      required: MIN_X_FOLLOWERS,
-      have: Number(user.x_followers) || 0,
-    });
-  }
+  // Note: previously gated on x_followers >= 20. Removed because the
+  // follower count was captured at X sign-in and never refreshed,
+  // which punished real users who grew their account afterwards.
+  // Admin pre-whitelist review is the human gate now.
   if (user.drop_eligible !== true) {
     return bad(res, 403, 'not_pre_whitelisted', {
       hint: 'Apply for the drop pre-whitelist on the drop page.',

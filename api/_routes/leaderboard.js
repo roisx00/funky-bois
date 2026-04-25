@@ -18,16 +18,20 @@ export default async function handler(req, res) {
   if (!Number.isFinite(limit) || limit <= 0) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
 
-  // ── Multi-signal engagement gate ──
-  // Earlier rule ("claimed any drop") still let through ~90 farm
-  // accounts that grabbed slots during the pre-jitter :00-sweep era.
-  // Now we require a STRONGER signal:
-  //   A. Built a portrait (end of game loop — strong signal), OR
-  //   B. Whitelisted (portrait + wallet + signed message — strongest), OR
-  //   C. Claimed >= 2 drops AND has >= 20 X followers.
-  //      (Drops alone are farmable; drops + real follower count is not.
-  //      20 is low enough to include real new crypto users but high
-  //      enough to exclude freshly-spun-up bot accounts with 0-5 followers.)
+  // ── Engagement gate (post follower-removal) ──
+  // We can no longer rely on x_followers because the count is captured
+  // at sign-in and never refreshed — real users who grew their X
+  // accounts get unfairly excluded.
+  //
+  // Pre-whitelist + drops is the new strong signal: drops require admin
+  // approval (real X profile review), so anyone who has claimed even
+  // one drop is admin-vetted.
+  //
+  // To appear on the board the user must be:
+  //   A. Built a portrait, OR
+  //   B. Whitelisted, OR
+  //   C. Claimed at least one drop (admin-vetted via pre-whitelist).
+  // Suspended users are always excluded.
   const rows = await sql`
     SELECT u.x_username, u.x_avatar, u.x_name, u.busts_balance,
            u.is_whitelisted, u.x_followers
@@ -36,10 +40,7 @@ export default async function handler(req, res) {
        AND (
            EXISTS (SELECT 1 FROM completed_nfts n WHERE n.user_id = u.id)
         OR u.is_whitelisted = TRUE
-        OR (
-              u.x_followers >= 20
-              AND (SELECT COUNT(*) FROM drop_claims d WHERE d.user_id = u.id) >= 2
-        )
+        OR EXISTS (SELECT 1 FROM drop_claims d WHERE d.user_id = u.id)
      )
      ORDER BY u.busts_balance DESC NULLS LAST, u.created_at ASC
      LIMIT ${limit}
