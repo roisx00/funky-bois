@@ -47,6 +47,90 @@ const PER_MSG     = 0.4;
 const cooldown   = new Map(); // discordId -> ts of last earn-tick
 const hourBucket = new Map(); // discordId -> { ts, earned (fractional) }
 const credits    = new Map(); // discordId -> fractional accumulator
+const strikes    = new Map(); // discordId -> { count, since } for link-mod
+
+// ─── link / DM-bait moderation ──────────────────────────────────────
+// Discord AutoMod handles the curated scam-link list. This bot layer
+// is stricter: anything from a non-trusted user that contains an
+// external link OR a DM-solicitation phrase gets deleted + warned.
+// Three strikes in 24h → auto-timeout for 1 hour.
+const LINK_RE     = /\bhttps?:\/\/\S+/gi;
+const INVITE_RE   = /\b(discord\.gg|discordapp\.com\/invite|t\.me|whatsapp\.com)\/\S+/i;
+const DM_BAIT_RE  = /\b(dm me|pm me|message me|inbox me|hit me up|check my dm|check my profile)\b/i;
+const ALLOWED_DOMAINS = ['the1969.io', 'x.com', 'twitter.com'];
+
+function isAllowedUrl(u) {
+  try {
+    const host = new URL(u).hostname.toLowerCase();
+    return ALLOWED_DOMAINS.some((d) => host === d || host.endsWith('.' + d));
+  } catch { return false; }
+}
+
+function isTrustedMember(member) {
+  if (!member) return false;
+  // Anyone who can already moderate is trusted to post links.
+  if (member.permissions?.has?.('Administrator'))   return true;
+  if (member.permissions?.has?.('ManageMessages'))  return true;
+  if (member.permissions?.has?.('ModerateMembers')) return true;
+  // Holders are trusted (they have skin in the game).
+  if (ROLE_MONK && member.roles?.cache?.has(ROLE_MONK)) return true;
+  return false;
+}
+
+async function maybeMod(msg) {
+  const content = msg.content || '';
+  if (!content) return false;
+  if (isTrustedMember(msg.member)) return false;
+
+  const links    = content.match(LINK_RE) || [];
+  const badLinks = links.filter((u) => !isAllowedUrl(u));
+  const hasInvite = INVITE_RE.test(content);
+  const hasDmBait = DM_BAIT_RE.test(content);
+
+  if (badLinks.length === 0 && !hasInvite && !hasDmBait) return false;
+
+  // Delete the offending message.
+  try { await msg.delete(); } catch (e) {
+    console.warn('[mod] delete failed:', e?.message);
+    // If we can't delete, don't bother counting strikes.
+    return false;
+  }
+
+  // Strike-count rolling 24h window.
+  const uid = msg.author.id;
+  const now = Date.now();
+  const cur = strikes.get(uid);
+  const fresh = cur && (now - cur.since < 24 * 60 * 60 * 1000);
+  const count = fresh ? cur.count + 1 : 1;
+  strikes.set(uid, { count, since: fresh ? cur.since : now });
+
+  const reason = hasInvite ? 'external invite links are not allowed'
+                : hasDmBait ? 'soliciting DMs is not allowed (team never DMs first)'
+                : 'links from unverified users are not allowed';
+
+  // Lightweight in-channel warn — no @mention to keep it less noisy.
+  try {
+    const tail = count >= 3 ? 'auto-timeout for 1 hour.' : `strike ${count}/3.`;
+    const m = await msg.channel.send({
+      content: `[mod] **${msg.author.username}** — ${reason}. ${tail}`,
+    });
+    // Fade the warn after 30s so the channel stays clean.
+    setTimeout(() => m.delete().catch(() => {}), 30 * 1000);
+  } catch (e) {
+    console.warn('[mod] warn-send failed:', e?.message);
+  }
+
+  if (count >= 3) {
+    try {
+      const member = await msg.guild.members.fetch(uid);
+      await member.timeout(60 * 60 * 1000, 'auto: 3 link/DM strikes in 24h');
+    } catch (e) {
+      console.warn('[mod] timeout failed:', e?.message);
+    }
+  }
+
+  return true; // message was moderated
+}
 
 function passes(content) {
   const c = content.trim();
@@ -245,8 +329,15 @@ client.on(Events.GuildMemberAdd, async (member) => {
 
 client.on(Events.MessageCreate, async (msg) => {
   if (msg.author?.bot) return;
-  if (msg.channelId !== GENERAL_ID) return;
   if (msg.guildId !== GUILD_ID) return;
+
+  // Link / DM-bait mod runs on EVERY channel (announcements,
+  // assembly, future channels). Returns true if the message was
+  // deleted — in that case stop processing so we don't reward it.
+  if (await maybeMod(msg)) return;
+
+  // Chat-earn only fires in the assembly channel.
+  if (msg.channelId !== GENERAL_ID) return;
 
   const reason = passes(msg.content || '');
   if (reason) return;

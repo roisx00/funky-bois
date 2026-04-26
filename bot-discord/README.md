@@ -92,6 +92,31 @@ The Stranger still gets granted as before.
    [boot] bot=The1969Bot#0000 guild=...  general=... app=https://the1969.io
    ```
 
+## Link / DM-bait moderation
+
+Bot watches every channel. If a user without trust posts a message
+containing:
+- Any `http(s)://` URL outside `the1969.io` / `x.com` / `twitter.com`
+- A Discord/Telegram/WhatsApp invite (`discord.gg/`, `t.me/`, etc.)
+- A DM-solicitation phrase ("dm me", "check my profile", etc.)
+
+→ message is **deleted**, an ephemeral warn is posted in-channel
+   (auto-fades in 30s), the user collects a strike. Three strikes
+   in a 24h window → auto-timeout for 1 hour.
+
+Trusted (links allowed):
+- Anyone with `Administrator` / `Manage Messages` / `Moderate Members`
+  permissions (= you and any mod you appoint)
+- Anyone with `@The Monk` role (verified holder)
+
+This complements Discord's built-in AutoMod (configure separately
+in Server Settings → AutoMod). Bot is the ceiling; AutoMod is the
+floor.
+
+Bot needs these guild permissions:
+- `Manage Messages` — to delete bad posts
+- `Moderate Members` — to apply the 1-hour timeout on 3rd strike
+
 ## Earn rules (server-enforced + bot-enforced)
 
 - **0.4 BUSTS** per qualifying chat message — accumulated locally,
