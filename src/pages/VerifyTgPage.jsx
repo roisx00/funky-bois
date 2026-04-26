@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 import { startXLogin } from '../utils/xAuth';
 import { useToast } from '../components/Toast';
 
-const TG_GROUP_LINK = 'https://t.me/the1969ETH'; // public group invite
+const TG_GROUP_LINK = 'https://t.me/the1969_chat'; // public group invite
 
 export default function VerifyTgPage() {
   const { xUser, completedNFTs, loginWithX } = useGame();
