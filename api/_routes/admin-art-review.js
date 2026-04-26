@@ -2,9 +2,15 @@
 // queue endpoint pattern. Approve → status='approved' makes it
 // public on /art and unlocks votes/comments. Reject is final for
 // THAT submission row but the user can resubmit.
+//
+// Cap: gallery is curated to 50 approved pieces. Approval past 50
+// is refused with `gallery_full` so the admin sees the cap and
+// must reject an existing piece first to free a slot.
 import { sql, one } from '../_lib/db.js';
 import { requireAdmin } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
+
+const APPROVED_CAP = 50;
 
 export default async function handler(req, res) {
   if (req.method === 'GET') return listQueue(req, res);
@@ -18,6 +24,13 @@ export default async function handler(req, res) {
   if (!Number.isInteger(sid) || sid <= 0) return bad(res, 400, 'missing_id');
   if (decision !== 'approve' && decision !== 'reject') return bad(res, 400, 'invalid_decision');
   const trimmedNote = typeof note === 'string' ? note.slice(0, 240).trim() : null;
+
+  if (decision === 'approve') {
+    const cnt = one(await sql`SELECT COUNT(*)::int AS c FROM art_submissions WHERE status = 'approved'`);
+    if ((cnt?.c ?? 0) >= APPROVED_CAP) {
+      return bad(res, 409, 'gallery_full', { cap: APPROVED_CAP });
+    }
+  }
 
   const row = one(await sql`
     UPDATE art_submissions
@@ -42,7 +55,7 @@ async function listQueue(req, res) {
   const offset = Math.max(0,             parseInt(req.query?.offset || '0',  10) || 0);
 
   const rows = await sql`
-    SELECT s.id, s.image_url, s.caption, s.status, s.admin_note,
+    SELECT s.id, s.image_url, s.image_bytes, s.caption, s.status, s.admin_note,
            s.created_at, s.reviewed_at,
            u.x_username, u.x_avatar, u.x_followers
       FROM art_submissions s
@@ -58,9 +71,13 @@ async function listQueue(req, res) {
   `;
 
   ok(res, {
+    cap: APPROVED_CAP,
     entries: rows.map((r) => ({
       id:         r.id,
-      imageUrl:   r.image_url,
+      // Legacy image_url (for blob-era rows) wins; newer rows expose
+      // the bytes-backed endpoint.
+      imageUrl:   r.image_url || `/api/art-image/${r.id}`,
+      imageBytes: r.image_bytes ?? null,
       caption:    r.caption,
       status:     r.status,
       adminNote:  r.admin_note,

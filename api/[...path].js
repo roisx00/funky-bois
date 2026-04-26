@@ -41,7 +41,7 @@ import adminPreWhitelist   from './_routes/admin-pre-whitelist.js';
 import adminPreWhitelistDecide from './_routes/admin-pre-whitelist-decide.js';
 import artHandler             from './_routes/art.js';
 import artSubmitHandler       from './_routes/art-submit.js';
-import artUploadUrlHandler    from './_routes/art-upload-url.js';
+import artImageHandler        from './_routes/art-image.js';
 import artVoteHandler         from './_routes/art-vote.js';
 import artCommentHandler      from './_routes/art-comment.js';
 import adminArtReviewHandler  from './_routes/admin-art-review.js';
@@ -90,7 +90,6 @@ const ROUTES = {
   'admin-pre-whitelist-decide': adminPreWhitelistDecide,
   'art':                  artHandler,
   'art-submit':           artSubmitHandler,
-  'art-upload-url':       artUploadUrlHandler,
   'art-vote':             artVoteHandler,
   'art-comment':          artCommentHandler,
   'admin-art-review':     adminArtReviewHandler,
@@ -146,6 +145,19 @@ function extractPath(req) {
 
 export default async function handler(req, res) {
   const key = extractPath(req);
+
+  // Dynamic-segment routes (id at the end). Done before the static
+  // ROUTES lookup so /api/art-image/123 resolves to artImageHandler.
+  // The handler reads the id from req.query.path itself.
+  if (key.startsWith('art-image/')) {
+    try { await artImageHandler(req, res); return; }
+    catch (err) {
+      console.error('[api dispatcher] art-image', err);
+      if (!res.writableEnded) res.status(500).json({ error: 'internal', message: err?.message });
+      return;
+    }
+  }
+
   const route = ROUTES[key];
   if (!route) {
     res.status(404).json({ error: 'route_not_found', path: key, url: req.url });

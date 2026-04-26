@@ -244,17 +244,18 @@ function SubmitModal({ onClose, onSubmitted, toast }) {
     if (!file || busy) return;
     setBusy(true);
     try {
-      const { upload } = await import('@vercel/blob/client');
-      const blob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/art-upload-url',
-        contentType: file.type,
+      // Downscale before sending. Vercel function bodies cap at
+      // ~4.5MB; base64 inflates by ~33%, so the on-wire JSON budget
+      // is ~3.3MB of decoded bytes. Aim for ≤3MB to leave headroom.
+      const { mime, dataB64 } = await downscaleToBase64(file, {
+        maxBytes: 3 * 1024 * 1024,
+        maxDimension: 1600,
       });
 
       const r = await fetch('/api/art-submit', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl: blob.url, caption }),
+        body: JSON.stringify({ mime, dataB64, caption }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d?.reason || d?.error || 'submit_failed');
@@ -416,3 +417,60 @@ function timeAgo(ts) {
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
+
+// Client-side downscaler. Reads the file, optionally shrinks the
+// longest edge to maxDimension, then re-encodes JPEG at decreasing
+// quality until the result fits maxBytes. Returns { mime, dataB64 }.
+//
+// GIFs are passed through (canvas would lose animation) — if a GIF
+// exceeds maxBytes the user gets an error and has to use a smaller
+// file. Static formats (png/jpg/webp) are always re-encoded as JPEG
+// for predictable size.
+async function downscaleToBase64(file, { maxBytes, maxDimension }) {
+  if (file.type === 'image/gif') {
+    if (file.size > maxBytes) throw new Error(`GIF too large (${(file.size / 1048576).toFixed(1)}MB > ${(maxBytes / 1048576).toFixed(1)}MB)`);
+    return { mime: 'image/gif', dataB64: await fileToBase64(file) };
+  }
+
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error('Could not decode image'));
+      i.src = url;
+    });
+
+    const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+    const w = Math.round(img.width  * scale);
+    const h = Math.round(img.height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, w, h);
+
+    // Step quality down until under budget.
+    for (const q of [0.92, 0.85, 0.78, 0.7, 0.6, 0.5]) {
+      const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', q));
+      if (blob && blob.size <= maxBytes) {
+        return { mime: 'image/jpeg', dataB64: await blobToBase64(blob) };
+      }
+    }
+    throw new Error('Image too complex to compress under 3MB — try a smaller / simpler one.');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1] || '');
+    r.onerror = () => rej(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+}
+function blobToBase64(blob) { return fileToBase64(blob); }

@@ -134,7 +134,9 @@ export default async function handler(req, res) {
 function mapRow(r) {
   return {
     id:        r.id,
-    imageUrl:  r.image_url,
+    // Legacy blob URL wins for older rows; new rows are bytea-backed
+    // and served from /api/art-image/<id>. Cached year-long, immutable.
+    imageUrl:  r.image_url || `/api/art-image/${r.id}`,
     caption:   r.caption,
     status:    r.status,
     adminNote: r.admin_note,
