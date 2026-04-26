@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675" font-family="Inter, system-ui, sans-serif">
+  <!-- BACKGROUND -->
+  <rect width="1200" height="675" fill="#F9F6F0"/>
+
+  <!-- TOP RULE -->
+  <line x1="60" y1="80" x2="1140" y2="80" stroke="#0E0E0E" stroke-width="1"/>
+
+  <!-- TOP-LEFT KICKER -->
+  <g transform="translate(60, 56)">
+    <circle cx="6" cy="-4" r="6" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
+    <text x="22" y="0" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">THE 1969 · COMMUNITY ART · OPEN</text>
+  </g>
+
+  <!-- TOP-RIGHT META -->
+  <text x="1140" y="56" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#5C5C5C">HAND-MADE  ·  NO AI  ·  ON THEME</text>
+
+  <!-- HEADLINE BLOCK (left side) -->
+  <g transform="translate(60, 180)">
+    <text font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#5C5C5C">SUBMIT YOUR ART</text>
+    <text y="80" font-size="92" font-weight="500" fill="#0E0E0E" letter-spacing="-3">Make a bust.</text>
+    <text y="170" font-size="78" font-style="italic" fill="#5C5C5C" letter-spacing="-2" font-family="'Instrument Serif', Georgia, serif">Show your work.</text>
+    <text y="240" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="2" fill="#0E0E0E" font-weight="500">Admin approves quality. Community ranks the rest.</text>
+    <text y="266" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="2" fill="#5C5C5C">Top pieces earn BUSTS + whitelist spots.</text>
+  </g>
+
+  <!-- ACCENT BLOCK — 50 SLOTS (top-right) -->
+  <g transform="translate(890, 130)">
+    <rect x="0" y="0" width="220" height="220" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
+    <text x="22" y="42" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">CURATED</text>
+    <text x="22" y="160" font-size="140" font-weight="500" fill="#0E0E0E" letter-spacing="-5">50</text>
+    <text x="22" y="195" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">SLOTS · 1 PER ARTIST</text>
+  </g>
+
+  <!-- DIVIDER -->
+  <line x1="60" y1="480" x2="1140" y2="480" stroke="#0E0E0E" stroke-width="1" stroke-dasharray="4,6"/>
+
+  <!-- THREE-COLUMN RULES STRIP -->
+  <g transform="translate(60, 540)">
+    <!-- 1 -->
+    <g>
+      <text y="-12" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">01</text>
+      <text y="20" font-size="22" font-weight="500" fill="#0E0E0E" letter-spacing="-0.5">Hand-made.</text>
+      <text y="48" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="2" fill="#5C5C5C">No AI generations. We can tell.</text>
+    </g>
+    <!-- 2 -->
+    <g transform="translate(380, 0)">
+      <text y="-12" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">02</text>
+      <text y="20" font-size="22" font-weight="500" fill="#0E0E0E" letter-spacing="-0.5">Holders vote 3×.</text>
+      <text y="48" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="2" fill="#5C5C5C">Pre-WL 2×. Signed-in 1×.</text>
+    </g>
+    <!-- 3 -->
+    <g transform="translate(760, 0)">
+      <text y="-12" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">03</text>
+      <text y="20" font-size="22" font-weight="500" fill="#0E0E0E" letter-spacing="-0.5">Top earns WL.</text>
+      <text y="48" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="2" fill="#5C5C5C">Number scales with quality + votes.</text>
+    </g>
+  </g>
+
+  <!-- BOTTOM RULE -->
+  <line x1="60" y1="615" x2="1140" y2="615" stroke="#0E0E0E" stroke-width="1"/>
+
+  <!-- FOOTER -->
+  <text x="60" y="650" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">@THE1969ETH</text>
+  <text x="1140" y="650" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">THE1969.IO/ART</text>
+</svg>
