@@ -19,11 +19,11 @@
         text-anchor="middle"
         font-family="'Instrument Serif', Georgia, serif"
         font-style="italic" font-weight="500"
-        font-size="120" fill="#0E0E0E"
-        letter-spacing="-2">witness archetypes.</text>
+        font-size="88" fill="#0E0E0E"
+        letter-spacing="-1">witness archetypes.</text>
 
   <!-- ACCENT UNDERLINE -->
-  <line x1="320" y1="320" x2="640" y2="320" stroke="#D7FF3A" stroke-width="6"/>
+  <line x1="380" y1="320" x2="580" y2="320" stroke="#D7FF3A" stroke-width="6"/>
 
   <!-- SUBLINE — the four roles -->
   <text x="480" y="380" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="6" fill="#5C5C5C">STRANGER · MONK · REBEL · PROPHET</text>
