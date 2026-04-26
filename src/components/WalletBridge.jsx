@@ -19,7 +19,7 @@ export default function WalletBridge() {
   const { signMessageAsync } = useSignMessage();
   const {
     isWalletConnected, walletAddress, bridgeWallet, disconnectWallet,
-    completedNFTs, authenticated, recordWhitelist, xUser,
+    completedNFTs, authenticated, recordWhitelist, xUser, isWhitelisted,
   } = useGame();
 
   // Guard so we only ATTEMPT a WL POST once per (wallet, portrait) pair
@@ -47,9 +47,28 @@ export default function WalletBridge() {
     if (!completedNFTs?.length) return;
     if (!xUser?.username) return;
 
+    // Already whitelisted with THIS wallet → don't prompt again ever.
+    // This is the critical fix: lastAttemptedRef only persists within
+    // a single page load, so on every refresh the user got re-prompted
+    // to sign even though the WL was already recorded server-side.
+    if (isWhitelisted && walletAddress
+        && walletAddress.toLowerCase() === address.toLowerCase()) {
+      return;
+    }
+
     const latest = completedNFTs[0];
     const key = `${address.toLowerCase()}:${latest.id}`;
     if (lastAttemptedRef.current === key) return;
+    // Same idea but persisted across reloads — once we attempt a sign
+    // for this wallet+portrait, don't re-attempt even if /api/me hasn't
+    // refreshed yet.
+    const lsKey = `the1969-wl-attempted:${key}`;
+    try {
+      if (window.localStorage.getItem(lsKey)) {
+        lastAttemptedRef.current = key;
+        return;
+      }
+    } catch { /* private mode etc. */ }
     lastAttemptedRef.current = key;
 
     (async () => {
@@ -70,6 +89,11 @@ export default function WalletBridge() {
           // User may have signed with the wrong account, or cancelled —
           // allow a retry once state changes.
           lastAttemptedRef.current = '';
+        } else {
+          // Success — pin the localStorage flag so a refresh BEFORE
+          // /api/me re-hydrates with isWhitelisted=true won't trigger
+          // a duplicate prompt.
+          try { window.localStorage.setItem(lsKey, '1'); } catch {}
         }
       } catch (e) {
         // User cancelled the sign prompt or popup was blocked — don't
@@ -77,7 +101,7 @@ export default function WalletBridge() {
         console.warn('[WalletBridge] whitelist record error:', e?.message || e);
       }
     })();
-  }, [authenticated, isConnected, address, completedNFTs, xUser, recordWhitelist, signMessageAsync]);
+  }, [authenticated, isConnected, address, completedNFTs, xUser, recordWhitelist, signMessageAsync, isWhitelisted, walletAddress]);
 
   return null;
 }
