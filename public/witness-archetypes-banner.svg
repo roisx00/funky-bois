@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" font-family="Inter, system-ui, sans-serif">
+  <!-- BACKGROUND -->
+  <rect width="960" height="540" fill="#F9F6F0"/>
+
+  <!-- TOP RULE -->
+  <line x1="48" y1="64" x2="912" y2="64" stroke="#0E0E0E" stroke-width="1"/>
+
+  <!-- TOP-LEFT KICKER -->
+  <g transform="translate(48, 44)">
+    <circle cx="6" cy="-4" r="6" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
+    <text x="22" y="0" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="12" letter-spacing="3" fill="#0E0E0E">THE 1969 · MONOCHROME · ETHEREUM</text>
+  </g>
+
+  <!-- TOP-RIGHT META -->
+  <text x="912" y="44" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">FOUR ROLES · ONE COLLECTIVE</text>
+
+  <!-- HEADLINE -->
+  <text x="480" y="280"
+        text-anchor="middle"
+        font-family="'Instrument Serif', Georgia, serif"
+        font-style="italic" font-weight="500"
+        font-size="120" fill="#0E0E0E"
+        letter-spacing="-2">witness archetypes.</text>
+
+  <!-- ACCENT UNDERLINE -->
+  <line x1="320" y1="320" x2="640" y2="320" stroke="#D7FF3A" stroke-width="6"/>
+
+  <!-- SUBLINE — the four roles -->
+  <text x="480" y="380" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="6" fill="#5C5C5C">STRANGER · MONK · REBEL · PROPHET</text>
+
+  <!-- FOURTH FOOTNOTE -->
+  <text x="480" y="416" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="20" fill="#0E0E0E">every role earns its title.</text>
+
+  <!-- BOTTOM RULE -->
+  <line x1="48" y1="476" x2="912" y2="476" stroke="#0E0E0E" stroke-width="1"/>
+
+  <!-- FOOTER -->
+  <text x="48" y="510" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">@THE1969ETH</text>
+  <text x="912" y="510" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">THE1969.IO</text>
+</svg>
