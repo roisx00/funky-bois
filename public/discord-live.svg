@@ -25,8 +25,8 @@
   <g transform="translate(890, 130)">
     <rect x="0" y="0" width="220" height="220" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
     <text x="22" y="42" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">DOOR IS OPEN</text>
-    <text x="22" y="148" font-size="64" font-weight="500" fill="#0E0E0E" letter-spacing="-2">JOIN</text>
-    <text x="22" y="190" font-size="64" font-weight="500" fill="#0E0E0E" letter-spacing="-2">NOW</text>
+    <text x="22" y="146" font-size="52" font-weight="500" fill="#0E0E0E" letter-spacing="-1">JOIN</text>
+    <text x="22" y="194" font-size="52" font-weight="500" fill="#0E0E0E" letter-spacing="-1">NOW</text>
   </g>
 
   <!-- DIVIDER -->
