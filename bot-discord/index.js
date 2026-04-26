@@ -20,12 +20,14 @@ import { Client, GatewayIntentBits, Events, Partials } from 'discord.js';
 const TOKEN          = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID       = process.env.DISCORD_GUILD_ID;
 const GENERAL_ID     = process.env.DISCORD_GENERAL_ID;
+const ANNOUNCE_ID    = process.env.DISCORD_ANNOUNCE_CHANNEL_ID || null;
 const ROLE_STRANGER  = process.env.DISCORD_VERIFIED_ROLE_ID || null; // The Stranger
 const ROLE_MONK      = process.env.DISCORD_MONK_ROLE_ID     || null; // The Monk
 const ROLE_REBEL     = process.env.DISCORD_REBEL_ROLE_ID    || null; // The Rebel
 const APP_BASE       = process.env.APP_BASE_URL || 'https://the1969.io';
 const SECRET         = process.env.BOT_SHARED_SECRET;
 const RECONCILE_MS   = Number(process.env.RECONCILE_INTERVAL_MS) || 10 * 60 * 1000;
+const POST_LINKS     = process.env.POST_OFFICIAL_LINKS === '1';
 
 if (!TOKEN)      { console.error('DISCORD_BOT_TOKEN missing');  process.exit(1); }
 if (!GUILD_ID)   { console.error('DISCORD_GUILD_ID missing');   process.exit(1); }
@@ -180,11 +182,56 @@ const client = new Client({
   partials: [Partials.GuildMember],
 });
 
+// Posts the official-links message to ANNOUNCE_ID once. Idempotent —
+// checks pinned messages for our title marker; if it's already there
+// (e.g. Railway just restarted), do nothing.
+const OFFICIAL_LINKS_MARKER = '┃ THE 1969 · OFFICIAL LINKS';
+const OFFICIAL_LINKS_BODY =
+`${OFFICIAL_LINKS_MARKER}
+
+A monochrome portrait collective. 1,969 busts. Real users only.
+
+**Site**         · ${APP_BASE}
+**X**             · https://x.com/the1969ETH
+**Drop**          · ${APP_BASE}/drop
+**Build**         · ${APP_BASE}/build
+**Gallery**       · ${APP_BASE}/gallery
+**Art**           · ${APP_BASE}/art
+**Collab apply**  · ${APP_BASE}/collab
+**Dashboard**     · ${APP_BASE}/dashboard
+
+Anything claiming to be us outside these links is a scam. Don't click, don't sign, don't connect.`;
+
+async function maybePostOfficialLinks() {
+  if (!POST_LINKS || !ANNOUNCE_ID) return;
+  try {
+    const channel = await client.channels.fetch(ANNOUNCE_ID).catch(() => null);
+    if (!channel) { console.warn('[announce] channel fetch failed'); return; }
+
+    const pinned = await channel.messages.fetchPinned().catch(() => null);
+    const already = pinned?.find?.((m) => (m.content || '').includes(OFFICIAL_LINKS_MARKER));
+    if (already) {
+      console.log('[announce] official links already pinned, skipping');
+      return;
+    }
+
+    const sent = await channel.send({ content: OFFICIAL_LINKS_BODY });
+    await sent.pin().catch((e) => console.warn('[announce] pin failed:', e?.message));
+    console.log('[announce] posted + pinned official links');
+  } catch (e) {
+    console.warn('[announce] failed:', e?.message);
+  }
+}
+
 client.once(Events.ClientReady, async (c) => {
   console.log(`[boot] bot=${c.user.tag} guild=${GUILD_ID} general=${GENERAL_ID} app=${APP_BASE}`);
   console.log(`[boot] roles stranger=${!!ROLE_STRANGER} monk=${!!ROLE_MONK} rebel=${!!ROLE_REBEL}`);
   console.log(`[boot] earn = ${PER_MSG} BUSTS/msg, cooldown ${COOLDOWN_MS / 1000}s, hourly cap ${HOURLY_CAP} BUSTS`);
   console.log(`[boot] reconcile interval = ${RECONCILE_MS}ms`);
+  console.log(`[boot] post-official-links = ${POST_LINKS}, announce channel = ${ANNOUNCE_ID || 'unset'}`);
+
+  // One-shot announcement (idempotent — checks pinned).
+  maybePostOfficialLinks().catch(() => {});
 
   // Initial reconcile + recurring sweep.
   reconcileAll().catch((e) => console.warn('[boot reconcile]', e?.message));

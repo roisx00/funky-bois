@@ -69,6 +69,10 @@ DISCORD_GENERAL_ID        (right-click #general → Copy Channel ID)
 DISCORD_VERIFIED_ROLE_ID  (right-click @The Stranger role → Copy Role ID)
 DISCORD_MONK_ROLE_ID      (right-click @The Monk     role → Copy Role ID — optional)
 DISCORD_REBEL_ROLE_ID     (right-click @The Rebel    role → Copy Role ID — optional)
+DISCORD_ANNOUNCE_CHANNEL_ID  (right-click #announcements → Copy Channel ID)
+POST_OFFICIAL_LINKS       =1   (post + pin official links on next boot.
+                                Idempotent — already-pinned message is
+                                detected and skipped on reboot.)
 APP_BASE_URL              = https://the1969.io
 BOT_SHARED_SECRET         (same string as Vercel)
 RECONCILE_INTERVAL_MS     (optional, default 600000 = 10 min)
