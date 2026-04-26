@@ -61,17 +61,51 @@ export default async function handler(req, res) {
   const xFollowers = Number(x.public_metrics?.followers_count) || 0;
 
   // ── 3. Upsert user ──
-  const upserted = one(await sql`
-    INSERT INTO users (x_id, x_username, x_name, x_avatar, referral_code, x_followers)
-    VALUES (${xId}, ${xUsername}, ${xName}, ${xAvatar}, ${xUsername}, ${xFollowers})
-    ON CONFLICT (x_id) DO UPDATE
-      SET x_username = EXCLUDED.x_username,
-          x_name     = EXCLUDED.x_name,
-          x_avatar   = EXCLUDED.x_avatar,
-          x_followers = EXCLUDED.x_followers,
-          updated_at = now()
-    RETURNING id, x_username, x_avatar, x_name, busts_balance, is_whitelisted, referred_by_user
-  `);
+  // Two conflict surfaces:
+  //   • UNIQUE(x_id)       — same X account signing in again. Normal.
+  //   • UNIQUE(x_username) — happens when we pre-seeded a placeholder
+  //                          row (x_id='seed_<handle>') and the real
+  //                          user is now logging in for the first
+  //                          time. Claim the seed row by stamping it
+  //                          with the real x_id; the portrait + ledger
+  //                          + WL flags ride along since we just
+  //                          UPDATE the existing row instead of
+  //                          inserting a new one.
+  let upserted;
+  try {
+    upserted = one(await sql`
+      INSERT INTO users (x_id, x_username, x_name, x_avatar, referral_code, x_followers)
+      VALUES (${xId}, ${xUsername}, ${xName}, ${xAvatar}, ${xUsername}, ${xFollowers})
+      ON CONFLICT (x_id) DO UPDATE
+        SET x_username = EXCLUDED.x_username,
+            x_name     = EXCLUDED.x_name,
+            x_avatar   = EXCLUDED.x_avatar,
+            x_followers = EXCLUDED.x_followers,
+            updated_at = now()
+      RETURNING id, x_username, x_avatar, x_name, busts_balance, is_whitelisted, referred_by_user
+    `);
+  } catch (e) {
+    const msg = String(e?.message || '').toLowerCase();
+    if (msg.includes('users_x_username_key') || msg.includes('x_username')) {
+      // Pre-seeded row exists for this handle. Claim it.
+      const seed = one(await sql`
+        SELECT id, x_id FROM users WHERE LOWER(x_username) = LOWER(${xUsername}) LIMIT 1
+      `);
+      if (!seed) throw e;
+      upserted = one(await sql`
+        UPDATE users
+           SET x_id        = ${xId},
+               x_name      = ${xName},
+               x_avatar    = ${xAvatar},
+               x_followers = ${xFollowers},
+               updated_at  = now()
+         WHERE id = ${seed.id}
+        RETURNING id, x_username, x_avatar, x_name, busts_balance, is_whitelisted, referred_by_user
+      `);
+    } else {
+      throw e;
+    }
+  }
 
   // ── 4. Referral relation (PENDING — bonus deferred) ──
   // We used to pay 50/50 BUSTS instantly at sign-up. A farmer exploited
