@@ -90,7 +90,9 @@ The Stranger still gets granted as before.
 
 ## Earn rules (server-enforced + bot-enforced)
 
-- 1 BUSTS per qualifying chat message
+- **0.4 BUSTS** per qualifying chat message — accumulated locally,
+  flushed to the server as integer BUSTS each time the per-user
+  total crosses 1.0 (so users see +1 BUSTS every 2-3 messages)
 - 60s cooldown between earns per user
 - Min 12 chars per message (no `gm`/`gn` farming)
 - 10 BUSTS/hour cap per user (bot-side)

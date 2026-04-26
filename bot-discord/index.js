@@ -33,13 +33,18 @@ if (!GENERAL_ID) { console.error('DISCORD_GENERAL_ID missing'); process.exit(1);
 if (!SECRET)     { console.error('BOT_SHARED_SECRET missing');  process.exit(1); }
 
 // ─── earn rules ──────────────────────────────────────────────────────
+// 0.4 BUSTS per qualifying message. The main app's busts_balance is
+// an INTEGER, so we accumulate fractional credit per user locally
+// and only fire an integer award when the accumulator crosses 1.0.
+// Net result: ~1 BUSTS every 2-3 messages without changing the DB.
 const COOLDOWN_MS = 60 * 1000;
-const HOURLY_CAP  = 10;
+const HOURLY_CAP  = 10;       // BUSTS / hour
 const MIN_CHARS   = 12;
-const PER_MSG     = 1;
+const PER_MSG     = 0.4;
 
-const cooldown = new Map();
-const hourBucket = new Map();
+const cooldown   = new Map(); // discordId -> ts of last earn-tick
+const hourBucket = new Map(); // discordId -> { ts, earned (fractional) }
+const credits    = new Map(); // discordId -> fractional accumulator
 
 function passes(content) {
   const c = content.trim();
@@ -62,24 +67,35 @@ function bumpHourly(uid) {
   else cur.earned += PER_MSG;
 }
 
-async function award(discordId) {
+// Fires only when a discordId's fractional accumulator crosses 1.0.
+// Returns true if at least one BUSTS was credited this turn.
+async function tryAwardWhole(discordId) {
+  const acc = credits.get(discordId) || 0;
+  if (acc < 1) return false;
+  const whole = Math.floor(acc);
+  // Optimistically debit the local accumulator FIRST so concurrent
+  // messages don't double-spend the same fractional bucket.
+  credits.set(discordId, acc - whole);
   try {
     const r = await fetch(`${APP_BASE}/api/discord-award-busts`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-bot-secret': SECRET },
-      body: JSON.stringify({ discordId, amount: PER_MSG, reason: 'Discord chat reward' }),
+      body: JSON.stringify({ discordId, amount: whole, reason: 'Discord chat reward' }),
     });
     if (!r.ok) {
+      // Refund both buckets so the user isn't charged for a failed credit.
+      credits.set(discordId, (credits.get(discordId) || 0) + whole);
       const cur = hourBucket.get(discordId);
-      if (cur) cur.earned = Math.max(0, cur.earned - PER_MSG);
+      if (cur) cur.earned = Math.max(0, cur.earned - whole);
       const d = await r.json().catch(() => ({}));
       console.warn('[award] rejected', discordId, d?.reason || d?.error);
       return false;
     }
     return true;
   } catch (e) {
+    credits.set(discordId, (credits.get(discordId) || 0) + whole);
     const cur = hourBucket.get(discordId);
-    if (cur) cur.earned = Math.max(0, cur.earned - PER_MSG);
+    if (cur) cur.earned = Math.max(0, cur.earned - whole);
     console.warn('[award] threw', e?.message);
     return false;
   }
@@ -167,6 +183,7 @@ const client = new Client({
 client.once(Events.ClientReady, async (c) => {
   console.log(`[boot] bot=${c.user.tag} guild=${GUILD_ID} general=${GENERAL_ID} app=${APP_BASE}`);
   console.log(`[boot] roles stranger=${!!ROLE_STRANGER} monk=${!!ROLE_MONK} rebel=${!!ROLE_REBEL}`);
+  console.log(`[boot] earn = ${PER_MSG} BUSTS/msg, cooldown ${COOLDOWN_MS / 1000}s, hourly cap ${HOURLY_CAP} BUSTS`);
   console.log(`[boot] reconcile interval = ${RECONCILE_MS}ms`);
 
   // Initial reconcile + recurring sweep.
@@ -195,7 +212,11 @@ client.on(Events.MessageCreate, async (msg) => {
   cooldown.set(uid, Date.now());
   bumpHourly(uid);
 
-  const ok = await award(uid);
+  // Add this message's fractional credit to the user's accumulator,
+  // then ATTEMPT to flush whole BUSTS to the server. Most messages
+  // won't trigger an actual API call (0.4 + 0.4 = 0.8, no flush).
+  credits.set(uid, (credits.get(uid) || 0) + PER_MSG);
+  const ok = await tryAwardWhole(uid);
 
   // Lazy reconcile on every successful earn — cheap, keeps roles
   // tight without waiting for the 10-min sweep.
