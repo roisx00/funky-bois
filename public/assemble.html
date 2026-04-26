@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The 1969 · Build a bust</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" />
+<style>
+  :root{
+    --paper:#F9F6F0; --ink:#0E0E0E; --lime:#D7FF3A; --mid:#5C5C5C;
+    --stage: 1080px; /* square frame for the recording */
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{
+    background:#1a1a1a; color:#fff;
+    font-family:'JetBrains Mono', ui-monospace, monospace;
+    min-height:100vh;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  header{
+    width:100%; padding:18px 28px;
+    display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid #333;
+  }
+  header h1{
+    font-family:'Instrument Serif', serif; font-style:italic;
+    color:var(--lime); font-size:22px; font-weight:400;
+  }
+  header p{ font-size:11px; opacity:.7; letter-spacing:.04em; }
+  .controls{display:flex; gap:10px;}
+  button{
+    font-family:'JetBrains Mono', monospace; font-size:12px;
+    padding:9px 18px; cursor:pointer;
+    background:var(--lime); color:var(--ink);
+    border:1px solid var(--ink);
+    text-transform:uppercase; letter-spacing:.06em; font-weight:700;
+  }
+  button:hover{background:#fff;}
+  button.ghost{background:transparent; color:#fff; border-color:#555;}
+
+  main{padding:24px;}
+
+  /* The stage IS the recordable frame. 1080x1080 = X-friendly square. */
+  .stage{
+    width:var(--stage); height:var(--stage); max-width:90vmin; max-height:90vmin;
+    aspect-ratio:1/1; position:relative; overflow:hidden;
+    background:var(--paper);
+    border:1px solid var(--ink);
+  }
+
+  /* Pin every layer at the same centre + size. Tracks scale uniformly
+     so the layers always line up perfectly when they snap. */
+  .layer{
+    position:absolute; left:50%; top:50%;
+    width:88%; height:88%;
+    transform:translate(-50%,-50%);
+    transform-origin:center center;
+    opacity:0;
+    image-rendering:pixelated;
+    image-rendering:crisp-edges;
+    pointer-events:none;
+  }
+  .layer svg{display:block; width:100%; height:100%;}
+
+  /* Each trait flies in from a different vector. Spring-feel ease.
+     CSS animation orchestrates the staggered entry so we don't have
+     to manage a JS timeline. */
+  @keyframes fly-from-top      { from{ transform:translate(-50%,-200%) rotate(-12deg); opacity:0; } 60%{opacity:1;} to{ transform:translate(-50%,-50%) rotate(0); opacity:1; } }
+  @keyframes fly-from-bottom   { from{ transform:translate(-50%, 100%) rotate( 8deg);  opacity:0; } 60%{opacity:1;} to{ transform:translate(-50%,-50%) rotate(0); opacity:1; } }
+  @keyframes fly-from-left     { from{ transform:translate(-200%,-50%) rotate(-6deg); opacity:0; } 60%{opacity:1;} to{ transform:translate(-50%,-50%) rotate(0); opacity:1; } }
+  @keyframes fly-from-right    { from{ transform:translate( 100%,-50%) rotate( 6deg); opacity:0; } 60%{opacity:1;} to{ transform:translate(-50%,-50%) rotate(0); opacity:1; } }
+  @keyframes fly-from-tl       { from{ transform:translate(-180%,-180%) rotate(-20deg); opacity:0; } 60%{opacity:1;} to{ transform:translate(-50%,-50%) rotate(0); opacity:1; } }
+  @keyframes fly-from-tr       { from{ transform:translate( 80%,-180%) rotate( 20deg); opacity:0; } 60%{opacity:1;} to{ transform:translate(-50%,-50%) rotate(0); opacity:1; } }
+  @keyframes fly-from-bl       { from{ transform:translate(-180%, 80%) rotate( 14deg); opacity:0; } 60%{opacity:1;} to{ transform:translate(-50%,-50%) rotate(0); opacity:1; } }
+  @keyframes fly-from-br       { from{ transform:translate(  80%, 80%) rotate(-14deg); opacity:0; } 60%{opacity:1;} to{ transform:translate(-50%,-50%) rotate(0); opacity:1; } }
+  @keyframes scale-flash       { 0%,100%{transform:translate(-50%,-50%) scale(1);} 50%{transform:translate(-50%,-50%) scale(1.04);} }
+  @keyframes accent-pulse      { 0%,100%{opacity:0;transform:translate(-50%,-50%) scale(1);} 30%{opacity:1;} 100%{transform:translate(-50%,-50%) scale(1.12);} }
+  @keyframes text-rise         { from{opacity:0; transform:translate(-50%, 30px);} to{opacity:1; transform:translate(-50%, 0);} }
+  @keyframes accent-rise       { from{opacity:0; transform:translate(-50%, 30px) scaleX(.4);} to{opacity:1; transform:translate(-50%, 0) scaleX(1);} }
+
+  /* Springy ease — hard land, slight overshoot. */
+  .layer.playing { animation-timing-function: cubic-bezier(0.22, 1.4, 0.36, 1); animation-fill-mode: forwards; }
+
+  /* Per-layer choreography. Each gets its own delay + direction so the
+     assembly reads as 8 distinct moves landing in z-order. Total ~7s. */
+  .layer.playing.bg          { animation: fly-from-top      1.2s 0.0s; }
+  .layer.playing.outfit      { animation: fly-from-bottom   1.1s 0.6s; }
+  .layer.playing.neck        { animation: fly-from-bl       1.0s 1.1s; }
+  .layer.playing.skin        { animation: fly-from-bottom   1.0s 1.6s; }
+  .layer.playing.eyes        { animation: fly-from-right    0.9s 2.4s; }
+  .layer.playing.face_mark   { animation: fly-from-left     0.9s 3.0s; }
+  .layer.playing.facial_hair { animation: fly-from-bl       0.9s 3.6s; }
+  .layer.playing.hair        { animation: fly-from-tl       0.9s 4.2s; }
+  .layer.playing.headwear    { animation: fly-from-top      1.0s 4.9s; }
+
+  /* Final little shake at 6.0s, then accent pulse + text. */
+  .stage.assembled .full-flash { animation: scale-flash 0.45s 6.0s ease-in-out 1; }
+
+  .accent-bar{
+    position:absolute; left:50%; bottom:14%;
+    width:60%; height:6px; background:var(--lime);
+    transform:translate(-50%, 30px) scaleX(.4);
+    opacity:0;
+  }
+  .stage.assembled .accent-bar{ animation: accent-rise 0.7s 6.6s cubic-bezier(0.22, 1.4, 0.36, 1) forwards; }
+
+  .reveal-text{
+    position:absolute; left:50%; bottom:6.5%;
+    transform:translate(-50%, 30px);
+    text-align:center;
+    opacity:0;
+  }
+  .stage.assembled .reveal-text{ animation: text-rise 0.6s 7.0s cubic-bezier(0.22, 1.4, 0.36, 1) forwards; }
+
+  .reveal-text .big{
+    font-family:'Instrument Serif', serif; font-style:italic;
+    font-size:64px; color:var(--ink); letter-spacing:-.02em; line-height:1;
+  }
+  .reveal-text .small{
+    font-family:'JetBrains Mono', monospace; font-size:12px;
+    letter-spacing:.16em; color:var(--mid); margin-top:8px;
+  }
+
+  /* Subtle paper grain so the stage doesn't look CGI-flat. */
+  .stage::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:radial-gradient(rgba(0,0,0,.04) 1px, transparent 1px);
+    background-size:3px 3px; opacity:.6;
+  }
+
+  .footnote{
+    margin-top:14px; font-size:10px; opacity:.6; letter-spacing:.04em;
+    max-width:1080px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>The 1969 · Build a bust</h1>
+  <p>1080×1080 · 10s · screen-record this stage</p>
+  <div class="controls">
+    <button id="play">▶ PLAY</button>
+    <button id="reset" class="ghost">RESET</button>
+  </div>
+</header>
+
+<main>
+  <div class="stage" id="stage">
+    <!-- 8 layers populated by JS in proper z-order -->
+    <div class="full-flash" id="layers"></div>
+    <div class="accent-bar"></div>
+    <div class="reveal-text">
+      <div class="big">Build a bust.</div>
+      <div class="small">THE1969.IO/BUILD</div>
+    </div>
+  </div>
+
+  <p class="footnote">
+    Optional background music — drop an MP3 at /assemble-bgm.mp3 and it auto-plays on PLAY.
+    All "clack" SFX are synthesized at runtime so no extra files needed.
+  </p>
+</main>
+
+<script type="module">
+  import {
+    BG_SVG, OUTFIT_SVG, SKIN_SVG, EYES_SVG, FACIAL_HAIR_SVG,
+    HAIR_SVG, HEADWEAR_SVG, FACE_MARK_SVG,
+  } from './article-art.js';
+
+  // ─── Pick the portrait being assembled ────────────────────────────
+  // A flex-y combo: glowing eyes (legendary), full beard (rare),
+  // crown (ultra rare), suit (rare), storm bg (rare). Reads as
+  // intentional, not random.
+  const E = {
+    background: 3,  // Storm (rare)
+    outfit:     4,  // Suit (rare)
+    skin:       1,  // Light (common)
+    eyes:       6,  // Glowing (legendary)
+    facial_hair:5,  // Full Beard (rare)
+    hair:       4,  // Long (rare)
+    headwear:   1,  // Cap (common)
+    face_mark:  0,  // None
+  };
+
+  // ─── Build each layer as its own 96-viewBox SVG ───────────────────
+  // Same composition logic as buildNFTSVG but split into 8 separate
+  // SVGs so they can be independently animated in.
+  const NECK = `<rect x="40" y="66" width="16" height="10" fill="#bbb"/><rect x="40" y="66" width="16" height="2" fill="#777"/>`;
+
+  function svgFor(name) {
+    const inner = (() => {
+      switch (name) {
+        case 'background':  return BG_SVG[E.background] || BG_SVG[0];
+        case 'outfit':      return OUTFIT_SVG[E.outfit] || OUTFIT_SVG[0];
+        case 'neck':        return NECK;
+        case 'skin':        return SKIN_SVG(E.skin);
+        case 'eyes':        return EYES_SVG[E.eyes] || EYES_SVG[0];
+        case 'face_mark':   return FACE_MARK_SVG[E.face_mark] || '';
+        case 'facial_hair': return FACIAL_HAIR_SVG[E.facial_hair] || FACIAL_HAIR_SVG[0];
+        case 'hair':        return HAIR_SVG[E.hair] || HAIR_SVG[0];
+        case 'headwear':    return HEADWEAR_SVG[E.headwear] || '';
+      }
+    })();
+    return `<svg viewBox="0 0 96 96" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${inner || ''}</svg>`;
+  }
+
+  // z-order matches buildNFTSVG layer stack.
+  const ORDER = [
+    'background', 'outfit', 'neck', 'skin', 'eyes',
+    'face_mark', 'facial_hair', 'hair', 'headwear',
+  ];
+
+  const layers = document.getElementById('layers');
+  layers.innerHTML = ORDER.map((n) => `<div class="layer ${n}" data-layer="${n}">${svgFor(n)}</div>`).join('');
+
+  // ─── Audio: synthesised "clack" + optional bgm ────────────────────
+  let actx;
+  function clack(freq = 1200, dur = 0.06) {
+    if (!actx) return;
+    const o = actx.createOscillator();
+    const g = actx.createGain();
+    o.type = 'square';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.18, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+    o.connect(g).connect(actx.destination);
+    o.start();
+    o.stop(actx.currentTime + dur);
+  }
+  function whoosh() {
+    if (!actx) return;
+    const o = actx.createOscillator();
+    const g = actx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(120, actx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(800, actx.currentTime + 0.6);
+    g.gain.setValueAtTime(0.0, actx.currentTime);
+    g.gain.linearRampToValueAtTime(0.12, actx.currentTime + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.6);
+    o.connect(g).connect(actx.destination);
+    o.start();
+    o.stop(actx.currentTime + 0.6);
+  }
+
+  let bgm;
+  function tryPlayBgm() {
+    bgm = new Audio('/assemble-bgm.mp3');
+    bgm.volume = 0.35;
+    bgm.play().catch(() => { /* file optional */ });
+  }
+  function stopBgm() { if (bgm) { bgm.pause(); bgm = null; } }
+
+  // ─── Choreography orchestration ───────────────────────────────────
+  // Each layer's CSS delay decides when it lands. We mirror those
+  // landing times here to fire the clack sound at the right moment.
+  const LANDINGS = [
+    // [layer, delay-ms-from-play, animation-duration-ms]
+    ['background',   0,    1200],
+    ['outfit',     600,    1100],
+    ['neck',      1100,    1000],
+    ['skin',      1600,    1000],
+    ['eyes',      2400,     900],
+    ['face_mark', 3000,     900],
+    ['facial_hair',3600,    900],
+    ['hair',      4200,     900],
+    ['headwear',  4900,    1000],
+  ];
+
+  const stage  = document.getElementById('stage');
+  const playBtn = document.getElementById('play');
+  const resetBtn = document.getElementById('reset');
+
+  function play() {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    actx.resume();
+    reset();
+    requestAnimationFrame(() => {
+      // Stagger animation classes so CSS @keyframes fire.
+      document.querySelectorAll('.layer').forEach((el) => el.classList.add('playing'));
+      tryPlayBgm();
+
+      // Clack on each landing (= delay + duration).
+      LANDINGS.forEach(([_, delay, dur]) => {
+        setTimeout(() => clack(900 + Math.floor(Math.random()*400), 0.05), delay + dur - 80);
+      });
+
+      // Reveal whoosh at 6.6s, accent + text fires via CSS.
+      setTimeout(whoosh, 6500);
+
+      // Trigger accent-bar + text reveal (CSS keyframes are scoped
+      // by .stage.assembled).
+      setTimeout(() => stage.classList.add('assembled'), 50);
+    });
+  }
+  function reset() {
+    stage.classList.remove('assembled');
+    document.querySelectorAll('.layer').forEach((el) => {
+      el.classList.remove('playing');
+      // force animation reflow
+      el.offsetHeight; // eslint-disable-line no-unused-expressions
+    });
+    stopBgm();
+  }
+
+  playBtn.addEventListener('click', play);
+  resetBtn.addEventListener('click', reset);
+</script>
+</body>
+</html>

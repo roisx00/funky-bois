@@ -150,7 +150,7 @@ function skinFor(variant) { return SKIN_TONES[variant ?? 1]; }
 // SVG renderers for individual elements (96×96 viewBox, tile preview)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const BG_SVG = [
+export const BG_SVG = [
   // Paper
   `<rect width="96" height="96" fill="#eaeaea"/><rect x="0" y="60" width="96" height="36" fill="#dcdcdc"/>`,
   // Concrete
@@ -171,7 +171,7 @@ const BG_SVG = [
    <g fill="#bbb"><rect x="8" y="10" width="2" height="2"/><rect x="8" y="22" width="2" height="2"/><rect x="8" y="40" width="2" height="2"/><rect x="8" y="60" width="2" height="2"/><rect x="8" y="78" width="2" height="2"/><rect x="86" y="14" width="2" height="2"/><rect x="86" y="30" width="2" height="2"/><rect x="86" y="50" width="2" height="2"/><rect x="86" y="70" width="2" height="2"/></g>`,
 ];
 
-const OUTFIT_SVG = [
+export const OUTFIT_SVG = [
   // Hoodie
   `<rect x="10" y="70" width="76" height="26" fill="#555"/><rect x="10" y="70" width="76" height="2" fill="#0A0A0A"/><rect x="36" y="68" width="24" height="6" fill="#777"/>`,
   // Tee
@@ -190,7 +190,7 @@ const OUTFIT_SVG = [
   `<rect x="12" y="68" width="72" height="28" fill="#222"/><rect x="12" y="68" width="72" height="2" fill="#0A0A0A"/><rect x="22" y="58" width="52" height="12" fill="#222"/><rect x="20" y="62" width="2" height="8" fill="#0A0A0A"/><rect x="74" y="62" width="2" height="8" fill="#0A0A0A"/>`,
 ];
 
-const EYES_SVG = [
+export const EYES_SVG = [
   // Default
   `<rect x="32" y="40" width="10" height="4" fill="#0A0A0A"/><rect x="54" y="40" width="10" height="4" fill="#0A0A0A"/><rect x="34" y="42" width="6" height="2" fill="#333"/><rect x="56" y="42" width="6" height="2" fill="#333"/><rect x="36" y="42" width="2" height="2" fill="#eee"/><rect x="58" y="42" width="2" height="2" fill="#eee"/>`,
   // Wide
@@ -209,7 +209,7 @@ const EYES_SVG = [
   `<rect x="40" y="38" width="16" height="10" fill="#0A0A0A"/><rect x="42" y="40" width="12" height="6" fill="#eee"/><rect x="46" y="42" width="4" height="4" fill="#0A0A0A"/>`,
 ];
 
-const FACIAL_HAIR_SVG = [
+export const FACIAL_HAIR_SVG = [
   // Clean
   `<rect x="46" y="46" width="4" height="8" fill="#777" opacity=".4"/><rect x="44" y="54" width="8" height="2" fill="#555"/><rect x="40" y="60" width="16" height="2" fill="#555"/>`,
   // Stubble
@@ -228,7 +228,7 @@ const FACIAL_HAIR_SVG = [
   `<rect x="46" y="46" width="4" height="8" fill="#777" opacity=".4"/><rect x="24" y="50" width="48" height="22" fill="#0A0A0A"/><rect x="20" y="54" width="4" height="16" fill="#0A0A0A"/><rect x="72" y="54" width="4" height="16" fill="#0A0A0A"/><rect x="26" y="72" width="44" height="4" fill="#0A0A0A"/><rect x="30" y="76" width="36" height="2" fill="#0A0A0A"/><rect x="40" y="58" width="16" height="2" fill="#777"/>`,
 ];
 
-const HAIR_SVG = [
+export const HAIR_SVG = [
   // Bald
   `<rect x="30" y="24" width="36" height="4" fill="#777"/><rect x="34" y="22" width="4" height="2" fill="#eee"/><rect x="40" y="22" width="10" height="2" fill="#eee"/>`,
   // Short
@@ -245,7 +245,7 @@ const HAIR_SVG = [
   `<rect x="44" y="6" width="8" height="8" fill="#0A0A0A"/><rect x="38" y="10" width="20" height="8" fill="#0A0A0A"/><rect x="32" y="16" width="32" height="8" fill="#0A0A0A"/><rect x="28" y="22" width="40" height="8" fill="#0A0A0A"/><rect x="40" y="14" width="16" height="6" fill="#555"/><rect x="44" y="20" width="8" height="4" fill="#bbb"/>`,
 ];
 
-const HEADWEAR_SVG = [
+export const HEADWEAR_SVG = [
   // None
   ``,
   // Cap
@@ -264,7 +264,7 @@ const HEADWEAR_SVG = [
   `<rect x="24" y="20" width="4" height="12" fill="#777"/><rect x="34" y="14" width="4" height="18" fill="#777"/><rect x="46" y="10" width="4" height="22" fill="#777"/><rect x="58" y="14" width="4" height="18" fill="#777"/><rect x="68" y="20" width="4" height="12" fill="#777"/><rect x="24" y="28" width="48" height="4" fill="#0A0A0A"/><rect x="46" y="6" width="4" height="4" fill="#eee"/><rect x="34" y="10" width="4" height="4" fill="#eee"/><rect x="58" y="10" width="4" height="4" fill="#eee"/>`,
 ];
 
-const FACE_MARK_SVG = [
+export const FACE_MARK_SVG = [
   // None
   ``,
   // Scar
@@ -281,7 +281,7 @@ const FACE_MARK_SVG = [
   `<rect x="42" y="30" width="12" height="6" fill="#eee"/><rect x="42" y="30" width="12" height="2" fill="#0A0A0A"/><rect x="42" y="34" width="12" height="2" fill="#0A0A0A"/><rect x="46" y="32" width="4" height="2" fill="#0A0A0A"/><rect x="40" y="30" width="2" height="2" fill="#0A0A0A"/><rect x="54" y="30" width="2" height="2" fill="#0A0A0A"/>`,
 ];
 
-const SKIN_SVG = (variant) => {
+export const SKIN_SVG = (variant) => {
   const tone = skinFor(variant);
   return `<rect x="28" y="26" width="40" height="40" fill="${tone}"/><rect x="26" y="28" width="2" height="36" fill="#0A0A0A"/><rect x="68" y="28" width="2" height="36" fill="#0A0A0A"/><rect x="28" y="26" width="40" height="2" fill="#0A0A0A"/><rect x="28" y="66" width="40" height="2" fill="#0A0A0A"/><rect x="58" y="28" width="10" height="36" fill="#777" opacity=".25"/>`;
 };
