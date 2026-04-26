@@ -52,7 +52,8 @@ export default function ArtPage() {
           </h1>
           <p className="art-hero-sub">
             Hand-made art only — no AI, on theme. Admin approves quality, the community votes.
-            Top pieces each week earn BUSTS · monthly grand winner earns 1 WL spot.
+            Top pieces earn BUSTS and whitelist spots — the number of WL allocations
+            depends on community votes and the art itself.
           </p>
         </div>
         <div className="art-hero-meta">
