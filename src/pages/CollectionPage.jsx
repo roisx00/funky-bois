@@ -1024,8 +1024,13 @@ function ConnectDiscord({ username }) {
     setBusy(true);
     try {
       const r = await fetch('/api/discord-oauth-init', { credentials: 'same-origin' });
-      const d = await r.json();
-      if (!r.ok || !d.url) throw new Error(d?.reason || 'init_failed');
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.url) {
+        // bad() writes { error, ...extra } — surface the real reason
+        // so we don't get a generic "init_failed" mask.
+        const reason = d?.error || d?.reason || `http_${r.status}`;
+        throw new Error(reason);
+      }
       window.location.href = d.url;
     } catch (e) {
       toast.error(`Could not start Discord link: ${e.message}`);
