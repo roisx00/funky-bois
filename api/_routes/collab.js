@@ -16,12 +16,16 @@ export default async function handler(req, res) {
       SELECT c.id, c.community_name, c.community_url, c.community_size,
              c.category, c.raid_link, c.raid_platform, c.status,
              c.wl_allocation, c.created_at, c.reviewed_at,
+             c.giveaway_post_url, c.giveaway_submitted_at,
+             c.banner_bytes,
              u.x_username, u.x_avatar,
              (SELECT COUNT(*)::int FROM collab_wallets w WHERE w.application_id = c.id) AS wallet_count
         FROM collab_applications c
         JOIN users u ON u.id = c.user_id
        WHERE c.status = 'approved'
-       ORDER BY c.wl_allocation DESC, c.created_at DESC
+       ORDER BY (SELECT COUNT(*) FROM collab_wallets w WHERE w.application_id = c.id) DESC,
+                COALESCE(c.community_size, 0) DESC,
+                c.created_at DESC
        LIMIT ${limit} OFFSET ${offset}
     `;
   } else if (status === 'pending') {
@@ -29,6 +33,8 @@ export default async function handler(req, res) {
       SELECT c.id, c.community_name, c.community_url, c.community_size,
              c.category, c.raid_link, c.raid_platform, c.status,
              c.wl_allocation, c.created_at, c.reviewed_at,
+             c.giveaway_post_url, c.giveaway_submitted_at,
+             c.banner_bytes,
              u.x_username, u.x_avatar,
              0 AS wallet_count
         FROM collab_applications c
@@ -42,12 +48,17 @@ export default async function handler(req, res) {
       SELECT c.id, c.community_name, c.community_url, c.community_size,
              c.category, c.raid_link, c.raid_platform, c.status,
              c.wl_allocation, c.created_at, c.reviewed_at,
+             c.giveaway_post_url, c.giveaway_submitted_at,
+             c.banner_bytes,
              u.x_username, u.x_avatar,
              (SELECT COUNT(*)::int FROM collab_wallets w WHERE w.application_id = c.id) AS wallet_count
         FROM collab_applications c
         JOIN users u ON u.id = c.user_id
        WHERE c.status IN ('pending', 'approved')
-       ORDER BY (c.status = 'approved') DESC, c.wl_allocation DESC, c.created_at DESC
+       ORDER BY (c.status = 'approved') DESC,
+                (SELECT COUNT(*) FROM collab_wallets w WHERE w.application_id = c.id) DESC,
+                COALESCE(c.community_size, 0) DESC,
+                c.created_at DESC
        LIMIT ${limit} OFFSET ${offset}
     `;
   } else {
@@ -77,6 +88,9 @@ function mapRow(r) {
     status:        r.status,
     wlAllocation:  r.wl_allocation,
     walletCount:   r.wallet_count,
+    bannerUrl:     r.banner_bytes ? `/api/collab-banner/${r.id}` : null,
+    giveawayPostUrl: r.giveaway_post_url || null,
+    giveawaySubmittedAt: r.giveaway_submitted_at ? new Date(r.giveaway_submitted_at).getTime() : null,
     xUsername:     r.x_username,
     xAvatar:       r.x_avatar,
     createdAt:     new Date(r.created_at).getTime(),

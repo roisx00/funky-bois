@@ -34,12 +34,17 @@ async function add(req, res) {
   if (!ETH_RE.test(addr)) return bad(res, 400, 'invalid_address');
 
   const app = one(await sql`
-    SELECT id, status, wl_allocation FROM collab_applications
+    SELECT id, status, wl_allocation, giveaway_post_url FROM collab_applications
      WHERE user_id = ${user.id}
      ORDER BY id DESC LIMIT 1
   `);
-  if (!app)                     return bad(res, 404, 'no_application');
-  if (app.status !== 'approved') return bad(res, 403, 'not_approved');
+  if (!app)                       return bad(res, 404, 'no_application');
+  if (app.status !== 'approved')  return bad(res, 403, 'not_approved');
+  if (!app.giveaway_post_url) {
+    return bad(res, 403, 'giveaway_required', {
+      hint: 'Submit your giveaway / announcement post URL first.',
+    });
+  }
 
   const cutoffSecs = await getConfigInt('collab_wallet_cutoff', 0);
   if (cutoffSecs && Math.floor(Date.now() / 1000) > cutoffSecs) {

@@ -49,6 +49,8 @@ import collabHandler          from './_routes/collab.js';
 import collabApplyHandler     from './_routes/collab-apply.js';
 import collabMineHandler      from './_routes/collab-mine.js';
 import collabWalletHandler    from './_routes/collab-wallet-add.js';
+import collabBannerHandler    from './_routes/collab-banner.js';
+import collabGiveawayHandler  from './_routes/collab-giveaway.js';
 import adminCollabReview      from './_routes/admin-collab-review.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
@@ -102,6 +104,7 @@ const ROUTES = {
   'collab-apply':         collabApplyHandler,
   'collab-mine':          collabMineHandler,
   'collab-wallet':        collabWalletHandler,
+  'collab-giveaway':      collabGiveawayHandler,
   'admin-collab-review':  adminCollabReview,
 
   // slash aliases (backward compat — keep until all callers migrated)
@@ -163,6 +166,14 @@ export default async function handler(req, res) {
     try { await artImageHandler(req, res); return; }
     catch (err) {
       console.error('[api dispatcher] art-image', err);
+      if (!res.writableEnded) res.status(500).json({ error: 'internal', message: err?.message });
+      return;
+    }
+  }
+  if (key.startsWith('collab-banner/')) {
+    try { await collabBannerHandler(req, res); return; }
+    catch (err) {
+      console.error('[api dispatcher] collab-banner', err);
       if (!res.writableEnded) res.status(500).json({ error: 'internal', message: err?.message });
       return;
     }

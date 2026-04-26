@@ -16,7 +16,8 @@ export default async function handler(req, res) {
   const app = one(await sql`
     SELECT id, community_name, community_url, community_size, category,
            raid_link, raid_platform, message, status, wl_allocation,
-           admin_note, created_at, reviewed_at, updated_at
+           admin_note, created_at, reviewed_at, updated_at,
+           giveaway_post_url, giveaway_submitted_at, banner_bytes
       FROM collab_applications
      WHERE user_id = ${user.id}
      ORDER BY id DESC
@@ -51,6 +52,9 @@ export default async function handler(req, res) {
       status:        app.status,
       wlAllocation:  app.wl_allocation,
       adminNote:     app.admin_note,
+      bannerUrl:     app.banner_bytes ? `/api/collab-banner/${app.id}` : null,
+      giveawayPostUrl: app.giveaway_post_url || null,
+      giveawaySubmittedAt: app.giveaway_submitted_at ? new Date(app.giveaway_submitted_at).getTime() : null,
       createdAt:     new Date(app.created_at).getTime(),
       reviewedAt:    app.reviewed_at ? new Date(app.reviewed_at).getTime() : null,
       updatedAt:     new Date(app.updated_at).getTime(),

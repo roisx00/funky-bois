@@ -78,6 +78,8 @@ async function listQueue(req, res) {
              c.category, c.raid_link, c.raid_platform, c.message,
              c.status, c.wl_allocation, c.admin_note,
              c.created_at, c.reviewed_at,
+             c.giveaway_post_url, c.giveaway_submitted_at,
+             c.banner_bytes,
              u.x_username, u.x_avatar, u.x_followers,
              (SELECT COUNT(*)::int FROM collab_wallets w WHERE w.application_id = c.id) AS wallet_count
         FROM collab_applications c
@@ -92,6 +94,8 @@ async function listQueue(req, res) {
              c.category, c.raid_link, c.raid_platform, c.message,
              c.status, c.wl_allocation, c.admin_note,
              c.created_at, c.reviewed_at,
+             c.giveaway_post_url, c.giveaway_submitted_at,
+             c.banner_bytes,
              u.x_username, u.x_avatar, u.x_followers,
              (SELECT COUNT(*)::int FROM collab_wallets w WHERE w.application_id = c.id) AS wallet_count
         FROM collab_applications c
@@ -106,6 +110,8 @@ async function listQueue(req, res) {
              c.category, c.raid_link, c.raid_platform, c.message,
              c.status, c.wl_allocation, c.admin_note,
              c.created_at, c.reviewed_at,
+             c.giveaway_post_url, c.giveaway_submitted_at,
+             c.banner_bytes,
              u.x_username, u.x_avatar, u.x_followers,
              0 AS wallet_count
         FROM collab_applications c
@@ -139,6 +145,9 @@ async function listQueue(req, res) {
       wlAllocation:  r.wl_allocation,
       walletCount:   r.wallet_count,
       adminNote:     r.admin_note,
+      bannerUrl:     r.banner_bytes ? `/api/collab-banner/${r.id}` : null,
+      giveawayPostUrl: r.giveaway_post_url || null,
+      giveawaySubmittedAt: r.giveaway_submitted_at ? new Date(r.giveaway_submitted_at).getTime() : null,
       xUsername:     r.x_username,
       xAvatar:       r.x_avatar,
       xFollowers:    Number(r.x_followers) || 0,
