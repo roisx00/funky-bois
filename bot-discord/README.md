@@ -25,16 +25,21 @@ provide. Use Railway / Fly / any Node host.
 
 ### B. Create the server skeleton
 
-Roles (in order, top-down — Discord's role hierarchy matters):
-- `@admin` (you)
-- `@The1960bot` (auto-created by invite — make sure it's BELOW @admin and ABOVE @verified)
-- `@holder` — granted when the user has a portrait built
-- `@verified` — granted when Discord ↔ X is linked
+Roles (top → bottom — Discord's role hierarchy matters):
+- `@The Prophet`  (admin = you)
+- `@The1969Bot`   (auto-created by invite — drag BELOW The Prophet
+                   and ABOVE every other role so it can grant them)
+- `@The Monk`     (portrait holder — has built their bust)
+- `@The Rebel`    (pre-WL approved — drop-eligible)
+- `@The Stranger` (verified = X-linked via the dashboard. Bot grants
+                   this one automatically on first link / first chat.
+                   `DISCORD_VERIFIED_ROLE_ID` should point at THIS role.)
 
 Channels:
-- `#announcements` — `@everyone` can read, ONLY `@admin` can post
-- `#general` — `@verified` can read AND post; `@everyone` can read but NOT post
-- `#official-links` — only `@holder` can read; useful for posting alpha post-mint
+- `#announcements` — `@everyone` can read, ONLY `@The Prophet` posts
+- `#general`       — `@The Stranger` posts + reads; `@everyone` can
+                     see the channel but cannot send
+- `#official-links`— only `@The Monk` reads (post-mint alpha)
 
 ### C. Server settings (lockdown)
 
