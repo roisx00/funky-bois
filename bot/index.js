@@ -79,11 +79,20 @@ bot.on('message', async (msg) => {
     return;
   }
 
-  // Promote with custom title (= the WL badge).
-  // Telegram requires the user to be promoted to admin (with all
-  // permissions OFF) before a custom title can be set. They get no
-  // actual moderator power — it's just the visible badge.
+  // Apply the badge.
+  //
+  // Telegram only shows custom titles next to admins, so we have to
+  // promote the user with all moderator perms OFF then set the title.
+  // Two real-world edge cases this handles:
+  //   1. The user is already an admin (or the group OWNER): promote
+  //      will fail or no-op, but setChatAdministratorCustomTitle still
+  //      works. We try the title set first if promote errors.
+  //   2. Telegram returns useful error text in `e.response?.body` —
+  //      log that instead of just `e.message` so future failures are
+  //      diagnosable from the Railway log.
   const customTitle = (result.customTitle || '1969 / VERIFIED').slice(0, 16);
+  let titleSet = false;
+
   try {
     await bot.promoteChatMember(CHAT_ID, tgId, {
       can_change_info:        false,
@@ -97,11 +106,25 @@ bot.on('message', async (msg) => {
       can_manage_video_chats: false,
       is_anonymous:           false,
     });
-    await bot.setChatAdministratorCustomTitle(CHAT_ID, tgId, customTitle);
   } catch (e) {
-    console.warn('[promote] failed:', e?.message);
+    // Owner can't be "promoted" — they're already at the top.
+    // That's fine; setChatAdministratorCustomTitle still works on them.
+    console.warn('[promote] step failed (might be owner / existing admin):',
+      e?.message, e?.response?.body);
+  }
+
+  try {
+    await bot.setChatAdministratorCustomTitle(CHAT_ID, tgId, customTitle);
+    titleSet = true;
+  } catch (e) {
+    console.warn('[title] setChatAdministratorCustomTitle failed:',
+      e?.message, e?.response?.body);
+  }
+
+  if (!titleSet) {
     await bot.sendMessage(CHAT_ID,
-      `@${tgUser || 'user'} verified, but I couldn't set the badge — make sure I have "Add New Admins" permission.`,
+      `@${tgUser || 'user'} verified ✓ — but I couldn't apply the badge. ` +
+      `Check Railway logs for the exact reason (likely missing "Add New Admins" or restricted privacy on the user).`,
       { reply_to_message_id: msg.message_id });
     return;
   }
