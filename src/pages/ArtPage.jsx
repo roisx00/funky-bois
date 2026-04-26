@@ -19,6 +19,7 @@ export default function ArtPage() {
   const [loading, setLoading]     = useState(true);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [openComments, setOpenComments] = useState(null); // submission id
+  const [shareEntry, setShareEntry]     = useState(null); // full entry obj
 
   const isHolder   = (completedNFTs || []).length > 0;
   const voteWeight = isHolder ? 3 : (dropEligible ? 2 : (xUser ? 1 : 0));
@@ -37,6 +38,22 @@ export default function ArtPage() {
   }, [sort]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Deep-link: /art?id=<N> auto-opens that piece's share card.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const idStr = params.get('id');
+    if (!idStr) return;
+    const id = Number(idStr);
+    if (!Number.isInteger(id) || id <= 0) return;
+    const found = entries.find((e) => e.id === id);
+    if (found) { setShareEntry(found); return; }
+    // Not in the current feed page — fall back to a minimal stub so
+    // the image still renders from /api/art-image.
+    if (entries.length > 0) {
+      setShareEntry({ id, imageUrl: `/api/art-image/${id}`, xUsername: '', caption: '' });
+    }
+  }, [entries]);
 
   return (
     <div className="page art-page">
@@ -133,6 +150,7 @@ export default function ArtPage() {
                 setEntries((prev) => prev.map((p) => p.id === updated.id ? { ...p, ...updated } : p));
               }}
               onComments={() => setOpenComments(e.id)}
+              onShare={() => setShareEntry(e)}
               toast={toast}
             />
           ))}
@@ -154,12 +172,19 @@ export default function ArtPage() {
           toast={toast}
         />
       )}
+      {shareEntry && (
+        <ShareModal
+          entry={shareEntry}
+          onClose={() => setShareEntry(null)}
+          toast={toast}
+        />
+      )}
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────
-function ArtTile({ entry, canVote, onVoted, onComments, toast }) {
+function ArtTile({ entry, canVote, onVoted, onComments, onShare, toast }) {
   const [busy, setBusy] = useState(false);
   const myVote = entry.myVote || 0;
 
@@ -207,8 +232,11 @@ function ArtTile({ entry, canVote, onVoted, onComments, toast }) {
           >
             ▼ <strong>{entry.dislikes ?? 0}</strong>
           </button>
-          <button className="art-comment-btn" onClick={onComments}>
+          <button className="art-comment-btn" onClick={onComments} title="Comments">
             💬 <strong>{entry.comments ?? 0}</strong>
+          </button>
+          <button className="art-comment-btn" onClick={onShare} title="Share">
+            ↗ Share
           </button>
           <span className="art-tile-score">score {Number(entry.score || 0).toFixed(1)}</span>
         </div>
@@ -404,6 +432,137 @@ function CommentsModal({ submissionId, onClose, canPost, toast }) {
             <button className="btn btn-ghost" onClick={onClose}>Close</button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// SHARE MODAL — preview + four share targets. Builds a permalink to
+// the specific piece (/art?id=<N>) so anyone clicking the share gets
+// dropped straight into this card on the live site.
+//
+// Instagram has no web-share intent (mobile app uses native picker),
+// so the IG button copies the link + nudges the user to download the
+// image and post it manually.
+// ─────────────────────────────────────────────────────────────────────
+function ShareModal({ entry, onClose, toast }) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const url    = `${origin}/art?id=${entry.id}`;
+  const author = entry.xUsername ? `@${entry.xUsername}` : 'a community artist';
+  const text   = entry.caption
+    ? `"${entry.caption.length > 140 ? entry.caption.slice(0, 137) + '…' : entry.caption}" — ${author} on @the1969eth`
+    : `Check out this piece by ${author} on @the1969eth`;
+
+  function openShare(intent) {
+    const enc = encodeURIComponent;
+    const links = {
+      x:        `https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(url)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}&quote=${enc(text)}`,
+      reddit:   `https://www.reddit.com/submit?url=${enc(url)}&title=${enc(text)}`,
+    };
+    const href = links[intent];
+    if (href) window.open(href, '_blank', 'noopener,noreferrer,width=640,height=520');
+  }
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link copied.');
+    } catch {
+      toast.error('Copy failed — long-press the URL above to copy manually.');
+    }
+  }
+
+  async function copyForInstagram() {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link copied. Save the image, then paste in your IG story / caption.');
+    } catch {
+      toast.error('Copy failed — long-press the URL above to copy manually.');
+    }
+  }
+
+  function downloadImage() {
+    const a = document.createElement('a');
+    a.href = entry.imageUrl;
+    a.download = `the1969-art-${entry.id}.svg`;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  return (
+    <div className="reveal-animation" onClick={onClose}>
+      <div
+        className="reveal-card"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: 560, textAlign: 'left' }}
+      >
+        <div className="reveal-card-kicker" style={{ textAlign: 'left' }}>SHARE</div>
+
+        <div style={{
+          margin: '14px 0', border: '1px solid var(--ink)',
+          background: 'var(--paper-2)', aspectRatio: '1 / 1',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+        }}>
+          <img
+            src={entry.imageUrl} alt={entry.caption || 'art'}
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+          />
+        </div>
+
+        {entry.xUsername ? (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink)', marginBottom: 4 }}>
+            @{entry.xUsername}
+          </div>
+        ) : null}
+        {entry.caption ? (
+          <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>
+            {entry.caption}
+          </div>
+        ) : null}
+
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 12px', border: '1px dashed var(--hairline)',
+          background: 'var(--paper-1)', marginBottom: 14,
+        }}>
+          <span style={{
+            flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11,
+            color: 'var(--text-3)', overflow: 'hidden',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{url}</span>
+          <button className="btn btn-ghost btn-sm" onClick={copyLink} style={{ flexShrink: 0 }}>Copy</button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+          <button className="btn btn-solid" onClick={() => openShare('x')}>
+            Share to X
+          </button>
+          <button className="btn btn-solid" onClick={() => openShare('facebook')}>
+            Share to Facebook
+          </button>
+          <button className="btn btn-solid" onClick={copyForInstagram}>
+            Share to Instagram
+          </button>
+          <button className="btn btn-ghost" onClick={downloadImage}>
+            Download image
+          </button>
+        </div>
+
+        <p style={{
+          marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 11,
+          letterSpacing: '0.04em', color: 'var(--text-4)',
+        }}>
+          Instagram doesn't accept web shares — copy the link, save the image, paste in your story or caption.
+        </p>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        </div>
       </div>
     </div>
   );
