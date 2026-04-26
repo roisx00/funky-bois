@@ -100,13 +100,16 @@ export default async function handler(req, res) {
   `;
 
   // 5. Auto-add to guild, best-effort. Bot needs CREATE_INSTANT_INVITE
-  //    on the guild AND a recent token. We swallow errors here so a
-  //    flaky guild-add doesn't undo the link.
-  const guildId = process.env.DISCORD_GUILD_ID;
+  //    on the guild AND the OAuth grant must include `guilds.join`
+  //    (we always request it). 201 = added now, 204 = already a
+  //    member. Anything else = log Discord's reason but don't undo
+  //    the link — user can still join via the invite link.
+  const guildId  = process.env.DISCORD_GUILD_ID;
   const botToken = process.env.DISCORD_BOT_TOKEN;
+  let joined = false;
   if (guildId && botToken) {
     try {
-      await fetch(`https://discord.com/api/guilds/${guildId}/members/${discordId}`, {
+      const r = await fetch(`https://discord.com/api/guilds/${guildId}/members/${discordId}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bot ${botToken}`,
@@ -114,11 +117,16 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({ access_token: tokenRes.access_token }),
       });
-      // 204 = added now, 201 = already a member. Both fine.
+      if (r.status === 201 || r.status === 204) {
+        joined = true;
+      } else {
+        const text = await r.text().catch(() => '');
+        console.warn('[discord-callback] guild add', r.status, text);
+      }
     } catch (e) {
-      console.warn('[discord-callback] guild add failed:', e?.message);
+      console.warn('[discord-callback] guild add threw:', e?.message);
     }
   }
 
-  return done('connected', { username: discordUsername });
+  return done('connected', { username: discordUsername, joined: joined ? '1' : '0' });
 }

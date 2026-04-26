@@ -150,6 +150,7 @@ function reducer(state, action) {
         dropEligible:     me.user.dropEligible === true,
         discordId:        me.user.discordId || null,
         discordUsername:  me.user.discordUsername || null,
+        discordInviteUrl: me.user.discordInviteUrl || null,
         preWhitelist:     me.preWhitelist || null,
         bustsHistory:     me.bustsHistory,
         inventory:        me.inventory,

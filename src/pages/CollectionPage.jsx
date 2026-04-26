@@ -22,7 +22,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
     completedNFTs, isWhitelisted,
     pendingGifts, claimGift, sendGift,
     pendingBustsTransfers, sendBusts, claimBustsTransfer,
-    xUser, referralCount, discordUsername,
+    xUser, referralCount, discordUsername, discordInviteUrl,
   } = useGame();
   const normalized = initialTab === 'elements' ? 'inventory' : initialTab;
   const [tab, setTab] = useState(normalized);
@@ -159,7 +159,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>50 BUSTS per successful invite</div>
             </div>
 
-            <ConnectDiscord username={discordUsername} />
+            <ConnectDiscord username={discordUsername} inviteUrl={discordInviteUrl} />
           </div>
         </div>
       )}
@@ -999,7 +999,7 @@ function FollowTaskCard() {
 // /api/me. Toast comes from the redirect query string set by the
 // callback (?discord=connected | error&reason=...).
 // ─────────────────────────────────────────────────────────────────────
-function ConnectDiscord({ username }) {
+function ConnectDiscord({ username, inviteUrl }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
 
@@ -1009,12 +1009,17 @@ function ConnectDiscord({ username }) {
     if (!status) return;
     if (status === 'connected') {
       const u = p.get('username');
-      toast.success(u ? `Discord linked as @${u}` : 'Discord linked.');
+      const joined = p.get('joined') === '1';
+      if (joined) {
+        toast.success(u ? `Discord linked & joined as @${u}` : 'Discord linked & joined.');
+      } else {
+        toast.success(u ? `Discord linked as @${u}. Click "Join the server" to enter.` : 'Discord linked. Click "Join the server".');
+      }
     } else if (status === 'error') {
       toast.error(`Discord link failed: ${p.get('reason') || 'unknown'}`);
     }
     const url = new URL(window.location.href);
-    ['discord', 'username', 'reason'].forEach((k) => url.searchParams.delete(k));
+    ['discord', 'username', 'reason', 'joined'].forEach((k) => url.searchParams.delete(k));
     window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1048,9 +1053,14 @@ function ConnectDiscord({ username }) {
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em' }}>
             ✓ @{username}
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 4, marginBottom: 10 }}>
             Linked. Earn BUSTS by chatting in #general.
           </div>
+          {inviteUrl ? (
+            <a className="btn btn-accent btn-sm btn-arrow" href={inviteUrl} target="_blank" rel="noreferrer">
+              Join the server
+            </a>
+          ) : null}
         </>
       ) : (
         <>

@@ -72,6 +72,7 @@ export default async function handler(req, res) {
       discordId:       user.discord_id || null,
       discordUsername: user.discord_username || null,
       discordLinkedAt: user.discord_linked_at ? new Date(user.discord_linked_at).getTime() : null,
+      discordInviteUrl: process.env.DISCORD_INVITE_URL || null,
     },
     preWhitelist: myPrewl ? {
       id:        myPrewl.id,
