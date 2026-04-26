@@ -39,6 +39,12 @@ import leaderboardHandler  from './_routes/leaderboard.js';
 import preWhitelistApply   from './_routes/pre-whitelist-apply.js';
 import adminPreWhitelist   from './_routes/admin-pre-whitelist.js';
 import adminPreWhitelistDecide from './_routes/admin-pre-whitelist-decide.js';
+import artHandler             from './_routes/art.js';
+import artSubmitHandler       from './_routes/art-submit.js';
+import artUploadUrlHandler    from './_routes/art-upload-url.js';
+import artVoteHandler         from './_routes/art-vote.js';
+import artCommentHandler      from './_routes/art-comment.js';
+import adminArtReviewHandler  from './_routes/admin-art-review.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
 // regardless of Vercel's catch-all behaviour for nested segments.
@@ -82,6 +88,12 @@ const ROUTES = {
   'pre-whitelist-apply': preWhitelistApply,
   'admin-pre-whitelist': adminPreWhitelist,
   'admin-pre-whitelist-decide': adminPreWhitelistDecide,
+  'art':                  artHandler,
+  'art-submit':           artSubmitHandler,
+  'art-upload-url':       artUploadUrlHandler,
+  'art-vote':             artVoteHandler,
+  'art-comment':          artCommentHandler,
+  'admin-art-review':     adminArtReviewHandler,
 
   // slash aliases (backward compat — keep until all callers migrated)
   'gift/send':           giftSendHandler,

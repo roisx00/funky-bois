@@ -186,6 +186,9 @@ export default function AdminPanel({ onNavigate }) {
       {/* Pre-whitelist queue (highest priority — the human gate) */}
       <PreWhitelistQueue />
 
+      {/* /art submission queue */}
+      <ArtQueue />
+
       {/* Credit form */}
       <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
         <div className="admin-roster-head">
@@ -1805,3 +1808,153 @@ function PreWhitelistQueue() {
     </section>
   );
 }
+
+
+// ─────────────────────────────────────────────────────────────────────
+// ART SUBMISSION QUEUE
+// Mirrors PreWhitelistQueue: pending tab by default, click to view
+// the image, approve/reject with optional note. Quality gate only —
+// the community decides ranking once the piece is approved.
+// ─────────────────────────────────────────────────────────────────────
+function ArtQueue() {
+  const [tab, setTab]         = useState("pending");
+  const [entries, setEntries] = useState([]);
+  const [counts, setCounts]   = useState({ pending: 0, approved: 0, rejected: 0 });
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId]   = useState(null);
+  const [noteFor, setNoteFor] = useState({});
+  const [error, setError]     = useState(null);
+
+  const load = async (statusKey) => {
+    setLoading(true); setError(null);
+    try {
+      const r = await fetch(`/api/admin-art-review?status=${encodeURIComponent(statusKey)}`, { credentials: "same-origin" });
+      const d = r.ok ? await r.json() : { entries: [] };
+      setEntries(d.entries || []);
+      if (d.counts) setCounts({
+        pending:  Number(d.counts.pending)  || 0,
+        approved: Number(d.counts.approved) || 0,
+        rejected: Number(d.counts.rejected) || 0,
+      });
+    } catch (e) {
+      setError(e?.message || "load failed"); setEntries([]);
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(tab); /* eslint-disable-line */ }, [tab]);
+
+  const decide = async (id, decision) => {
+    setBusyId(id);
+    try {
+      const r = await fetch("/api/admin-art-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ id, decision, note: noteFor[id] || "" }),
+      });
+      const d = r.ok ? await r.json() : { error: "failed" };
+      if (d.error) setError(d.error);
+      else {
+        setEntries((prev) => prev.filter((e) => e.id !== id));
+        setNoteFor((prev) => { const n = { ...prev }; delete n[id]; return n; });
+        setCounts((prev) => ({
+          ...prev,
+          [tab]: Math.max(0, (prev[tab] || 0) - 1),
+          [decision === "approve" ? "approved" : "rejected"]:
+            (prev[decision === "approve" ? "approved" : "rejected"] || 0) + 1,
+        }));
+      }
+    } finally { setBusyId(null); }
+  };
+
+  const setNote = (id, val) => setNoteFor((prev) => ({ ...prev, [id]: val }));
+
+  return (
+    <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+      <div className="admin-roster-head">
+        <div>
+          <div className="admin-roster-title">Community art queue</div>
+          <div className="admin-roster-meta">
+            Approve hand-made on-theme art. Reject AI / off-theme / low-effort.
+          </div>
+        </div>
+        <div className="admin-roster-actions" style={{ display: "flex", gap: 6 }}>
+          {["pending", "approved", "rejected"].map((s) => (
+            <button
+              key={s}
+              className={`btn btn-sm ${tab === s ? "btn-solid" : "btn-ghost"}`}
+              onClick={() => setTab(s)}
+            >
+              {s} ({counts[s] || 0})
+            </button>
+          ))}
+          <button className="btn btn-ghost btn-sm" onClick={() => load(tab)} disabled={loading}>
+            {loading ? "..." : "Refresh"}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ padding: 12, color: "var(--red, #c4352b)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+          Error: {error}
+        </div>
+      )}
+
+      {!loading && entries.length === 0 && (
+        <div className="admin-roster-empty">No {tab} submissions.</div>
+      )}
+
+      {entries.map((e) => (
+        <div key={e.id} className="admin-roster-row" style={{ alignItems: "flex-start", gap: 16 }}>
+          <a href={e.imageUrl} target="_blank" rel="noreferrer" style={{ flexShrink: 0 }}>
+            <img src={e.imageUrl} alt="" style={{ width: 140, height: 140, objectFit: "cover", border: "1px solid var(--hairline)", background: "var(--paper-2)" }} />
+          </a>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="admin-roster-user">
+              <a href={`https://x.com/${e.xUsername}`} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>
+                @{e.xUsername} ↗
+              </a>
+            </div>
+            <div className="admin-roster-wallet" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <span>{(e.xFollowers || 0).toLocaleString()} followers</span>
+              <span>·</span>
+              <span>{new Date(e.createdAt).toLocaleString()}</span>
+            </div>
+            {e.caption ? (
+              <div style={{ marginTop: 8, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-3)", maxWidth: 560 }}>
+                &ldquo;{e.caption}&rdquo;
+              </div>
+            ) : null}
+            {e.adminNote ? (
+              <div style={{ marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-4)" }}>
+                Admin note: {e.adminNote}
+              </div>
+            ) : null}
+          </div>
+
+          {tab === "pending" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 240 }}>
+              <input
+                type="text"
+                value={noteFor[e.id] || ""}
+                onChange={(ev) => setNote(e.id, ev.target.value)}
+                placeholder="Optional note (shown to user)"
+                maxLength={240}
+                style={{ width: "100%", fontSize: 11 }}
+              />
+              <div style={{ display: "flex", gap: 6 }}>
+                <button className="btn btn-solid btn-sm" onClick={() => decide(e.id, "approve")} disabled={busyId === e.id} style={{ flex: 1 }}>
+                  {busyId === e.id ? "..." : "Approve"}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => decide(e.id, "reject")} disabled={busyId === e.id} style={{ flex: 1 }}>
+                  Reject
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}
+

@@ -6529,3 +6529,93 @@ section { background: var(--bg); }
 .drop-v3-slot-row-next .drop-v3-slot-mood {
   color: var(--text-4);
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+   /art — community art gallery
+   ───────────────────────────────────────────────────────────────────── */
+.art-page { max-width: 1320px; margin: 0 auto; padding: 32px 24px 80px; }
+
+.art-hero {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 24px; padding-bottom: 28px; margin-bottom: 28px;
+  border-bottom: 1px solid var(--hairline);
+}
+.art-hero-copy { max-width: 720px; }
+.art-hero-kicker {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--text-4); margin-bottom: 18px;
+}
+.art-hero-title {
+  font-family: var(--font-display); font-size: 64px; font-weight: 500;
+  letter-spacing: -0.035em; color: var(--ink); margin: 0 0 18px;
+  line-height: 1.0;
+}
+.art-hero-title em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--text-3); }
+.art-hero-sub {
+  font-family: var(--font-mono); font-size: 13px; color: var(--text-3);
+  line-height: 1.55; margin: 0;
+}
+.art-hero-meta {
+  text-align: right; font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-4);
+}
+.art-hero-meta strong {
+  display: block; font-family: var(--font-display); font-size: 56px;
+  font-weight: 500; letter-spacing: -0.02em; color: var(--ink);
+  margin-bottom: 4px;
+}
+
+@media (max-width: 720px) {
+  .art-hero { flex-direction: column; align-items: stretch; }
+  .art-hero-title { font-size: 44px; }
+  .art-hero-meta { text-align: left; }
+}
+
+/* Grid */
+.art-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+.art-tile {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--hairline); background: var(--paper-2);
+  overflow: hidden;
+}
+.art-tile-img {
+  aspect-ratio: 1 / 1; background: var(--paper-1);
+  display: flex; align-items: center; justify-content: center;
+  border-bottom: 1px solid var(--hairline);
+}
+.art-tile-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.art-tile-skeleton { aspect-ratio: 1 / 1; background: var(--paper-3, var(--paper-2)); opacity: 0.5; }
+
+.art-tile-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
+.art-tile-author {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  color: var(--ink); letter-spacing: 0.02em;
+}
+.art-tile-caption {
+  font-family: var(--font-serif); font-style: italic; font-size: 13px;
+  color: var(--text-3); line-height: 1.4;
+}
+.art-tile-actions {
+  display: flex; align-items: center; gap: 8px; margin-top: 6px;
+  padding-top: 10px; border-top: 1px dashed var(--hairline);
+  font-family: var(--font-mono); font-size: 12px;
+}
+.art-vote-btn, .art-comment-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 8px; border: 1px solid var(--hairline); background: transparent;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-3);
+  cursor: pointer;
+}
+.art-vote-btn:hover, .art-comment-btn:hover { background: var(--paper-1); color: var(--ink); }
+.art-vote-btn.active { background: var(--accent); color: var(--ink); border-color: var(--ink); }
+.art-vote-btn.active.dislike { background: var(--ink); color: var(--paper-1); }
+.art-vote-btn:disabled, .art-comment-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.art-tile-score {
+  margin-left: auto; font-size: 10px; color: var(--text-4);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
