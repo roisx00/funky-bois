@@ -12,7 +12,7 @@ export async function getSessionUser(req) {
     SELECT id, x_id, x_username, x_name, x_avatar, busts_balance,
            is_whitelisted, wallet_address, referral_code, referred_by_user,
            daily_claimed_on, created_at, is_admin, x_followers, suspended,
-           drop_eligible
+           drop_eligible, discord_id, discord_username, discord_linked_at
     FROM users
     WHERE id = ${payload.sub}
   `);

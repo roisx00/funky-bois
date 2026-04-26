@@ -22,7 +22,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
     completedNFTs, isWhitelisted,
     pendingGifts, claimGift, sendGift,
     pendingBustsTransfers, sendBusts, claimBustsTransfer,
-    xUser, referralCount,
+    xUser, referralCount, discordUsername,
   } = useGame();
   const normalized = initialTab === 'elements' ? 'inventory' : initialTab;
   const [tab, setTab] = useState(normalized);
@@ -158,6 +158,8 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>50 BUSTS per successful invite</div>
             </div>
+
+            <ConnectDiscord username={discordUsername} />
           </div>
         </div>
       )}
@@ -988,6 +990,76 @@ function FollowTaskCard() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Discord connect card on the dashboard. Reads + writes status from
+// /api/me. Toast comes from the redirect query string set by the
+// callback (?discord=connected | error&reason=...).
+// ─────────────────────────────────────────────────────────────────────
+function ConnectDiscord({ username }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const status = p.get('discord');
+    if (!status) return;
+    if (status === 'connected') {
+      const u = p.get('username');
+      toast.success(u ? `Discord linked as @${u}` : 'Discord linked.');
+    } else if (status === 'error') {
+      toast.error(`Discord link failed: ${p.get('reason') || 'unknown'}`);
+    }
+    const url = new URL(window.location.href);
+    ['discord', 'username', 'reason'].forEach((k) => url.searchParams.delete(k));
+    window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function connect() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await fetch('/api/discord-oauth-init', { credentials: 'same-origin' });
+      const d = await r.json();
+      if (!r.ok || !d.url) throw new Error(d?.reason || 'init_failed');
+      window.location.href = d.url;
+    } catch (e) {
+      toast.error(`Could not start Discord link: ${e.message}`);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 14, padding: '14px 18px', border: '1px solid var(--hairline)', background: 'var(--paper-2)' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-4)', marginBottom: 6 }}>
+        Discord
+      </div>
+      {username ? (
+        <>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em' }}>
+            ✓ @{username}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+            Linked. Earn BUSTS by chatting in #general.
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em' }}>
+            Connect Discord
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 4, marginBottom: 10 }}>
+            Earn BUSTS by chatting in #general. Auto-joins the official server.
+          </div>
+          <button className="btn btn-solid btn-sm btn-arrow" onClick={connect} disabled={busy}>
+            {busy ? 'Loading.' : 'Connect Discord'}
+          </button>
+        </>
+      )}
     </div>
   );
 }

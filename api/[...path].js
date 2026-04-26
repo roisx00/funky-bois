@@ -52,6 +52,9 @@ import collabWalletHandler    from './_routes/collab-wallet-add.js';
 import collabBannerHandler    from './_routes/collab-banner.js';
 import collabGiveawayHandler  from './_routes/collab-giveaway.js';
 import adminCollabReview      from './_routes/admin-collab-review.js';
+import discordOAuthInit       from './_routes/discord-oauth-init.js';
+import discordOAuthCallback   from './_routes/discord-oauth-callback.js';
+import discordAwardBusts      from './_routes/discord-award-busts.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
 // regardless of Vercel's catch-all behaviour for nested segments.
@@ -106,6 +109,9 @@ const ROUTES = {
   'collab-wallet':        collabWalletHandler,
   'collab-giveaway':      collabGiveawayHandler,
   'admin-collab-review':  adminCollabReview,
+  'discord-oauth-init':       discordOAuthInit,
+  'discord-oauth-callback':   discordOAuthCallback,
+  'discord-award-busts':      discordAwardBusts,
 
   // slash aliases (backward compat — keep until all callers migrated)
   'gift/send':           giftSendHandler,

@@ -148,6 +148,8 @@ function reducer(state, action) {
         isAdmin:          me.user.isAdmin,
         suspended:        me.user.suspended === true,
         dropEligible:     me.user.dropEligible === true,
+        discordId:        me.user.discordId || null,
+        discordUsername:  me.user.discordUsername || null,
         preWhitelist:     me.preWhitelist || null,
         bustsHistory:     me.bustsHistory,
         inventory:        me.inventory,

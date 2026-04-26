@@ -69,6 +69,9 @@ export default async function handler(req, res) {
       isAdmin:         isAdminUser(user),
       suspended:       user.suspended === true,
       dropEligible:    user.drop_eligible === true,
+      discordId:       user.discord_id || null,
+      discordUsername: user.discord_username || null,
+      discordLinkedAt: user.discord_linked_at ? new Date(user.discord_linked_at).getTime() : null,
     },
     preWhitelist: myPrewl ? {
       id:        myPrewl.id,
