@@ -45,6 +45,11 @@ import artImageHandler        from './_routes/art-image.js';
 import artVoteHandler         from './_routes/art-vote.js';
 import artCommentHandler      from './_routes/art-comment.js';
 import adminArtReviewHandler  from './_routes/admin-art-review.js';
+import collabHandler          from './_routes/collab.js';
+import collabApplyHandler     from './_routes/collab-apply.js';
+import collabMineHandler      from './_routes/collab-mine.js';
+import collabWalletHandler    from './_routes/collab-wallet-add.js';
+import adminCollabReview      from './_routes/admin-collab-review.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
 // regardless of Vercel's catch-all behaviour for nested segments.
@@ -93,6 +98,11 @@ const ROUTES = {
   'art-vote':             artVoteHandler,
   'art-comment':          artCommentHandler,
   'admin-art-review':     adminArtReviewHandler,
+  'collab':               collabHandler,
+  'collab-apply':         collabApplyHandler,
+  'collab-mine':          collabMineHandler,
+  'collab-wallet':        collabWalletHandler,
+  'admin-collab-review':  adminCollabReview,
 
   // slash aliases (backward compat — keep until all callers migrated)
   'gift/send':           giftSendHandler,

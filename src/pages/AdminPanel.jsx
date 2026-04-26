@@ -186,6 +186,9 @@ export default function AdminPanel({ onNavigate }) {
       {/* Pre-whitelist queue (highest priority — the human gate) */}
       <PreWhitelistQueue />
 
+      {/* Collaboration queue */}
+      <CollabQueue />
+
       {/* /art submission queue */}
       <ArtQueue />
 
@@ -1947,6 +1950,216 @@ function ArtQueue() {
                   {busyId === e.id ? "..." : "Approve"}
                 </button>
                 <button className="btn btn-ghost btn-sm" onClick={() => decide(e.id, "reject")} disabled={busyId === e.id} style={{ flex: 1 }}>
+                  Reject
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// COLLAB QUEUE
+// Tabbed pending/approved/rejected. Approve requires an allocation
+// (1..1000). Also exposes the global wallet-submission cutoff config.
+// ─────────────────────────────────────────────────────────────────────
+function CollabQueue() {
+  const [tab, setTab]         = useState('pending');
+  const [entries, setEntries] = useState([]);
+  const [counts, setCounts]   = useState({ pending: 0, approved: 0, rejected: 0 });
+  const [cutoffSecs, setCutoffSecs] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId]   = useState(null);
+  const [allocFor, setAllocFor] = useState({});
+  const [noteFor, setNoteFor] = useState({});
+  const [error, setError]     = useState(null);
+
+  const load = async (statusKey) => {
+    setLoading(true); setError(null);
+    try {
+      const r = await fetch(`/api/admin-collab-review?status=${encodeURIComponent(statusKey)}`, { credentials: 'same-origin' });
+      const d = r.ok ? await r.json() : { entries: [] };
+      setEntries(d.entries || []);
+      setCutoffSecs(d.cutoffSecs ?? null);
+      if (d.counts) setCounts({
+        pending:  Number(d.counts.pending)  || 0,
+        approved: Number(d.counts.approved) || 0,
+        rejected: Number(d.counts.rejected) || 0,
+      });
+    } catch (e) {
+      setError(e?.message || 'load failed'); setEntries([]);
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(tab); /* eslint-disable-line */ }, [tab]);
+
+  const decide = async (id, decision) => {
+    setBusyId(id);
+    try {
+      const body = { id, decision, note: noteFor[id] || '' };
+      if (decision === 'approve') {
+        body.allocation = Number(allocFor[id]);
+        if (!Number.isFinite(body.allocation) || body.allocation < 1) {
+          setError('Set an allocation (1..1000) before approving');
+          setBusyId(null);
+          return;
+        }
+      }
+      const r = await fetch('/api/admin-collab-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(body),
+      });
+      const d = r.ok ? await r.json() : { error: 'failed' };
+      if (d.error) setError(d.reason || d.error);
+      else {
+        setEntries((prev) => prev.filter((e) => e.id !== id));
+        setCounts((prev) => ({
+          ...prev,
+          [tab]: Math.max(0, (prev[tab] || 0) - 1),
+          [decision === 'approve' ? 'approved' : 'rejected']:
+            (prev[decision === 'approve' ? 'approved' : 'rejected'] || 0) + 1,
+        }));
+        setNoteFor((prev) => { const n = { ...prev }; delete n[id]; return n; });
+        setAllocFor((prev) => { const n = { ...prev }; delete n[id]; return n; });
+      }
+    } finally { setBusyId(null); }
+  };
+
+  const setCutoff = async (datetimeLocal) => {
+    const secs = datetimeLocal ? Math.floor(new Date(datetimeLocal).getTime() / 1000) : 0;
+    try {
+      const r = await fetch('/api/admin-collab-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ setCutoff: secs }),
+      });
+      const d = r.ok ? await r.json() : { error: 'failed' };
+      if (d.error) setError(d.reason || d.error);
+      else setCutoffSecs(d.cutoffSecs || null);
+    } catch (e) { setError(e?.message); }
+  };
+
+  const cutoffInputValue = cutoffSecs
+    ? new Date(cutoffSecs * 1000).toISOString().slice(0, 16)
+    : '';
+
+  return (
+    <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+      <div className="admin-roster-head">
+        <div>
+          <div className="admin-roster-title">Collaboration applications</div>
+          <div className="admin-roster-meta">
+            Approve communities + set their WL allocation. Wallet cutoff applies globally.
+          </div>
+        </div>
+        <div className="admin-roster-actions" style={{ display: 'flex', gap: 6 }}>
+          {['pending', 'approved', 'rejected'].map((s) => (
+            <button
+              key={s}
+              className={`btn btn-sm ${tab === s ? 'btn-solid' : 'btn-ghost'}`}
+              onClick={() => setTab(s)}
+            >{s} ({counts[s] || 0})</button>
+          ))}
+          <button className="btn btn-ghost btn-sm" onClick={() => load(tab)} disabled={loading}>
+            {loading ? '...' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+        padding: '10px 0', borderBottom: '1px dashed var(--hairline)', marginBottom: 12,
+      }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-4)' }}>
+          Wallet submission cutoff
+        </span>
+        <input
+          type="datetime-local"
+          defaultValue={cutoffInputValue}
+          onBlur={(e) => setCutoff(e.target.value)}
+          style={{ fontSize: 12, fontFamily: 'var(--font-mono)' }}
+        />
+        {cutoffSecs ? (
+          <button className="btn btn-ghost btn-sm" onClick={() => setCutoff('')}>Clear cutoff</button>
+        ) : (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-4)' }}>
+            (no cutoff — wallets open indefinitely)
+          </span>
+        )}
+      </div>
+
+      {error && (
+        <div style={{ padding: 12, color: 'var(--red, #c4352b)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+          Error: {error}
+        </div>
+      )}
+
+      {!loading && entries.length === 0 && (
+        <div className="admin-roster-empty">No {tab} applications.</div>
+      )}
+
+      {entries.map((e) => (
+        <div key={e.id} className="admin-roster-row" style={{ alignItems: 'flex-start', gap: 16 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="admin-roster-user">
+              <strong style={{ color: 'var(--ink)' }}>{e.communityName}</strong>
+              {' · '}
+              <a href={`https://x.com/${e.xUsername}`} target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+                @{e.xUsername} ↗
+              </a>
+            </div>
+            <div className="admin-roster-wallet" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <span>{e.category || '—'}</span>
+              {e.communitySize ? <><span>·</span><span>~{e.communitySize.toLocaleString()} members</span></> : null}
+              {e.communityUrl ? <><span>·</span><a href={e.communityUrl} target="_blank" rel="noreferrer">site ↗</a></> : null}
+              <span>·</span>
+              <a href={e.raidLink} target="_blank" rel="noreferrer">{e.raidPlatform} raid ↗</a>
+              <span>·</span>
+              <span>{new Date(e.createdAt).toLocaleString()}</span>
+              {e.status === 'approved' ? (
+                <><span>·</span><strong>{e.wlAllocation} WL · {e.walletCount} submitted</strong></>
+              ) : null}
+            </div>
+            {e.message ? (
+              <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-3)', maxWidth: 700 }}>
+                &ldquo;{e.message}&rdquo;
+              </div>
+            ) : null}
+            {e.adminNote ? (
+              <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-4)' }}>
+                Admin note: {e.adminNote}
+              </div>
+            ) : null}
+          </div>
+
+          {tab === 'pending' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 260 }}>
+              <input
+                type="number" min={1} max={1000}
+                value={allocFor[e.id] || ''}
+                onChange={(ev) => setAllocFor((p) => ({ ...p, [e.id]: ev.target.value }))}
+                placeholder="WL allocation (1..1000)"
+                style={{ width: '100%', fontSize: 11 }}
+              />
+              <input
+                type="text"
+                value={noteFor[e.id] || ''}
+                onChange={(ev) => setNoteFor((p) => ({ ...p, [e.id]: ev.target.value }))}
+                placeholder="Optional note (shown to applicant)"
+                maxLength={240}
+                style={{ width: '100%', fontSize: 11 }}
+              />
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button className="btn btn-solid btn-sm" onClick={() => decide(e.id, 'approve')} disabled={busyId === e.id} style={{ flex: 1 }}>
+                  {busyId === e.id ? '...' : 'Approve'}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => decide(e.id, 'reject')} disabled={busyId === e.id} style={{ flex: 1 }}>
                   Reject
                 </button>
               </div>

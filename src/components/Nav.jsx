@@ -11,6 +11,7 @@ const BASE_PAGES = [
   { id: 'drop',    label: 'Drop' },
   { id: 'gallery', label: 'Gallery' },
   { id: 'art',     label: 'Art' },
+  { id: 'collab',  label: 'Collab' },
 ];
 // Leaderboard is publicly viewable but lives between Build and Dashboard
 // in the nav when the user is signed in, so we keep it out of the base
