@@ -198,6 +198,9 @@ export default function LandingPage({ onNavigate }) {
               <button className="btn btn-ghost btn-lg" onClick={() => onNavigate('gallery')}>
                 View Gallery
               </button>
+              <button className="btn btn-ghost btn-lg" onClick={() => onNavigate('verify-tg')}>
+                Verify on Telegram
+              </button>
             </div>
 
             <div className="hero-ledger">

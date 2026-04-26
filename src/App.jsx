@@ -10,6 +10,7 @@ import AdminPanel from './pages/AdminPanel';
 import BuilderPage from './pages/BuilderPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ArtPage from './pages/ArtPage';
+import VerifyTgPage from './pages/VerifyTgPage';
 import { handleXCallback, startXLogin } from './utils/xAuth';
 import { useToast } from './components/Toast';
 import './App.css';
@@ -49,7 +50,7 @@ function BuilderGate({ navigate }) {
   );
 }
 
-const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'art'];
+const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'art', 'verify-tg'];
 
 function pathToPage(pathname) {
   const clean = pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -150,6 +151,7 @@ function AppInner() {
       {page === 'gallery' && <GalleryPage onNavigate={navigate} />}
       {page === 'leaderboard' && <LeaderboardPage onNavigate={navigate} />}
       {page === 'art' && <ArtPage onNavigate={navigate} />}
+      {page === 'verify-tg' && <VerifyTgPage onNavigate={navigate} />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}
     </>
   );

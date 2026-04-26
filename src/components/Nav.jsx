@@ -7,10 +7,11 @@ import { useToast } from './Toast';
 import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
 
 const BASE_PAGES = [
-  { id: 'home',    label: 'Index' },
-  { id: 'drop',    label: 'Drop' },
-  { id: 'gallery', label: 'Gallery' },
-  { id: 'art',     label: 'Art' },
+  { id: 'home',      label: 'Index' },
+  { id: 'drop',      label: 'Drop' },
+  { id: 'gallery',   label: 'Gallery' },
+  { id: 'art',       label: 'Art' },
+  { id: 'verify-tg', label: 'Verify TG' },
 ];
 // Leaderboard is publicly viewable but lives between Build and Dashboard
 // in the nav when the user is signed in, so we keep it out of the base

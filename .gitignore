@@ -33,3 +33,5 @@ artifacts/
 cache/
 metadata/
 .tmp-art-seeds/
+
+bot/node_modules/
