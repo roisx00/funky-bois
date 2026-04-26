@@ -1,81 +1,65 @@
 // The 1969 — Discord chat bot.
 //
-// Listens to the configured general-chat channel. When a linked
-// member posts a message that passes the spam filters, calls the
-// app's /api/discord-award-busts endpoint to credit the user.
+// Two jobs:
+//   1. Award BUSTS for qualifying messages in #general (chat-to-earn).
+//   2. Reconcile three roles on every linked member, on a schedule
+//      AND on key events (join, link, chat). The roles map 1:1 to
+//      app-side flags:
+//        @The Stranger → linked + not suspended
+//        @The Monk     → has a built portrait
+//        @The Rebel    → drop_eligible
 //
-// Also auto-grants the @verified role to any member whose Discord
-// id is bound to an X account in our DB. Verification is checked
-// on guildMemberAdd (when they join via OAuth) and lazily on
-// messageCreate (in case they linked while already in the guild).
+// Bot adds OR removes roles as state changes. e.g. user builds their
+// portrait → next reconcile gives them The Monk. Pre-WL revoked →
+// next reconcile takes The Rebel away.
 //
-// Bot needs: bot + applications.commands scopes; Send Messages,
-// Read Message History, View Channels, Manage Roles permissions
-// in the guild.
-//
-// Env required:
-//   DISCORD_BOT_TOKEN       — from Discord Developer Portal
-//   DISCORD_GUILD_ID        — your server id
-//   DISCORD_GENERAL_ID      — #general channel id (where chat earns)
-//   DISCORD_VERIFIED_ROLE_ID— role to grant on link (optional)
-//   APP_BASE_URL            — https://the1969.io
-//   BOT_SHARED_SECRET       — must match Vercel env var
-//
-// Earn rules (defence-in-depth; server enforces a daily cap of its own):
-//   • Cooldown: 60s between earning messages per user
-//   • Length:   message must be ≥12 chars after trim
-//   • Hourly:   max 10 BUSTS/hour per user (local cache, server has its own cap)
-//   • Filter:   reject pure links, all-emoji, repeated chars, stickers
+// Bot has zero DB access — every decision goes through the main
+// app's API behind a shared bot secret.
 import { Client, GatewayIntentBits, Events, Partials } from 'discord.js';
 
 const TOKEN          = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID       = process.env.DISCORD_GUILD_ID;
 const GENERAL_ID     = process.env.DISCORD_GENERAL_ID;
-const VERIFIED_ROLE  = process.env.DISCORD_VERIFIED_ROLE_ID || null;
+const ROLE_STRANGER  = process.env.DISCORD_VERIFIED_ROLE_ID || null; // The Stranger
+const ROLE_MONK      = process.env.DISCORD_MONK_ROLE_ID     || null; // The Monk
+const ROLE_REBEL     = process.env.DISCORD_REBEL_ROLE_ID    || null; // The Rebel
 const APP_BASE       = process.env.APP_BASE_URL || 'https://the1969.io';
 const SECRET         = process.env.BOT_SHARED_SECRET;
+const RECONCILE_MS   = Number(process.env.RECONCILE_INTERVAL_MS) || 10 * 60 * 1000;
 
 if (!TOKEN)      { console.error('DISCORD_BOT_TOKEN missing');  process.exit(1); }
 if (!GUILD_ID)   { console.error('DISCORD_GUILD_ID missing');   process.exit(1); }
 if (!GENERAL_ID) { console.error('DISCORD_GENERAL_ID missing'); process.exit(1); }
 if (!SECRET)     { console.error('BOT_SHARED_SECRET missing');  process.exit(1); }
 
+// ─── earn rules ──────────────────────────────────────────────────────
 const COOLDOWN_MS = 60 * 1000;
 const HOURLY_CAP  = 10;
 const MIN_CHARS   = 12;
 const PER_MSG     = 1;
 
-// Per-user state: last earn ts, hour bucket count.
-const cooldown = new Map();    // discordId -> ts
-const hourBucket = new Map();  // discordId -> { ts, earned }
+const cooldown = new Map();
+const hourBucket = new Map();
 
 function passes(content) {
   const c = content.trim();
-  if (c.length < MIN_CHARS)               return 'too_short';
-  if (/^https?:\/\//.test(c))             return 'link_only';
-  if (/^[\p{Emoji}\s]+$/u.test(c))        return 'emoji_only';
-  if (/(.)\1{6,}/.test(c))                return 'repeated_chars';
+  if (c.length < MIN_CHARS)        return 'too_short';
+  if (/^https?:\/\//.test(c))      return 'link_only';
+  if (/^[\p{Emoji}\s]+$/u.test(c)) return 'emoji_only';
+  if (/(.)\1{6,}/.test(c))         return 'repeated_chars';
   return null;
 }
-
 function withinHourly(uid) {
   const now = Date.now();
   const cur = hourBucket.get(uid);
-  if (!cur || now - cur.ts > 3600 * 1000) {
-    hourBucket.set(uid, { ts: now, earned: 0 });
-    return true;
-  }
+  if (!cur || now - cur.ts > 3600 * 1000) { hourBucket.set(uid, { ts: now, earned: 0 }); return true; }
   return cur.earned < HOURLY_CAP;
 }
-
 function bumpHourly(uid) {
   const now = Date.now();
   const cur = hourBucket.get(uid);
-  if (!cur || now - cur.ts > 3600 * 1000) {
-    hourBucket.set(uid, { ts: now, earned: PER_MSG });
-  } else {
-    cur.earned += PER_MSG;
-  }
+  if (!cur || now - cur.ts > 3600 * 1000) hourBucket.set(uid, { ts: now, earned: PER_MSG });
+  else cur.earned += PER_MSG;
 }
 
 async function award(discordId) {
@@ -85,11 +69,10 @@ async function award(discordId) {
       headers: { 'content-type': 'application/json', 'x-bot-secret': SECRET },
       body: JSON.stringify({ discordId, amount: PER_MSG, reason: 'Discord chat reward' }),
     });
-    const d = await r.json().catch(() => ({}));
     if (!r.ok) {
-      // Refund the local hourly increment if server rejected.
       const cur = hourBucket.get(discordId);
       if (cur) cur.earned = Math.max(0, cur.earned - PER_MSG);
+      const d = await r.json().catch(() => ({}));
       console.warn('[award] rejected', discordId, d?.reason || d?.error);
       return false;
     }
@@ -102,6 +85,75 @@ async function award(discordId) {
   }
 }
 
+// ─── role reconciliation ────────────────────────────────────────────
+async function fetchUserStatus(discordId) {
+  try {
+    const r = await fetch(`${APP_BASE}/api/discord-user-status?discordId=${discordId}`, {
+      headers: { 'x-bot-secret': SECRET },
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+async function reconcileRoles(member, status) {
+  if (!member?.roles) return;
+  if (!status) status = await fetchUserStatus(member.id);
+  if (!status) return;
+
+  const want = {
+    [ROLE_STRANGER]: status.linked && status.stranger,
+    [ROLE_MONK]:     status.monk,
+    [ROLE_REBEL]:    status.rebel,
+  };
+
+  for (const [roleId, shouldHave] of Object.entries(want)) {
+    if (!roleId) continue;
+    const has = member.roles.cache?.has(roleId);
+    try {
+      if (shouldHave && !has)       await member.roles.add(roleId);
+      else if (!shouldHave && has)  await member.roles.remove(roleId);
+    } catch (e) {
+      console.warn('[role]', member.id, roleId, e?.message);
+    }
+  }
+}
+
+// ─── periodic full sweep ────────────────────────────────────────────
+async function reconcileAll() {
+  const guild = client.guilds.cache.get(GUILD_ID);
+  if (!guild) return;
+
+  let cursor = '';
+  let pages = 0;
+  let total = 0;
+  while (true) {
+    pages += 1;
+    const url = new URL(`${APP_BASE}/api/discord-linked-users`);
+    if (cursor) url.searchParams.set('cursor', cursor);
+    url.searchParams.set('limit', '200');
+    const r = await fetch(url, { headers: { 'x-bot-secret': SECRET } }).catch(() => null);
+    if (!r || !r.ok) { console.warn('[reconcileAll] fetch failed'); break; }
+    const d = await r.json().catch(() => ({}));
+    const entries = d.entries || [];
+    for (const e of entries) {
+      const member = await guild.members.fetch(e.discordId).catch(() => null);
+      if (!member) continue; // user not in guild — skip silently
+      await reconcileRoles(member, {
+        linked: true, suspended: e.suspended,
+        stranger: e.stranger, monk: e.monk, rebel: e.rebel,
+        xUsername: e.xUsername,
+      });
+      total += 1;
+    }
+    cursor = d.nextCursor;
+    if (!cursor) break;
+    if (pages > 25) break; // safety: 5000 users max per sweep
+  }
+  console.log(`[reconcileAll] reconciled ${total} members across ${pages} page(s)`);
+}
+
+// ─── client + events ────────────────────────────────────────────────
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -112,34 +164,19 @@ const client = new Client({
   partials: [Partials.GuildMember],
 });
 
-client.once(Events.ClientReady, (c) => {
+client.once(Events.ClientReady, async (c) => {
   console.log(`[boot] bot=${c.user.tag} guild=${GUILD_ID} general=${GENERAL_ID} app=${APP_BASE}`);
+  console.log(`[boot] roles stranger=${!!ROLE_STRANGER} monk=${!!ROLE_MONK} rebel=${!!ROLE_REBEL}`);
+  console.log(`[boot] reconcile interval = ${RECONCILE_MS}ms`);
+
+  // Initial reconcile + recurring sweep.
+  reconcileAll().catch((e) => console.warn('[boot reconcile]', e?.message));
+  setInterval(() => reconcileAll().catch((e) => console.warn('[interval reconcile]', e?.message)), RECONCILE_MS);
 });
 
-// On member join (via app's auto-add or manual): grant verified role
-// if the user is linked in our DB.
-async function maybeGrantVerified(member) {
-  if (!VERIFIED_ROLE) return;
-  if (!member?.id) return;
-  if (member.roles?.cache?.has(VERIFIED_ROLE)) return;
-  try {
-    const r = await fetch(`${APP_BASE}/api/discord-award-busts`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-bot-secret': SECRET },
-      body: JSON.stringify({ discordId: member.id, amount: 0, reason: 'check' }),
-    });
-    // amount=0 is rejected by server with invalid_amount, but if the
-    // call returns 404 discord_not_linked we know they're unlinked.
-    // We use a separate lookup path if you'd rather not abuse award.
-    // For now we just optimistically grant — server still rate-limits.
-    if (r.status !== 404) {
-      await member.roles.add(VERIFIED_ROLE).catch(() => {});
-    }
-  } catch { /* ignore */ }
-}
-
-client.on(Events.GuildMemberAdd, (member) => {
-  maybeGrantVerified(member);
+client.on(Events.GuildMemberAdd, async (member) => {
+  // Wait a beat — link write happens around the same time as guild add
+  setTimeout(() => reconcileRoles(member, null).catch(() => {}), 1500);
 });
 
 client.on(Events.MessageCreate, async (msg) => {
@@ -151,7 +188,6 @@ client.on(Events.MessageCreate, async (msg) => {
   if (reason) return;
 
   const uid = msg.author.id;
-
   const last = cooldown.get(uid) || 0;
   if (Date.now() - last < COOLDOWN_MS) return;
   if (!withinHourly(uid)) return;
@@ -161,9 +197,10 @@ client.on(Events.MessageCreate, async (msg) => {
 
   const ok = await award(uid);
 
-  // Lazy verify-role grant in case they linked while in the guild.
-  if (ok && VERIFIED_ROLE && msg.member && !msg.member.roles.cache.has(VERIFIED_ROLE)) {
-    msg.member.roles.add(VERIFIED_ROLE).catch(() => {});
+  // Lazy reconcile on every successful earn — cheap, keeps roles
+  // tight without waiting for the 10-min sweep.
+  if (ok && msg.member) {
+    reconcileRoles(msg.member, null).catch(() => {});
   }
 });
 

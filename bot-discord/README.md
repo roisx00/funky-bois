@@ -66,10 +66,16 @@ Set these on Railway (the bot's own env):
 DISCORD_BOT_TOKEN         (same as Vercel)
 DISCORD_GUILD_ID          (same as Vercel)
 DISCORD_GENERAL_ID        (right-click #general → Copy Channel ID)
-DISCORD_VERIFIED_ROLE_ID  (right-click @verified role → Copy Role ID — optional)
+DISCORD_VERIFIED_ROLE_ID  (right-click @The Stranger role → Copy Role ID)
+DISCORD_MONK_ROLE_ID      (right-click @The Monk     role → Copy Role ID — optional)
+DISCORD_REBEL_ROLE_ID     (right-click @The Rebel    role → Copy Role ID — optional)
 APP_BASE_URL              = https://the1969.io
 BOT_SHARED_SECRET         (same string as Vercel)
+RECONCILE_INTERVAL_MS     (optional, default 600000 = 10 min)
 ```
+
+If MONK or REBEL role IDs are missing the bot just skips those —
+The Stranger still gets granted as before.
 
 ## Railway deploy (5 min, one-time)
 
@@ -102,8 +108,26 @@ the request rate.
 4. Server: exchanges code → fetches their Discord identity → writes
    `users.discord_id` + `users.discord_username` → uses bot token to
    PUT them into the guild via `guilds/{id}/members/{userId}`
-5. Bot's GuildMemberAdd handler grants `@verified` automatically
+5. Bot's GuildMemberAdd handler reconciles roles (≤1.5s after join)
 6. Now they can chat in `#general` and earn BUSTS
 
-If they're already in the guild, the bot lazy-grants `@verified` on
-their first chat message.
+## How role reconciliation works
+
+The bot grants AND removes three roles based on app-side state:
+
+| Role          | App-side condition                    |
+|---------------|---------------------------------------|
+| @The Stranger | linked + not suspended                |
+| @The Monk     | has at least 1 completed_nft (built)  |
+| @The Rebel    | drop_eligible = TRUE                  |
+
+Reconcile fires:
+- on `GuildMemberAdd` (after a 1.5s buffer so the link row is ready)
+- on every successful chat-earn (lazy keep-fresh)
+- every 10 min via a full sweep — paged via /api/discord-linked-users
+
+So when a user builds a portrait, the next reconcile (within 10 min,
+or sooner if they chat) grants @The Monk. If you suspend an account
+in admin, all three roles get pulled at the next sweep.
+
+The Prophet (admin) is YOU — bot doesn't manage that role.

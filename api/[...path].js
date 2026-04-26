@@ -55,6 +55,8 @@ import adminCollabReview      from './_routes/admin-collab-review.js';
 import discordOAuthInit       from './_routes/discord-oauth-init.js';
 import discordOAuthCallback   from './_routes/discord-oauth-callback.js';
 import discordAwardBusts      from './_routes/discord-award-busts.js';
+import discordUserStatus      from './_routes/discord-user-status.js';
+import discordLinkedUsers     from './_routes/discord-linked-users.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
 // regardless of Vercel's catch-all behaviour for nested segments.
@@ -112,6 +114,8 @@ const ROUTES = {
   'discord-oauth-init':       discordOAuthInit,
   'discord-oauth-callback':   discordOAuthCallback,
   'discord-award-busts':      discordAwardBusts,
+  'discord-user-status':      discordUserStatus,
+  'discord-linked-users':     discordLinkedUsers,
 
   // slash aliases (backward compat — keep until all callers migrated)
   'gift/send':           giftSendHandler,
