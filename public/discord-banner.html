@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The 1969 · Discord banner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" />
+<style>
+  :root {
+    --paper:#F9F6F0; --ink:#0E0E0E; --lime:#D7FF3A; --mid:#5C5C5C;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{
+    background:#1a1a1a; color:#fff;
+    font-family:'JetBrains Mono', ui-monospace, monospace;
+    min-height:100vh;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  header{
+    width:100%; padding:18px 28px;
+    display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid #333;
+  }
+  header h1{
+    font-family:'Instrument Serif', serif; font-style:italic;
+    color:var(--lime); font-size:22px; font-weight:400;
+  }
+  header p{font-size:11px; opacity:.7; letter-spacing:.04em;}
+  button{
+    font-family:'JetBrains Mono', monospace; font-size:12px;
+    padding:9px 18px; cursor:pointer;
+    background:var(--lime); color:var(--ink);
+    border:1px solid var(--ink);
+    text-transform:uppercase; letter-spacing:.06em; font-weight:700;
+  }
+  button:hover{background:#fff;}
+
+  main{padding:24px;}
+
+  /* 960×540 = Discord server banner spec. */
+  .stage{
+    width:960px; height:540px;
+    max-width:90vmin; max-height:calc(90vmin * 0.5625);
+    aspect-ratio: 960/540;
+    position:relative; overflow:hidden;
+    border:1px solid var(--ink);
+    display:grid;
+    grid-template-columns:540px 1fr;
+  }
+
+  /* Left: portrait, dark backdrop */
+  .portrait-cell{
+    background:#0E0E0E; position:relative;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .portrait-cell svg{
+    width:100%; height:100%;
+    image-rendering:pixelated;
+    image-rendering:crisp-edges;
+  }
+  .frame-edge{
+    position:absolute; top:0; right:0; bottom:0;
+    width:6px; background:var(--lime);
+  }
+
+  /* Right: cream text panel */
+  .text-cell{
+    background:var(--paper);
+    padding:48px 40px 36px; position:relative;
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .kicker{
+    display:flex; align-items:center; gap:10px;
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    letter-spacing:.18em; text-transform:uppercase; color:var(--mid);
+  }
+  .kicker .dot{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--lime); border:1px solid var(--ink);
+  }
+
+  .head{
+    font-family:'Instrument Serif', serif; font-style:italic;
+    font-size:84px; font-weight:500; color:var(--ink);
+    letter-spacing:-.02em; line-height:.95;
+    margin:14px 0 16px;
+  }
+  .head .num{ font-style:normal; }
+
+  .sub{
+    font-family:'JetBrains Mono', monospace; font-size:14px;
+    letter-spacing:.04em; color:var(--mid); line-height:1.5;
+    max-width:380px;
+  }
+
+  .footrule{
+    border-top:1px solid var(--ink); padding-top:14px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    letter-spacing:.16em; color:var(--ink);
+  }
+
+  /* Subtle paper grain so it doesn't read flat. */
+  .text-cell::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:radial-gradient(rgba(0,0,0,.04) 1px, transparent 1px);
+    background-size:3px 3px; opacity:.6;
+  }
+
+  .controls{margin-top:18px; display:flex; gap:10px; align-items:center;}
+  .footnote{margin-top:14px; font-size:10px; opacity:.6; letter-spacing:.04em;}
+</style>
+</head>
+<body>
+<header>
+  <h1>The 1969 · Discord banner</h1>
+  <p>960×540 · screen-record or download PNG</p>
+  <div class="controls">
+    <button id="download">Download PNG</button>
+  </div>
+</header>
+
+<main>
+  <div class="stage" id="stage">
+    <div class="portrait-cell">
+      <div id="portrait"></div>
+      <div class="frame-edge"></div>
+    </div>
+    <div class="text-cell">
+      <div>
+        <div class="kicker">
+          <span class="dot"></span>
+          THE 1969 · DISCORD · LIVE
+        </div>
+        <div class="head">
+          witnesses<span class="num">.</span>
+        </div>
+        <div class="sub">
+          1,969 monochrome busts. real users only. join the assembly, earn BUSTS for being real.
+        </div>
+      </div>
+      <div class="footrule">
+        <span>@THE1969ETH</span>
+        <span>THE1969.IO</span>
+      </div>
+    </div>
+  </div>
+  <p class="footnote">Right-click portrait → Save Image As, or click Download PNG. Upload to Discord → Server Settings → Overview → Server Banner.</p>
+</main>
+
+<script type="module">
+import { buildNFTSVG } from './article-art.js';
+
+// A signature combo — Void bg, Crown ultra-rare, Glowing eyes
+// legendary, Suit, Full Beard, Long hair. Reads as "this is THE
+// portrait" without needing a label.
+const ELEMENTS = {
+  background: 5,  // Void (legendary)
+  outfit:     4,  // Suit (rare)
+  skin:       2,  // Mid (common)
+  eyes:       6,  // Glowing (legendary)
+  facial_hair:5,  // Full Beard (rare)
+  hair:       4,  // Long (rare)
+  headwear:   7,  // Crown (ultra rare)
+  face_mark:  0,  // None
+};
+
+const slot = document.getElementById('portrait');
+slot.innerHTML = buildNFTSVG(ELEMENTS);
+slot.firstElementChild.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+slot.style.cssText = 'width:100%; height:100%; display:flex;';
+
+// ─── Download PNG via canvas ────────────────────────────────────
+document.getElementById('download').addEventListener('click', async () => {
+  const stage = document.getElementById('stage');
+  const W = 960, H = 540;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  // 1. Right cell first (paper bg)
+  ctx.fillStyle = '#F9F6F0';
+  ctx.fillRect(540, 0, 420, 540);
+
+  // 2. Left cell dark
+  ctx.fillStyle = '#0E0E0E';
+  ctx.fillRect(0, 0, 540, 540);
+
+  // 3. Lime accent strip
+  ctx.fillStyle = '#D7FF3A';
+  ctx.fillRect(534, 0, 6, 540);
+
+  // 4. Portrait
+  const svgString = buildNFTSVG(ELEMENTS);
+  const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  await new Promise((res) => {
+    const img = new Image();
+    img.onload = () => {
+      // The portrait viewBox is 96×96 — scale it to 540×540 maintaining
+      // crisp pixels with imageSmoothingEnabled = false.
+      ctx.drawImage(img, 0, 0, 540, 540);
+      URL.revokeObjectURL(url);
+      res();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(); };
+    img.src = url;
+  });
+
+  // 5. Right cell text — use document.fonts to be sure they're loaded
+  await document.fonts.ready;
+
+  // Kicker
+  ctx.fillStyle = '#D7FF3A';
+  ctx.beginPath();
+  ctx.arc(580, 60, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#0E0E0E';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = '#5C5C5C';
+  ctx.font = '500 11px "JetBrains Mono", monospace';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('THE 1969  ·  DISCORD  ·  LIVE', 600, 60);
+
+  // Headline
+  ctx.fillStyle = '#0E0E0E';
+  ctx.font = 'italic 500 84px "Instrument Serif", serif';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('witnesses.', 580, 220);
+
+  // Sub
+  ctx.fillStyle = '#5C5C5C';
+  ctx.font = '500 14px "JetBrains Mono", monospace';
+  const subLines = [
+    '1,969 monochrome busts.',
+    'real users only. join the',
+    'assembly, earn BUSTS for',
+    'being real.',
+  ];
+  subLines.forEach((line, i) => {
+    ctx.fillText(line, 580, 270 + i * 22);
+  });
+
+  // Foot rule
+  ctx.strokeStyle = '#0E0E0E';
+  ctx.beginPath();
+  ctx.moveTo(580, 470);
+  ctx.lineTo(940, 470);
+  ctx.stroke();
+
+  ctx.fillStyle = '#0E0E0E';
+  ctx.font = '500 11px "JetBrains Mono", monospace';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('@THE1969ETH', 580, 495);
+
+  ctx.textAlign = 'right';
+  ctx.fillText('THE1969.IO', 940, 495);
+
+  // Save
+  canvas.toBlob((b) => {
+    if (!b) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = 'the1969-discord-banner.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }, 'image/png');
+});
+</script>
+</body>
+</html>
