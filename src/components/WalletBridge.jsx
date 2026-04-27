@@ -59,9 +59,11 @@ export default function WalletBridge() {
     const latest = completedNFTs[0];
     const key = `${address.toLowerCase()}:${latest.id}`;
     if (lastAttemptedRef.current === key) return;
-    // Same idea but persisted across reloads — once we attempt a sign
-    // for this wallet+portrait, don't re-attempt even if /api/me hasn't
-    // refreshed yet.
+    // Persist across reloads so refreshes don't re-prompt. Critical:
+    // pin the flag BEFORE attempting the sign — if the user cancels
+    // the popup we DO NOT clear it (they explicitly said no, don't
+    // ask again on every refresh). Only clear on server-side reject
+    // so they can retry with corrected state.
     const lsKey = `the1969-wl-attempted:${key}`;
     try {
       if (window.localStorage.getItem(lsKey)) {
@@ -70,6 +72,7 @@ export default function WalletBridge() {
       }
     } catch { /* private mode etc. */ }
     lastAttemptedRef.current = key;
+    try { window.localStorage.setItem(lsKey, '1'); } catch {}
 
     (async () => {
       try {
@@ -86,18 +89,16 @@ export default function WalletBridge() {
         });
         if (r && r.ok === false) {
           console.warn('[WalletBridge] whitelist record rejected:', r.reason);
-          // User may have signed with the wrong account, or cancelled —
-          // allow a retry once state changes.
+          // Server rejected (signature mismatch, wallet conflict, etc.)
+          // Clear the flag so a fresh state change can retry.
           lastAttemptedRef.current = '';
-        } else {
-          // Success — pin the localStorage flag so a refresh BEFORE
-          // /api/me re-hydrates with isWhitelisted=true won't trigger
-          // a duplicate prompt.
-          try { window.localStorage.setItem(lsKey, '1'); } catch {}
+          try { window.localStorage.removeItem(lsKey); } catch {}
         }
       } catch (e) {
-        // User cancelled the sign prompt or popup was blocked — don't
-        // re-prompt until state changes again.
+        // User cancelled the sign prompt or popup was blocked. The
+        // localStorage flag stays set — no re-prompt on refresh. They
+        // can manually trigger from the dashboard "Secure whitelist"
+        // button if they change their mind.
         console.warn('[WalletBridge] whitelist record error:', e?.message || e);
       }
     })();

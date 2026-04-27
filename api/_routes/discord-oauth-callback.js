@@ -107,6 +107,7 @@ export default async function handler(req, res) {
   const guildId  = process.env.DISCORD_GUILD_ID;
   const botToken = process.env.DISCORD_BOT_TOKEN;
   let joined = false;
+  let joinReason = '';
   if (guildId && botToken) {
     try {
       const r = await fetch(`https://discord.com/api/guilds/${guildId}/members/${discordId}`, {
@@ -122,11 +123,27 @@ export default async function handler(req, res) {
       } else {
         const text = await r.text().catch(() => '');
         console.warn('[discord-callback] guild add', r.status, text);
+        // Map common Discord error codes to short slugs the toast can
+        // explain instead of the raw `{"message":"internal network
+        // error","code":40333}` blob the user was seeing in logs.
+        let parsed = null;
+        try { parsed = JSON.parse(text); } catch {}
+        const code = parsed?.code;
+        if (code === 40333) joinReason = 'server_cap';      // user is at 100/200 server limit
+        else if (code === 30001) joinReason = 'server_cap'; // explicit "Maximum number of guilds reached"
+        else if (code === 40002) joinReason = 'verify_phone'; // server requires phone-verified
+        else if (r.status === 403) joinReason = 'forbidden';
+        else joinReason = `http_${r.status}`;
       }
     } catch (e) {
       console.warn('[discord-callback] guild add threw:', e?.message);
+      joinReason = 'network';
     }
   }
 
-  return done('connected', { username: discordUsername, joined: joined ? '1' : '0' });
+  return done('connected', {
+    username: discordUsername,
+    joined: joined ? '1' : '0',
+    ...(joinReason ? { join_reason: joinReason } : {}),
+  });
 }

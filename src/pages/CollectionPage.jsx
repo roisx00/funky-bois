@@ -1010,8 +1010,15 @@ function ConnectDiscord({ username, inviteUrl }) {
     if (status === 'connected') {
       const u = p.get('username');
       const joined = p.get('joined') === '1';
+      const jr = p.get('join_reason') || '';
       if (joined) {
         toast.success(u ? `Discord linked & joined as @${u}` : 'Discord linked & joined.');
+      } else if (jr === 'server_cap') {
+        toast.error(`Discord linked${u ? ` as @${u}` : ''}, but your account is at Discord's server limit. Leave a server you don't use, then click "Join the server".`);
+      } else if (jr === 'verify_phone') {
+        toast.error(`Discord linked${u ? ` as @${u}` : ''}, but our server requires a phone-verified Discord account. Verify your phone in Discord, then click "Join the server".`);
+      } else if (jr) {
+        toast.error(`Discord linked${u ? ` as @${u}` : ''}, but auto-join failed (${jr}). Click "Join the server" to retry.`);
       } else {
         toast.success(u ? `Discord linked as @${u}. Click "Join the server" to enter.` : 'Discord linked. Click "Join the server".');
       }
@@ -1019,7 +1026,7 @@ function ConnectDiscord({ username, inviteUrl }) {
       toast.error(`Discord link failed: ${p.get('reason') || 'unknown'}`);
     }
     const url = new URL(window.location.href);
-    ['discord', 'username', 'reason', 'joined'].forEach((k) => url.searchParams.delete(k));
+    ['discord', 'username', 'reason', 'joined', 'join_reason'].forEach((k) => url.searchParams.delete(k));
     window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

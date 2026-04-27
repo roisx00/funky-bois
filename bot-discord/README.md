@@ -119,9 +119,8 @@ Bot needs these guild permissions:
 
 ## Earn rules (server-enforced + bot-enforced)
 
-- **0.4 BUSTS** per qualifying chat message — accumulated locally,
-  flushed to the server as integer BUSTS each time the per-user
-  total crosses 1.0 (so users see +1 BUSTS every 2-3 messages)
+- **1 BUSTS** per qualifying chat message — credited instantly so the
+  user sees their balance move on the next dashboard refresh
 - 60s cooldown between earns per user
 - Min 12 chars per message (no `gm`/`gn` farming)
 - 10 BUSTS/hour cap per user (bot-side)
