@@ -11,6 +11,7 @@ import BuilderPage from './pages/BuilderPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ArtPage from './pages/ArtPage';
 import CollabPage from './pages/CollabPage';
+import LorePage1977 from './pages/LorePage1977';
 import { handleXCallback, startXLogin } from './utils/xAuth';
 import { useToast } from './components/Toast';
 import './App.css';
@@ -50,7 +51,7 @@ function BuilderGate({ navigate }) {
   );
 }
 
-const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'art', 'collab'];
+const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'art', 'collab', '1977'];
 
 function pathToPage(pathname) {
   const clean = pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -152,6 +153,7 @@ function AppInner() {
       {page === 'leaderboard' && <LeaderboardPage onNavigate={navigate} />}
       {page === 'art' && <ArtPage onNavigate={navigate} />}
       {page === 'collab' && <CollabPage onNavigate={navigate} />}
+      {page === '1977' && <LorePage1977 onNavigate={navigate} />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}
     </>
   );
