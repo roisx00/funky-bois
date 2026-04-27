@@ -16,6 +16,53 @@ export default function LorePage1969({ onNavigate }) {
       padding: '64px 24px 120px',
       color: 'var(--ink)',
     }}>
+      {/* Responsive overrides — inline styles can't carry @media rules,
+          so we ship a scoped <style> block once. Tablet (≤840px) collapses
+          the timeline to two columns, the sidenote layout to single
+          column, and reflows justified body text to left-aligned. Phone
+          (≤480px) further compacts the timeline and survivor grid. */}
+      <style>{`
+        @media (max-width: 840px) {
+          .lore-page { padding: 48px 16px 96px !important; }
+          .lore-timeline {
+            grid-template-columns: repeat(2, 1fr) !important;
+            row-gap: 18px;
+          }
+          .lore-timeline-stop:nth-child(1),
+          .lore-timeline-stop:nth-child(3) {
+            border-left: none !important;
+            padding-left: 0 !important;
+          }
+          .lore-timeline-stop:nth-child(3),
+          .lore-timeline-stop:nth-child(4) {
+            padding-top: 14px;
+            border-top: 1px solid var(--hairline);
+          }
+          .lore-sidenote-row {
+            grid-template-columns: 1fr !important;
+            row-gap: 24px;
+          }
+          .lore-body { text-align: left !important; max-width: 100% !important; }
+          .lore-drop-cap { font-size: 56px !important; margin-right: 8px !important; }
+          .lore-survivor-grid { grid-template-columns: repeat(8, 1fr) !important; }
+        }
+        @media (max-width: 480px) {
+          .lore-timeline { grid-template-columns: 1fr !important; }
+          .lore-timeline-stop {
+            border-left: none !important;
+            padding-left: 0 !important;
+            border-top: 1px solid var(--hairline);
+            padding-top: 12px;
+          }
+          .lore-timeline-stop:first-child {
+            border-top: none;
+            padding-top: 0;
+          }
+          .lore-survivor-grid { grid-template-columns: repeat(6, 1fr) !important; }
+          .lore-drop-cap { font-size: 48px !important; }
+        }
+      `}</style>
+
       <Hero />
       <Timeline />
 
@@ -381,10 +428,10 @@ function Timeline() {
     { year: 'before',  label: 'The First Assembly' },
     { year: '2002',    label: 'The Second Assembly forms' },
     { year: '1977',    label: 'The Vault burns' },
-    { year: 'today',   label: 'The Third Assembly · 1,969' },
+    { year: '2026',    label: 'The Third Assembly · 1,969' },
   ];
   return (
-    <div style={{
+    <div className="lore-timeline" style={{
       borderTop: '1px solid var(--ink)',
       borderBottom: '1px solid var(--ink)',
       padding: '20px 0',
@@ -394,7 +441,7 @@ function Timeline() {
       gap: 12,
     }}>
       {stops.map((s, i) => (
-        <div key={i} style={{
+        <div key={i} className="lore-timeline-stop" style={{
           borderLeft: i === 0 ? 'none' : '1px solid var(--hairline)',
           paddingLeft: i === 0 ? 0 : 18,
         }}>
@@ -428,7 +475,7 @@ function Timeline() {
 // ─────────────────────────────────────────────────────────────────────
 function Body({ children }) {
   return (
-    <p style={{
+    <p className="lore-body" style={{
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: 17.5,
       lineHeight: 1.78,
@@ -447,7 +494,7 @@ function Body({ children }) {
 function DropCap({ letter, children }) {
   return (
     <>
-      <span style={{
+      <span className="lore-drop-cap" style={{
         float: 'left',
         fontFamily: 'var(--font-display)',
         fontStyle: 'italic',
@@ -532,7 +579,7 @@ function Pull({ children, big, lime }) {
 // ─────────────────────────────────────────────────────────────────────
 function SidenoteRow({ children }) {
   return (
-    <div style={{
+    <div className="lore-sidenote-row" style={{
       display: 'grid',
       gridTemplateColumns: 'minmax(0, 680px) minmax(0, 240px)',
       columnGap: 40,
@@ -685,7 +732,7 @@ function SurvivorGrid() {
       }}>
         The Thirty-Three · partial index · 1977
       </div>
-      <div style={{
+      <div className="lore-survivor-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(11, 1fr)',
         gap: 6,
