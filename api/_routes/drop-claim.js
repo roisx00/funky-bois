@@ -25,7 +25,7 @@ import { rateLimit, clientIp } from '../_lib/ratelimit.js';
 import { getConfigInt } from '../_lib/config.js';
 import {
   pickRandomElement, DROP_BUSTS_REWARD, DAILY_CLAIM_BONUS,
-  getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION,
+  getCurrentSessionId, isSessionActive,
   DEFAULT_POOL_SIZE, todayKey,
 } from '../_lib/elements.js';
 import { settleReferralIfPending } from '../_lib/referral.js';
@@ -69,20 +69,13 @@ export default async function handler(req, res) {
     return bad(res, 409, 'already_built_portrait');
   }
 
-  // ── Session row + per-user quota ──
+  // ── Session row ──
   const poolSize = await getConfigInt('default_pool_size', DEFAULT_POOL_SIZE);
   await sql`
     INSERT INTO drop_sessions (session_id, pool_size, opened_at)
     VALUES (${sessId}, ${poolSize}, to_timestamp(${sessId / 1000}))
     ON CONFLICT (session_id) DO NOTHING
   `;
-  const userClaimsRow = one(await sql`
-    SELECT COUNT(*)::int AS cnt FROM drop_claims
-    WHERE user_id = ${user.id} AND session_id = ${sessId}
-  `);
-  if ((userClaimsRow?.cnt ?? 0) >= MAX_CLAIMS_PER_SESSION) {
-    return bad(res, 429, 'max_claims_reached', { sessionId: sessId });
-  }
 
   // ── Atomic pool decrement ──
   const sessRow = one(await sql`
@@ -99,10 +92,25 @@ export default async function handler(req, res) {
   const reward = DROP_BUSTS_REWARD[el.rarity] || 5;
   const dailyBonus = user.daily_claimed_on === todayKey() ? 0 : DAILY_CLAIM_BONUS;
 
-  await sql`
+  // Per-user quota enforced by the UNIQUE(user_id, session_id) DB
+  // constraint — replaces the previous SELECT-COUNT-then-INSERT pattern
+  // that had a TOCTOU race (parallel requests all saw count=0 and all
+  // inserted, breaking MAX_CLAIMS_PER_SESSION). With ON CONFLICT DO
+  // NOTHING the second-and-later attempts return no row and we revert
+  // the pool decrement so the slot is freed for somebody else.
+  const claimRow = one(await sql`
     INSERT INTO drop_claims (user_id, session_id, position, element_type, variant, rarity, busts_reward)
     VALUES (${user.id}, ${sessId}, ${sessRow.pool_claimed}, ${el.type}, ${el.variant}, ${el.rarity}, ${reward})
-  `;
+    ON CONFLICT (user_id, session_id) DO NOTHING
+    RETURNING id
+  `);
+  if (!claimRow) {
+    await sql`
+      UPDATE drop_sessions SET pool_claimed = pool_claimed - 1
+       WHERE session_id = ${sessId}
+    `;
+    return bad(res, 429, 'max_claims_reached', { sessionId: sessId });
+  }
   await sql`
     INSERT INTO inventory (user_id, element_type, variant, quantity, obtained_via)
     VALUES (${user.id}, ${el.type}, ${el.variant}, 1, 'drop')
