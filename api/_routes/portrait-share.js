@@ -26,7 +26,9 @@ export default async function handler(req, res) {
   const { portraitId, tweetUrl } = await readBody(req) || {};
   if (!portraitId) return bad(res, 400, 'missing_portrait');
 
-  // Pull the portrait so we can verify its share_hash
+  // Pull the portrait so we can verify its share_hash. The shared_to_x
+  // value here is informational only — the atomic UPDATE below is the
+  // real race guard.
   const nft = one(await sql`
     SELECT id, share_hash, shared_to_x
     FROM completed_nfts
@@ -52,13 +54,27 @@ export default async function handler(req, res) {
     }
   }
 
-  await sql`
+  // Atomic flip — the WHERE clause includes `shared_to_x = false`, so
+  // only ONE parallel request flips the flag and gets a returned row.
+  // Any later request sees zero rows and skips the BUSTS credit
+  // (preventing a double-credit race that previously paid 200 BUSTS
+  // multiple times for a single share).
+  const flipped = one(await sql`
     UPDATE completed_nfts
        SET shared_to_x = true,
            shared_at   = now(),
            tweet_url   = ${tweetUrl || null}
-     WHERE id = ${portraitId} AND user_id = ${user.id}
-  `;
+     WHERE id = ${portraitId}
+       AND user_id = ${user.id}
+       AND shared_to_x = false
+    RETURNING id
+  `);
+  if (!flipped) {
+    // Another concurrent request already flipped the flag and
+    // collected the reward — no double-credit allowed.
+    return ok(res, { credited: false, alreadyShared: true });
+  }
+
   await sql`
     UPDATE users
        SET busts_balance = busts_balance + ${SHARE_NFT_BUSTS},
