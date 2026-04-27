@@ -67,49 +67,37 @@ export default function LorePage1969({ onNavigate }) {
       <Timeline />
 
       <Body>
-        <DropCap letter="B">efore the third assembly there was the second. Before
-        the second, the first.</DropCap> The history of the witnesses is older than
-        any of us; older than the city that held them; older than the paper they
-        used to keep their record. What we have inherited is not a tradition. It is
-        a wound.
+        <DropCap letter="T">hree assemblies. One Vault. One fire.</DropCap> The history
+        of the witnesses is older than any of us; older than the city that held
+        them; older than the paper they used to keep their record. What we have
+        inherited is not a tradition. It is a wound.
       </Body>
 
       <SectionLabel n="I" title="The First Assembly" margin="m" />
-      <Body>
-        The first assembly is not in the records, because the records were the
-        first assembly. They had no buildings. They had no name. We know they
-        existed because of a footnote, found in a margin in the Vault, in a hand
-        not the writer's: <em>this method we received from the elders before us, who
-        in turn received it from theirs, and so on, until the line is lost.</em>
-      </Body>
-      <Body>
-        Whatever they were, they passed the practice down. <em>To witness, to
-        remember, to seal the testimony.</em> Three verbs in that order. Three verbs
-        we are still trying to keep.
-      </Body>
-
-      <SectionLabel n="II" title="The Second Assembly · 2002" />
       <SidenoteRow>
         <SidenoteCol>
           <Body>
-            <DropCap letter="T">he second assembly was 2,002 in number,</DropCap> drawn
-            from across what was then a city. They came from rooms with low ceilings
-            and from chapels too small for them. They were strangers, monks, soldiers,
-            rebels, queens, prophets, poets &mdash; the eight oaths, kept for centuries
-            in private and now gathered for the first time in one place.
+            The first assembly is the oldest fact in our record. They had no name
+            for themselves; what we call them is what those who came after called
+            them. They built the Vault. They wrote the doctrine. They began the
+            practice the second and the third both inherit.
           </Body>
           <Body>
-            They did not announce themselves. They did not make themselves known. The
-            second assembly took for itself only what the first had: a method and a
-            silence. They met before sunrise, walked separately to the meeting hall,
-            sat in the order their oaths required, and worked for six hours each
-            morning. The afternoons they spent alone.
+            We know they existed because of a footnote, found in the margin of a
+            page that survived the fire only by accident: <em>this method we received
+            from the elders before us, who in turn received it from theirs, and so
+            on, until the line is lost.</em> They passed three verbs down: <em>to
+            witness, to remember, to seal the testimony.</em> Three verbs in that
+            order. Three verbs we are still trying to keep.
           </Body>
           <Body>
-            By the spring of the third year, they had completed two thousand and two
-            testimonies. One for every witness who had taken an oath. A complete
-            assembly of memory. They sealed each in an envelope of unbleached paper,
-            tied with a length of grey thread.
+            Across the centuries the first kept the Vault filled. By the time the
+            fire came, two thousand and two testimonies had been sealed inside it.
+            None of them were the first assembly's own &mdash; they were the
+            testimonies the first had gathered, witness by witness, generation by
+            generation. The first assembly had been gone a long time when the
+            Vault burned. What burned were their inheritors' inheritors'
+            inheritors.
           </Body>
         </SidenoteCol>
         <Sidenote>
@@ -131,31 +119,31 @@ export default function LorePage1969({ onNavigate }) {
         <VaultIntactSVG />
       </Illustration>
 
-      <SectionLabel n="III" title="The Vault" />
+      <SectionLabel n="II" title="The Vault" />
       <Body>
-        The Vault stood at the northern edge of the assembly grounds. It was small
-        for what it held. Stone exterior, iron door, two wooden shelves &mdash;
-        nothing more. It is important to be exact about this: the Vault was not
-        built for security. It was built for keeping. A keeper's house, not a
-        fortress.
+        The Vault stood at the northern edge of what had once been the first
+        assembly's grounds. It was small for what it held. Stone exterior, iron
+        door, two wooden shelves &mdash; nothing more. It is important to be exact
+        about this: the Vault was not built for security. It was built for keeping.
+        A keeper's house, not a fortress.
       </Body>
       <Body>
-        On the inner wall, in the assembly hand, the second carved a sentence that
-        was not visible from the door:
+        On the inner wall, in the first assembly's hand, was a sentence that was
+        not visible from the door:
       </Body>
       <Pull>The truth held in agreement is heavier than any iron.</Pull>
       <Body>
-        They believed it. They lived as if it was. The door remained unlocked
-        through the entirety of the second assembly's tenure, until the morning of
-        the fourteenth day, when iron and agreement turned out to be different
-        substances after all.
+        They believed it. The keepers who came after them believed it. The door
+        remained unlocked across centuries, until the morning of the fourteenth
+        day, when iron and agreement turned out to be different substances after
+        all.
       </Body>
 
       <Artifacts />
 
-      <SectionLabel n="IV" title="The Doctrine of Remembering" />
+      <SectionLabel n="III" title="The Doctrine of Remembering" />
       <Body>
-        The second assembly's doctrine was three paragraphs long, and it has come
+        The first assembly's doctrine was three paragraphs long, and it has come
         down to us only because two of the surviving thirty-three could recite it
         from memory. It begins with a definition.
       </Body>
@@ -175,15 +163,15 @@ export default function LorePage1969({ onNavigate }) {
         broken. A building cannot promise.
       </Pull>
       <Body>
-        They knew. They wrote it down. They kept the door unlocked anyway. This is
-        the part of the story we are still trying to understand.
+        They knew. They wrote it down. The keepers kept the door unlocked anyway.
+        This is the part of the story we are still trying to understand.
       </Body>
 
       <Illustration caption="14.09.1977 · 04:47 · THE EAST WALL">
         <FlameSVG />
       </Illustration>
 
-      <SectionLabel n="V" title="The Fourteenth Day" />
+      <SectionLabel n="IV" title="The Fourteenth Day · 1977" />
       <Body>
         On the fourteenth day of the ninth month, in the year 1977, the Vault
         burned. The fire was set at the eastern wall, at four hours and forty-seven
@@ -191,7 +179,7 @@ export default function LorePage1969({ onNavigate }) {
         records cannot &mdash; they were inside.
       </Body>
       <Body>
-        What we know we know from the thirty-three witnesses sleeping in the outer
+        What we know we know from the thirty-three keepers sleeping in the outer
         hall. They woke to the smell first, then the noise. By the time they
         reached the courtyard the eastern wall was already gone. Two of them ran
         in. They came out empty-handed. Three more tried. They came out coughing.
@@ -210,26 +198,27 @@ export default function LorePage1969({ onNavigate }) {
             from a window that was not yet broken when the fire reached it. None of
             the survivors ever wrote down what they had seen. The doctrine had
             forbidden it. To replace a lost testimony with a fresh memory was, in
-            their view, to forge a false one.
+            the first assembly's view, to forge a false one.
           </Body>
           <Body>
             The lost testimonies were not lost in the way an ordinary record is
             lost. They were lost the way a person is lost. The witnesses who had
-            sealed them were dead, or scattered, or had taken vows of silence in
-            grief. The seals could not be replaced. The voices could not be
-            recovered. We do not know who they were. We do not know what they had
-            seen. We have inherited their absence, and only that.
+            originally sealed them &mdash; centuries earlier, in some cases &mdash;
+            were long dead. The seals could not be replaced. The voices could not
+            be recovered. We do not know who they were. We do not know what they
+            had seen. We have inherited their absence, and only that.
           </Body>
         </SidenoteCol>
         <Sidenote>
           <SidenoteHeader>The Numbers</SidenoteHeader>
           <SidenoteBody>
-            <code>2,002</code> · in the second assembly<br/>
             <code>2,002</code> · testimonies sealed<br/>
             <code>14.09.1977</code> · the fire<br/>
-            <code>33</code> · survived<br/>
+            <code>33</code> · keepers survived<br/>
             <code>1,969</code> · were lost<br/>
-            <code>0</code> · were rewritten
+            <code>0</code> · were rewritten<br/>
+            <code>25</code> · years of silence<br/>
+            <code>2002</code> · the second forms
           </SidenoteBody>
         </Sidenote>
       </SidenoteRow>
@@ -238,9 +227,9 @@ export default function LorePage1969({ onNavigate }) {
         <AshSVG />
       </Illustration>
 
-      <SectionLabel n="VI" title="The Thirty-Three" />
+      <SectionLabel n="V" title="The Thirty-Three" />
       <Body>
-        The thirty-three did not stay together. By the end of the year they had
+        The thirty-three did not stay together. By the end of 1977 they had
         scattered. The outer hall was demolished. The Vault grounds were sold. Some
         of the survivors took new names. Some kept their oaths in private and
         passed them, where they could, to those they trusted. Others stopped
@@ -254,9 +243,9 @@ export default function LorePage1969({ onNavigate }) {
 
       <SurvivorGrid />
 
-      <SectionLabel n="VII" title="The Silence" />
+      <SectionLabel n="VI" title="The Silence · 1977 — 2002" />
       <Body>
-        For forty-nine years, no third assembly formed. People kept their oaths
+        For twenty-five years, no assembly formed. People kept their oaths
         privately, the way the survivors had taught them. Some of the practices
         were lost. Some were corrupted. The doctrine of remembering was, in many
         rooms, reduced to a habit of carrying small objects &mdash; a candle, a
@@ -265,38 +254,89 @@ export default function LorePage1969({ onNavigate }) {
       </Body>
       <Body>
         It was a long, quiet erosion. Not catastrophe. Just the steady loss that
-        follows catastrophe when no one is permitted to write the next page. The
-        first assembly had taught the second the method; the second was supposed to
-        teach the third; the second never had the chance.
+        follows catastrophe when no one is permitted to write the next page.
       </Body>
 
-      <SectionLabel n="VIII" title="The Third Assembly · 1969" />
+      <SectionLabel n="VII" title="The Second Assembly · 2002" />
       <Body>
-        <DropCap letter="W">e are the third assembly.</DropCap> We are 1,969 in number,
-        because that is how many testimonies the second assembly lost. We are not
-        replacing them. We are remembering them by being more careful than they
-        were.
+        <DropCap letter="T">wenty-five years after the fire,</DropCap> the second
+        assembly formed. Two thousand and two of them, drawn from across what had
+        become a different city, descendants of the keepers and inheritors of the
+        oaths. They came from rooms with low ceilings and from chapels too small
+        for them. The eight oaths, kept in private through the silence, gathered
+        in one place again.
+      </Body>
+      <Body>
+        They did not announce themselves. They did not make themselves known. The
+        second took for itself only what the first had: a method and a silence.
+        They met before sunrise, walked separately to the meeting hall, sat in the
+        order their oaths required, and worked for six hours each morning. The
+        afternoons they spent alone.
+      </Body>
+      <Body>
+        They had no Vault. The first's was ash. They tried to build a new one
+        &mdash; not from stone but from agreement, kept by twos and threes, every
+        testimony witnessed by another. For a few years it held.
+      </Body>
+      <Pull>
+        The second assembly did not fade. It was undone.
+      </Pull>
+      <Body>
+        The adversary who set the fire in 1977 was never named, never caught,
+        never gone. Twenty-five years was long enough for the witnesses to forget
+        what they had been carrying for, but not long enough for the one who
+        burned the first Vault to forget where the keepers' children had gone.
+        When the second assembly came together, the adversary was already among
+        them. Not as a stranger &mdash; as someone trusted.
+      </Body>
+      <Body>
+        We do not have the details. The second did not record them, and the few
+        who survived the second's collapse will not say. What we know is the
+        shape of it: a slow, deliberate breaking. A testimony exposed. A keeper
+        turned. An oath, held for centuries in private, used as a weapon against
+        the assembly that had taken it. By the late years of the second, agreement
+        itself had become unsafe. The doctrine that said <em>the truth held in
+        agreement is heavier than any iron</em> had been twisted: agreement, weighed
+        wrong, can be the heaviest weapon of all.
+      </Body>
+      <Body>
+        The second assembly did not fail because they were careless. They failed
+        because they were attacked, and because they had not yet learned how to
+        keep what cannot be locked.
+      </Body>
+
+      <SectionLabel n="VIII" title="The Third Assembly · 2026" />
+      <Body>
+        <DropCap letter="W">e are the third assembly.</DropCap> We are 1,969 in
+        number, because that is how many testimonies the fire took from the first.
+        We are not replacing those testimonies. We are remembering them by being
+        more careful than the keepers of 1977 were, and by trying to fail
+        differently than the second.
       </Body>
       <Body>
         We have inherited their lesson, not their grounds. There is no building to
         defend. The Vault now is digital, distributed, on-chain, in your wallet,
         in the gallery, in the testimony you carry forward when you build your
         portrait. Each portrait is a sealed envelope. Each trait pulled from the
-        hourly drop is a fragment of method, kept the way the second kept theirs:
+        hourly drop is a fragment of method, kept the way the first kept theirs:
         in the order required, under the conditions required, by witnesses who
         have agreed to be present.
       </Body>
       <Body>
-        We are not trying to be the second assembly. The second assembly was good,
-        and they failed. We are trying to fail differently, or not at all.
+        We are not the first. We are not the second. We are what comes after
+        catastrophe, after the long silence, and after the second assembly was
+        broken from inside. The adversary that took the Vault in 1977 and the
+        second in its later years has not been named, has not been caught, and is
+        not assumed gone. The third assembly proceeds as if the fire could be
+        set tonight.
       </Body>
 
       <SectionLabel n="IX" title="The Doctrine of the Third" />
       <Body>
         The doctrine of the third assembly is one sentence. It was decided by
-        agreement and not by writing, because the second's writing burned, and
-        because we trust agreement now in a way they could not have. The sentence
-        is the only doctrine we have, and it is enough.
+        agreement and not by writing, because the first's writing burned, and
+        because we trust agreement now in a way the keepers of 1977 could not
+        have. The sentence is the only doctrine we have, and it is enough.
       </Body>
 
       <Pull big lime>The Vault must not burn again.</Pull>
@@ -414,7 +454,7 @@ function Hero() {
         textTransform: 'none',
         maxWidth: 720,
       }}>
-        compiled from fragments · the morning of 14.09.1977 · onward
+        compiled from fragments · 1977 onward · arranged by the third assembly
       </div>
     </header>
   );
@@ -425,10 +465,10 @@ function Hero() {
 // ─────────────────────────────────────────────────────────────────────
 function Timeline() {
   const stops = [
-    { year: 'before',  label: 'The First Assembly' },
-    { year: '2002',    label: 'The Second Assembly forms' },
-    { year: '1977',    label: 'The Vault burns' },
-    { year: '2026',    label: 'The Third Assembly · 1,969' },
+    { year: 'before · 1969',  label: 'The First Assembly' },
+    { year: '1977',           label: 'The Vault burns' },
+    { year: '2002',           label: 'The Second Assembly forms' },
+    { year: '2026',           label: 'The Third Assembly' },
   ];
   return (
     <div className="lore-timeline" style={{
