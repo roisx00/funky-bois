@@ -235,7 +235,13 @@ export default function BuilderPage({ onNavigate }) {
     }
   };
 
-  if (inventory.length === 0) {
+  // Empty state ONLY for users with no traits AND no completed portrait.
+  // Without the completedNFTs check, a user who just built and consumed
+  // their 8 traits would land here and never see the share/celebration
+  // view (portrait-submit deletes inventory rows that hit quantity 0).
+  // The celebration view rendered below handles the post-build flow,
+  // including the "Share on X · +200 BUSTS" CTA.
+  if (inventory.length === 0 && completedNFTs.length === 0) {
     return (
       <div className="builder-page">
         <div className="builder-empty">
