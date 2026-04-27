@@ -17,6 +17,7 @@ import portraitSubmit      from './_routes/portrait-submit.js';
 import portraitShare       from './_routes/portrait-share.js';
 import whitelistRecord     from './_routes/whitelist-record.js';
 import mintBindWallet      from './_routes/mint-bind-wallet.js';
+import adminMintWallets    from './_routes/admin-mint-wallets.js';
 import adminWhitelist      from './_routes/admin-whitelist.js';
 import adminCredit         from './_routes/admin-credit.js';
 import adminUsers          from './_routes/admin-users.js';
@@ -79,6 +80,7 @@ const ROUTES = {
   'portrait-share':      portraitShare,
   'whitelist-record':    whitelistRecord,
   'mint-bind-wallet':    mintBindWallet,
+  'admin-mint-wallets':  adminMintWallets,
   'admin-whitelist':     adminWhitelist,
   'admin-credit':        adminCredit,
   'admin-users':         adminUsers,

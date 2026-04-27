@@ -237,11 +237,13 @@ export default function AdminPanel({ onNavigate }) {
 
 
       {/* WL roster */}
+      <MintWalletExports />
+
       <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
         <div className="admin-roster-head">
           <div>
-            <div className="admin-roster-title">Whitelist roster</div>
-            <div className="admin-roster-meta">{wlEntries.length} secured / source: live DB</div>
+            <div className="admin-roster-title">Whitelist roster (legacy table)</div>
+            <div className="admin-roster-meta">{wlEntries.length} signed via portrait flow / source: whitelist table</div>
           </div>
           <div className="admin-roster-actions">
             <a
@@ -251,7 +253,7 @@ export default function AdminPanel({ onNavigate }) {
               rel="noreferrer"
             >Download JSON</a>
             <a
-              className="btn btn-solid btn-sm"
+              className="btn btn-ghost btn-sm"
               href="/api/admin-whitelist?format=csv"
               target="_blank"
               rel="noreferrer"
@@ -2167,6 +2169,77 @@ function CollabQueue() {
           )}
         </div>
       ))}
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Mint wallet exports — Tier 1 + Tier 2 separately, plus combined.
+// Source: users table (the authoritative wallet binding column).
+// ─────────────────────────────────────────────────────────────────────
+function MintWalletExports() {
+  const [data, setData]     = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/admin-mint-wallets', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d) => { if (!cancelled) { setData(d); setLoading(false); } })
+      .catch((e) => { if (!cancelled) { setError(String(e)); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+      <div className="admin-roster-head">
+        <div>
+          <div className="admin-roster-title">Mint wallet exports</div>
+          <div className="admin-roster-meta">
+            {loading
+              ? 'loading…'
+              : error
+              ? `error · ${error}`
+              : `${data?.tier1?.total ?? 0} Tier 1 · ${data?.tier2?.total ?? 0} Tier 2 · ${data?.grandTotal ?? 0} total`}
+          </div>
+        </div>
+        <div className="admin-roster-actions">
+          <a
+            className="btn btn-solid btn-sm"
+            href="/api/admin-mint-wallets?format=csv&tier=1"
+            target="_blank"
+            rel="noreferrer"
+          >Tier 1 CSV</a>
+          <a
+            className="btn btn-solid btn-sm"
+            href="/api/admin-mint-wallets?format=csv&tier=2"
+            target="_blank"
+            rel="noreferrer"
+          >Tier 2 CSV</a>
+          <a
+            className="btn btn-ghost btn-sm"
+            href="/api/admin-mint-wallets?format=csv&tier=all"
+            target="_blank"
+            rel="noreferrer"
+          >Combined CSV</a>
+        </div>
+      </div>
+      <div style={{
+        padding: '14px 18px',
+        border: '1px solid var(--hairline)',
+        background: 'var(--paper-2)',
+        fontSize: 12.5,
+        lineHeight: 1.65,
+        color: 'var(--text-3)',
+      }}>
+        <strong style={{ color: 'var(--ink)' }}>Source of truth:</strong> the
+        <code style={{ background: 'transparent' }}> users.wallet_address </code>
+        column. Tier 1 = built portrait holders with a wallet bound. Tier 2 =
+        pre-WL approved with a wallet bound, not yet built. Both exclude suspended
+        accounts. Tier 1 supersedes Tier 2 when a user builds a portrait — the
+        next download will reflect that automatically.
+      </div>
     </section>
   );
 }
