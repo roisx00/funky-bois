@@ -338,18 +338,39 @@ export default function AdminPanel({ onNavigate }) {
             No whitelisted wallets yet. Entries appear after a user submits a portrait, shares on X, and connects their wallet.
           </div>
         ) : (
-          wlEntries.map((r) => (
-            <div key={`${r.xUsername}-${r.walletAddress}`} className="admin-roster-row">
-              <div>
-                <div className="admin-roster-user">@{r.xUsername || 'anon'}</div>
-                <div className="admin-roster-wallet">{shortAddr(r.walletAddress)}</div>
-              </div>
-              <div className="admin-roster-wallet" style={{ fontFamily: 'var(--font-mono)' }}>
-                {r.walletAddress}
-              </div>
-              <div className="admin-roster-time">{timeAgo(r.claimedAt)}</div>
-            </div>
-          ))
+          // Collapsed by default — the roster can run hundreds of rows and
+          // was eating most of the admin panel's vertical space. Downloads
+          // above are the actual workflow; the inline list is for spot-
+          // checks only, so hide it behind a disclosure.
+          <details>
+            <summary style={{
+              cursor: 'pointer',
+              padding: '14px 24px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'var(--text-3)',
+              userSelect: 'none',
+            }}>
+              Show inline roster ({wlEntries.length} rows)
+            </summary>
+            <PaginatedList
+              items={wlEntries}
+              render={(r) => (
+                <div key={`${r.xUsername}-${r.walletAddress}`} className="admin-roster-row">
+                  <div>
+                    <div className="admin-roster-user">@{r.xUsername || 'anon'}</div>
+                    <div className="admin-roster-wallet">{shortAddr(r.walletAddress)}</div>
+                  </div>
+                  <div className="admin-roster-wallet" style={{ fontFamily: 'var(--font-mono)' }}>
+                    {r.walletAddress}
+                  </div>
+                  <div className="admin-roster-time">{timeAgo(r.claimedAt)}</div>
+                </div>
+              )}
+            />
+          </details>
         )}
       </section>
 
