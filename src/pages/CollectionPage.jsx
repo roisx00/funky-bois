@@ -1,10 +1,13 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useAccount, useSignMessage } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import ElementCard from '../components/ElementCard';
 import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
 import { MysteryBoxOpener } from '../components/MysteryBox';
 import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
+import { mintBindMessage } from '../utils/wlMessage';
 
 const TABS = [
   { id: 'overview',  label: 'Overview' },
@@ -23,6 +26,8 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
     pendingGifts, claimGift, sendGift,
     pendingBustsTransfers, sendBusts, claimBustsTransfer,
     xUser, referralCount, discordUsername, discordInviteUrl,
+    dropEligible, walletBound, walletAddress: serverWalletAddress,
+    bindMintWallet,
   } = useGame();
   const normalized = initialTab === 'elements' ? 'inventory' : initialTab;
   const [tab, setTab] = useState(normalized);
@@ -101,55 +106,87 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       {/* ─── Overview ─── */}
       {tab === 'overview' && (
         <div className="dash-overview-grid">
-          <div className="gift-card">
-            <div className="gift-card-title">Progress toward portrait</div>
-            <div className="gift-card-sub">
-              You've collected {progressCount} of {TOTAL_TYPES} trait types. Complete the set to build your portrait and unlock whitelist.
+          {/* Mint wallet card — only shown to relevant audiences. The
+              "Progress toward portrait" card is hidden once the user has
+              built (it would just be a confusing wall of green checkmarks). */}
+          <MintWalletCard
+            hasBuilt={completedNFTs.length > 0}
+            isWhitelisted={isWhitelisted}
+            dropEligible={dropEligible === true}
+            walletBound={walletBound === true}
+            serverWalletAddress={serverWalletAddress}
+            xUsername={xUser?.username}
+            bindMintWallet={bindMintWallet}
+          />
+
+          {completedNFTs.length === 0 && (
+            <div className="gift-card">
+              <div className="gift-card-title">Progress toward portrait</div>
+              <div className="gift-card-sub">
+                You've collected {progressCount} of {TOTAL_TYPES} trait types. Complete the set to build your portrait and unlock whitelist.
+              </div>
+              <div className="progress-bar-wrap" style={{ marginBottom: 20 }}>
+                <div className="progress-bar-fill" style={{ width: `${(progressCount/TOTAL_TYPES)*100}%` }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                {ELEMENT_TYPES.map((type) => {
+                  const has = byType[type].length > 0;
+                  return (
+                    <div key={type} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '10px 14px', border: '1px solid var(--hairline)',
+                      background: has ? 'var(--accent-dim)' : 'var(--paper-2)',
+                    }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.06em', color: has ? 'var(--ink)' : 'var(--text-4)' }}>
+                        {ELEMENT_LABELS[type]}
+                      </span>
+                      <span style={{ color: has ? 'var(--ink)' : 'var(--text-4)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                        {has ? '✓' : '/'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+                <button className="btn btn-solid btn-sm btn-arrow" onClick={() => onNavigate('drop')}>Go to drop</button>
+                {hasAllTypes && <button className="btn btn-accent btn-sm" onClick={() => onNavigate('builder')}>Build portrait</button>}
+              </div>
             </div>
-            <div className="progress-bar-wrap" style={{ marginBottom: 20 }}>
-              <div className="progress-bar-fill" style={{ width: `${(progressCount/TOTAL_TYPES)*100}%` }} />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-              {ELEMENT_TYPES.map((type) => {
-                const has = byType[type].length > 0;
-                return (
-                  <div key={type} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '10px 14px', border: '1px solid var(--hairline)',
-                    background: has ? 'var(--accent-dim)' : 'var(--paper-2)',
-                  }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.06em', color: has ? 'var(--ink)' : 'var(--text-4)' }}>
-                      {ELEMENT_LABELS[type]}
-                    </span>
-                    <span style={{ color: has ? 'var(--ink)' : 'var(--text-4)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-                      {has ? '✓' : '/'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-              <button className="btn btn-solid btn-sm btn-arrow" onClick={() => onNavigate('drop')}>Go to drop</button>
-              {hasAllTypes && <button className="btn btn-accent btn-sm" onClick={() => onNavigate('builder')}>Build portrait</button>}
-            </div>
-          </div>
+          )}
 
           <div className="gift-card">
             <div className="gift-card-title">Shortcuts</div>
-            <div className="gift-card-sub">Jump straight into the actions that push your set forward.</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button className="btn btn-ghost" onClick={() => setTab('boxes')}>
-                Open a Mystery Box
-              </button>
-              <button className="btn btn-ghost" onClick={() => setTab('tasks')}>
-                Complete X tasks · {taskCount} live
-              </button>
-              <button className="btn btn-ghost" onClick={() => setTab('gift')}>
-                Gift traits · {myGifts.length} inbox
-              </button>
-              <button className="btn btn-ghost" onClick={() => setTab('history')}>
-                BUSTS history
-              </button>
+            <div className="gift-card-sub" style={{ marginBottom: 18 }}>
+              Jump straight into the actions that push your set forward.
+            </div>
+            <div style={{ border: '1px solid var(--hairline)', background: 'var(--paper-2)' }}>
+              <ShortcutRow
+                kicker="BOXES"
+                title="Open a Mystery Box"
+                meta="Spend BUSTS for better odds"
+                onClick={() => setTab('boxes')}
+              />
+              <ShortcutRow
+                kicker="TASKS"
+                title="Complete X tasks"
+                meta={`${taskCount} live`}
+                badge={taskCount > 0 ? taskCount : null}
+                onClick={() => setTab('tasks')}
+              />
+              <ShortcutRow
+                kicker="GIFT"
+                title="Gift traits"
+                meta={`${myGifts.length} inbox`}
+                badge={myGifts.length > 0 ? myGifts.length : null}
+                onClick={() => setTab('gift')}
+              />
+              <ShortcutRow
+                kicker="HISTORY"
+                title="BUSTS history"
+                meta="Every credit and debit"
+                onClick={() => setTab('history')}
+                last
+              />
             </div>
             <div style={{ marginTop: 24, padding: '14px 18px', border: '1px solid var(--hairline)', background: 'var(--paper-2)' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-4)', marginBottom: 6 }}>Referrals</div>
@@ -1082,6 +1119,216 @@ function ConnectDiscord({ username, inviteUrl }) {
           </button>
         </>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// One row inside the Shortcuts card. Hairline-separated, kicker label
+// on top, title + meta below, optional count badge, chevron at right.
+// ─────────────────────────────────────────────────────────────────────
+function ShortcutRow({ kicker, title, meta, badge, onClick, last }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        width: '100%', textAlign: 'left',
+        padding: '14px 18px',
+        background: 'transparent', border: 'none',
+        borderBottom: last ? 'none' : '1px solid var(--hairline)',
+        cursor: 'pointer',
+        font: 'inherit', color: 'inherit',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-dim)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em',
+          textTransform: 'uppercase', color: 'var(--text-4)', marginBottom: 4,
+        }}>
+          {kicker}
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 500,
+          letterSpacing: '-0.01em', color: 'var(--ink)',
+        }}>
+          {title}
+        </div>
+        {meta ? (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
+            {meta}
+          </div>
+        ) : null}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {badge != null ? (
+          <span style={{
+            background: 'var(--accent)', color: 'var(--ink)',
+            border: '1px solid var(--ink)',
+            fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
+            padding: '2px 8px', minWidth: 22, textAlign: 'center',
+          }}>
+            {badge}
+          </span>
+        ) : null}
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--text-3)' }}>›</span>
+      </div>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Mint wallet card. Three audience-specific copy variants:
+//   built + no wallet  → GTD bind ("you built, lock your slot")
+//   pre-WL + no built   → FCFS bind ("submit early, auto-promotes if you build")
+//   neither             → mint-not-announced notice + scam warning
+// When walletBound is true, the card collapses to a compact "✓ wallet
+// bound for [tier]" status so users get confirmation without a CTA.
+// ─────────────────────────────────────────────────────────────────────
+function MintWalletCard({
+  hasBuilt, isWhitelisted, dropEligible,
+  walletBound, serverWalletAddress, xUsername,
+  bindMintWallet,
+}) {
+  const toast = useToast();
+  const { address: wagmiAddress, isConnected } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+  const { openConnectModal } = useConnectModal();
+  const [busy, setBusy] = useState(false);
+
+  // Tier the user lands on once their wallet is bound. Builders go to
+  // GTD; pre-WL non-builders go to FCFS. If they later build, server
+  // state flips and they appear on GTD on the next /api/me hydration.
+  const tier = (isWhitelisted || hasBuilt) ? 'GTD' : 'FCFS';
+
+  // Audience: who is this card speaking to right now?
+  const audience =
+    walletBound        ? 'bound'
+    : (hasBuilt || isWhitelisted) ? 'built_no_wallet'
+    : dropEligible     ? 'prewl_no_wallet'
+    :                    'not_eligible';
+
+  async function handleBind() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      // Step 1: ensure a wagmi connection exists. If not, pop the
+      // RainbowKit modal — user picks wallet, returns connected.
+      let address = wagmiAddress;
+      if (!isConnected || !address) {
+        if (openConnectModal) openConnectModal();
+        toast.info?.('Open the wallet connect popup, then click again to sign.');
+        setBusy(false);
+        return;
+      }
+      // Step 2: sign the canonical message proving wallet ownership.
+      const message = mintBindMessage({ xUsername, walletAddress: address });
+      const signature = await signMessageAsync({ message });
+      // Step 3: server-side bind.
+      const r = await bindMintWallet({ walletAddress: address, signature });
+      if (r?.ok) {
+        toast.success(
+          r.tier === 'gtd'
+            ? 'Wallet bound. You’re on the GTD list.'
+            : 'Wallet bound. You’re on the FCFS list. Build a portrait to upgrade to GTD.'
+        );
+      } else {
+        toast.error(`Could not bind wallet: ${r?.reason || 'unknown'}`);
+      }
+    } catch (e) {
+      console.warn('[mint-bind] failed:', e?.message || e);
+      toast.error('Wallet bind cancelled or failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ── Compact bound state ─────────────────────────────────────────
+  if (audience === 'bound') {
+    const short = serverWalletAddress
+      ? `${serverWalletAddress.slice(0, 6)}…${serverWalletAddress.slice(-4)}`
+      : null;
+    return (
+      <div className="gift-card">
+        <div className="gift-card-title">Mint wallet</div>
+        <div className="gift-card-sub" style={{ marginBottom: 12 }}>
+          You’re positioned for the upcoming mint. Mint date is not announced yet — watch <strong>@THE1969ETH</strong>.
+        </div>
+        <div style={{ padding: '14px 18px', border: '1px solid var(--hairline)', background: 'var(--paper-2)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-4)', marginBottom: 6 }}>
+            Tier
+          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em' }}>
+            ✓ {tier} mint
+          </div>
+          {short ? (
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+              wallet {short}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Not eligible: just an informational notice + scam warning ──
+  if (audience === 'not_eligible') {
+    return (
+      <div className="gift-card">
+        <div className="gift-card-title">Mint update</div>
+        <div className="gift-card-sub" style={{ marginBottom: 12 }}>
+          Mint date is not announced yet. The only official source is <strong>@THE1969ETH</strong>.
+          We will never DM you, ask for your seed, or send pre-mint links.
+        </div>
+        <div style={{ padding: '14px 18px', border: '1px solid var(--hairline)', background: 'var(--paper-2)', fontSize: 13, color: 'var(--text-3)', lineHeight: 1.55 }}>
+          To position for the mint:<br/>
+          1. Apply for pre-whitelist when applications reopen, or<br/>
+          2. Build a portrait via the hourly drop.<br/>
+          Either path lets you bind a wallet here.
+        </div>
+      </div>
+    );
+  }
+
+  // ── Active CTA: built-no-wallet OR prewl-no-wallet ─────────────
+  const isBuilder = audience === 'built_no_wallet';
+  return (
+    <div className="gift-card">
+      <div className="gift-card-title">
+        {isBuilder ? 'Lock your GTD mint slot' : 'Submit wallet for FCFS mint'}
+      </div>
+      <div className="gift-card-sub" style={{ marginBottom: 14 }}>
+        {isBuilder ? (
+          <>
+            You’ve built your portrait but haven’t submitted a wallet yet. Connect now so we can position you for the GTD mint.
+            Mint date is not announced — watch <strong>@THE1969ETH</strong>.
+          </>
+        ) : (
+          <>
+            You’re pre-approved but haven’t built a portrait yet. Submit your wallet now to participate in the <strong>FCFS</strong> mint. If you build a portrait before mint, your wallet auto-upgrades to <strong>GTD</strong>.
+          </>
+        )}
+      </div>
+
+      <div style={{ padding: '14px 18px', border: '1px solid var(--hairline)', background: 'var(--paper-2)', marginBottom: 14 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-4)', marginBottom: 6 }}>
+          Current tier
+        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em' }}>
+          {tier} mint
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+          {isBuilder ? 'Guaranteed slot once your wallet is bound.' : 'First-come, first-served once mint opens.'}
+        </div>
+      </div>
+
+      <button className="btn btn-solid btn-sm btn-arrow" onClick={handleBind} disabled={busy}>
+        {busy
+          ? 'Working…'
+          : (!isConnected ? 'Connect wallet' : 'Sign & submit')}
+      </button>
     </div>
   );
 }

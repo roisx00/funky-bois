@@ -97,6 +97,7 @@ function emptyState() {
     xUser:           null, // { id, username, name, avatar }
     walletAddress:   null,
     isWalletConnected: false,
+    walletBound:     false,
     bustsBalance:    0,
     bustsHistory:    [],
     inventory:       [],
@@ -142,6 +143,7 @@ function reducer(state, action) {
         },
         walletAddress:    me.user.walletAddress || null,
         isWalletConnected: !!me.user.walletAddress,
+        walletBound:     me.user.walletBound === true,
         bustsBalance:     me.user.bustsBalance,
         isWhitelisted:    me.user.isWhitelisted,
         followClaimedAt:  me.user.followClaimedAt || null,
@@ -638,6 +640,19 @@ export function GameProvider({ children }) {
     return r;
   }, [refreshMe]);
 
+  // Bind a wallet for the upcoming mint without requiring a portrait.
+  // Used by the dashboard MintWalletCard for pre-WL-approved users
+  // (FCFS) and built-but-unbound users (GTD).
+  const bindMintWallet = useCallback(async ({ walletAddress, signature }) => {
+    if (!signature) return { ok: false, reason: 'signature_required' };
+    const r = await jpost('/api/mint-bind-wallet', { walletAddress, signature });
+    if (r.ok) {
+      dispatch({ type: 'SET_WALLET', address: walletAddress });
+      refreshMe();
+    }
+    return r;
+  }, [refreshMe]);
+
   // Wallet bridge: WalletBridge dispatches address into context
   const bridgeWallet = useCallback((address) => {
     dispatch({ type: 'SET_WALLET', address });
@@ -711,6 +726,7 @@ export function GameProvider({ children }) {
     markShared,
     sharePortrait,
     recordWhitelist,
+    bindMintWallet,
     removeElement,
     addGiftedElement,
     sendGift,

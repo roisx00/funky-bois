@@ -11,3 +11,13 @@ export function whitelistClaimMessage({ xUsername, portraitId, walletAddress }) 
     `wallet: ${wallet}`,
   ].join('\n');
 }
+
+export function mintBindMessage({ xUsername, walletAddress }) {
+  const handle = String(xUsername || '').toLowerCase();
+  const wallet = String(walletAddress || '').toLowerCase();
+  return [
+    'THE 1969 · mint wallet bind',
+    `handle: @${handle}`,
+    `wallet: ${wallet}`,
+  ].join('\n');
+}

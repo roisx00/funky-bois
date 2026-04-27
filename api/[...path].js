@@ -16,6 +16,7 @@ import usersExistsHandler  from './_routes/users-exists.js';
 import portraitSubmit      from './_routes/portrait-submit.js';
 import portraitShare       from './_routes/portrait-share.js';
 import whitelistRecord     from './_routes/whitelist-record.js';
+import mintBindWallet      from './_routes/mint-bind-wallet.js';
 import adminWhitelist      from './_routes/admin-whitelist.js';
 import adminCredit         from './_routes/admin-credit.js';
 import adminUsers          from './_routes/admin-users.js';
@@ -77,6 +78,7 @@ const ROUTES = {
   'portrait-submit':     portraitSubmit,
   'portrait-share':      portraitShare,
   'whitelist-record':    whitelistRecord,
+  'mint-bind-wallet':    mintBindWallet,
   'admin-whitelist':     adminWhitelist,
   'admin-credit':        adminCredit,
   'admin-users':         adminUsers,
