@@ -118,6 +118,7 @@ function emptyState() {
     portraitsBuilt:   0,
     supplyCap:        1969,
     recentClaims:     [],
+    prewlApplicationsOpen: true,
   };
 }
 
@@ -166,6 +167,7 @@ function reducer(state, action) {
         mySessionClaims: typeof me.mySessionClaims === 'number'
           ? Math.max(me.mySessionClaims, state.mySessionClaims)
           : state.mySessionClaims,
+        prewlApplicationsOpen: me.prewlApplicationsOpen !== false,
       };
     }
 

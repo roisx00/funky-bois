@@ -14,11 +14,23 @@ import { sql, one } from '../_lib/db.js';
 import { requireActiveUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
+import { getConfig } from '../_lib/config.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireActiveUser(req, res);
   if (!user) return;
+
+  // Admin-controlled kill switch. When app_config.prewl_applications_open
+  // is set to '0', new + repeat submissions are blocked. Approved users
+  // are unaffected — they keep their access. Already-pending users see
+  // their pending status as normal.
+  const open = await getConfig('prewl_applications_open', '1');
+  if (String(open) !== '1') {
+    return bad(res, 403, 'applications_closed', {
+      hint: 'Pre-whitelist applications are temporarily closed. Watch @THE1969ETH for the reopen announcement.',
+    });
+  }
 
   // Soft per-user rate limit so someone can't spam the queue.
   if (!(await rateLimit(res, user.id, { name: 'prewl_apply', max: 3, windowSecs: 3600 }))) return;

@@ -23,6 +23,7 @@ export default function DropPage() {
     authenticated, xUser, suspended,
     dropEligible, preWhitelist, completedNFTs, isAdmin,
     refreshMe, loginWithX, recentClaims,
+    prewlApplicationsOpen,
   } = useGame();
   const toast = useToast();
 
@@ -44,16 +45,21 @@ export default function DropPage() {
   const hasBuilt = (completedNFTs || []).length > 0;
   const status   = preWhitelist?.status || null;
 
-  // Derived top-level state
+  // Derived top-level state. When pre-WL applications are closed, the
+  // "not_applied" and "rejected" stages collapse into a single "closed"
+  // stage so users see a clean reopen-soon message instead of a form
+  // that the API would reject anyway. Already-pending and approved
+  // users are unaffected — they keep their existing flow.
   const stage = useMemo(() => {
     if (!authenticated)            return 'signed_out';
     if (suspended)                 return 'suspended';
     if (hasBuilt)                  return 'built';
     if (dropEligible)              return 'approved';
     if (status === 'pending')      return 'pending';
+    if (prewlApplicationsOpen === false) return 'closed';
     if (status === 'rejected')     return 'rejected';
     return 'not_applied';
-  }, [authenticated, suspended, hasBuilt, dropEligible, status]);
+  }, [authenticated, suspended, hasBuilt, dropEligible, status, prewlApplicationsOpen]);
 
   const [busy, setBusy]       = useState(false);
   const [revealed, setRevealed] = useState(null);
@@ -166,6 +172,10 @@ export default function DropPage() {
                 busy={busy}
                 onApply={handleApply}
               />
+            )}
+
+            {stage === 'closed' && (
+              <ClosedStage />
             )}
 
             {stage === 'pending' && (
@@ -410,6 +420,21 @@ function ApplyStage({ xUser, message, setMessage, busy, onApply }) {
       >
         {busy ? 'Submitting...' : 'Apply for pre-whitelist'}
       </button>
+    </div>
+  );
+}
+
+function ClosedStage() {
+  return (
+    <div className="drop-v2-stage-pending">
+      <div className="drop-v2-stage-title">Pre-whitelist applications are closed</div>
+      <p className="drop-v2-stage-sub">
+        We&rsquo;re reviewing the existing queue ahead of the mint. New applications
+        will reopen soon — watch <strong>@THE1969ETH</strong> for the announcement.
+      </p>
+      <div className="drop-v2-pending-meta">
+        Already approved? Your access is unchanged. Already pending? Your application is still in the queue.
+      </div>
     </div>
   );
 }
