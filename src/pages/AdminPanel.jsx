@@ -64,6 +64,79 @@ async function jpost(path, body) {
   return { ok: r.ok, status: r.status, ...d };
 }
 
+// One row in the All Users table. Renders user identity + balance + flags
+// + a Suspend/Unsuspend toggle. The toggle prompts for an optional reason
+// and lands an audit-trail row in busts_ledger via /api/admin-suspend.
+function UserRow({ user, onChanged }) {
+  const [busy, setBusy] = useState(false);
+
+  async function toggle() {
+    if (busy) return;
+    const action = user.suspended ? 'unsuspend' : 'suspend';
+    const verb   = user.suspended ? 'UNSUSPEND' : 'SUSPEND';
+    const reason = window.prompt(
+      `${verb} @${user.xUsername}?\n\nOptional reason (logged to busts_ledger):`,
+      user.suspended ? 'Manual review · cleared' : ''
+    );
+    if (reason === null) return; // user cancelled
+    setBusy(true);
+    const r = await jpost('/api/admin-suspend', {
+      userId: user.id,
+      action,
+      reason: reason.trim() || undefined,
+    });
+    setBusy(false);
+    if (!r.ok) {
+      alert(`Failed: ${r.error || r.reason || 'unknown'}`);
+      return;
+    }
+    if (typeof onChanged === 'function') onChanged();
+  }
+
+  return (
+    <div className="admin-roster-row users-row" style={user.suspended ? { opacity: 0.7 } : null}>
+      <div>
+        <div className="admin-roster-user">
+          @{user.xUsername}
+          {user.suspended ? (
+            <span style={{
+              marginLeft: 8,
+              fontFamily: 'var(--font-mono)',
+              fontSize: 9,
+              letterSpacing: '0.18em',
+              padding: '2px 6px',
+              background: 'var(--ink)',
+              color: '#fff',
+            }}>SUSPENDED</span>
+          ) : null}
+        </div>
+        <div className="admin-roster-wallet">
+          {user.walletAddress ? shortAddr(user.walletAddress) : 'no wallet'}
+          {user.xFollowers ? ` · ${user.xFollowers.toLocaleString()} followers` : ''}
+        </div>
+      </div>
+      <div className="admin-roster-wallet" style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)', fontWeight: 500 }}>
+        {user.bustsBalance.toLocaleString()} <span style={{ fontSize: 10, color: 'var(--text-4)' }}>BUSTS</span>
+      </div>
+      <div className="admin-roster-time">
+        {user.isWhitelisted ? <span style={{ color: 'var(--ink)', fontWeight: 600 }}>WL</span> : '/'}
+        {user.dropEligible ? <span style={{ marginLeft: 6, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink)' }}>·DROP</span> : null}
+      </div>
+      <div className="admin-roster-time">{timeAgo(user.createdAt)}</div>
+      <div>
+        <button
+          className={user.suspended ? 'btn btn-solid btn-sm' : 'btn btn-ghost btn-sm'}
+          onClick={toggle}
+          disabled={busy}
+          style={{ minWidth: 110 }}
+        >
+          {busy ? '...' : (user.suspended ? 'Unsuspend' : 'Suspend')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPanel({ onNavigate }) {
   const { isAdmin, hydrated, authenticated, xUser } = useGame();
 
@@ -317,19 +390,7 @@ export default function AdminPanel({ onNavigate }) {
           <PaginatedList
             items={users}
             render={(u) => (
-              <div key={u.id} className="admin-roster-row users-row">
-                <div>
-                  <div className="admin-roster-user">@{u.xUsername}</div>
-                  <div className="admin-roster-wallet">{u.walletAddress ? shortAddr(u.walletAddress) : 'no wallet'}</div>
-                </div>
-                <div className="admin-roster-wallet" style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)', fontWeight: 500 }}>
-                  {u.bustsBalance.toLocaleString()} <span style={{ fontSize: 10, color: 'var(--text-4)' }}>BUSTS</span>
-                </div>
-                <div className="admin-roster-time">
-                  {u.isWhitelisted ? <span style={{ color: 'var(--ink)', fontWeight: 600 }}>WL</span> : '/'}
-                </div>
-                <div className="admin-roster-time">{timeAgo(u.createdAt)}</div>
-              </div>
+              <UserRow key={u.id} user={u} onChanged={refreshAll} />
             )}
           />
         )}
