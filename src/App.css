@@ -2445,7 +2445,8 @@
 }
 .admin-roster-row:last-child { border-bottom: none; }
 .admin-roster-row:hover { background: var(--paper-2); }
-.admin-roster-row.users-row    { grid-template-columns: 1.5fr 1fr 1fr auto; }
+/* 5 cells: identity (with optional SUSPENDED badge) · BUSTS · WL flags · time · suspend button */
+.admin-roster-row.users-row    { grid-template-columns: 1.5fr 1fr 0.7fr auto auto; }
 .admin-roster-row.tasks-row    { grid-template-columns: 40px 1fr auto auto auto; }
 .admin-roster-row.verifs-row   { grid-template-columns: 32px 1fr auto auto auto; }
 .admin-credit-form             { display: grid; grid-template-columns: 1fr 140px auto; gap: 12px; align-items: end; padding: 20px 24px; }
