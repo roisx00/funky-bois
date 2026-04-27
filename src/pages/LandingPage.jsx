@@ -557,7 +557,7 @@ export default function LandingPage({ onNavigate }) {
               <li><a onClick={() => onNavigate('drop')}>Drop</a></li>
               <li><a onClick={() => onNavigate('gallery')}>Gallery</a></li>
               <li><a onClick={() => onNavigate('dashboard')}>Dashboard</a></li>
-              <li><a onClick={() => onNavigate('1977')}>1977 — Archive</a></li>
+              <li><a onClick={() => onNavigate('1969')}>1969 — Archive</a></li>
             </ul>
           </div>
 

@@ -11,7 +11,7 @@ import BuilderPage from './pages/BuilderPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 // import ArtPage from './pages/ArtPage'; // hidden — re-import to re-enable
 import CollabPage from './pages/CollabPage';
-import LorePage1977 from './pages/LorePage1977';
+import LorePage1969 from './pages/LorePage1969';
 import { handleXCallback, startXLogin } from './utils/xAuth';
 import { useToast } from './components/Toast';
 import './App.css';
@@ -54,7 +54,7 @@ function BuilderGate({ navigate }) {
 // 'art' is currently hidden — kept out of VALID_PAGES so direct URL hits
 // resolve to home. Re-enable later by adding it back here AND restoring
 // the Nav entry + route render below.
-const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'collab', '1977'];
+const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'collab', '1969'];
 
 function pathToPage(pathname) {
   const clean = pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -155,7 +155,7 @@ function AppInner() {
       {page === 'gallery' && <GalleryPage onNavigate={navigate} />}
       {page === 'leaderboard' && <LeaderboardPage onNavigate={navigate} />}
       {page === 'collab' && <CollabPage onNavigate={navigate} />}
-      {page === '1977' && <LorePage1977 onNavigate={navigate} />}
+      {page === '1969' && <LorePage1969 onNavigate={navigate} />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}
     </>
   );
