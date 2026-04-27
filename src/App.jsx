@@ -9,7 +9,7 @@ import GalleryPage from './pages/GalleryPage';
 import AdminPanel from './pages/AdminPanel';
 import BuilderPage from './pages/BuilderPage';
 import LeaderboardPage from './pages/LeaderboardPage';
-import ArtPage from './pages/ArtPage';
+// import ArtPage from './pages/ArtPage'; // hidden — re-import to re-enable
 import CollabPage from './pages/CollabPage';
 import LorePage1977 from './pages/LorePage1977';
 import { handleXCallback, startXLogin } from './utils/xAuth';
@@ -51,7 +51,10 @@ function BuilderGate({ navigate }) {
   );
 }
 
-const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'art', 'collab', '1977'];
+// 'art' is currently hidden — kept out of VALID_PAGES so direct URL hits
+// resolve to home. Re-enable later by adding it back here AND restoring
+// the Nav entry + route render below.
+const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'collab', '1977'];
 
 function pathToPage(pathname) {
   const clean = pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -151,7 +154,6 @@ function AppInner() {
       )}
       {page === 'gallery' && <GalleryPage onNavigate={navigate} />}
       {page === 'leaderboard' && <LeaderboardPage onNavigate={navigate} />}
-      {page === 'art' && <ArtPage onNavigate={navigate} />}
       {page === 'collab' && <CollabPage onNavigate={navigate} />}
       {page === '1977' && <LorePage1977 onNavigate={navigate} />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}

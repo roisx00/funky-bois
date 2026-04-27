@@ -272,9 +272,9 @@ A monochrome portrait collective. 1,969 busts. Real users only.
 **Drop**          · ${APP_BASE}/drop
 **Build**         · ${APP_BASE}/build
 **Gallery**       · ${APP_BASE}/gallery
-**Art**           · ${APP_BASE}/art
 **Collab apply**  · ${APP_BASE}/collab
 **Dashboard**     · ${APP_BASE}/dashboard
+**Archive · 1977** · ${APP_BASE}/1977
 
 Anything claiming to be us outside these links is a scam. Don't click, don't sign, don't connect.`;
 
