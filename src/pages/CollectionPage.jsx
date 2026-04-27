@@ -1199,9 +1199,9 @@ function MintWalletCard({
   const [busy, setBusy] = useState(false);
 
   // Tier the user lands on once their wallet is bound. Builders go to
-  // GTD; pre-WL non-builders go to FCFS. If they later build, server
-  // state flips and they appear on GTD on the next /api/me hydration.
-  const tier = (isWhitelisted || hasBuilt) ? 'GTD' : 'FCFS';
+  // Tier 1; pre-WL non-builders go to Tier 2. If they later build,
+  // server state flips and they appear on Tier 1 on next /api/me load.
+  const tier = (isWhitelisted || hasBuilt) ? 'Tier 1' : 'Tier 2';
 
   // Audience: who is this card speaking to right now?
   const audience =
@@ -1231,8 +1231,8 @@ function MintWalletCard({
       if (r?.ok) {
         toast.success(
           r.tier === 'gtd'
-            ? 'Wallet bound. You’re on the GTD list.'
-            : 'Wallet bound. You’re on the FCFS list. Build a portrait to upgrade to GTD.'
+            ? 'Wallet bound. You’re on Tier 1.'
+            : 'Wallet bound. You’re on Tier 2. Build a portrait to upgrade to Tier 1.'
         );
       } else {
         toast.error(`Could not bind wallet: ${r?.reason || 'unknown'}`);
@@ -1297,17 +1297,17 @@ function MintWalletCard({
   return (
     <div className="gift-card">
       <div className="gift-card-title">
-        {isBuilder ? 'Lock your GTD mint slot' : 'Submit wallet for FCFS mint'}
+        {isBuilder ? 'Lock your Tier 1 mint slot' : 'Submit wallet for Tier 2 mint'}
       </div>
       <div className="gift-card-sub" style={{ marginBottom: 14 }}>
         {isBuilder ? (
           <>
-            You’ve built your portrait but haven’t submitted a wallet yet. Connect now so we can position you for the GTD mint.
+            You’ve built your portrait but haven’t submitted a wallet yet. Connect now so we can position you for the Tier 1 mint.
             Mint date is not announced — watch <strong>@THE1969ETH</strong>.
           </>
         ) : (
           <>
-            You’re pre-approved but haven’t built a portrait yet. Submit your wallet now to participate in the <strong>FCFS</strong> mint. If you build a portrait before mint, your wallet auto-upgrades to <strong>GTD</strong>.
+            You’re pre-approved but haven’t built a portrait yet. Submit your wallet now to participate in the <strong>Tier 2</strong> mint. If you build a portrait before mint, your wallet auto-upgrades to <strong>Tier 1</strong>.
           </>
         )}
       </div>
