@@ -60,6 +60,38 @@ export default async function handler(req, res) {
   const sessId = getCurrentSessionId();
   if (!isSessionActive(sessId)) return bad(res, 409, 'no_active_session');
 
+  // ── ANTI-BOT TIME GATE (two layers) ──────────────────────────────
+  // Layer A · auto-trap. Anything under 250ms after session open is
+  // physiologically impossible for a human (mean reaction time is
+  // ~250ms BEFORE a network round-trip). If we see a claim that fast,
+  // the account is automated. Suspend it immediately and return.
+  // The user's inventory + claim history is preserved for audit, but
+  // requireActiveUser will block all future endpoints they try.
+  //
+  // Layer B · warmup window. Real users who bound a wallet, armed the
+  // claim early, and clicked exactly at :00 might land in 250-800ms.
+  // We don't suspend, just reject — they can retry once past the
+  // warmup. Bots that retry will hit Layer A again next session.
+  const sinceOpenMs = Date.now() - Number(sessId);
+  if (sinceOpenMs >= 0 && sinceOpenMs < 250) {
+    await sql`
+      UPDATE users
+         SET suspended = TRUE,
+             drop_eligible = FALSE,
+             updated_at = now()
+       WHERE id = ${user.id}
+    `;
+    return bad(res, 425, 'auto_suspended_bot_speed', {
+      hint: 'Your account fired a claim faster than humanly possible. This is an automated tool. Account suspended pending review.',
+    });
+  }
+  if (sinceOpenMs >= 0 && sinceOpenMs < 800) {
+    return bad(res, 425, 'window_warmup', {
+      hint: 'The drop window is still warming up. Try again in a moment.',
+      msRemaining: 800 - sinceOpenMs,
+    });
+  }
+
   // Already-built users shouldn't even hit this endpoint, but guard
   // anyway. If they HAVE built, they're probably calling stale UI.
   const built = one(await sql`SELECT 1 AS hit FROM completed_nfts WHERE user_id = ${user.id} LIMIT 1`);
