@@ -304,19 +304,37 @@ export function getElementSVG(type, variant) {
   }
 }
 
-// Optional pixel-art OpenSea wave glyph rendered in the bottom-right corner
-// when a portrait carries elements.welcome === 'opensea'. Used for the
-// reciprocal "we welcome OpenSea" profile in the gallery.
+// OpenSea-themed pixel badge. Pinned to bottom-right when a portrait
+// carries elements.welcome === 'opensea'. Reads clearly as the OpenSea
+// brand: blue rounded square with a white pixel-art wave + sail silhouette
+// (the brand's signature mark), framed with a dark border so it's visible
+// against any background variant.
 const OPENSEA_BADGE = `
   <g shape-rendering="crispEdges">
-    <rect x="76" y="76" width="18" height="18" fill="#2081E2"/>
-    <rect x="76" y="76" width="18" height="2" fill="#1868B7"/>
-    <rect x="78" y="84" width="2" height="2" fill="#FFFFFF"/>
-    <rect x="80" y="82" width="2" height="4" fill="#FFFFFF"/>
-    <rect x="82" y="80" width="2" height="6" fill="#FFFFFF"/>
-    <rect x="84" y="82" width="2" height="4" fill="#FFFFFF"/>
-    <rect x="86" y="84" width="2" height="2" fill="#FFFFFF"/>
-    <rect x="80" y="88" width="10" height="2" fill="#FFFFFF"/>
+    <!-- frame border (ink) for contrast against any bg -->
+    <rect x="70" y="70" width="24" height="24" fill="#0E0E0E"/>
+    <!-- OpenSea blue field -->
+    <rect x="71" y="71" width="22" height="22" fill="#2081E2"/>
+    <!-- top highlight rim -->
+    <rect x="71" y="71" width="22" height="1" fill="#4A9EEA"/>
+    <!-- mast / sail vertical (boat) -->
+    <rect x="81" y="74" width="2" height="9" fill="#FFFFFF"/>
+    <!-- sail right triangle (stepped pixels) -->
+    <rect x="83" y="76" width="2" height="2" fill="#FFFFFF"/>
+    <rect x="83" y="78" width="3" height="2" fill="#FFFFFF"/>
+    <rect x="83" y="80" width="4" height="3" fill="#FFFFFF"/>
+    <!-- hull -->
+    <rect x="76" y="83" width="12" height="2" fill="#FFFFFF"/>
+    <rect x="78" y="85" width="8" height="1" fill="#FFFFFF"/>
+    <!-- water waves (two lines) -->
+    <rect x="73" y="87" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="78" y="87" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="83" y="87" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="88" y="87" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="75" y="89" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="80" y="89" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="85" y="89" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="90" y="89" width="3" height="1" fill="#FFFFFF"/>
   </g>
 `;
 

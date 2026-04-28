@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350">
+  <!-- paper bg -->
+  <rect width="1080" height="1350" fill="#F9F6F0"/>
+  <!-- top + bottom inner rules -->
+  <line x1="60" y1="110" x2="1020" y2="110" stroke="#0E0E0E" stroke-width="1"/>
+  <line x1="60" y1="1240" x2="1020" y2="1240" stroke="#0E0E0E" stroke-width="1"/>
+  <!-- top meta strip -->
+  <text x="60" y="95" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#0E0E0E">THE 1969 · MONOCHROME PORTRAITS · ETHEREUM</text>
+  <text x="1020" y="95" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#0E0E0E">ISSUE 2026-04-28</text>
+  <!-- main inner black frame -->
+  <rect x="60" y="160" width="960" height="850" fill="#0E0E0E"/>
+  <!-- 2.2M FOLLOWERS lime pill (top-left of black frame) -->
+  <rect x="100" y="200" width="260" height="56" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="2"/>
+  <text x="230" y="237" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="22" font-weight="700" letter-spacing="3" fill="#0E0E0E">2.2M FOLLOWERS</text>
+  <!-- portrait centered in black frame -->
+  <svg x="310" y="330" width="460" height="460" viewBox="0 0 96 96" shape-rendering="crispEdges">
+    <rect width="96" height="96" fill="#0A0A0A"/>
+   <g fill="#bbb"><rect x="8" y="10" width="2" height="2"/><rect x="8" y="22" width="2" height="2"/><rect x="8" y="40" width="2" height="2"/><rect x="8" y="60" width="2" height="2"/><rect x="8" y="78" width="2" height="2"/><rect x="86" y="14" width="2" height="2"/><rect x="86" y="30" width="2" height="2"/><rect x="86" y="50" width="2" height="2"/><rect x="86" y="70" width="2" height="2"/></g>
+    <rect x="10" y="72" width="76" height="24" fill="#eee"/><rect x="10" y="72" width="76" height="2" fill="#555"/><rect x="30" y="76" width="36" height="20" fill="#eee"/><rect x="44" y="74" width="8" height="8" fill="#0A0A0A"/>
+    <rect x="40" y="66" width="16" height="10" fill="#bbb"/><rect x="40" y="66" width="16" height="2" fill="#777"/>
+    <rect x="28" y="26" width="40" height="40" fill="#bbbbbb"/><rect x="26" y="28" width="2" height="36" fill="#0A0A0A"/><rect x="68" y="28" width="2" height="36" fill="#0A0A0A"/><rect x="28" y="26" width="40" height="2" fill="#0A0A0A"/><rect x="28" y="66" width="40" height="2" fill="#0A0A0A"/><rect x="58" y="28" width="10" height="36" fill="#777" opacity=".25"/>
+    <rect x="32" y="42" width="10" height="2" fill="#0A0A0A"/><rect x="54" y="42" width="10" height="2" fill="#0A0A0A"/>
+    
+    <rect x="46" y="46" width="4" height="8" fill="#777" opacity=".4"/><rect x="44" y="54" width="8" height="2" fill="#555"/><rect x="40" y="60" width="16" height="2" fill="#555"/>
+    <rect x="20" y="12" width="56" height="18" fill="#0A0A0A"/><rect x="16" y="18" width="64" height="14" fill="#0A0A0A"/><rect x="22" y="30" width="4" height="4" fill="#0A0A0A"/><rect x="70" y="30" width="4" height="4" fill="#0A0A0A"/>
+    <rect x="22" y="18" width="52" height="12" fill="#0A0A0A"/><rect x="18" y="28" width="60" height="4" fill="#0A0A0A"/><rect x="40" y="22" width="16" height="2" fill="#222"/>
+    
+  <g shape-rendering="crispEdges">
+    <!-- frame border (ink) for contrast against any bg -->
+    <rect x="70" y="70" width="24" height="24" fill="#0E0E0E"/>
+    <!-- OpenSea blue field -->
+    <rect x="71" y="71" width="22" height="22" fill="#2081E2"/>
+    <!-- top highlight rim -->
+    <rect x="71" y="71" width="22" height="1" fill="#4A9EEA"/>
+    <!-- mast / sail vertical (boat) -->
+    <rect x="81" y="74" width="2" height="9" fill="#FFFFFF"/>
+    <!-- sail right triangle (stepped pixels) -->
+    <rect x="83" y="76" width="2" height="2" fill="#FFFFFF"/>
+    <rect x="83" y="78" width="3" height="2" fill="#FFFFFF"/>
+    <rect x="83" y="80" width="4" height="3" fill="#FFFFFF"/>
+    <!-- hull -->
+    <rect x="76" y="83" width="12" height="2" fill="#FFFFFF"/>
+    <rect x="78" y="85" width="8" height="1" fill="#FFFFFF"/>
+    <!-- water waves (two lines) -->
+    <rect x="73" y="87" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="78" y="87" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="83" y="87" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="88" y="87" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="75" y="89" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="80" y="89" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="85" y="89" width="3" height="1" fill="#FFFFFF"/>
+    <rect x="90" y="89" width="3" height="1" fill="#FFFFFF"/>
+  </g>
+
+  </svg>
+  <!-- @opensea handle -->
+  <text x="540" y="1100" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-size="82" fill="#0E0E0E" letter-spacing="-1">@opensea</text>
+  <text x="540" y="1150" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="32" fill="#5C5C5C">just built their bust.</text>
+  <!-- footer -->
+  <text x="60" y="1290" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">the1969.io</text>
+  <text x="1020" y="1290" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">@the1969eth</text>
+</svg>
