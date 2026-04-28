@@ -98,29 +98,38 @@ export default function LitepaperPage({ onNavigate }) {
 
           <Section n="03" title="Architecture">
             <Body>
-              The system is a thin Next-style serverless architecture chosen for cost-to-
-              survive a launch-day surge without provisioning for it in advance.
+              The system is a thin serverless architecture chosen for cost-to-survive a
+              launch-day surge without provisioning for it in advance. The shape below
+              describes what each layer is responsible for; specific vendor choices are
+              held privately for security reasons.
             </Body>
 
             <ArchStack />
 
             <Body>
-              Front of stack: a React + Vite single-page app served from edge CDN. Wallet
-              integration via wagmi + RainbowKit. State is hydrated from a single
-              authoritative endpoint (<code>/api/me</code>) on every navigation.
+              Front of stack: a single-page application served from edge cache. Wallet
+              connectivity is integrated via standard EIP-1193 providers. State is
+              hydrated from a single authoritative endpoint (<code>/api/me</code>) on every
+              navigation, so client and server agree on a single timestamped truth.
             </Body>
             <Body>
-              Backend: Vercel serverless functions, dispatched through a single catch-all
-              route. Postgres on Neon (serverless, autoscaling, connection-pooled). Rate
-              limiting via Upstash Redis. Identity via X OAuth 2.0 with PKCE.
+              Backend: stateless serverless functions dispatched through a single
+              catch-all route. The data layer is a connection-pooled Postgres instance
+              with autoscaled compute and an append-only audit ledger for every economic
+              event in the project. Rate limiting runs through an isolated in-memory
+              layer, scoped per-user, per-IP, and per-endpoint.
             </Body>
             <Body>
-              External services are isolated behind interfaces. Pre-pinned static art
-              metadata lives on IPFS via dedicated pinning. The Discord bot is a
+              Identity is X OAuth 2.0 with PKCE — a per-account cryptographic proof that
+              the human controlling the X handle is the same human submitting the
+              request. The on-chain layer is Ethereum with an audited ERC-721 contract
+              and metadata pinned to IPFS at fixed CIDs.
+            </Body>
+            <Body>
+              External services are isolated behind interfaces. The bot service is a
               long-running process on a separate host, communicating with the main app
               via a shared-secret HMAC channel — not a direct database connection. This
-              isolation means a Discord outage cannot affect a drop window, and a drop
-              outage cannot affect Discord.
+              isolation means an outage in one component cannot cascade to the others.
             </Body>
           </Section>
 
@@ -638,19 +647,21 @@ function Link({ children, onClick }) {
 // DIAGRAMS — inline SVG, technical, monochrome with lime accents
 // ─────────────────────────────────────────────────────────────────────
 
-// 1. Architecture stack
+// 1. Architecture stack — vendor-agnostic. Specific provider names are
+// withheld to prevent reconnaissance. The architectural shape (what
+// each layer does) is what matters for the reader.
 function ArchStack() {
   const layers = [
-    { tag: 'CLIENT',   name: 'React + Vite SPA',           sub: 'wagmi · RainbowKit · edge-cached' },
-    { tag: 'API',      name: 'Vercel Serverless',          sub: 'single dispatcher · stateless' },
-    { tag: 'DATA',     name: 'Neon Postgres',              sub: 'autoscaled · pooled · audited' },
-    { tag: 'CACHE',    name: 'Upstash Redis',              sub: 'rate limits · presence' },
-    { tag: 'IDENTITY', name: 'X OAuth 2.0 (PKCE)',         sub: 'per-account proof' },
-    { tag: 'CHAIN',    name: 'Ethereum · ERC-721',         sub: 'mint contract · IPFS metadata' },
-    { tag: 'SOCIAL',   name: 'Discord Bot · Isolated',     sub: 'HMAC channel · separate host' },
+    { tag: 'CLIENT',   name: 'Single-Page Application',     sub: 'edge-cached · wallet-aware' },
+    { tag: 'API',      name: 'Serverless Functions',        sub: 'single dispatcher · stateless' },
+    { tag: 'DATA',     name: 'Postgres · Audited Ledger',   sub: 'autoscaled · pooled · append-only' },
+    { tag: 'CACHE',    name: 'In-Memory Rate Layer',        sub: 'per-user · per-IP · per-endpoint' },
+    { tag: 'IDENTITY', name: 'X OAuth 2.0 (PKCE)',          sub: 'per-account proof' },
+    { tag: 'CHAIN',    name: 'Ethereum · ERC-721',          sub: 'audited contract · IPFS metadata' },
+    { tag: 'SOCIAL',   name: 'Isolated Bot Service',        sub: 'shared-secret HMAC channel' },
   ];
   return (
-    <DiagramFrame caption="figure 1 · system stack">
+    <DiagramFrame caption="figure 1 · system stack · functional view">
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {layers.map((l, i) => (
           <div key={i} style={{
