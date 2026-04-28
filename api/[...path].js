@@ -19,6 +19,8 @@ import whitelistRecord     from './_routes/whitelist-record.js';
 import mintBindWallet      from './_routes/mint-bind-wallet.js';
 import adminMintWallets    from './_routes/admin-mint-wallets.js';
 import adminSuspend        from './_routes/admin-suspend.js';
+import suspensionAppeal    from './_routes/suspension-appeal.js';
+import adminSuspensionAppeals from './_routes/admin-suspension-appeals.js';
 import adminWhitelist      from './_routes/admin-whitelist.js';
 import adminCredit         from './_routes/admin-credit.js';
 import adminUsers          from './_routes/admin-users.js';
@@ -83,6 +85,8 @@ const ROUTES = {
   'mint-bind-wallet':    mintBindWallet,
   'admin-mint-wallets':  adminMintWallets,
   'admin-suspend':       adminSuspend,
+  'suspension-appeal':   suspensionAppeal,
+  'admin-suspension-appeals': adminSuspensionAppeals,
   'admin-whitelist':     adminWhitelist,
   'admin-credit':        adminCredit,
   'admin-users':         adminUsers,

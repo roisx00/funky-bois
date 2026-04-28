@@ -417,6 +417,8 @@ export default function AdminPanel({ onNavigate }) {
         )}
       </section>
 
+      <AdminSuspensionAppeals />
+
       <AdminDropAudit />
 
       <AdminTasksPanel />
@@ -2322,6 +2324,160 @@ function MintWalletExports() {
         accounts. Tier 1 supersedes Tier 2 when a user builds a portrait — the
         next download will reflect that automatically.
       </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Admin: queue of suspended users appealing their suspension. Each row
+// shows their case + claim history (so admin can spot-check botted vs
+// legit) + Approve / Reject buttons. Approve unsuspends instantly.
+// ─────────────────────────────────────────────────────────────────────
+function AdminSuspensionAppeals() {
+  const [items, setItems] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('pending');
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const r = await jget(`/api/admin-suspension-appeals?status=${statusFilter}`);
+    if (r.ok) setItems(r.items || []);
+    setLoading(false);
+  }, [statusFilter]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  async function decide(appealId, action) {
+    if (busyId) return;
+    const verb = action === 'approve' ? 'APPROVE' : 'REJECT';
+    const note = window.prompt(`${verb} appeal #${appealId}?\n\nOptional admin note (visible to user if rejected):`, '');
+    if (note === null) return;
+    setBusyId(appealId);
+    const r = await jpost('/api/admin-suspension-appeals', {
+      appealId,
+      action,
+      adminNote: note.trim() || undefined,
+    });
+    setBusyId(null);
+    if (!r.ok) {
+      alert(`Failed: ${r.error || r.reason || 'unknown'}`);
+      return;
+    }
+    refresh();
+  }
+
+  return (
+    <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+      <div className="admin-roster-head">
+        <div>
+          <div className="admin-roster-title">Suspension appeals</div>
+          <div className="admin-roster-meta">
+            {loading ? 'loading…' : `${items.length} ${statusFilter}`}
+          </div>
+        </div>
+        <div className="admin-roster-actions">
+          {['pending', 'approved', 'rejected', 'all'].map((s) => (
+            <button
+              key={s}
+              className={`btn btn-sm ${statusFilter === s ? 'btn-solid' : 'btn-ghost'}`}
+              onClick={() => setStatusFilter(s)}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {!loading && items.length === 0 ? (
+        <div className="admin-roster-empty">
+          No {statusFilter} appeals.
+        </div>
+      ) : (
+        items.map((it) => (
+          <div key={it.appealId} style={{
+            padding: '16px 24px',
+            borderBottom: '1px solid var(--hairline)',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) auto',
+            gap: 18,
+            alignItems: 'flex-start',
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                <a
+                  href={`https://x.com/${it.user.xUsername}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="admin-roster-user"
+                >
+                  @{it.user.xUsername}
+                </a>
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 9,
+                  letterSpacing: '0.18em', padding: '2px 6px',
+                  background: it.status === 'pending' ? 'var(--accent)'
+                    : it.status === 'approved' ? '#0E0E0E'
+                    : '#888',
+                  color: it.status === 'pending' ? 'var(--ink)' : '#fff',
+                }}>
+                  {it.status.toUpperCase()}
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)' }}>
+                  {it.user.xFollowers.toLocaleString()} followers
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-4)' }}>
+                  {timeAgo(it.createdAt)}
+                </span>
+              </div>
+              <div style={{
+                padding: '8px 12px', marginTop: 6,
+                background: 'var(--paper-2)', border: '1px solid var(--hairline)',
+                fontFamily: 'Georgia, serif', fontSize: 14, lineHeight: 1.55,
+                color: 'var(--ink)',
+              }}>
+                {it.message}
+              </div>
+              <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)' }}>
+                claims: {it.claims.total}
+                {it.claims.fastestMs != null ? ` · fastest ${it.claims.fastestMs}ms` : ''}
+                {it.claims.avgMs != null ? ` · avg ${it.claims.avgMs}ms` : ''}
+                {it.claims.fastestMs != null && it.claims.fastestMs < 250 ? (
+                  <span style={{ color: '#c44', marginLeft: 8 }}>● BOT-SPEED PRESENT</span>
+                ) : it.claims.fastestMs != null && it.claims.fastestMs >= 800 ? (
+                  <span style={{ color: 'var(--ink)', marginLeft: 8 }}>● clean speed</span>
+                ) : null}
+              </div>
+              {it.adminNote ? (
+                <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)' }}>
+                  admin note: <em>{it.adminNote}</em>
+                </div>
+              ) : null}
+            </div>
+
+            {it.status === 'pending' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <button
+                  className="btn btn-solid btn-sm"
+                  onClick={() => decide(it.appealId, 'approve')}
+                  disabled={busyId === it.appealId}
+                  style={{ minWidth: 110 }}
+                >
+                  {busyId === it.appealId ? '...' : 'Approve · Unsuspend'}
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => decide(it.appealId, 'reject')}
+                  disabled={busyId === it.appealId}
+                  style={{ minWidth: 110 }}
+                >
+                  Reject
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ))
+      )}
     </section>
   );
 }

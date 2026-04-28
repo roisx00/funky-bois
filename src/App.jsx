@@ -165,12 +165,65 @@ function AppInner() {
 // public site so they understand WHY they can't claim/build/etc.
 function SuspendedBanner() {
   const { suspended, authenticated } = useGame();
+  const [appeal, setAppeal] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+  const toast = useToast();
+
+  useEffect(() => {
+    if (!authenticated || !suspended) return;
+    let cancelled = false;
+    fetch('/api/suspension-appeal', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : { appeal: null }))
+      .then((d) => {
+        if (cancelled) return;
+        setAppeal(d?.appeal || null);
+        setMessage(d?.appeal?.message || '');
+        setLoaded(true);
+      })
+      .catch(() => { if (!cancelled) setLoaded(true); });
+    return () => { cancelled = true; };
+  }, [authenticated, suspended]);
+
   if (!authenticated || !suspended) return null;
+
+  async function submit() {
+    if (busy) return;
+    if (message.trim().length < 20) {
+      setErr('Please write at least 20 characters explaining your case.');
+      return;
+    }
+    setBusy(true); setErr(null);
+    try {
+      const r = await fetch('/api/suspension-appeal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ message: message.trim() }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setErr(d?.error || d?.hint || 'Submission failed.');
+        setBusy(false);
+        return;
+      }
+      toast.success('Appeal submitted. We will review.');
+      setAppeal({
+        id: d.appealId, message: message.trim(), status: 'pending',
+        adminNote: null, createdAt: Date.now(), decidedAt: null,
+      });
+    } catch (e) {
+      setErr(e?.message || 'Network error.');
+    } finally { setBusy(false); }
+  }
+
   return (
     <div style={{
       background:    '#0E0E0E',
       color:         '#F9F6F0',
-      padding:       '14px 24px',
+      padding:       '18px 24px',
       fontFamily:    'var(--font-mono)',
       fontSize:      13,
       lineHeight:    1.55,
@@ -178,13 +231,93 @@ function SuspendedBanner() {
       borderTop:    '1px solid var(--ink)',
       borderBottom: '1px solid var(--ink)',
     }}>
-      <strong style={{ letterSpacing: '0.14em', fontSize: 11, textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>
+      <strong style={{ letterSpacing: '0.14em', fontSize: 11, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
         ACCOUNT SUSPENDED
       </strong>
-      This account has been flagged for violating the anti-farm policy. You
-      cannot claim drops, open boxes, build a portrait, or transfer BUSTS.
-      If you believe this is a mistake, contact{' '}
-      <a href="https://x.com/the1969eth" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>@the1969eth</a> on X.
+      <div style={{ marginBottom: 14, maxWidth: 720 }}>
+        Your account has been flagged for the anti-farm policy. You cannot
+        claim drops, open boxes, build, or transfer BUSTS. If you believe
+        this is a mistake, submit an appeal below — admin will review.
+      </div>
+
+      {!loaded ? (
+        <div style={{ opacity: 0.7 }}>Loading appeal status…</div>
+      ) : appeal && appeal.status === 'pending' ? (
+        <div style={{
+          padding: 14, background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.16)', maxWidth: 720,
+        }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 8, color: '#D7FF3A' }}>
+            APPEAL · UNDER REVIEW
+          </div>
+          <div style={{ marginBottom: 8, fontStyle: 'italic' }}>
+            “{appeal.message}”
+          </div>
+          <div style={{ fontSize: 11, opacity: 0.7 }}>
+            Submitted {new Date(appeal.createdAt).toLocaleString()} · we review daily
+          </div>
+        </div>
+      ) : appeal && appeal.status === 'approved' ? (
+        <div style={{ color: '#D7FF3A', fontSize: 13 }}>
+          Appeal approved. Refresh the page if your account still looks suspended.
+        </div>
+      ) : (
+        <div style={{ maxWidth: 720 }}>
+          {appeal && appeal.status === 'rejected' ? (
+            <div style={{
+              padding: 12, marginBottom: 12,
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.16)',
+            }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 6, color: '#aaa' }}>
+                Previous appeal · rejected
+              </div>
+              {appeal.adminNote ? (
+                <div style={{ fontStyle: 'italic', opacity: 0.85 }}>Admin note: {appeal.adminNote}</div>
+              ) : (
+                <div style={{ opacity: 0.7 }}>No admin note. You may resubmit with new context.</div>
+              )}
+            </div>
+          ) : null}
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Explain why this suspension is a mistake. Min 20 characters, max 1000."
+            maxLength={1000}
+            rows={4}
+            style={{
+              width: '100%', padding: '10px 12px',
+              background: 'rgba(255,255,255,0.06)',
+              color: '#F9F6F0',
+              border: '1px solid rgba(255,255,255,0.2)',
+              fontFamily: 'var(--font-mono)', fontSize: 13, lineHeight: 1.5,
+              resize: 'vertical',
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+            <span style={{ fontSize: 11, opacity: 0.7 }}>{message.length}/1000</span>
+            <button
+              onClick={submit}
+              disabled={busy}
+              style={{
+                background: '#D7FF3A', color: '#0E0E0E',
+                border: '1px solid #D7FF3A',
+                padding: '8px 18px',
+                fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+                cursor: busy ? 'wait' : 'pointer',
+              }}
+            >
+              {busy ? 'Submitting…' : 'Submit appeal'}
+            </button>
+          </div>
+          {err ? <div style={{ marginTop: 8, color: '#ff8a8a', fontSize: 12 }}>{err}</div> : null}
+        </div>
+      )}
+
+      <div style={{ marginTop: 14, fontSize: 11, opacity: 0.7 }}>
+        Or reach <a href="https://x.com/the1969eth" target="_blank" rel="noreferrer" style={{ color: '#D7FF3A' }}>@the1969eth</a> on X.
+      </div>
     </div>
   );
 }
