@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import Skeleton from '../components/Skeleton';
-import { buildNFTSVG, getElementSVG, ELEMENT_LABELS } from '../data/elements';
+import { buildNFTSVG, getElementSVG, ELEMENT_LABELS, ELEMENT_TYPES, ELEMENT_VARIANTS } from '../data/elements';
 
 const PAGE_SIZE = 20;
 
@@ -308,6 +308,7 @@ export default function AdminPanel({ onNavigate }) {
 
       <AdminDropConfig />
 
+      <AdminGiftTrait />
 
       {/* WL roster */}
       <MintWalletExports />
@@ -2482,3 +2483,125 @@ function AdminSuspensionAppeals() {
   );
 }
 
+
+// ─────────────────────────────────────────────────────────────────────
+// Admin: directly grant a trait to a specific user's inventory.
+// Use case: a user needs one trait to complete their portrait. Admin
+// fills the form, the trait appears in the user's inventory immediately
+// — no inbox, no claim step. Admin identity is hidden in the user's
+// busts_ledger; the row reads "Received trait: <name>" only.
+// ─────────────────────────────────────────────────────────────────────
+function AdminGiftTrait() {
+  const [toX, setToX]       = useState('');
+  const [type, setType]     = useState(ELEMENT_TYPES[0]);
+  const [variant, setVariant] = useState(0);
+  const [count, setCount]   = useState(1);
+  const [busy, setBusy]     = useState(false);
+  const [last, setLast]     = useState(null);
+
+  const variants = ELEMENT_VARIANTS[type] || [];
+
+  async function send() {
+    if (busy) return;
+    const handle = toX.trim().replace(/^@/, '');
+    if (!handle) { alert('Recipient X username is required.'); return; }
+    if (!window.confirm(`Grant ${count} × ${variants[variant]?.name || '?'} (${ELEMENT_LABELS[type]}) to @${handle}?`)) return;
+    setBusy(true);
+    const r = await jpost('/api/admin-gift-trait', {
+      toXUsername: handle,
+      elementType: type,
+      variant: Number(variant),
+      count: Number(count),
+    });
+    setBusy(false);
+    if (!r.ok) {
+      alert(`Failed: ${r.error || r.reason || 'unknown'}`);
+      return;
+    }
+    setLast({ ...r, ts: Date.now() });
+    setToX('');
+    setCount(1);
+  }
+
+  return (
+    <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+      <div className="admin-roster-head">
+        <div>
+          <div className="admin-roster-title">Grant trait to user</div>
+          <div className="admin-roster-meta">
+            Adds a trait directly to the user&rsquo;s inventory. They can use it to build immediately.
+            Admin handle is hidden in their ledger.
+          </div>
+        </div>
+      </div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1.4fr 1fr 1.6fr 80px auto',
+        gap: 12,
+        alignItems: 'end',
+        padding: '20px 24px',
+      }}>
+        <div>
+          <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>X username</label>
+          <input
+            type="text"
+            value={toX}
+            onChange={(e) => setToX(e.target.value)}
+            placeholder="@user"
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div>
+          <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Trait type</label>
+          <select
+            value={type}
+            onChange={(e) => { setType(e.target.value); setVariant(0); }}
+            style={{ width: '100%' }}
+          >
+            {ELEMENT_TYPES.map((t) => (
+              <option key={t} value={t}>{ELEMENT_LABELS[t]}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Variant</label>
+          <select
+            value={variant}
+            onChange={(e) => setVariant(Number(e.target.value))}
+            style={{ width: '100%' }}
+          >
+            {variants.map((v, i) => (
+              <option key={i} value={i}>{v.name} · {v.rarity}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Count</label>
+          <input
+            type="number"
+            min={1}
+            max={20}
+            value={count}
+            onChange={(e) => setCount(e.target.value)}
+            style={{ width: '100%' }}
+          />
+        </div>
+        <button className="btn btn-solid" onClick={send} disabled={busy}>
+          {busy ? '...' : 'Grant'}
+        </button>
+      </div>
+      {last ? (
+        <div style={{
+          padding: '14px 24px',
+          background: 'var(--paper-2)',
+          borderTop: '1px solid var(--hairline)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 12,
+          color: 'var(--ink)',
+        }}>
+          ✓ Granted <strong>{last.granted} × {last.elementName}</strong> ({last.rarity}) to <strong>{last.recipient}</strong>
+        </div>
+      ) : null}
+    </section>
+  );
+}
