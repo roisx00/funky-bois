@@ -24,7 +24,7 @@ function poolStateFor(pct) {
   return 'stocked';                    // fresh
 }
 
-export default async function handler(req, res) {
+export default async function handler(_req, res) {
   const sessId = getCurrentSessionId();
 
   // Run all read-only queries in parallel so the 15s poll stays cheap.
@@ -69,14 +69,19 @@ export default async function handler(req, res) {
          AND u.suspended = FALSE
          AND NOT EXISTS (SELECT 1 FROM completed_nfts WHERE user_id = u.id)
     `),
-    // Total approved (lifetime, regardless of build/claim state) — so
-    // the UI can show "189 of 226 eligible" and the math reads cleanly
-    // against the admin "approved" tab count.
+    // Total approved (lifetime). Sourced from pre_whitelist_requests
+    // because users.drop_eligible flips to FALSE on portrait build —
+    // so reading the flag would silently exclude built users and
+    // produce a near-identical count to "eligible". The intent of
+    // this number is "how many users has admin ever approved", which
+    // is what the queue's approved tab shows. We exclude suspended
+    // users (they were approved but are now banned, no point counting).
     one(await sql`
       SELECT COUNT(*)::int AS c
-        FROM users
-       WHERE drop_eligible = TRUE
-         AND suspended = FALSE
+        FROM pre_whitelist_requests p
+        JOIN users u ON u.id = p.user_id
+       WHERE p.status = 'approved'
+         AND u.suspended = FALSE
     `),
   ]);
   const poolSize    = sess?.pool_size ?? DEFAULT_POOL_SIZE;
