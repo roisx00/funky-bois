@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350">
+  <!-- paper bg -->
+  <rect width="1080" height="1350" fill="#F9F6F0"/>
+
+  <!-- top + bottom inner rules -->
+  <line x1="60" y1="110" x2="1020" y2="110" stroke="#0E0E0E" stroke-width="1"/>
+  <line x1="60" y1="1240" x2="1020" y2="1240" stroke="#0E0E0E" stroke-width="1"/>
+
+  <!-- top meta strip -->
+  <text x="60" y="95" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#0E0E0E">THE 1969 · MONOCHROME PORTRAITS · ETHEREUM</text>
+  <text x="1020" y="95" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#0E0E0E">ISSUE 2026-04-28</text>
+
+  <!-- main inner black frame (vault stage) -->
+  <rect x="60" y="160" width="960" height="850" fill="#0E0E0E"/>
+
+  <!-- subtle lime glow off-center -->
+  <radialGradient id="g" cx="50%" cy="40%" r="55%">
+    <stop offset="0%" stop-color="#D7FF3A" stop-opacity="0.12"/>
+    <stop offset="60%" stop-color="#D7FF3A" stop-opacity="0"/>
+  </radialGradient>
+  <rect x="60" y="160" width="960" height="850" fill="url(#g)"/>
+
+  <!-- vault-cell grid texture -->
+  <g opacity="0.05" stroke="#F9F6F0" stroke-width="1">
+    <line x1="60" y1="372" x2="1020" y2="372"/>
+    <line x1="60" y1="585" x2="1020" y2="585"/>
+    <line x1="60" y1="798" x2="1020" y2="798"/>
+    <line x1="300" y1="160" x2="300" y2="1010"/>
+    <line x1="540" y1="160" x2="540" y2="1010"/>
+    <line x1="780" y1="160" x2="780" y2="1010"/>
+  </g>
+
+  <!-- LIVE pill (top-left of black frame) -->
+  <rect x="100" y="200" width="160" height="56" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="2"/>
+  <circle cx="124" cy="228" r="6" fill="#0E0E0E"/>
+  <text x="146" y="234" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="22" font-weight="700" letter-spacing="3" fill="#0E0E0E">LIVE</text>
+
+  <!-- top-right meta inside frame -->
+  <text x="980" y="234" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#F9F6F0" opacity="0.55">THE 1969 / VAULT</text>
+
+  <!-- VAULT GLYPH (centered in stage) — architectural keep with sealed door + sigil -->
+  <g transform="translate(540, 540)">
+    <!-- crenellations -->
+    <g fill="#161616" stroke="#F9F6F0" stroke-opacity="0.22" stroke-width="1.5">
+      <rect x="-220" y="-260" width="44" height="20"/>
+      <rect x="-156" y="-260" width="44" height="20"/>
+      <rect x="-92"  y="-260" width="44" height="20"/>
+      <rect x="-28"  y="-260" width="44" height="20"/>
+      <rect x="36"   y="-260" width="44" height="20"/>
+      <rect x="100"  y="-260" width="44" height="20"/>
+      <rect x="164"  y="-260" width="44" height="20"/>
+    </g>
+    <!-- main keep body -->
+    <rect x="-220" y="-240" width="440" height="380" fill="#161616" stroke="#F9F6F0" stroke-opacity="0.22" stroke-width="2"/>
+    <!-- vertical wall hatching -->
+    <g stroke="#F9F6F0" stroke-opacity="0.07" stroke-width="1">
+      <line x1="-180" y1="-240" x2="-180" y2="140"/>
+      <line x1="-130" y1="-240" x2="-130" y2="140"/>
+      <line x1="-80"  y1="-240" x2="-80"  y2="140"/>
+      <line x1="-30"  y1="-240" x2="-30"  y2="140"/>
+      <line x1="20"   y1="-240" x2="20"   y2="140"/>
+      <line x1="80"   y1="-240" x2="80"   y2="140"/>
+      <line x1="140"  y1="-240" x2="140"  y2="140"/>
+      <line x1="180"  y1="-240" x2="180"  y2="140"/>
+    </g>
+    <!-- platform / base -->
+    <rect x="-260" y="140" width="520" height="20" fill="#1a1a1a" stroke="#F9F6F0" stroke-opacity="0.22" stroke-width="1.5"/>
+
+    <!-- sigil window (above door, illuminated) -->
+    <rect x="-32" y="-150" width="64" height="64" fill="#0a0a0a" stroke="#D7FF3A" stroke-width="2"/>
+    <text x="0" y="-100" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="48" fill="#D7FF3A">⌬</text>
+
+    <!-- sealed door -->
+    <rect x="-70" y="-30" width="140" height="170" fill="#0a0a0a" stroke="#F9F6F0" stroke-opacity="0.4" stroke-width="2"/>
+    <!-- door split line -->
+    <line x1="0" y1="-30" x2="0" y2="140" stroke="#F9F6F0" stroke-opacity="0.18" stroke-width="1"/>
+    <!-- iron bands -->
+    <rect x="-70" y="0" width="140" height="8" fill="#F9F6F0" fill-opacity="0.14"/>
+    <rect x="-70" y="120" width="140" height="8" fill="#F9F6F0" fill-opacity="0.14"/>
+    <!-- rivets -->
+    <g fill="#F9F6F0" fill-opacity="0.4">
+      <circle cx="-60" cy="4"   r="3"/>
+      <circle cx="60"  cy="4"   r="3"/>
+      <circle cx="-60" cy="124" r="3"/>
+      <circle cx="60"  cy="124" r="3"/>
+    </g>
+    <!-- lockplate -->
+    <rect x="-22" y="44" width="44" height="32" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="2"/>
+    <circle cx="0" cy="60" r="5" fill="#0E0E0E"/>
+
+    <!-- corner brackets around the keep -->
+    <g stroke="#D7FF3A" stroke-width="2.5" fill="none">
+      <path d="M -260 -270 L -260 -240 M -260 -270 L -230 -270"/>
+      <path d="M  260 -270 L  260 -240 M  260 -270 L  230 -270"/>
+      <path d="M -260  180 L -260  150 M -260  180 L -230  180"/>
+      <path d="M  260  180 L  260  150 M  260  180 L  230  180"/>
+    </g>
+  </g>
+
+  <!-- HEADLINE -->
+  <text x="540" y="1090" text-anchor="middle"
+        font-family="'Instrument Serif', Georgia, serif"
+        font-style="italic" font-weight="500"
+        font-size="92" fill="#0E0E0E"
+        letter-spacing="-1.5">the vault is live.</text>
+
+  <!-- LIME ACCENT RULE -->
+  <line x1="450" y1="1118" x2="630" y2="1118" stroke="#D7FF3A" stroke-width="6"/>
+
+  <!-- SUBLINE -->
+  <text x="540" y="1170" text-anchor="middle"
+        font-family="Georgia, serif" font-style="italic"
+        font-size="22" fill="#3A3A3A">A keep for every holder. Composable. Upgradable. Persistent.</text>
+
+  <!-- DOCTRINE -->
+  <text x="540" y="1208" text-anchor="middle"
+        font-family="ui-monospace, 'JetBrains Mono', monospace"
+        font-size="11" letter-spacing="4" fill="#0E0E0E">⌬ THE VAULT MUST NOT BURN AGAIN</text>
+
+  <!-- footer -->
+  <text x="60" y="1290" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">the1969.io/vault</text>
+  <text x="540" y="1290" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#5C5C5C">§11 · LITEPAPER</text>
+  <text x="1020" y="1290" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">@the1969eth</text>
+</svg>

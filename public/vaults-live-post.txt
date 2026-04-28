@@ -1,0 +1,75 @@
+─────────────────────────────────────────────
+  THE 1969 — VAULTS LIVE · X POST OPTIONS
+─────────────────────────────────────────────
+
+▌ POST A — primary (with banner attached)
+
+the vault is live.
+
+every holder is given a procedural keep — generated from your X identity, owned by you alone. composable, upgradable, persistent.
+
+eight upgrade tracks. three tiers each. permanent.
+the more you reinforce, the stronger your keep stands.
+
+vaults will be central to the games shipping after mint.
+
+off-chain for now. when the assembly mints, the vault evolves with it. one path forward, recorded.
+
+read §11 of the litepaper. the1969.io/litepaper
+
+⌬ the vault must not burn again.
+
+
+─────────────────────────────────────────────
+
+▌ POST B — shorter alt
+
+the vault is live · the1969.io/vault
+
+a procedural keep for every holder. eight upgrade tracks. three tiers each. permanent reinforcement.
+
+central to the games coming post-mint. off-chain today. evolves with the assembly.
+
+§11 of the litepaper documents everything.
+
+
+─────────────────────────────────────────────
+
+▌ THREAD VERSION (5 tweets, optional)
+
+1/ the vault is live.
+
+   every holder is given a procedural keep — generated from your X identity, owned by you alone.
+
+   the1969.io/vault
+
+2/ the vault is composable. eight upgrade tracks · three tiers each · all permanent. each tier reinforces the keep against what's coming.
+
+   the more you reinforce, the stronger it stands.
+
+3/ vaults are central to the games shipping after the assembly mints. design loop locked. mode catalog opens with the first release.
+
+4/ off-chain for now. the same state machine carries forward when the 1,969 mint completes — every BUSTS, every upgrade tier, every recorded burn — into the next shape of the system.
+
+5/ read §11 of the litepaper. it documents the architecture in full.
+
+   the1969.io/litepaper
+
+   ⌬ the vault must not burn again.
+
+
+─────────────────────────────────────────────
+
+▌ NOTES ON WHAT'S NOT SAID
+
+- No "staking" language. No "yield" language. No APR / rate / earn quotes.
+- "$BUST may move on-chain" implied via "the vault evolves with [the
+  mint]" / "carries forward... into the next shape" — never directly
+  confirmed.
+- No mint date promises. No floor / price commitments.
+- Game catalog deliberately not enumerated — only that vaults are
+  central to it.
+- The doctrine line closes the post: it ties the announcement to the
+  thesis without sounding promotional.
+
+─────────────────────────────────────────────
