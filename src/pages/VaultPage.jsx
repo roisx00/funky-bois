@@ -39,6 +39,21 @@ export default function VaultPage({ onNavigate }) {
   const animTimers = useRef([]);
   useEffect(() => () => { animTimers.current.forEach(clearTimeout); }, []);
 
+  // Custom confirm modal — replaces window.confirm() on this page.
+  // askConfirm({...}) returns a Promise<boolean>. Resolves true on
+  // confirm, false on cancel or backdrop dismiss.
+  const [confirmState, setConfirmState] = useState(null);
+  const askConfirm = useCallback((payload) => {
+    return new Promise((resolve) => {
+      setConfirmState({ ...payload, resolve });
+    });
+  }, []);
+  function closeConfirm(value) {
+    if (!confirmState) return;
+    confirmState.resolve(value);
+    setConfirmState(null);
+  }
+
   function playDepositAnim(amount) {
     animTimers.current.forEach(clearTimeout);
     animTimers.current = [];
@@ -142,7 +157,30 @@ export default function VaultPage({ onNavigate }) {
       toast.error(`Vault has only ${vault.bustsDeposited.toLocaleString()} BUSTS.`);
       return;
     }
-    if (!window.confirm(`${bustsMode === 'deposit' ? 'Deposit' : 'Withdraw'} ${amountInput.toLocaleString()} BUSTS?`)) return;
+    const ok = await askConfirm(bustsMode === 'deposit' ? {
+      title: 'Confirm deposit',
+      kicker: '§02 · DEPOSIT',
+      body: 'BUSTS move from your balance into the vault. Earn yield while inside. Withdraw anytime.',
+      items: [
+        { label: 'Amount', value: `${amountInput.toLocaleString()} BUSTS` },
+        { label: 'Vault after', value: `${(vault.bustsDeposited + amountInput).toLocaleString()} BUSTS` },
+        { label: 'New rate', value: `${Math.floor((vault.bustsDeposited + amountInput) * 0.001 + (vault.portraitId ? 10 : 0))} / day` },
+      ],
+      confirmLabel: 'Deposit',
+      tone: 'accent',
+    } : {
+      title: 'Confirm withdraw',
+      kicker: '§02 · WITHDRAW',
+      body: 'Pending yield settles to your balance first, then BUSTS leave the vault.',
+      items: [
+        { label: 'Amount', value: `${amountInput.toLocaleString()} BUSTS` },
+        { label: 'Vault after', value: `${Math.max(0, vault.bustsDeposited - amountInput).toLocaleString()} BUSTS` },
+        { label: 'New rate', value: `${Math.floor(Math.max(0, vault.bustsDeposited - amountInput) * 0.001 + (vault.portraitId ? 10 : 0))} / day` },
+      ],
+      confirmLabel: 'Withdraw',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const url = bustsMode === 'deposit' ? '/api/vault-deposit' : '/api/vault-withdraw';
@@ -170,10 +208,27 @@ export default function VaultPage({ onNavigate }) {
       toast.error('You need to build a portrait first.');
       return;
     }
-    if (!window.confirm(isDeposit
-      ? `Deposit your portrait into the vault?\n\nEarns +10 BUSTS/day flat. Withdraw anytime.`
-      : `Withdraw your portrait from the vault?\n\nYield rate decreases by 10/day.`
-    )) return;
+    const ok = await askConfirm(isDeposit ? {
+      title: 'Bind portrait',
+      kicker: '§03 · PORTRAIT',
+      body: 'Your portrait stays yours, stays in the gallery. While bound, the vault earns a flat rate on top of BUSTS yield.',
+      items: [
+        { label: 'Bonus', value: '+10 BUSTS / day' },
+        { label: 'Lock-up', value: 'None — withdraw anytime' },
+      ],
+      confirmLabel: 'Bind portrait',
+      tone: 'accent',
+    } : {
+      title: 'Unbind portrait',
+      kicker: '§03 · PORTRAIT',
+      body: 'Pending yield settles first. Your portrait returns to you. The +10 / day bonus stops immediately.',
+      items: [
+        { label: 'Rate change', value: '−10 BUSTS / day' },
+      ],
+      confirmLabel: 'Withdraw portrait',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const r = await fetch('/api/vault-portrait', {
@@ -202,7 +257,19 @@ export default function VaultPage({ onNavigate }) {
     if (nextTier > cat.tiers.length) { toast.info?.('Already at max tier.'); return; }
     const cost = cat.tiers[nextTier - 1].cost;
     if (cost > bustsBalance) { toast.error(`Need ${cost.toLocaleString()} BUSTS. You have ${bustsBalance.toLocaleString()}.`); return; }
-    if (!window.confirm(`Upgrade ${cat.label} to tier ${nextTier}?\n\nCost: ${cost.toLocaleString()} BUSTS\nBonus: +${cat.tiers[nextTier - 1].bonus} power\nPermanent. Non-refundable.`)) return;
+    const ok = await askConfirm({
+      title: `Upgrade ${cat.label}`,
+      kicker: `§04 · TIER ${nextTier} OF ${cat.tiers.length}`,
+      body: cat.tagline ? `${cat.tagline} Permanent. Non-refundable.` : 'Permanent. Non-refundable.',
+      items: [
+        { label: 'Cost', value: `${cost.toLocaleString()} BUSTS` },
+        { label: 'Power gain', value: `+${cat.tiers[nextTier - 1].bonus}` },
+        { label: 'After this', value: `Tier ${nextTier} / ${cat.tiers.length}` },
+      ],
+      confirmLabel: `Buy tier ${nextTier}`,
+      tone: 'accent',
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const r = await fetch('/api/vault-upgrade', {
@@ -455,6 +522,8 @@ export default function VaultPage({ onNavigate }) {
           </div>
         </div>
       </section>
+
+      <ConfirmModal state={confirmState} onClose={closeConfirm} />
     </div>
   );
 }
@@ -462,6 +531,58 @@ export default function VaultPage({ onNavigate }) {
 // ─────────────────────────────────────────────────────────────────────
 // SUB-COMPONENTS
 // ─────────────────────────────────────────────────────────────────────
+
+// Custom confirm dialog matching the dark+lime vault aesthetic.
+// Replaces window.confirm() — kicker, title, body, optional label/value
+// list, and a tone (accent/danger). Esc cancels, Enter confirms.
+function ConfirmModal({ state, onClose }) {
+  useEffect(() => {
+    if (!state) return undefined;
+    function onKey(e) {
+      if (e.key === 'Escape') onClose(false);
+      if (e.key === 'Enter') onClose(true);
+    }
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [state, onClose]);
+
+  if (!state) return null;
+  const { title, kicker, body, items, confirmLabel, tone } = state;
+  return (
+    <div className="vlt-confirm-backdrop" onClick={() => onClose(false)} role="dialog" aria-modal="true">
+      <div className={`vlt-confirm-card vlt-confirm-${tone || 'accent'}`} onClick={(e) => e.stopPropagation()}>
+        <div className="vlt-confirm-corner vlt-confirm-corner-tl" aria-hidden="true" />
+        <div className="vlt-confirm-corner vlt-confirm-corner-br" aria-hidden="true" />
+        {kicker ? <div className="vlt-confirm-kicker">{kicker}</div> : null}
+        <h3 className="vlt-confirm-title">{title}</h3>
+        {body ? <p className="vlt-confirm-body">{body}</p> : null}
+        {items && items.length ? (
+          <dl className="vlt-confirm-list">
+            {items.map((it, i) => (
+              <div className="vlt-confirm-row" key={i}>
+                <dt>{it.label}</dt>
+                <dd>{it.value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+        <div className="vlt-confirm-actions">
+          <button className="vlt-confirm-cancel" onClick={() => onClose(false)} type="button">
+            Cancel
+          </button>
+          <button className="vlt-confirm-go" onClick={() => onClose(true)} type="button" autoFocus>
+            {confirmLabel || 'Confirm'} <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ChronCell({ num, label, unit, hero }) {
   return (
@@ -1441,6 +1562,147 @@ function Style() {
         font-family: var(--font-mono); font-weight: 700;
         color: var(--accent); font-size: 11px; letter-spacing: 0.18em;
         display: block; margin-bottom: 6px;
+      }
+
+      /* ── CONFIRM MODAL ── */
+      .vlt-confirm-backdrop {
+        position: fixed; inset: 0; z-index: 9999;
+        background: rgba(8, 8, 8, 0.78);
+        backdrop-filter: blur(4px);
+        display: flex; align-items: center; justify-content: center;
+        padding: 24px;
+        animation: vltFadeIn 160ms ease;
+      }
+      @keyframes vltFadeIn { from { opacity: 0; } to { opacity: 1; } }
+      .vlt-confirm-card {
+        position: relative;
+        width: 100%; max-width: 480px;
+        background: #0E0E0E; color: #F9F6F0;
+        border: 1px solid rgba(249,246,240,0.18);
+        padding: 32px 32px 26px;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+        animation: vltSlideUp 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+      }
+      @keyframes vltSlideUp {
+        from { opacity: 0; transform: translateY(16px) scale(0.98); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .vlt-confirm-accent { border-color: rgba(215,255,58,0.42); }
+      .vlt-confirm-danger { border-color: rgba(249,246,240,0.32); }
+      .vlt-confirm-corner {
+        position: absolute; width: 14px; height: 14px;
+        border: 1px solid var(--accent);
+      }
+      .vlt-confirm-danger .vlt-confirm-corner { border-color: rgba(249,246,240,0.6); }
+      .vlt-confirm-corner-tl { top: 6px; left: 6px; border-right: none; border-bottom: none; }
+      .vlt-confirm-corner-br { bottom: 6px; right: 6px; border-left: none; border-top: none; }
+      .vlt-confirm-kicker {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.22em; text-transform: uppercase;
+        color: var(--accent); font-weight: 600;
+        margin-bottom: 14px;
+      }
+      .vlt-confirm-danger .vlt-confirm-kicker { color: rgba(249,246,240,0.7); }
+      .vlt-confirm-title {
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: 34px; letter-spacing: -0.02em; line-height: 1.05;
+        margin: 0 0 12px; color: #F9F6F0;
+      }
+      .vlt-confirm-body {
+        font-family: Georgia, serif; font-size: 14px;
+        line-height: 1.6; color: rgba(249,246,240,0.7);
+        margin: 0 0 18px;
+      }
+      .vlt-confirm-list {
+        margin: 0 0 22px; padding: 14px 16px;
+        border: 1px dashed rgba(249,246,240,0.18);
+        background: rgba(249,246,240,0.025);
+        display: flex; flex-direction: column; gap: 10px;
+      }
+      .vlt-confirm-row {
+        display: flex; justify-content: space-between; align-items: baseline;
+        gap: 16px; margin: 0;
+      }
+      .vlt-confirm-row dt {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.2em; text-transform: uppercase;
+        color: rgba(249,246,240,0.5);
+        margin: 0;
+      }
+      .vlt-confirm-row dd {
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: 18px; color: #F9F6F0; margin: 0;
+        text-align: right; letter-spacing: -0.01em;
+      }
+      .vlt-confirm-actions {
+        display: flex; gap: 10px; align-items: stretch;
+      }
+      .vlt-confirm-cancel, .vlt-confirm-go {
+        flex: 1; min-height: 48px;
+        font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+        letter-spacing: 0.14em; text-transform: uppercase;
+        cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+        gap: 8px; padding: 0 16px;
+        transition: all 120ms ease;
+      }
+      .vlt-confirm-cancel {
+        background: transparent;
+        border: 1px solid rgba(249,246,240,0.28);
+        color: rgba(249,246,240,0.75);
+      }
+      .vlt-confirm-cancel:hover {
+        border-color: #F9F6F0; color: #F9F6F0;
+      }
+      .vlt-confirm-go {
+        background: var(--accent);
+        border: 1px solid var(--accent);
+        color: #0E0E0E;
+        flex: 1.4;
+      }
+      .vlt-confirm-go:hover {
+        background: #F9F6F0; border-color: #F9F6F0;
+        box-shadow: 0 0 0 4px rgba(215,255,58,0.2);
+      }
+      .vlt-confirm-danger .vlt-confirm-go {
+        background: #F9F6F0; border-color: #F9F6F0;
+      }
+      .vlt-confirm-danger .vlt-confirm-go:hover {
+        background: var(--accent); border-color: var(--accent);
+        box-shadow: 0 0 0 4px rgba(215,255,58,0.2);
+      }
+
+      /* Modal responsive — works at every device width */
+      @media (max-width: 760px) {
+        .vlt-confirm-backdrop { padding: 16px; }
+        .vlt-confirm-card { padding: 24px 22px 20px; max-height: calc(100vh - 32px); }
+        .vlt-confirm-title { font-size: 28px; }
+        .vlt-confirm-body { font-size: 13px; }
+        .vlt-confirm-row dd { font-size: 16px; }
+      }
+      @media (max-width: 480px) {
+        .vlt-confirm-backdrop { padding: 12px; align-items: flex-end; }
+        .vlt-confirm-card {
+          padding: 22px 18px 18px;
+          max-height: calc(100vh - 24px);
+          animation: vltSlideUpSheet 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        @keyframes vltSlideUpSheet {
+          from { opacity: 0; transform: translateY(40px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .vlt-confirm-kicker { font-size: 9px; margin-bottom: 10px; }
+        .vlt-confirm-title { font-size: 24px; line-height: 1.1; }
+        .vlt-confirm-body { font-size: 13px; margin-bottom: 14px; }
+        .vlt-confirm-list { padding: 12px; gap: 8px; margin-bottom: 18px; }
+        .vlt-confirm-row {
+          flex-direction: column; align-items: flex-start; gap: 2px;
+        }
+        .vlt-confirm-row dd { text-align: left; font-size: 16px; }
+        .vlt-confirm-actions { flex-direction: column-reverse; gap: 8px; }
+        .vlt-confirm-cancel, .vlt-confirm-go { width: 100%; min-height: 46px; font-size: 11px; }
       }
 
       /* ── RESPONSIVE ──
