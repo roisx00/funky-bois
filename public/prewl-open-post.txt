@@ -6,9 +6,9 @@
 
 pre-whitelist applications are open.
 
-a finite list. a manual review. a signed seat at the assembly.
+a finite list. a manual review. once approved you get drop access. claim a trait every five hours. compose a bust. submit it.
 
-every approved holder earns a guaranteed mint. no farming. no shortcuts. show up. stand for it.
+build a portrait, earn a guaranteed seat at the assembly. don't build, you still mint in the open round if you make it.
 
 apply now. the1969.io/drop
 
@@ -21,7 +21,7 @@ apply now. the1969.io/drop
 
 pre-whitelist . open.
 
-submit. wait for review. earn your seat.
+approval grants drop access. building a portrait earns the guaranteed seat. everything else is the open round.
 
 the1969.io/drop
 
@@ -30,6 +30,23 @@ the1969.io/drop
 
 ▌ POST C . single line
 
-pre-whitelist applications are now open. the1969.io/drop
+pre-whitelist applications are now open. approval gets you the drop. building gets you the seat. the1969.io/drop
+
+
+─────────────────────────────────────────────
+
+▌ NOTES — what's accurate vs the previous draft
+
+The previous version claimed "every approved holder earns a guaranteed
+mint." That's wrong. Approval flow is two-stage:
+
+  1. APPROVED   → drop_eligible = TRUE → can claim traits every 5h
+                                          → Tier 2 (FCFS) at mint
+  2. APPROVED + PORTRAIT BUILT → is_whitelisted = TRUE → Tier 1 (GTD)
+                                                       → guaranteed mint
+
+Only Tier 1 gets the guaranteed seat. The new copy makes that distinction
+explicit: "build a portrait, earn a guaranteed seat. don't build, you
+still mint in the open round if you make it."
 
 ─────────────────────────────────────────────
