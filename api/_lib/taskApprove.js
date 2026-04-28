@@ -33,18 +33,22 @@ export async function approveVerification(verifId, reviewedBy) {
     `);
     if (!sentinel) {
       const task = one(await sql`SELECT reward_trifecta FROM tasks WHERE id = ${v.task_id}`);
-      const bonus = task?.reward_trifecta ?? 100;
-      await sql`UPDATE users SET busts_balance = busts_balance + ${bonus} WHERE id = ${v.user_id}`;
-      await sql`
-        INSERT INTO busts_ledger (user_id, amount, reason)
-        VALUES (${v.user_id}, ${bonus}, 'Task trifecta bonus')
-      `;
-      await sql`
-        INSERT INTO pending_verifications (user_id, task_id, action_type, points, source, status, reviewed_at, reviewed_by)
-        VALUES (${v.user_id}, ${v.task_id}, 'trifecta', ${bonus}, 'auto', 'approved', now(), ${reviewedBy})
-        ON CONFLICT (user_id, task_id, action_type) DO NOTHING
-      `;
-      return { id: verifId, approved: true, awarded: v.points, trifectaBonus: bonus };
+      const bonus = task?.reward_trifecta ?? 0;
+      // Skip the bonus path entirely when the configured bonus is 0
+      // (avoids writing zero-amount ledger rows and noise events).
+      if (bonus > 0) {
+        await sql`UPDATE users SET busts_balance = busts_balance + ${bonus} WHERE id = ${v.user_id}`;
+        await sql`
+          INSERT INTO busts_ledger (user_id, amount, reason)
+          VALUES (${v.user_id}, ${bonus}, 'Task trifecta bonus')
+        `;
+        await sql`
+          INSERT INTO pending_verifications (user_id, task_id, action_type, points, source, status, reviewed_at, reviewed_by)
+          VALUES (${v.user_id}, ${v.task_id}, 'trifecta', ${bonus}, 'auto', 'approved', now(), ${reviewedBy})
+          ON CONFLICT (user_id, task_id, action_type) DO NOTHING
+        `;
+        return { id: verifId, approved: true, awarded: v.points, trifectaBonus: bonus };
+      }
     }
   }
   return { id: verifId, approved: true, awarded: v.points };

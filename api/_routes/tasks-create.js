@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   const body = await readBody(req) || {};
   const {
     tweetUrl, description = null, activeUntil = null,
-    rewardLike = 10, rewardRt = 20, rewardReply = 30, rewardTrifecta = 100,
+    rewardLike = 2, rewardRt = 5, rewardReply = 5, rewardTrifecta = 0,
   } = body;
   const tweetId = parseTweetId(tweetUrl);
   if (!tweetId) return bad(res, 400, 'invalid_tweet_url');
