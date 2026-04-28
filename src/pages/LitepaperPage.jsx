@@ -59,7 +59,7 @@ export default function LitepaperPage({ onNavigate }) {
           <Abstract />
           <TableOfContents />
 
-          <Section id="1" n="01" title="The Thesis">
+          <Section n="01" title="The Thesis">
             <Body>
               <DropCap letter="T">HE 1969 is a 1,969-piece monochrome bust collective on Ethereum
               built around a single discipline:</DropCap> only real, attentive humans should be
@@ -81,7 +81,7 @@ export default function LitepaperPage({ onNavigate }) {
             </Pull>
           </Section>
 
-          <Section id="2" n="02" title="The Three Assemblies">
+          <Section n="02" title="The Three Assemblies">
             <Body>
               The full mythology lives in <Link onClick={() => onNavigate?.('1969')}>the Archive · Chapter Zero</Link>.
               In summary: a First Assembly built a vault and codified the
@@ -96,7 +96,7 @@ export default function LitepaperPage({ onNavigate }) {
             </Body>
           </Section>
 
-          <Section id="3" n="03" title="Architecture">
+          <Section n="03" title="Architecture">
             <Body>
               The system is a thin Next-style serverless architecture chosen for cost-to-
               survive a launch-day surge without provisioning for it in advance.
@@ -124,7 +124,7 @@ export default function LitepaperPage({ onNavigate }) {
             </Body>
           </Section>
 
-          <Section id="4" n="04" title="The Drop Engine">
+          <Section n="04" title="The Drop Engine">
             <Body>
               Traits are distributed exclusively through a global hourly drop. There is
               no presale of traits, no allocation, no merch pre-print. Every trait that
@@ -155,7 +155,7 @@ export default function LitepaperPage({ onNavigate }) {
             </Body>
           </Section>
 
-          <Section id="5" n="05" title="Anti-Bot Defense">
+          <Section n="05" title="Anti-Bot Defense">
             <Body>
               The single hardest engineering problem in this project has been defending
               the drop pool against automated claims. Bot operators with aged X accounts
@@ -196,7 +196,7 @@ export default function LitepaperPage({ onNavigate }) {
             </Body>
           </Section>
 
-          <Section id="6" n="06" title="The Build Flow">
+          <Section n="06" title="The Build Flow">
             <Body>
               When a holder has at least one of each of the eight trait types, they can
               compose a portrait. Selection is from inventory — what they pulled, plus
@@ -225,7 +225,7 @@ export default function LitepaperPage({ onNavigate }) {
             </Body>
           </Section>
 
-          <Section id="7" n="07" title="The Eight Oaths">
+          <Section n="07" title="The Eight Oaths">
             <Body>
               Each portrait belongs implicitly to one of eight archetypes, named after
               the oaths kept by the Second Assembly. The archetype is determined by
@@ -245,7 +245,7 @@ export default function LitepaperPage({ onNavigate }) {
             </Body>
           </Section>
 
-          <Section id="8" n="08" title="The BUSTS Economy">
+          <Section n="08" title="The BUSTS Economy">
             <Body>
               BUSTS is the project's internal currency. It exists today as an off-chain
               integer balance per user, governed by the application database. The unit
@@ -283,7 +283,7 @@ export default function LitepaperPage({ onNavigate }) {
             </Body>
           </Section>
 
-          <Section id="9" n="09" title="The Mint">
+          <Section n="09" title="The Mint">
             <Body>
               The mint is structured as a two-tier allowlist plus a public window. The
               tiers are not based on auction or revenue maximization — they are based on
@@ -319,7 +319,7 @@ export default function LitepaperPage({ onNavigate }) {
             </Body>
           </Section>
 
-          <Section id="10" n="10" title="Post-Mint">
+          <Section n="10" title="Post-Mint">
             <Body>
               The mint is a checkpoint, not the destination. Three categories of work
               are queued to follow it:
@@ -348,7 +348,7 @@ export default function LitepaperPage({ onNavigate }) {
             </Body>
           </Section>
 
-          <Section id="11" n="11" title="The Doctrine">
+          <Section n="11" title="The Doctrine">
             <Body>
               The project has one rule. It was not chosen by committee. It was inherited
               from the lesson of 1977, repeated by the Third Assembly because the lesson
@@ -398,7 +398,7 @@ function Hero() {
         fontSize: 'clamp(72px, 12vw, 168px)', letterSpacing: '-0.035em',
         lineHeight: 0.92, margin: '0 0 16px',
       }}>
-        a process,<br/>not a sale.
+        a process<br/>that's fun.
       </h1>
 
       <div style={{
@@ -546,7 +546,7 @@ function TOCSticky({ activeSection }) {
 // ─────────────────────────────────────────────────────────────────────
 // SECTION WRAPPER
 // ─────────────────────────────────────────────────────────────────────
-function Section({ n, title, children, id }) {
+function Section({ n, title, children }) {
   return (
     <section
       id={`section-${n}`}

@@ -558,7 +558,7 @@ export default function LandingPage({ onNavigate }) {
               <li><a onClick={() => onNavigate('gallery')}>Gallery</a></li>
               <li><a onClick={() => onNavigate('dashboard')}>Dashboard</a></li>
               <li><a onClick={() => onNavigate('1969')}>1969 — Archive</a></li>
-              <li><a onClick={() => onNavigate('litepaper')}>Litepaper</a></li>
+              {/* Litepaper deliberately not surfaced — direct URL only during review */}
             </ul>
           </div>
 

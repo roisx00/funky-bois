@@ -11,7 +11,9 @@ const BASE_PAGES = [
   { id: 'drop',     label: 'Drop' },
   { id: 'gallery',  label: 'Gallery' },
   { id: '1969',     label: '1969' },
-  { id: 'litepaper', label: 'Litepaper' },
+  // 'litepaper' route is intentionally NOT in the public nav while the
+  // team reviews. Direct URL the1969.io/litepaper still works. Add the
+  // entry back here when ready to go public.
 ];
 // Leaderboard is publicly viewable but lives between Build and Dashboard
 // in the nav when the user is signed in, so we keep it out of the base
