@@ -5,6 +5,7 @@ import { startXLogin } from '../utils/xAuth';
 import BrandMark from './BrandMark';
 import { useToast } from './Toast';
 import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
+import { useAccount, useDisconnect } from 'wagmi';
 
 const BASE_PAGES = [
   { id: 'home',     label: 'Index' },
@@ -117,10 +118,28 @@ export default function Nav({ currentPage, onNavigate }) {
 
   const { openConnectModal } = useConnectModal();
   const { openAccountModal } = useAccountModal();
+  const { isConnected: wagmiConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+  // Robust wallet-connect handler. RainbowKit's useConnectModal returns
+  // openConnectModal = undefined when wagmi already considers the wallet
+  // connected (e.g. cached from a previous session). If our DB doesn't
+  // know about it, the user sees "Connect Wallet" but the button does
+  // nothing. Fall back to the account modal (so they can disconnect from
+  // there) or force a disconnect to reset wagmi and re-render with the
+  // connect modal available.
   const openConnect = () => {
     setUserMenuOpen(false);
     setMobileOpen(false);
-    openConnectModal?.();
+    if (openConnectModal) {
+      openConnectModal();
+    } else if (wagmiConnected && openAccountModal) {
+      openAccountModal();
+    } else if (wagmiConnected) {
+      try { disconnect(); } catch (e) { console.warn('[Nav] forced disconnect failed:', e); }
+      toast.info?.('Resetting wallet — try again in a moment.');
+    } else {
+      toast.error('Wallet connector unavailable. Refresh the page and try again.');
+    }
   };
 
   return (
