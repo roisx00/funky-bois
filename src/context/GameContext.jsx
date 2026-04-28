@@ -7,10 +7,10 @@ import { useToast } from '../components/Toast';
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Session constants (mirror server) ───────────────────────────────────────
-const SESSION_INTERVAL_MS    = 2 * 60 * 60 * 1000;
+const SESSION_INTERVAL_MS    = 5 * 60 * 60 * 1000;
 const SESSION_WINDOW_MS      = 5 * 60 * 1000;
 // Mirrors api/_lib/elements.js — keep in sync. One claim per user
-// per 2-hour session in the pre-whitelist model.
+// per 5-hour session in the pre-whitelist model.
 const MAX_CLAIMS_PER_SESSION = 1;
 
 function getCurrentSessionId() {

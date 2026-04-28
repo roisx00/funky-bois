@@ -8,7 +8,7 @@ function friendlyDropError(r) {
   const code = r?.reason || r?.error || '';
   if (code === 'not_pre_whitelisted')   return 'Your account isn’t on the drop pre-whitelist yet. Apply below — admin will review.';
   if (code === 'already_built_portrait') return 'You’ve already built your portrait. The drop is for users still collecting traits.';
-  if (code === 'pool_exhausted')        return 'All slots claimed this window. Next pool opens at the top of the next 2-hour cycle.';
+  if (code === 'pool_exhausted')        return 'All slots claimed this window. Next pool opens at the top of the next 5-hour cycle.';
   if (code === 'no_active_session')     return 'The drop window just closed. Back when the next session opens.';
   if (code === 'max_claims_reached')    return 'You’ve already claimed in this session. One claim per user per window.';
   if (code === 'rate_limited')          return 'Slow down a moment, then try again.';
@@ -214,7 +214,7 @@ export default function DropPage() {
               <li>Sign in with X.</li>
               <li>Apply for the drop pre-whitelist.</li>
               <li>Admin reviews your X profile and approves real users.</li>
-              <li>Once approved, hit <strong>Claim</strong> every 2 hours.</li>
+              <li>Once approved, hit <strong>Claim</strong> every 5 hours.</li>
               <li>Build your portrait when you have all 8 traits.</li>
             </ol>
           </div>
@@ -223,7 +223,7 @@ export default function DropPage() {
             <div className="drop-v2-aside-title">Rules</div>
             <ul className="drop-v2-rules">
               <li>Pre-whitelist required to claim.</li>
-              <li>1 claim per user per 2-hour session.</li>
+              <li>1 claim per user per 5-hour session.</li>
               <li>Pool: 20 slots per window.</li>
               <li>After you build, drop access ends — others get a turn.</li>
               {isAdmin ? <li style={{ opacity: 0.7 }}>ADMIN · review queue in /admin</li> : null}
@@ -398,7 +398,7 @@ function ApplyStage({ xUser, message, setMessage, busy, onApply }) {
       <p className="drop-v2-stage-sub">
         Click below to submit your X profile (<strong>@{xUser?.username || 'you'}</strong>) for review.
         Admins will eyeball your account and approve real users. Approval is one-time — after that,
-        you can claim every 2 hours until you finish your portrait.
+        you can claim every 5 hours until you finish your portrait.
       </p>
       <div className="drop-v2-form-row">
         <label className="drop-v2-form-label">Optional note for admin</label>
@@ -507,10 +507,10 @@ function ApprovedStage({ isActive, isPoolEmpty, claimsThisSession, maxClaims, bu
       </div>
       <p className="drop-v2-stage-sub">
         {alreadyClaimed
-          ? 'One claim per user per session. Come back at the top of the next 2-hour cycle.'
+          ? 'One claim per user per session. Come back at the top of the next 5-hour cycle.'
           : isActive
             ? 'One click. The server picks a random trait weighted by published rarity odds.'
-            : 'The drop window is closed. The next 20-slot pool opens at the top of the next 2-hour cycle.'}
+            : 'The drop window is closed. The next 20-slot pool opens at the top of the next 5-hour cycle.'}
       </p>
       <button
         className="btn btn-accent btn-lg btn-arrow"
@@ -667,7 +667,7 @@ function SlotMeter({ taken, size, nextSize, mood, isPoolEmpty, windowOpen, prewl
           <span className="drop-v3-slot-count">0/{nextSize || size || 20}</span>
         </div>
         <div className="drop-v3-slot-dots">{dotsFor(0, safeNextSize)}</div>
-        <div className="drop-v3-slot-mood">Opens at the top of the next 2-hour cycle</div>
+        <div className="drop-v3-slot-mood">Opens at the top of the next 5-hour cycle</div>
         {audience}
       </div>
     </div>

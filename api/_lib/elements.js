@@ -133,10 +133,10 @@ export function pickFromBox(tier) {
 }
 
 // Drop session math (mirrors GameContext).
-// One session every 2 hours with a 5-minute claim window. HMAC-
+// One session every 5 hours with a 5-minute claim window. HMAC-
 // jittered reveal schedule means the 20 slots spread across the full
 // 5-minute window so bots can't sweep at :00:00.
-const SESSION_INTERVAL_MS = 2 * 60 * 60 * 1000;
+const SESSION_INTERVAL_MS = 5 * 60 * 60 * 1000;
 const SESSION_WINDOW_MS   = 5 * 60 * 1000;
 // One claim per user per session. Pre-whitelist gates pool access,
 // so the per-user cap only needs to ensure no single approved user

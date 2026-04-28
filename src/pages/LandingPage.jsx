@@ -5,7 +5,7 @@ import { buildNFTSVG, ELEMENT_LABELS, ELEMENT_TYPES, ELEMENT_VARIANTS } from '..
 import Timer from '../components/Timer';
 
 const STEPS = [
-  { num: '01', title: 'Join the Drop',      desc: 'A claim window opens every 2 hours. Show up fast, grab a trait before the pool empties.' },
+  { num: '01', title: 'Join the Drop',      desc: 'A claim window opens every 5 hours. Show up fast, grab a trait before the pool empties.' },
   { num: '02', title: 'Collect the Eight',  desc: 'Eight portrait layers combine into one complete bust. Duplicates become gifting ammo.' },
   { num: '03', title: 'Assemble the Bust',  desc: 'Stack common, rare, and ultra-rare pieces into a final portrait that feels like you.' },
   { num: '04', title: 'Earn the Whitelist', desc: 'Build, share on X, prove taste. No Discord chores, no fake hype. Just the work.' },
@@ -188,7 +188,7 @@ export default function LandingPage({ onNavigate }) {
 
             <p className="hero-lede">
               A finite run of monochrome pixel busts, earned through taste rather than grinding.
-              Claim a trait every 2 hours, compose a portrait, share it on X, unlock your mint.
+              Claim a trait every 5 hours, compose a portrait, share it on X, unlock your mint.
             </p>
 
             <div className="hero-cta">

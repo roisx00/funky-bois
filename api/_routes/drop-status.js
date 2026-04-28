@@ -12,7 +12,7 @@ import { getCurrentSessionId, isSessionActive, MAX_CLAIMS_PER_SESSION, DEFAULT_P
 import { countOnline } from '../_lib/presence.js';
 import { getConfigInt } from '../_lib/config.js';
 
-const SESSION_INTERVAL_MS = 2 * 60 * 60 * 1000;
+const SESSION_INTERVAL_MS = 5 * 60 * 60 * 1000;
 const SESSION_WINDOW_MS   = 5 * 60 * 1000;
 const SUPPLY_CAP          = 1969;
 

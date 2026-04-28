@@ -1622,7 +1622,7 @@ async function drawTweetGraphic(canvas, item) {
       ctx.fillStyle = GFX_GREY;
       ctx.font = "500 22px 'JetBrains Mono', monospace";
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText('20 traits out. 20 holders. The pool refreshes every 2 hours.', w / 2, 920);
+      ctx.fillText('20 traits out. 20 holders. The pool refreshes every 5 hours.', w / 2, 920);
 
       gfxStamp(ctx, w - 180, 220, 'FOMO', -0.08);
     }

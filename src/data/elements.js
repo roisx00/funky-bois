@@ -304,6 +304,22 @@ export function getElementSVG(type, variant) {
   }
 }
 
+// Optional pixel-art OpenSea wave glyph rendered in the bottom-right corner
+// when a portrait carries elements.welcome === 'opensea'. Used for the
+// reciprocal "we welcome OpenSea" profile in the gallery.
+const OPENSEA_BADGE = `
+  <g shape-rendering="crispEdges">
+    <rect x="76" y="76" width="18" height="18" fill="#2081E2"/>
+    <rect x="76" y="76" width="18" height="2" fill="#1868B7"/>
+    <rect x="78" y="84" width="2" height="2" fill="#FFFFFF"/>
+    <rect x="80" y="82" width="2" height="4" fill="#FFFFFF"/>
+    <rect x="82" y="80" width="2" height="6" fill="#FFFFFF"/>
+    <rect x="84" y="82" width="2" height="4" fill="#FFFFFF"/>
+    <rect x="86" y="84" width="2" height="2" fill="#FFFFFF"/>
+    <rect x="80" y="88" width="10" height="2" fill="#FFFFFF"/>
+  </g>
+`;
+
 // ─── Full-NFT composite (layer stack) ─────────────────────────────────────
 export function buildNFTSVG(elements) {
   const bg       = BG_SVG[elements.background ?? 0] || BG_SVG[0];
@@ -314,6 +330,7 @@ export function buildNFTSVG(elements) {
   const hair     = HAIR_SVG[elements.hair ?? 0] || HAIR_SVG[0];
   const headwear = HEADWEAR_SVG[elements.headwear ?? 0] || '';
   const faceMark = FACE_MARK_SVG[elements.face_mark ?? 0] || '';
+  const welcome  = elements.welcome === 'opensea' ? OPENSEA_BADGE : '';
 
   // Neck always present between outfit and head
   const neck = `<rect x="40" y="66" width="16" height="10" fill="#bbb"/><rect x="40" y="66" width="16" height="2" fill="#777"/>`;
@@ -328,5 +345,6 @@ export function buildNFTSVG(elements) {
     ${facial}
     ${hair}
     ${headwear}
+    ${welcome}
   </svg>`;
 }
