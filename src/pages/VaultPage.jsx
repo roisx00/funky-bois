@@ -393,22 +393,6 @@ export default function VaultPage({ onNavigate }) {
         </div>
       </section>
 
-      {/* ─── CHRONICLE STRIP ─────────────────────────────────── */}
-      <section className="vlt-chronicle">
-        <div className="vlt-chronicle-inner">
-          <div className="vlt-chronicle-head">
-            <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
-            <span className="vlt-chronicle-sub">A running ledger of what your vault has done.</span>
-          </div>
-          <div className="vlt-chron-stats">
-            <ChronCell num={vault.bustsDeposited.toLocaleString()} label="BUSTS deposited" unit="cumulative" />
-            <ChronCell num={isPortraitInVault ? '1' : '0'} label="portrait bound" unit={isPortraitInVault ? 'active' : '—'} />
-            <ChronCell num={vault.lifetimeYieldPaid.toLocaleString()} label="yield earned" unit="lifetime" hero />
-            <ChronCell num={String(vault.burnCount)} label="times burned" unit={vault.burnCount === 0 ? 'never' : 'survived'} />
-          </div>
-        </div>
-      </section>
-
       {/* ─── §01 DEPOSIT / WITHDRAW ──────────────────────────── */}
       {/* Promoted to §01 so the user sees the vault SVG (above) while
           they interact with deposit + portrait — the door-open animation
@@ -502,6 +486,25 @@ export default function VaultPage({ onNavigate }) {
           onAction={handlePortraitAction}
           onNavigate={onNavigate}
         />
+      </section>
+
+      {/* ─── CHRONICLE STRIP ─────────────────────────────────── */}
+      {/* Moved below the action sections so the vault hero sits as close
+          as possible to deposit + portrait — the door-open animation
+          stays in the user's viewport while they act. */}
+      <section className="vlt-chronicle vlt-chronicle-compact">
+        <div className="vlt-chronicle-inner">
+          <div className="vlt-chronicle-head">
+            <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
+            <span className="vlt-chronicle-sub">A running ledger of what your vault has done.</span>
+          </div>
+          <div className="vlt-chron-stats">
+            <ChronCell num={vault.bustsDeposited.toLocaleString()} label="BUSTS deposited" unit="cumulative" />
+            <ChronCell num={isPortraitInVault ? '1' : '0'} label="portrait bound" unit={isPortraitInVault ? 'active' : '—'} />
+            <ChronCell num={vault.lifetimeYieldPaid.toLocaleString()} label="yield earned" unit="lifetime" hero />
+            <ChronCell num={String(vault.burnCount)} label="times burned" unit={vault.burnCount === 0 ? 'never' : 'survived'} />
+          </div>
+        </div>
       </section>
 
       {/* ─── §03 YIELD ───────────────────────────────────────── */}
@@ -813,7 +816,7 @@ function Style() {
       /* ── HERO ── */
       .vlt-hero {
         background: #0B0B0B; color: #F9F6F0;
-        padding: 80px 24px 88px; position: relative;
+        padding: 80px 24px 56px; position: relative;
         overflow: hidden; border-bottom: 1px solid var(--ink);
       }
       .vlt-hero::before {
@@ -1195,6 +1198,19 @@ function Style() {
 
       /* ── SECTIONS ── */
       .vlt-section { max-width: 1180px; margin: 0 auto; padding: 64px 24px; }
+      /* The first section right after the hero pulls up tight so the
+         vault SVG (with its door-open animation) stays in the viewport
+         while the user is interacting with deposit. */
+      .vlt-hero + .vlt-section { padding-top: 28px; }
+      /* Compact chronicle variant — sits between action sections without
+         eating vertical real estate. */
+      .vlt-chronicle-compact { padding: 18px 24px; }
+      .vlt-chronicle-compact .vlt-chronicle-inner { grid-template-columns: 200px 1fr; gap: 24px; }
+      .vlt-chronicle-compact .vlt-chronicle-head { padding-right: 20px; gap: 4px; }
+      .vlt-chronicle-compact .vlt-chronicle-sub { font-size: 12px; line-height: 1.4; }
+      .vlt-chronicle-compact .vlt-chron-num { font-size: 26px; }
+      .vlt-chronicle-compact .vlt-chron-cell { padding: 0 16px; gap: 4px; }
+      .vlt-chronicle-compact .vlt-chron-cell.hero { padding: 4px 16px; }
       .vlt-section-head { max-width: 720px; margin-bottom: 32px; }
       .vlt-section-num {
         font-family: var(--font-mono); font-size: 11px;
