@@ -1062,7 +1062,7 @@ function BUSTSFlow() {
 function TierDiagram() {
   return (
     <DiagramFrame caption="figure 7 · mint tier structure">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
+      <div className="lp-diag-grid lp-diag-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
         <TierCard num="I"   label="Tier 1" rule="built portrait + wallet bound under signature" outcome="priority window · calm settlement" lime />
         <TierCard num="II"  label="Tier 2" rule="pre-WL approved + wallet bound" outcome="open window · race settlement" />
         <TierCard num="III" label="Public" rule="anyone with the residual supply" outcome="public window · standard pricing" />
@@ -1093,7 +1093,7 @@ function TierCard({ num, label, rule, outcome, lime }) {
 function PostMintGrid() {
   return (
     <DiagramFrame caption="figure 8 · post-mint roadmap">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
+      <div className="lp-diag-grid lp-diag-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
         <RoadCard label="EXPERIENCES" body="A sequence of releases — competitive, collaborative, ritual — sharing the eight-oath identity, the BUSTS economy, and the same anti-bot stack. Shape decided per release. First release within weeks of mint." />
         <RoadCard label="$BUSTS" body="On-chain transition of the BUSTS economy. Genesis snapshot taken from the off-chain ledger. Schedule depends on regulatory clarity and ledger maturity." accent />
         <RoadCard label="UTILITY" body="Post-mint, held tokens gain functions they do not have at mint. The catalog is intentionally open. Each addition is documented in the Archive when it ships." />
@@ -1123,7 +1123,7 @@ function RoadCard({ label, body, accent }) {
 function VaultAnatomy() {
   return (
     <DiagramFrame caption="figure 9 · vault anatomy · four deterministic dimensions">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
+      <div className="lp-diag-grid lp-diag-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
         <AnatomyCell axis="FRAME" rolls="4" examples="square keep · arched gate · cathedral · monolith" />
         <AnatomyCell axis="WALL"  rolls="4" examples="ashlar · iron-banded · mortared · plate" />
         <AnatomyCell axis="SIGIL" rolls="6" examples="six glyphs · illuminated at supreme tier" />
@@ -1215,7 +1215,7 @@ function LoopStage({ label, body, lime }) {
 function ProgressionDiagram() {
   return (
     <DiagramFrame caption="figure 12 · vault progression · long-arc lifecycle">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
+      <div className="lp-diag-grid lp-diag-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
         <ProgCell label="01" title="Genesis"      body="Vault generated from holder identity. Base Power. Empty deposits. No bond." />
         <ProgCell label="02" title="Reinforce"    body="Deposit BUSTS. Bind portrait. Buy first upgrade tiers. Power climbs." />
         <ProgCell label="03" title="Play"         body="Enter games. Stake BUSTS. Win or lose. Outcomes recorded permanently." lime />
@@ -1303,6 +1303,19 @@ function ResponsiveStyles() {
         .lp-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
         .lp-toc { display: none !important; }
         .lp-dropcap { font-size: 48px !important; }
+        /* Diagram grids collapse cleanly on mobile so cells don't
+           overflow horizontally (figures 6, 7, 8, 9, 11, 12). */
+        .lp-diag-grid-5, .lp-diag-grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+        .lp-diag-grid-5 > *, .lp-diag-grid-4 > * { border-bottom: 1px solid var(--ink); }
+        .lp-diag-grid-5 > *:nth-child(2n), .lp-diag-grid-4 > *:nth-child(2n) { border-right: none !important; }
+        .lp-diag-grid-3 { grid-template-columns: 1fr !important; }
+        .lp-diag-grid-3 > * { border-right: none !important; border-bottom: 1px solid var(--ink); }
+        .lp-diag-grid-3 > *:last-child, .lp-diag-grid-5 > *:last-child, .lp-diag-grid-4 > *:last-child { border-bottom: none; }
+      }
+      @media (max-width: 540px) {
+        .lp-diag-grid-5, .lp-diag-grid-4 { grid-template-columns: 1fr !important; }
+        .lp-diag-grid-5 > *, .lp-diag-grid-4 > * { border-right: none !important; border-bottom: 1px solid var(--ink); }
+        .lp-diag-grid-5 > *:last-child, .lp-diag-grid-4 > *:last-child { border-bottom: none; }
       }
     `}</style>
   );
