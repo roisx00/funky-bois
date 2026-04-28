@@ -199,6 +199,15 @@ export default function LandingPage({ onNavigate }) {
                 View Gallery
               </button>
             </div>
+            <button
+              className="hero-litepaper-link"
+              onClick={() => onNavigate('litepaper')}
+              type="button"
+            >
+              <span className="hero-litepaper-tag">DOC</span>
+              Read the litepaper
+              <span aria-hidden="true">→</span>
+            </button>
 
             <div className="hero-ledger">
               <div className="hero-ledger-cell">
@@ -558,7 +567,7 @@ export default function LandingPage({ onNavigate }) {
               <li><a onClick={() => onNavigate('gallery')}>Gallery</a></li>
               <li><a onClick={() => onNavigate('dashboard')}>Dashboard</a></li>
               <li><a onClick={() => onNavigate('1969')}>1969 — Archive</a></li>
-              {/* Litepaper deliberately not surfaced — direct URL only during review */}
+              <li><a onClick={() => onNavigate('litepaper')}>Litepaper</a></li>
             </ul>
           </div>
 
