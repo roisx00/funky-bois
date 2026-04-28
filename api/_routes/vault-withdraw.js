@@ -40,12 +40,11 @@ export default async function handler(req, res) {
   `);
   if (!updated) return bad(res, 409, 'insufficient_vault_balance');
 
+  // Credit the user back + record the movement. We deliberately don't
+  // touch vault_deposits here — that table has a CHECK (amount > 0)
+  // constraint from the original deposit-only design, and busts_ledger
+  // already gives us a full audit trail of the withdrawal.
   try {
-    // Audit row in vault_deposits (negative = withdrawal)
-    await sql`
-      INSERT INTO vault_deposits (user_id, amount)
-      VALUES (${user.id}::uuid, ${-amount})
-    `;
     await sql`
       UPDATE users SET busts_balance = busts_balance + ${amount}
        WHERE id = ${user.id}
