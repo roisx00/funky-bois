@@ -1,34 +1,37 @@
-// THE 1969 — Vault page (Phase 1, day 1)
+// THE 1969 — Vault page (v2 layout)
 //
-// Each holder's vault, rendered procedurally from their user_id.
-// Visible state: power, BUSTS deposited, upgrade levels, burn count.
-// Actions on this page: deposit BUSTS · buy upgrades.
+// Editorial structure (top → bottom):
+//   1. HERO BAND — full-width dark, vault rendered large, floating stat
+//      plinths beside it, tier badge prominent
+//   2. CHRONICLE STRIP — paper, horizontal stat ribbon below the hero
+//   3. §01 DEPOSIT — quick-amount chips + custom input + projected
+//      power preview ("after this deposit your vault would be at X")
+//   4. §02 UPGRADES — 8-track grid (was 4), each card has a pixel icon,
+//      labeled tagline, segmented progress bar, next-tier cost/bonus
+//   5. §03 WHAT WAITS — small post-mint reveal teaser
 //
-// The defense gameplay ships separately at /vault/play in Phase 2.
-//
-// Brand: dark vault rendered against the paper page — the vault is
-// "the kept thing" inside a museum-catalog frame. Lime accents only
-// where state warrants (sigil, supreme tier reinforcements).
+// Phase 2 (the actual defense game) ships next at /vault/play.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import {
   buildVaultSVG, vaultTraits,
-  powerTierOf, POWER_TIER_LABELS, UPGRADE_CATALOG,
+  powerTierOf, POWER_TIER_LABELS, UPGRADE_CATALOG, UPGRADE_ICONS,
 } from '../data/vaults';
+
+const QUICK_DEPOSIT = [100, 500, 1000, 5000, 10000];
 
 export default function VaultPage({ onNavigate }) {
   const { authenticated, xUser, bustsBalance, refreshMe } = useGame();
   const toast = useToast();
 
-  const [vault, setVault]     = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy]       = useState(false);
+  const [vault, setVault]               = useState(null);
+  const [loading, setLoading]           = useState(true);
+  const [busy, setBusy]                 = useState(false);
   const [depositInput, setDepositInput] = useState('');
 
   const refresh = useCallback(async () => {
-    setLoading(true);
     try {
       const r = await fetch('/api/vault', { credentials: 'same-origin' });
       const d = await r.json();
@@ -42,6 +45,21 @@ export default function VaultPage({ onNavigate }) {
     refresh();
   }, [authenticated, refresh]);
 
+  // Live power projection from the deposit input
+  const depositAmt = useMemo(() => {
+    const n = Math.trunc(Number(depositInput));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }, [depositInput]);
+  const projectedPower = useMemo(() => {
+    if (!vault) return 0;
+    if (!depositAmt) return vault.power;
+    // Mirror computePower: floor((100 + (deposits + amt)/50 + bonus) * 0.9^burns)
+    const newDeposits = vault.bustsDeposited + depositAmt;
+    const raw = 100 + Math.floor(newDeposits / 50) + (vault.upgradeBonus || 0);
+    const decay = Math.pow(0.9, vault.burnCount || 0);
+    return Math.max(1, Math.floor(raw * decay));
+  }, [vault, depositAmt]);
+
   if (!authenticated) {
     return (
       <div className="page" style={{ maxWidth: 720, margin: '0 auto', padding: '120px 24px', textAlign: 'center' }}>
@@ -51,7 +69,9 @@ export default function VaultPage({ onNavigate }) {
         <p style={{ fontFamily: 'Georgia, serif', fontSize: 17, color: 'var(--text-3)', marginBottom: 28 }}>
           Every approved holder has one. Yours is waiting.
         </p>
-        <button className="btn btn-solid btn-arrow" onClick={() => onNavigate?.('home')}>Back to home</button>
+        <button className="btn btn-solid btn-arrow" onClick={() => onNavigate?.('home')}>
+          Back to home
+        </button>
       </div>
     );
   }
@@ -59,20 +79,20 @@ export default function VaultPage({ onNavigate }) {
   if (loading || !vault) {
     return (
       <div className="page" style={{ maxWidth: 720, margin: '0 auto', padding: '120px 24px', textAlign: 'center', fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>
-        Loading your vault…
+        Locating your vault…
       </div>
     );
   }
 
-  const power = vault.power;
-  const tier  = powerTierOf(power);
+  const power     = vault.power;
+  const tier      = powerTierOf(power);
   const tierLabel = POWER_TIER_LABELS[tier];
-  const traits = vaultTraits(vault.userId);
+  const traits    = vaultTraits(vault.userId);
 
   async function handleDeposit() {
     const amount = Math.trunc(Number(depositInput));
     if (!Number.isFinite(amount) || amount < 10) { toast.error('Min deposit is 10 BUSTS.'); return; }
-    if (amount > bustsBalance) { toast.error(`You only have ${bustsBalance.toLocaleString()} BUSTS.`); return; }
+    if (amount > bustsBalance)                   { toast.error(`You only have ${bustsBalance.toLocaleString()} BUSTS.`); return; }
     if (busy) return;
     if (!window.confirm(`Deposit ${amount.toLocaleString()} BUSTS into your vault?\n\nLocked until post-mint reveal. Increases vault power.`)) return;
     setBusy(true);
@@ -125,104 +145,139 @@ export default function VaultPage({ onNavigate }) {
   }
 
   return (
-    <div className="page vault-page" style={{
-      maxWidth: 1080, margin: '0 auto', padding: '64px 24px 120px',
-    }}>
+    <div className="vault-page-v2">
       <Style />
 
-      {/* ── Hero ── */}
-      <header style={{ marginBottom: 32 }}>
-        <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.18em',
-          textTransform: 'uppercase', color: 'var(--text-4)',
-          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
-        }}>
-          <span style={{ width: 8, height: 8, background: 'var(--accent)', border: '1px solid var(--ink)', borderRadius: '50%' }} />
-          THE 1969 · YOUR VAULT
-        </div>
-        <h1 style={{
-          fontFamily: 'var(--font-display)', fontStyle: 'italic',
-          fontWeight: 500, fontSize: 'clamp(56px, 8vw, 96px)',
-          letterSpacing: '-0.025em', lineHeight: 0.96, margin: '0 0 12px',
-        }}>
-          @{xUser?.username}'s vault.
-        </h1>
-        <p style={{ fontFamily: 'Georgia, serif', fontSize: 17, color: 'var(--text-3)', maxWidth: 640, lineHeight: 1.6 }}>
-          Every vault is uniquely composed from your X identity. Deposit BUSTS to strengthen
-          it. Upgrade its defenses. Soon, you will defend it. <em>The Vault must not burn again.</em>
-        </p>
-      </header>
+      {/* ─── HERO BAND ─────────────────────────────────────────── */}
+      <section className="vlt-hero">
+        <div className="vlt-hero-inner">
+          <div className="vlt-hero-meta">
+            <span className="vlt-kicker">
+              <span className="vlt-kicker-dot" />
+              THE 1969 · YOUR VAULT
+            </span>
+            <h1 className="vlt-hero-title">
+              @{xUser?.username}'s<br/>
+              <em>vault.</em>
+            </h1>
+            <p className="vlt-hero-sub">
+              Every vault is uniquely composed from your X identity.
+              Deposit BUSTS to strengthen it. Upgrade its defenses.
+              Soon, you will defend it.
+              <br/><em>The Vault must not burn again.</em>
+            </p>
 
-      {/* ── Vault portrait + stats ── */}
-      <div className="vault-grid">
-        <div>
-          <div className="vault-art-frame">
-            <div dangerouslySetInnerHTML={{ __html: buildVaultSVG({ userId: vault.userId, power, burnCount: vault.burnCount }) }} />
+            {/* Stat plinths beside the vault */}
+            <div className="vlt-stat-plinths">
+              <Plinth label="POWER" main={power.toLocaleString()} sub={tierLabel} accent={tier >= 3} />
+              <Plinth label="LOCKED INSIDE" main={vault.bustsDeposited.toLocaleString()} sub="BUSTS" />
+              <Plinth label="TIER" main={`§${tier}`} sub={tierLabel} />
+              <Plinth label="BURN COUNT" main={String(vault.burnCount)} sub={vault.burnCount === 0 ? 'still standing' : 'has been burned'} />
+            </div>
           </div>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em',
-            color: 'var(--text-4)', marginTop: 12,
-          }}>
-            <span>FRAME · {traits.frame + 1} / 4</span>
-            <span>WALL · {traits.wall + 1} / 4</span>
-            <span>SIGIL · {traits.sigil + 1} / 6</span>
+
+          <div className="vlt-hero-art">
+            <div
+              className="vlt-art-frame"
+              dangerouslySetInnerHTML={{ __html: buildVaultSVG({ userId: vault.userId, power, burnCount: vault.burnCount }) }}
+            />
+            <div className="vlt-art-caption">
+              <span>FRAME · {traits.frame + 1}/4</span>
+              <span>WALL · {traits.wall + 1}/4</span>
+              <span>SIGIL · {traits.sigil + 1}/6</span>
+            </div>
           </div>
-        </div>
-
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <StatCell label="POWER" main={power.toLocaleString()} sub={tierLabel} accent={tier >= 3} />
-          <StatCell label="LOCKED INSIDE" main={vault.bustsDeposited.toLocaleString()} sub="BUSTS" />
-          <StatCell label="BURN COUNT" main={vault.burnCount.toString()} sub={vault.burnCount === 0 ? 'still standing' : 'has been burned'} />
-          <StatCell label="WINS" main={vault.winCount.toString()} sub="defenses held" />
-        </aside>
-      </div>
-
-      {/* ── Deposit section ── */}
-      <section className="vault-action-card">
-        <div>
-          <div className="vault-section-kicker">DEPOSIT</div>
-          <h2 className="vault-section-title">Add BUSTS to the vault.</h2>
-          <p className="vault-section-sub">
-            Locked until post-mint reveal. <strong>Every 50 BUSTS deposited adds 1 power.</strong>
-            Deposits are not lost when the vault burns — only the vault's power decreases.
-          </p>
-        </div>
-        <div className="vault-deposit-row">
-          <input
-            type="number"
-            min="10"
-            max="100000"
-            value={depositInput}
-            onChange={(e) => setDepositInput(e.target.value)}
-            placeholder="Amount in BUSTS"
-            style={{ flex: 1 }}
-          />
-          <button
-            className="btn btn-solid btn-arrow"
-            disabled={busy || !depositInput}
-            onClick={handleDeposit}
-          >
-            {busy ? 'Working…' : 'Deposit'}
-          </button>
-          <span className="vault-balance">{bustsBalance.toLocaleString()} BUSTS available</span>
         </div>
       </section>
 
-      {/* ── Upgrade tracks ── */}
-      <section className="vault-action-card">
-        <div>
-          <div className="vault-section-kicker">UPGRADES</div>
-          <h2 className="vault-section-title">Reinforce the vault.</h2>
-          <p className="vault-section-sub">
-            Four tracks. Three tiers each. Each upgrade boosts power permanently and unlocks
-            stronger active defenses during play.
-          </p>
+      {/* ─── CHRONICLE STRIP ──────────────────────────────────── */}
+      <section className="vlt-chronicle">
+        <div className="vlt-chronicle-inner">
+          <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
+          <div className="vlt-chron-stats">
+            <ChronCell num={vault.bustsDeposited.toLocaleString()} label="BUSTS deposited" />
+            <ChronCell num={String(vault.winCount)} label="defenses held" />
+            <ChronCell num={String(vault.burnCount)} label="times burned" />
+            <ChronCell num={String(daysSince(vault.createdAt))} label="days standing" />
+          </div>
         </div>
-        <div className="vault-upgrade-grid">
+      </section>
+
+      {/* ─── §01 DEPOSIT ──────────────────────────────────────── */}
+      <section className="vlt-section">
+        <SectionHead n="01" title="Deposit" sub="Add BUSTS to the vault. Locked until post-mint reveal. Every 50 BUSTS = +1 power." />
+
+        <div className="vlt-deposit-card">
+          <div className="vlt-deposit-projection">
+            <div className="vlt-proj-row">
+              <span className="vlt-proj-label">Current</span>
+              <span className="vlt-proj-value">{power.toLocaleString()} <small>POWER</small></span>
+            </div>
+            <div className="vlt-proj-arrow">↓</div>
+            <div className="vlt-proj-row vlt-proj-after">
+              <span className="vlt-proj-label">After deposit</span>
+              <span className="vlt-proj-value">
+                {projectedPower.toLocaleString()} <small>POWER</small>
+                {projectedPower > power && <span className="vlt-proj-delta">+{(projectedPower - power).toLocaleString()}</span>}
+              </span>
+            </div>
+          </div>
+
+          <div className="vlt-deposit-form">
+            <div className="vlt-deposit-chips">
+              {QUICK_DEPOSIT.map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  className={`vlt-chip ${Number(depositInput) === amt ? 'active' : ''}`}
+                  onClick={() => setDepositInput(String(amt))}
+                  disabled={amt > bustsBalance}
+                >
+                  {amt >= 1000 ? `${amt / 1000}K` : amt}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="vlt-chip vlt-chip-max"
+                onClick={() => setDepositInput(String(bustsBalance))}
+                disabled={bustsBalance < 10}
+              >
+                MAX
+              </button>
+            </div>
+            <div className="vlt-deposit-input-row">
+              <input
+                type="number"
+                min="10"
+                max="100000"
+                value={depositInput}
+                onChange={(e) => setDepositInput(e.target.value)}
+                placeholder="Custom amount"
+              />
+              <button
+                className="btn btn-solid btn-arrow vlt-deposit-go"
+                disabled={busy || !depositInput || Number(depositInput) < 10}
+                onClick={handleDeposit}
+              >
+                {busy ? 'Working…' : 'Deposit'}
+              </button>
+            </div>
+            <div className="vlt-deposit-balance">
+              {bustsBalance.toLocaleString()} BUSTS available
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── §02 UPGRADES ─────────────────────────────────────── */}
+      <section className="vlt-section">
+        <SectionHead n="02" title="Reinforce" sub="Eight tracks. Three tiers each. Each upgrade boosts power permanently and unlocks stronger active defenses during play." />
+
+        <div className="vlt-upgrade-grid">
           {Object.entries(UPGRADE_CATALOG).map(([track, cat]) => (
             <UpgradeCard
               key={track}
+              track={track}
               cat={cat}
               owned={vault.upgrades.filter((u) => u.track === track)}
               busy={busy}
@@ -231,124 +286,493 @@ export default function VaultPage({ onNavigate }) {
           ))}
         </div>
       </section>
+
+      {/* ─── §03 WHAT WAITS ───────────────────────────────────── */}
+      <section className="vlt-section vlt-waits">
+        <SectionHead n="03" title="What waits" sub="The vault opens after the assembly mints. What you'll find inside is recorded but not announced. Deposits accumulate. The reveal is coming." />
+        <div className="vlt-waits-card">
+          <div className="vlt-waits-lock">⌬</div>
+          <div className="vlt-waits-text">
+            <strong>Sealed.</strong> The lock holds until the assembly is complete. Until then,
+            every deposit, every upgrade, every defense held increases what is kept inside.
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────
-function StatCell({ label, main, sub, accent }) {
+// SUB-COMPONENTS
+// ─────────────────────────────────────────────────────────────────────
+
+function Plinth({ label, main, sub, accent }) {
   return (
-    <div style={{
-      padding: '14px 18px',
-      border: `1px solid ${accent ? 'var(--accent)' : 'var(--hairline)'}`,
-      background: accent ? 'rgba(215,255,58,0.08)' : 'var(--paper-2)',
-    }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-4)', textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 32, fontWeight: 500, letterSpacing: '-0.02em', color: 'var(--ink)' }}>{main}</div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{sub}</div>
+    <div className={`vlt-plinth ${accent ? 'vlt-plinth-accent' : ''}`}>
+      <div className="vlt-plinth-label">{label}</div>
+      <div className="vlt-plinth-main">{main}</div>
+      <div className="vlt-plinth-sub">{sub}</div>
     </div>
   );
 }
 
-function UpgradeCard({ cat, owned, busy, onBuy }) {
+function ChronCell({ num, label }) {
+  return (
+    <div className="vlt-chron-cell">
+      <div className="vlt-chron-num">{num}</div>
+      <div className="vlt-chron-label">{label}</div>
+    </div>
+  );
+}
+
+function SectionHead({ n, title, sub }) {
+  return (
+    <div className="vlt-section-head">
+      <div className="vlt-section-num">§{n}</div>
+      <h2 className="vlt-section-title">{title}.</h2>
+      <p className="vlt-section-sub">{sub}</p>
+    </div>
+  );
+}
+
+function UpgradeCard({ track, cat, owned, busy, onBuy }) {
   const currentTier = owned.length ? Math.max(...owned.map((u) => u.tier)) : 0;
-  const nextTier = currentTier + 1;
-  const maxed = nextTier > cat.tiers.length;
-  const next  = !maxed ? cat.tiers[nextTier - 1] : null;
+  const nextTier    = currentTier + 1;
+  const maxed       = nextTier > cat.tiers.length;
+  const next        = !maxed ? cat.tiers[nextTier - 1] : null;
+  const lit         = currentTier > 0;
+
   return (
-    <div style={{
-      border: '1px solid var(--ink)',
-      padding: '16px 18px',
-      background: 'var(--paper)',
-      display: 'flex', flexDirection: 'column', gap: 10,
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 24, fontWeight: 500 }}>{cat.label}</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-4)', letterSpacing: '0.12em' }}>
-          {currentTier} / {cat.tiers.length}
-        </div>
+    <div className={`vlt-up-card ${lit ? 'lit' : ''} ${maxed ? 'maxed' : ''}`}>
+      <div className="vlt-up-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="28" height="28" dangerouslySetInnerHTML={{ __html: UPGRADE_ICONS[track] || '' }} />
       </div>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-        {cat.tiers.map((_, i) => (
-          <span key={i} style={{
-            flex: 1, height: 4,
-            background: i < currentTier ? 'var(--accent)' : 'var(--hairline)',
-          }} />
-        ))}
-      </div>
-      {maxed ? (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink)', letterSpacing: '0.1em' }}>
-          MAXED · permanent
+      <div className="vlt-up-body">
+        <div className="vlt-up-name">{cat.label}</div>
+        <div className="vlt-up-tagline">{cat.tagline}</div>
+        <div className="vlt-up-progress">
+          {cat.tiers.map((_, i) => (
+            <span key={i} className={`vlt-up-seg ${i < currentTier ? 'on' : ''}`} />
+          ))}
         </div>
-      ) : (
-        <>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 13, color: 'var(--text-3)' }}>
-            Tier {nextTier} · <strong style={{ color: 'var(--ink)' }}>{next.cost.toLocaleString()} BUSTS</strong> · +{next.bonus} power
-          </div>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={onBuy}
-            disabled={busy}
-            style={{ alignSelf: 'flex-start' }}
-          >
-            {busy ? 'Working…' : `Buy tier ${nextTier}`}
-          </button>
-        </>
-      )}
+        {maxed ? (
+          <div className="vlt-up-maxed">MAXED · permanent</div>
+        ) : (
+          <>
+            <div className="vlt-up-next">
+              <span>Tier {nextTier}</span>
+              <span className="vlt-up-cost">{next.cost.toLocaleString()} BUSTS</span>
+              <span className="vlt-up-bonus">+{next.bonus} power</span>
+            </div>
+            <button
+              className="vlt-up-buy"
+              disabled={busy}
+              onClick={onBuy}
+            >
+              {busy ? '…' : `Buy tier ${nextTier}`}
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
+function daysSince(ts) {
+  if (!ts) return 0;
+  const ms = Date.now() - ts;
+  return Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)));
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// STYLE — heavy inline because this page demands a coherent look. Kept
+// scoped under .vault-page-v2 so it doesn't bleed into the rest of the site.
+// ─────────────────────────────────────────────────────────────────────
 function Style() {
   return (
     <style>{`
-      .vault-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 32px;
-        margin-bottom: 48px;
-        align-items: flex-start;
-      }
-      .vault-art-frame {
+      .vault-page-v2 { color: var(--ink); }
+
+      /* ─── HERO BAND ───────────────────────────────────────── */
+      .vlt-hero {
         background: #0E0E0E;
-        border: 1px solid var(--ink);
-        padding: 24px;
-        aspect-ratio: 320 / 240;
+        color: #F9F6F0;
+        padding: 80px 24px 96px;
+        position: relative;
+        overflow: hidden;
+        border-bottom: 1px solid var(--ink);
       }
-      .vault-action-card {
-        border: 1px solid var(--hairline);
-        padding: 28px 32px;
-        background: var(--paper-2);
-        margin-bottom: 28px;
+      .vlt-hero::before {
+        /* atmospheric grain */
+        content: '';
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(215,255,58,0.04), transparent 50%),
+          radial-gradient(circle at 80% 100%, rgba(215,255,58,0.03), transparent 60%);
+        pointer-events: none;
       }
-      .vault-section-kicker {
-        font-family: var(--font-mono); font-size: 10; letter-spacing: 0.22em;
-        text-transform: uppercase; color: var(--text-4); margin-bottom: 8px;
-      }
-      .vault-section-title {
-        font-family: var(--font-display); font-style: italic; font-weight: 500;
-        font-size: 32px; letter-spacing: -0.02em; margin: 0 0 8px;
-      }
-      .vault-section-sub {
-        font-family: Georgia, serif; font-size: 14.5; line-height: 1.6;
-        color: var(--text-3); max-width: 600px; margin: 0 0 20px;
-      }
-      .vault-deposit-row {
-        display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
-      }
-      .vault-balance {
-        font-family: var(--font-mono); font-size: 11;
-        letter-spacing: 0.1em; color: var(--text-3);
-      }
-      .vault-upgrade-grid {
+      .vlt-hero-inner {
+        max-width: 1180px; margin: 0 auto;
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr 1.2fr;
+        gap: 48px;
+        align-items: center;
+        position: relative; z-index: 1;
+      }
+      .vlt-kicker {
+        font-family: var(--font-mono); font-size: 11px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: rgba(249,246,240,0.6);
+        display: inline-flex; align-items: center; gap: 10px;
+        margin-bottom: 18px;
+      }
+      .vlt-kicker-dot {
+        width: 8px; height: 8px; background: var(--accent);
+        border: 1px solid var(--ink); border-radius: 50%;
+      }
+      .vlt-hero-title {
+        font-family: var(--font-display);
+        font-style: italic; font-weight: 500;
+        font-size: clamp(56px, 8vw, 96px);
+        letter-spacing: -0.025em; line-height: 0.95;
+        margin: 0 0 18px;
+      }
+      .vlt-hero-sub {
+        font-family: Georgia, serif; font-size: 16px;
+        line-height: 1.65; color: rgba(249,246,240,0.7);
+        max-width: 480px; margin: 0 0 32px;
+      }
+      .vlt-stat-plinths {
+        display: grid; grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .vlt-plinth {
+        background: rgba(249,246,240,0.05);
+        border: 1px solid rgba(249,246,240,0.18);
+        padding: 12px 16px;
+      }
+      .vlt-plinth-accent {
+        border-color: var(--accent);
+        background: rgba(215,255,58,0.08);
+      }
+      .vlt-plinth-label {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: rgba(249,246,240,0.5);
+        margin-bottom: 6px;
+      }
+      .vlt-plinth-main {
+        font-family: var(--font-display); font-style: italic;
+        font-weight: 500; font-size: 32px;
+        letter-spacing: -0.02em; line-height: 1;
+        color: #F9F6F0;
+      }
+      .vlt-plinth-sub {
+        font-family: var(--font-mono); font-size: 10px;
+        color: rgba(249,246,240,0.55);
+        margin-top: 4px;
+      }
+      .vlt-hero-art {
+        display: flex; flex-direction: column; gap: 14px;
+      }
+      .vlt-art-frame {
+        background: #050505;
+        border: 1px solid rgba(249,246,240,0.18);
+        padding: 18px;
+        aspect-ratio: 320 / 240;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+      }
+      .vlt-art-caption {
+        display: flex; justify-content: space-between;
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.18em; color: rgba(249,246,240,0.45);
+      }
+
+      /* ─── CHRONICLE STRIP ─────────────────────────────────── */
+      .vlt-chronicle {
+        background: var(--paper-2);
+        border-bottom: 1px solid var(--hairline);
+        padding: 28px 24px;
+      }
+      .vlt-chronicle-inner {
+        max-width: 1180px; margin: 0 auto;
+        display: flex; flex-wrap: wrap; gap: 28px;
+        align-items: center;
+      }
+      .vlt-chronicle .vlt-kicker {
+        color: var(--text-4);
+        margin-bottom: 0;
+        margin-right: 12px;
+      }
+      .vlt-chron-stats {
+        display: flex; gap: 32px; flex: 1; flex-wrap: wrap;
+      }
+      .vlt-chron-cell { display: flex; flex-direction: column; gap: 2px; }
+      .vlt-chron-num {
+        font-family: var(--font-display); font-style: italic;
+        font-weight: 500; font-size: 26px; color: var(--ink);
+        letter-spacing: -0.015em;
+      }
+      .vlt-chron-label {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.16em; text-transform: uppercase;
+        color: var(--text-4);
+      }
+
+      /* ─── SECTIONS ────────────────────────────────────────── */
+      .vlt-section {
+        max-width: 1180px; margin: 0 auto;
+        padding: 64px 24px;
+      }
+      .vlt-section-head {
+        max-width: 720px; margin-bottom: 32px;
+      }
+      .vlt-section-num {
+        font-family: var(--font-mono); font-size: 11px;
+        letter-spacing: 0.2em; color: var(--text-4);
+        margin-bottom: 8px;
+      }
+      .vlt-section-title {
+        font-family: var(--font-display); font-style: italic;
+        font-weight: 500; font-size: 48px;
+        letter-spacing: -0.02em; line-height: 1;
+        margin: 0 0 14px;
+      }
+      .vlt-section-sub {
+        font-family: Georgia, serif; font-size: 16px;
+        line-height: 1.65; color: var(--text-3);
+        margin: 0;
+      }
+
+      /* ─── DEPOSIT CARD ────────────────────────────────────── */
+      .vlt-deposit-card {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 32px;
+        background: var(--paper-2);
+        border: 1px solid var(--ink);
+        padding: 28px 32px;
+      }
+      .vlt-deposit-projection {
+        display: flex; flex-direction: column; gap: 6px;
+        padding: 18px; border: 1px solid var(--hairline);
+        background: var(--paper);
+      }
+      .vlt-proj-row { display: flex; flex-direction: column; gap: 2px; }
+      .vlt-proj-label {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--text-4);
+      }
+      .vlt-proj-value {
+        font-family: var(--font-display); font-style: italic;
+        font-weight: 500; font-size: 28px;
+        letter-spacing: -0.02em; color: var(--ink);
+      }
+      .vlt-proj-value small {
+        font-family: var(--font-mono); font-size: 9px;
+        letter-spacing: 0.18em; color: var(--text-4);
+        margin-left: 6px;
+      }
+      .vlt-proj-arrow {
+        font-family: var(--font-mono); font-size: 18px;
+        color: var(--text-4); text-align: center;
+        padding: 4px 0;
+      }
+      .vlt-proj-after .vlt-proj-value {
+        color: var(--ink);
+      }
+      .vlt-proj-delta {
+        background: var(--accent);
+        color: var(--ink);
+        font-family: var(--font-mono); font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        margin-left: 8px;
+        letter-spacing: 0.04em;
+      }
+      .vlt-deposit-form { display: flex; flex-direction: column; gap: 14px; }
+      .vlt-deposit-chips {
+        display: flex; gap: 8px; flex-wrap: wrap;
+      }
+      .vlt-chip {
+        background: transparent;
+        border: 1px solid var(--hairline);
+        color: var(--ink);
+        font-family: var(--font-mono); font-size: 12px;
+        font-weight: 500; letter-spacing: 0.06em;
+        padding: 8px 14px;
+        cursor: pointer;
+        transition: all 100ms;
+      }
+      .vlt-chip:hover:not(:disabled) {
+        border-color: var(--ink);
+        background: var(--paper-2);
+      }
+      .vlt-chip.active {
+        background: var(--ink); color: var(--paper);
+        border-color: var(--ink);
+      }
+      .vlt-chip:disabled {
+        opacity: 0.35; cursor: not-allowed;
+      }
+      .vlt-chip-max {
+        margin-left: auto;
+        border-color: var(--accent);
+      }
+      .vlt-deposit-input-row {
+        display: flex; gap: 10px;
+      }
+      .vlt-deposit-input-row input {
+        flex: 1;
+        padding: 11px 14px;
+        font-family: var(--font-mono); font-size: 14px;
+        background: var(--paper);
+        border: 1px solid var(--ink);
+      }
+      .vlt-deposit-go { white-space: nowrap; }
+      .vlt-deposit-balance {
+        font-family: var(--font-mono); font-size: 11px;
+        letter-spacing: 0.06em; color: var(--text-3);
+      }
+
+      /* ─── UPGRADE GRID ────────────────────────────────────── */
+      .vlt-upgrade-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
         gap: 14px;
       }
-      @media (max-width: 840px) {
-        .vault-grid { grid-template-columns: 1fr; }
-        .vault-upgrade-grid { grid-template-columns: 1fr; }
-        .vault-action-card { padding: 22px 18px; }
+      .vlt-up-card {
+        background: var(--paper);
+        border: 1px solid var(--ink);
+        padding: 18px 18px 16px;
+        display: flex; flex-direction: column; gap: 12px;
+        position: relative;
+        transition: border-color 120ms;
+      }
+      .vlt-up-card.lit {
+        border-color: var(--ink);
+        background: linear-gradient(180deg, rgba(215,255,58,0.06), transparent 40%);
+      }
+      .vlt-up-card.maxed {
+        border-color: var(--accent);
+        background: linear-gradient(180deg, rgba(215,255,58,0.12), transparent 70%);
+      }
+      .vlt-up-icon {
+        width: 40px; height: 40px;
+        background: var(--paper-2);
+        border: 1px solid var(--hairline);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--ink);
+      }
+      .vlt-up-card.lit .vlt-up-icon {
+        background: var(--ink);
+        color: var(--accent);
+        border-color: var(--ink);
+      }
+      .vlt-up-card.maxed .vlt-up-icon {
+        background: var(--accent);
+        color: var(--ink);
+        border-color: var(--ink);
+      }
+      .vlt-up-body { display: flex; flex-direction: column; gap: 6px; }
+      .vlt-up-name {
+        font-family: var(--font-display); font-style: italic;
+        font-weight: 500; font-size: 22px;
+        letter-spacing: -0.015em; line-height: 1.1;
+        color: var(--ink);
+      }
+      .vlt-up-tagline {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.12em; text-transform: uppercase;
+        color: var(--text-4);
+        margin-bottom: 4px;
+      }
+      .vlt-up-progress {
+        display: flex; gap: 4px;
+        margin-bottom: 8px;
+      }
+      .vlt-up-seg {
+        flex: 1; height: 5px;
+        background: var(--hairline);
+      }
+      .vlt-up-seg.on { background: var(--accent); }
+      .vlt-up-next {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px;
+        font-family: var(--font-mono); font-size: 11px;
+        color: var(--text-3);
+        margin-bottom: 10px;
+        align-items: baseline;
+      }
+      .vlt-up-cost {
+        text-align: right; color: var(--ink); font-weight: 600;
+      }
+      .vlt-up-bonus {
+        grid-column: 1 / -1;
+        font-size: 10px; color: var(--text-4);
+        letter-spacing: 0.1em;
+      }
+      .vlt-up-buy {
+        background: transparent;
+        border: 1px solid var(--ink);
+        color: var(--ink);
+        font-family: var(--font-mono); font-size: 11px;
+        font-weight: 600; letter-spacing: 0.08em;
+        padding: 8px 12px;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: all 120ms;
+      }
+      .vlt-up-buy:hover:not(:disabled) {
+        background: var(--ink); color: var(--paper);
+      }
+      .vlt-up-buy:disabled { opacity: 0.5; cursor: not-allowed; }
+      .vlt-up-maxed {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.16em; color: var(--ink);
+        font-weight: 700; margin-top: 4px;
+      }
+
+      /* ─── §03 WHAT WAITS ──────────────────────────────────── */
+      .vlt-waits-card {
+        display: flex; align-items: center; gap: 28px;
+        padding: 36px 32px;
+        background: #0E0E0E; color: #F9F6F0;
+        border: 1px solid var(--ink);
+      }
+      .vlt-waits-lock {
+        font-size: 64px; line-height: 1;
+        color: var(--accent);
+        font-family: serif;
+      }
+      .vlt-waits-text {
+        font-family: Georgia, serif; font-size: 16px;
+        line-height: 1.7; color: rgba(249,246,240,0.78);
+      }
+      .vlt-waits-text strong {
+        font-family: var(--font-mono); font-weight: 700;
+        color: var(--accent);
+        font-size: 11px; letter-spacing: 0.18em;
+        display: block; margin-bottom: 6px;
+      }
+
+      /* ─── RESPONSIVE ─────────────────────────────────────── */
+      @media (max-width: 980px) {
+        .vlt-hero-inner { grid-template-columns: 1fr; gap: 32px; }
+        .vlt-deposit-card { grid-template-columns: 1fr; gap: 18px; }
+        .vlt-upgrade-grid { grid-template-columns: repeat(2, 1fr); }
+        .vlt-section { padding: 48px 18px; }
+        .vlt-section-title { font-size: 38px; }
+      }
+      @media (max-width: 560px) {
+        .vlt-hero { padding: 56px 18px 64px; }
+        .vlt-hero-title { font-size: 48px; }
+        .vlt-stat-plinths { grid-template-columns: 1fr; }
+        .vlt-upgrade-grid { grid-template-columns: 1fr; }
+        .vlt-chron-stats { gap: 18px; }
+        .vlt-waits-card { flex-direction: column; align-items: flex-start; padding: 24px; gap: 16px; }
       }
     `}</style>
   );

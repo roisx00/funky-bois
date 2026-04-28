@@ -631,10 +631,29 @@ export function computePower({ bustsDeposited, burnCount, upgradeBonusTotal }) {
 }
 
 export const UPGRADE_CATALOG = {
-  walls:      { label: 'Walls',      tiers: [{ cost:  300, bonus: 50 },  { cost: 1000, bonus: 150 }, { cost: 3000, bonus: 400 }] },
-  watchtower: { label: 'Watchtower', tiers: [{ cost:  500, bonus: 60 },  { cost: 1500, bonus: 180 }, { cost: 4000, bonus: 450 }] },
-  vanguard:   { label: 'Vanguard',   tiers: [{ cost:  800, bonus: 80 },  { cost: 2200, bonus: 220 }, { cost: 5500, bonus: 500 }] },
-  wards:      { label: 'Wards',      tiers: [{ cost: 1200, bonus: 100 }, { cost: 3000, bonus: 280 }, { cost: 7000, bonus: 600 }] },
+  walls:      { label: 'Walls',      tagline: 'Stone thickness',         tiers: [{ cost:  300, bonus: 50 },  { cost: 1000, bonus: 150 }, { cost: 3000, bonus: 400 }] },
+  watchtower: { label: 'Watchtower', tagline: 'Sight + range',           tiers: [{ cost:  500, bonus: 60 },  { cost: 1500, bonus: 180 }, { cost: 4000, bonus: 450 }] },
+  vanguard:   { label: 'Vanguard',   tagline: 'Front-line defenders',    tiers: [{ cost:  800, bonus: 80 },  { cost: 2200, bonus: 220 }, { cost: 5500, bonus: 500 }] },
+  wards:      { label: 'Wards',      tagline: 'Sigil-bound shields',     tiers: [{ cost: 1200, bonus: 100 }, { cost: 3000, bonus: 280 }, { cost: 7000, bonus: 600 }] },
+  sentries:   { label: 'Sentries',   tagline: 'Patrolling eyes',         tiers: [{ cost:  400, bonus: 55 },  { cost: 1200, bonus: 165 }, { cost: 3500, bonus: 420 }] },
+  beacon:     { label: 'Beacon',     tagline: 'Early warning',           tiers: [{ cost:  600, bonus: 65 },  { cost: 1800, bonus: 195 }, { cost: 4500, bonus: 470 }] },
+  forge:      { label: 'Forge',      tagline: 'Replenishing ammo',       tiers: [{ cost: 1000, bonus: 90 },  { cost: 2800, bonus: 250 }, { cost: 6500, bonus: 540 }] },
+  oath:       { label: 'Oath',       tagline: 'Archetype reinforcement', tiers: [{ cost: 1500, bonus: 120 }, { cost: 4000, bonus: 320 }, { cost: 9000, bonus: 700 }] },
+};
+
+// Pixel icon SVGs per upgrade track — drawn into a 24×24 viewBox so they
+// can be inlined as <svg viewBox="0 0 24 24"> blocks at any size.
+// Pure ink monochrome by default; lime accent rendered separately by the card
+// when the track has any owned tier.
+export const UPGRADE_ICONS = {
+  walls: `<g fill="currentColor"><rect x="2" y="6" width="6" height="4"/><rect x="10" y="6" width="6" height="4"/><rect x="18" y="6" width="4" height="4"/><rect x="2" y="11" width="3" height="4"/><rect x="6" y="11" width="6" height="4"/><rect x="13" y="11" width="6" height="4"/><rect x="20" y="11" width="2" height="4"/><rect x="2" y="16" width="6" height="4"/><rect x="10" y="16" width="6" height="4"/><rect x="18" y="16" width="4" height="4"/></g>`,
+  watchtower: `<g fill="currentColor"><rect x="9" y="2" width="6" height="3"/><rect x="8" y="5" width="8" height="2"/><rect x="10" y="7" width="4" height="11"/><rect x="6" y="18" width="12" height="3"/><rect x="11" y="9" width="2" height="3"/></g>`,
+  vanguard: `<g fill="currentColor" stroke="currentColor"><polygon points="12,2 4,5 4,11 12,21 20,11 20,5"/></g><g fill="#F9F6F0"><rect x="11" y="6" width="2" height="9"/><rect x="8" y="9" width="8" height="2"/></g>`,
+  wards: `<g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></g><g fill="currentColor"><rect x="11" y="2" width="2" height="3"/><rect x="11" y="19" width="2" height="3"/><rect x="2" y="11" width="3" height="2"/><rect x="19" y="11" width="3" height="2"/></g>`,
+  sentries: `<g fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="6"/></g><circle cx="12" cy="12" r="3" fill="currentColor"/>`,
+  beacon: `<g fill="currentColor"><rect x="10" y="14" width="4" height="8"/><rect x="8" y="20" width="8" height="2"/></g><g fill="currentColor"><polygon points="12,2 14,7 12,10 10,7"/><polygon points="12,4 13,7 12,9 11,7"/></g>`,
+  forge: `<g fill="currentColor"><rect x="2" y="14" width="20" height="4"/><rect x="4" y="11" width="16" height="3"/><rect x="6" y="18" width="3" height="4"/><rect x="15" y="18" width="3" height="4"/></g><g fill="currentColor"><rect x="11" y="3" width="6" height="2"/><rect x="14" y="5" width="2" height="6"/></g>`,
+  oath: `<g fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 22,8 19,20 5,20 2,8"/></g><circle cx="12" cy="11" r="3" fill="currentColor"/>`,
 };
 
 export function totalUpgradeBonus(upgrades) {
