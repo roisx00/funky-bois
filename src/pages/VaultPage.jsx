@@ -33,6 +33,23 @@ export default function VaultPage({ onNavigate }) {
   const [bustsMode, setBustsMode]     = useState('deposit'); // 'deposit' | 'withdraw'
   const [bustsAmount, setBustsAmount] = useState('');
 
+  // Deposit animation: doors-open → coin-flies-in → doors-shut → flash
+  const [animPhase, setAnimPhase]   = useState('idle');   // idle | opening | depositing | closing | flash
+  const [animAmount, setAnimAmount] = useState(0);
+  const animTimers = useRef([]);
+  useEffect(() => () => { animTimers.current.forEach(clearTimeout); }, []);
+
+  function playDepositAnim(amount) {
+    animTimers.current.forEach(clearTimeout);
+    animTimers.current = [];
+    setAnimAmount(amount);
+    setAnimPhase('opening');
+    animTimers.current.push(setTimeout(() => setAnimPhase('depositing'), 380));
+    animTimers.current.push(setTimeout(() => setAnimPhase('closing'),    1080));
+    animTimers.current.push(setTimeout(() => setAnimPhase('flash'),      1430));
+    animTimers.current.push(setTimeout(() => setAnimPhase('idle'),       1900));
+  }
+
   const refresh = useCallback(async () => {
     try {
       const r = await fetch('/api/vault', { credentials: 'same-origin' });
@@ -139,6 +156,7 @@ export default function VaultPage({ onNavigate }) {
       if (!r.ok) { toast.error(d?.error || d?.hint || 'Action failed.'); setBusy(false); return; }
       if (d.yieldCredited > 0) toast.success(`+${d.yieldCredited.toLocaleString()} yield credited along the way.`);
       toast.success(`${bustsMode === 'deposit' ? 'Deposited' : 'Withdrew'} ${amountInput.toLocaleString()} BUSTS.`);
+      if (bustsMode === 'deposit') playDepositAnim(amountInput);
       setBustsAmount('');
       await Promise.all([refresh(), refreshMe()]);
     } catch (e) { toast.error(e?.message || 'Network error.'); }
@@ -268,10 +286,22 @@ export default function VaultPage({ onNavigate }) {
               <span className="vlt-art-mark">FILE / VLT-{(vault.userId || '').slice(0, 4).toUpperCase()}</span>
               <span className="vlt-art-mark vlt-art-mark-tier">TIER {tier} · {tierLabel.toUpperCase()}</span>
             </div>
-            <div
-              className="vlt-art-frame"
-              dangerouslySetInnerHTML={{ __html: buildVaultSVG({ userId: vault.userId, power, burnCount: vault.burnCount }) }}
-            />
+            <div className={`vlt-art-frame vlt-anim-host vlt-anim-${animPhase}`}>
+              <div
+                className="vlt-art-svg"
+                dangerouslySetInnerHTML={{ __html: buildVaultSVG({ userId: vault.userId, power, burnCount: vault.burnCount }) }}
+              />
+              <div className="vlt-anim-doors" aria-hidden="true">
+                <span className="vlt-anim-door vlt-anim-door-l" />
+                <span className="vlt-anim-door vlt-anim-door-r" />
+                <span className="vlt-anim-glow" />
+              </div>
+              <div className="vlt-anim-coin" aria-hidden="true">
+                <span className="vlt-anim-coin-disc">$</span>
+                <span className="vlt-anim-coin-amt">+{animAmount.toLocaleString()}</span>
+              </div>
+              <div className="vlt-anim-flash" aria-hidden="true" />
+            </div>
             <div className="vlt-art-caption">
               <span><b>FRAME</b> {traits.frame + 1}/4</span>
               <span className="vlt-cap-sep" />
@@ -801,6 +831,125 @@ function Style() {
       }
       .vlt-art-frame::before { top: 6px; left: 6px; border-right: none; border-bottom: none; }
       .vlt-art-frame::after  { bottom: 6px; right: 6px; border-left: none; border-top: none; }
+      .vlt-art-svg { position: relative; z-index: 1; width: 100%; height: 100%; }
+      .vlt-art-svg svg { display: block; width: 100%; height: 100%; }
+
+      /* ── DEPOSIT ANIMATION ──
+         Overlay tracks the door area of the procedural vault
+         (~bottom-center, ~24% wide × ~36% tall in the 320×240 viewBox).
+         All pieces idle hidden; phases fade them in and out. */
+      .vlt-anim-host { position: relative; }
+      .vlt-anim-doors {
+        position: absolute; left: 50%; bottom: 9%;
+        transform: translateX(-50%);
+        width: 24%; height: 36%;
+        z-index: 3; pointer-events: none;
+        display: flex; opacity: 0;
+        transition: opacity 120ms ease;
+      }
+      .vlt-anim-host:not(.vlt-anim-idle) .vlt-anim-doors { opacity: 1; }
+      .vlt-anim-door {
+        flex: 1; height: 100%;
+        background:
+          linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+        border: 1px solid rgba(215,255,58,0.4);
+        position: relative;
+        transform-origin: bottom center;
+        transition: transform 360ms cubic-bezier(0.5, 0, 0.3, 1);
+      }
+      .vlt-anim-door::before {
+        content: ''; position: absolute; inset: 18% 22%;
+        background: rgba(215,255,58,0.08);
+        border: 1px dashed rgba(215,255,58,0.3);
+      }
+      .vlt-anim-door-l { transform: translateX(0) rotateY(0deg); border-right: none; }
+      .vlt-anim-door-r { transform: translateX(0) rotateY(0deg); border-left: none; }
+
+      .vlt-anim-glow {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse at center, rgba(215,255,58,0.45), rgba(215,255,58,0) 70%);
+        opacity: 0; transition: opacity 200ms ease;
+      }
+
+      .vlt-anim-coin {
+        position: absolute; left: 50%; bottom: -10%;
+        transform: translateX(-50%) translateY(0) scale(0.85);
+        z-index: 4; pointer-events: none;
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        opacity: 0;
+      }
+      .vlt-anim-coin-disc {
+        width: 36px; height: 36px; border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #fff8c8, var(--accent) 60%, #8a9c1a 100%);
+        border: 2px solid #0E0E0E;
+        box-shadow: 0 0 18px rgba(215,255,58,0.7), inset 0 0 6px rgba(0,0,0,0.25);
+        font-family: var(--font-display); font-style: italic; font-weight: 700;
+        font-size: 18px; color: #0E0E0E;
+        display: flex; align-items: center; justify-content: center;
+        text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+      }
+      .vlt-anim-coin-amt {
+        font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+        letter-spacing: 0.1em; color: var(--accent);
+        background: #0E0E0E; padding: 3px 8px;
+        border: 1px solid var(--accent);
+        white-space: nowrap;
+        text-shadow: 0 0 6px rgba(215,255,58,0.5);
+      }
+
+      .vlt-anim-flash {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse at 50% 70%, rgba(215,255,58,0.55), rgba(215,255,58,0) 65%);
+        opacity: 0; pointer-events: none; z-index: 5;
+        transition: opacity 200ms ease;
+      }
+
+      /* PHASE 1 — opening: doors split apart, coin appears, glow rises */
+      .vlt-anim-opening .vlt-anim-door-l { transform: translateX(-15%) rotateY(38deg); }
+      .vlt-anim-opening .vlt-anim-door-r { transform: translateX(15%) rotateY(-38deg); }
+      .vlt-anim-opening .vlt-anim-glow { opacity: 1; }
+      .vlt-anim-opening .vlt-anim-coin {
+        opacity: 1; transition: opacity 240ms ease, transform 240ms ease;
+      }
+
+      /* PHASE 2 — depositing: coin flies up into the doorway, doors stay open */
+      .vlt-anim-depositing .vlt-anim-door-l { transform: translateX(-15%) rotateY(38deg); }
+      .vlt-anim-depositing .vlt-anim-door-r { transform: translateX(15%) rotateY(-38deg); }
+      .vlt-anim-depositing .vlt-anim-glow { opacity: 1; }
+      .vlt-anim-depositing .vlt-anim-coin {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-180%) scale(0.4);
+        transition: transform 700ms cubic-bezier(0.55, 0.15, 0.6, 0.95), opacity 700ms ease 300ms;
+      }
+      .vlt-anim-depositing .vlt-anim-coin-disc { animation: vltCoinSpin 700ms linear; }
+      .vlt-anim-depositing .vlt-anim-coin-amt { opacity: 0; transition: opacity 200ms ease; }
+      @keyframes vltCoinSpin {
+        from { transform: rotateY(0deg); }
+        to   { transform: rotateY(720deg); }
+      }
+
+      /* PHASE 3 — closing: doors slam shut */
+      .vlt-anim-closing .vlt-anim-door-l { transform: translateX(0) rotateY(0deg); transition: transform 280ms cubic-bezier(0.7, 0, 0.4, 1); }
+      .vlt-anim-closing .vlt-anim-door-r { transform: translateX(0) rotateY(0deg); transition: transform 280ms cubic-bezier(0.7, 0, 0.4, 1); }
+      .vlt-anim-closing .vlt-anim-glow { opacity: 0.4; transition: opacity 280ms ease; }
+
+      /* PHASE 4 — flash: brief bloom on the whole frame, faint shake */
+      .vlt-anim-flash .vlt-anim-flash { opacity: 1; transition: opacity 80ms ease; }
+      .vlt-anim-flash .vlt-anim-doors { opacity: 0; transition: opacity 240ms ease 80ms; }
+      .vlt-anim-flash { animation: vltShake 380ms ease; }
+      @keyframes vltShake {
+        0%, 100% { transform: translateX(0); }
+        20%      { transform: translateX(-2px); }
+        40%      { transform: translateX(3px); }
+        60%      { transform: translateX(-2px); }
+        80%      { transform: translateX(1px); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .vlt-anim-door, .vlt-anim-coin, .vlt-anim-glow, .vlt-anim-flash {
+          transition: none !important; animation: none !important;
+        }
+      }
       .vlt-art-caption {
         display: flex; align-items: center; gap: 14px;
         font-family: var(--font-mono); font-size: 10px;
