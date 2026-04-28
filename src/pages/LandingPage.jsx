@@ -575,6 +575,7 @@ export default function LandingPage({ onNavigate }) {
             <div className="footer-col-title">Social</div>
             <ul className="footer-link-list">
               <li><a href="https://x.com/the1969eth" target="_blank" rel="noreferrer">X / Twitter</a></li>
+              <li><a href="https://discord.gg/qFSPYDhBdQ" target="_blank" rel="noreferrer">Discord</a></li>
             </ul>
           </div>
         </div>
