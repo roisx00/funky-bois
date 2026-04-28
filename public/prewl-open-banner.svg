@@ -68,41 +68,48 @@
   </g>
 
   <!-- ─── RIGHT-SIDE STAMP / SEAL ─── -->
-  <g transform="translate(1440, 460)">
+  <g transform="translate(1450, 480)">
     <!-- outer frame -->
-    <rect x="-220" y="-220" width="440" height="440" fill="#0E0E0E"/>
+    <rect x="-260" y="-260" width="520" height="520" fill="#0E0E0E"/>
     <!-- glow -->
     <radialGradient id="g" cx="50%" cy="50%" r="55%">
-      <stop offset="0%" stop-color="#D7FF3A" stop-opacity="0.15"/>
+      <stop offset="0%" stop-color="#D7FF3A" stop-opacity="0.18"/>
       <stop offset="60%" stop-color="#D7FF3A" stop-opacity="0"/>
     </radialGradient>
-    <rect x="-220" y="-220" width="440" height="440" fill="url(#g)"/>
+    <rect x="-260" y="-260" width="520" height="520" fill="url(#g)"/>
 
     <!-- corner brackets in lime -->
     <g stroke="#D7FF3A" stroke-width="3" fill="none">
-      <path d="M -200 -200 L -200 -160 M -200 -200 L -160 -200"/>
-      <path d="M  200 -200 L  200 -160 M  200 -200 L  160 -200"/>
-      <path d="M -200  200 L -200  160 M -200  200 L -160  200"/>
-      <path d="M  200  200 L  200  160 M  200  200 L  160  200"/>
+      <path d="M -240 -240 L -240 -200 M -240 -240 L -200 -240"/>
+      <path d="M  240 -240 L  240 -200 M  240 -240 L  200 -240"/>
+      <path d="M -240  240 L -240  200 M -240  240 L -200  240"/>
+      <path d="M  240  240 L  240  200 M  240  240 L  200  240"/>
     </g>
 
-    <!-- big 'OPEN' stamp -->
-    <text x="0" y="-30" text-anchor="middle"
+    <!-- ⌬ sigil top -->
+    <text x="0" y="-150" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-size="56" fill="#D7FF3A">⌬</text>
+
+    <!-- STATUS kicker -->
+    <text x="0" y="-80" text-anchor="middle"
           font-family="ui-monospace, 'JetBrains Mono', monospace"
           font-size="14" letter-spacing="6" fill="#D7FF3A" opacity="0.85">STATUS</text>
-    <text x="0" y="80" text-anchor="middle"
+
+    <!-- big 'OPEN' stamp — sized to fit inside the 520px box -->
+    <text x="0" y="60" text-anchor="middle"
           font-family="'Instrument Serif', Georgia, serif"
           font-style="italic" font-weight="500"
-          font-size="160" fill="#D7FF3A"
-          letter-spacing="-2">OPEN</text>
-    <text x="0" y="135" text-anchor="middle"
-          font-family="ui-monospace, 'JetBrains Mono', monospace"
-          font-size="13" letter-spacing="6" fill="#F9F6F0" opacity="0.6">PRE-WHITELIST · 2026</text>
+          font-size="120" fill="#D7FF3A"
+          letter-spacing="-1">OPEN</text>
 
-    <!-- ⌬ sigil top -->
-    <text x="0" y="-110" text-anchor="middle"
-          font-family="'Instrument Serif', Georgia, serif"
-          font-style="italic" font-size="48" fill="#D7FF3A">⌬</text>
+    <!-- accent rule -->
+    <line x1="-60" y1="100" x2="60" y2="100" stroke="#D7FF3A" stroke-width="3"/>
+
+    <!-- footer line inside the stamp -->
+    <text x="0" y="160" text-anchor="middle"
+          font-family="ui-monospace, 'JetBrains Mono', monospace"
+          font-size="12" letter-spacing="6" fill="#F9F6F0" opacity="0.6">PRE-WHITELIST · 2026</text>
   </g>
 
   <!-- DOCTRINE -->
