@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <rect width="1200" height="900" fill="#0E0E0E"/>
+  <radialGradient id="g" cx="80%" cy="20%" r="55%">
+    <stop offset="0%" stop-color="#D7FF3A" stop-opacity="0.10"/>
+    <stop offset="60%" stop-color="#D7FF3A" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="1200" height="900" fill="url(#g)"/>
+  <g opacity="0.05" stroke="#F9F6F0" stroke-width="1">
+    <line x1="0" y1="225" x2="1200" y2="225"/><line x1="0" y1="450" x2="1200" y2="450"/><line x1="0" y1="675" x2="1200" y2="675"/>
+    <line x1="300" y1="0" x2="300" y2="900"/><line x1="600" y1="0" x2="600" y2="900"/><line x1="900" y1="0" x2="900" y2="900"/>
+  </g>
+  <g stroke="#D7FF3A" stroke-width="3" fill="none">
+    <path d="M 40 40 L 40 90 M 40 40 L 90 40"/>
+    <path d="M 1160 40 L 1160 90 M 1160 40 L 1110 40"/>
+    <path d="M 40 860 L 40 810 M 40 860 L 90 860"/>
+    <path d="M 1160 860 L 1160 810 M 1160 860 L 1110 860"/>
+  </g>
+  <g transform="translate(80, 100)">
+    <circle cx="6" cy="-4" r="6" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
+    <text x="22" y="0" font-family="ui-monospace,'JetBrains Mono',monospace" font-size="14" letter-spacing="4" fill="#F9F6F0" opacity="0.7">TIMELINE · CARD 01</text>
+  </g>
+  
+  <g transform="translate(820, 220)" stroke-width="2" stroke="#0E0E0E">
+    <circle cx="50" cy="80" r="50" fill="#F9F6F0"/>
+    <rect x="20" y="130" width="60" height="80" fill="#F9F6F0"/>
+    <circle cx="160" cy="80" r="50" fill="#D7FF3A"/>
+    <rect x="130" y="130" width="60" height="80" fill="#D7FF3A"/>
+    <circle cx="270" cy="80" r="50" fill="#F9F6F0"/>
+    <rect x="240" y="130" width="60" height="80" fill="#F9F6F0"/>
+  </g>
+
+  <text x="80" y="640" font-family="'Instrument Serif',Georgia,serif" font-style="italic" font-weight="500" font-size="84" fill="#F9F6F0" letter-spacing="-2">First Assembly.</text>
+  <line x1="80" y1="668" x2="220" y2="668" stroke="#D7FF3A" stroke-width="5"/>
+  <text x="80" y="730" font-family="Georgia,serif" font-style="italic" font-size="22" fill="#F9F6F0" opacity="0.65">Holders apply. Approval grants a guaranteed seat.</text>
+  <line x1="80" y1="800" x2="1120" y2="800" stroke="#F9F6F0" stroke-opacity="0.18" stroke-width="1"/>
+  <text x="80" y="840" font-family="ui-monospace,'JetBrains Mono',monospace" font-size="11" letter-spacing="3" fill="#F9F6F0" opacity="0.5">THE 1969 · ETHEREUM · 1,969 EDITIONS</text>
+</svg>
