@@ -513,39 +513,65 @@ function YieldCard({ vault, dailyRate, busy, onClaim }) {
   const frac  = (exact - whole).toFixed(4).slice(1); // ".XXXX"
   const canClaim = whole >= 1;
 
+  const isLive = dailyRate > 0;
   return (
-    <div className="vlt-yield-card">
+    <div className={`vlt-yield-card ${isLive ? 'live' : ''}`}>
       <div className="vlt-yield-main">
-        <div className="vlt-yield-label">PENDING</div>
+        <div className="vlt-yield-label">
+          PENDING YIELD
+          {isLive ? <span className="vlt-yield-live"><span className="vlt-yield-live-dot" />LIVE</span> : null}
+        </div>
         <div className="vlt-yield-num">
           <span className="vlt-yield-whole">{whole.toLocaleString()}</span>
-          <span className="vlt-yield-frac">{frac}</span>
+          <span className="vlt-yield-unit">BUSTS</span>
         </div>
-        <div className="vlt-yield-unit">BUSTS</div>
+        {isLive ? (
+          <div className="vlt-yield-ticker">
+            <span className="vlt-yield-ticker-arrow">↑</span>
+            <span className="vlt-yield-ticker-frac">+0{frac}</span>
+            <span className="vlt-yield-ticker-meta">incoming this second</span>
+          </div>
+        ) : (
+          <div className="vlt-yield-ticker vlt-yield-ticker-empty">
+            Deposit BUSTS or bind a portrait to start earning.
+          </div>
+        )}
       </div>
+
       <div className="vlt-yield-meta">
-        <div className="vlt-yield-rate">
-          <span className="vlt-yield-rate-label">RATE</span>
-          <span className="vlt-yield-rate-val">{dailyRate.toLocaleString()} <small>BUSTS / day</small></span>
+        <div className="vlt-yield-stat">
+          <span className="vlt-yield-stat-label">DAILY RATE</span>
+          <span className="vlt-yield-stat-val">{dailyRate.toLocaleString()}</span>
+          <span className="vlt-yield-stat-unit">BUSTS / DAY</span>
         </div>
-        <div className="vlt-yield-rate">
-          <span className="vlt-yield-rate-label">SOURCES</span>
-          <span className="vlt-yield-rate-val">
-            {vault.bustsDeposited > 0 ? `${(vault.bustsDeposited * 0.001).toFixed(2)}/d busts` : '—'}
-            {vault.portraitId ? ' · 10/d portrait' : ''}
+        <div className="vlt-yield-stat">
+          <span className="vlt-yield-stat-label">SOURCES</span>
+          <span className="vlt-yield-stat-sources">
+            <span className={vault.bustsDeposited > 0 ? 'on' : ''}>
+              {vault.bustsDeposited > 0 ? `${(vault.bustsDeposited * 0.001).toFixed(2)}/d` : '—'}
+              <small>busts</small>
+            </span>
+            <span className={vault.portraitId ? 'on' : ''}>
+              {vault.portraitId ? '10/d' : '—'}
+              <small>portrait</small>
+            </span>
           </span>
         </div>
-        <div className="vlt-yield-rate">
-          <span className="vlt-yield-rate-label">LIFETIME EARNED</span>
-          <span className="vlt-yield-rate-val">{vault.lifetimeYieldPaid.toLocaleString()} <small>BUSTS</small></span>
+        <div className="vlt-yield-stat">
+          <span className="vlt-yield-stat-label">LIFETIME EARNED</span>
+          <span className="vlt-yield-stat-val">{vault.lifetimeYieldPaid.toLocaleString()}</span>
+          <span className="vlt-yield-stat-unit">BUSTS</span>
         </div>
       </div>
+
       <button
         className="vlt-yield-claim"
         disabled={busy || !canClaim}
         onClick={onClaim}
       >
-        {busy ? 'Working…' : canClaim ? `Claim ${whole.toLocaleString()} BUSTS →` : 'Nothing to claim'}
+        {busy ? 'Working…' : canClaim
+          ? <><span>Claim</span><strong>{whole.toLocaleString()}</strong><span>BUSTS →</span></>
+          : 'Nothing to claim yet'}
       </button>
     </div>
   );
@@ -1049,73 +1075,159 @@ function Style() {
 
       /* ── §01 YIELD ── */
       .vlt-yield-card {
-        background: var(--paper-2);
+        background: #0E0E0E; color: #F9F6F0;
         border: 1px solid var(--ink);
-        padding: 36px 36px 32px;
+        padding: 32px 36px;
         display: grid;
-        grid-template-columns: 1fr 1.4fr auto;
-        gap: 36px;
-        align-items: center;
+        grid-template-columns: 1.1fr 1.4fr auto;
+        gap: 40px;
+        align-items: stretch;
+        position: relative; overflow: hidden;
       }
-      .vlt-yield-main { display: flex; flex-direction: column; gap: 4px; }
+      .vlt-yield-card::before {
+        content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+        width: 4px; background: rgba(249,246,240,0.12);
+        transition: background 240ms ease;
+      }
+      .vlt-yield-card.live::before { background: var(--accent); box-shadow: 0 0 16px rgba(215,255,58,0.4); }
+
+      .vlt-yield-main {
+        display: flex; flex-direction: column; gap: 8px;
+        justify-content: center; min-width: 0;
+      }
       .vlt-yield-label {
         font-family: var(--font-mono); font-size: 10px;
-        letter-spacing: 0.22em; text-transform: uppercase;
-        color: var(--text-4);
+        letter-spacing: 0.24em; text-transform: uppercase;
+        color: rgba(249,246,240,0.5);
+        display: inline-flex; align-items: center; gap: 12px;
+      }
+      .vlt-yield-live {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 9px; letter-spacing: 0.22em;
+        color: var(--accent); font-weight: 700;
+        padding: 2px 8px;
+        border: 1px solid rgba(215,255,58,0.35);
+        background: rgba(215,255,58,0.08);
+      }
+      .vlt-yield-live-dot {
+        width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+        box-shadow: 0 0 6px var(--accent);
+        animation: vltPulse 1.6s ease-in-out infinite;
       }
       .vlt-yield-num {
+        display: flex; align-items: baseline; gap: 14px;
+        line-height: 1;
+      }
+      .vlt-yield-whole {
         font-family: var(--font-display); font-style: italic; font-weight: 500;
-        line-height: 1; color: var(--ink);
-        display: flex; align-items: baseline; gap: 6px;
+        font-size: clamp(64px, 7vw, 88px); letter-spacing: -0.03em;
+        color: #F9F6F0; line-height: 0.9;
       }
-      .vlt-yield-whole { font-size: 64px; letter-spacing: -0.025em; }
-      .vlt-yield-frac {
-        font-size: 22px; color: var(--accent);
-        font-family: var(--font-mono); font-style: normal;
-        letter-spacing: 0;
-      }
+      .vlt-yield-card.live .vlt-yield-whole { color: var(--accent); }
       .vlt-yield-unit {
         font-family: var(--font-mono); font-size: 11px;
-        letter-spacing: 0.18em; color: var(--text-3); margin-top: 4px;
+        font-style: normal; font-weight: 600;
+        letter-spacing: 0.22em; text-transform: uppercase;
+        color: rgba(249,246,240,0.55);
       }
+      .vlt-yield-ticker {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-family: var(--font-mono); font-size: 11px;
+        letter-spacing: 0.06em;
+        color: rgba(249,246,240,0.7);
+        padding-top: 4px;
+      }
+      .vlt-yield-ticker-arrow { color: var(--accent); font-weight: 700; }
+      .vlt-yield-ticker-frac {
+        color: var(--accent); font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        min-width: 64px;
+      }
+      .vlt-yield-ticker-meta {
+        color: rgba(249,246,240,0.4);
+        text-transform: uppercase; letter-spacing: 0.16em; font-size: 10px;
+        padding-left: 6px; border-left: 1px solid rgba(249,246,240,0.18);
+      }
+      .vlt-yield-ticker-empty {
+        font-family: Georgia, serif; font-style: italic;
+        font-size: 13px; color: rgba(249,246,240,0.55);
+      }
+
       .vlt-yield-meta {
-        display: grid; gap: 12px;
-        border-left: 1px solid var(--hairline);
-        padding-left: 28px;
+        display: flex; flex-direction: column; gap: 14px;
+        padding-left: 32px;
+        border-left: 1px solid rgba(249,246,240,0.14);
+        justify-content: center;
       }
-      .vlt-yield-rate { display: flex; flex-direction: column; gap: 2px; }
-      .vlt-yield-rate-label {
+      .vlt-yield-stat {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        align-items: baseline; gap: 14px;
+      }
+      .vlt-yield-stat-label {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.2em; text-transform: uppercase;
+        color: rgba(249,246,240,0.5);
+      }
+      .vlt-yield-stat-val {
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: 24px; letter-spacing: -0.02em; line-height: 1;
+        color: #F9F6F0;
+      }
+      .vlt-yield-stat-unit {
         font-family: var(--font-mono); font-size: 10px;
         letter-spacing: 0.18em; text-transform: uppercase;
-        color: var(--text-4);
+        color: rgba(249,246,240,0.4);
+        margin-left: 8px;
       }
-      .vlt-yield-rate-val {
-        font-family: var(--font-display); font-style: italic;
-        font-weight: 500; font-size: 18px;
-        color: var(--ink);
+      .vlt-yield-stat-sources {
+        display: flex; gap: 14px; align-items: baseline;
       }
-      .vlt-yield-rate-val small {
-        font-family: var(--font-mono); font-size: 10px;
-        font-style: normal; color: var(--text-4);
-        margin-left: 4px;
+      .vlt-yield-stat-sources > span {
+        font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+        color: rgba(249,246,240,0.35);
+        display: inline-flex; align-items: baseline; gap: 6px;
       }
+      .vlt-yield-stat-sources > span.on { color: #F9F6F0; }
+      .vlt-yield-stat-sources > span.on small {
+        color: var(--accent);
+      }
+      .vlt-yield-stat-sources small {
+        font-family: var(--font-mono); font-size: 9px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: rgba(249,246,240,0.35);
+        font-weight: 400;
+      }
+
       .vlt-yield-claim {
         background: var(--accent);
-        border: 1px solid var(--ink);
-        color: var(--ink);
-        font-family: var(--font-mono); font-size: 13px; font-weight: 700;
-        letter-spacing: 0.08em; text-transform: uppercase;
-        padding: 16px 24px;
+        border: 1px solid var(--accent);
+        color: #0E0E0E;
+        font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+        letter-spacing: 0.14em; text-transform: uppercase;
+        padding: 0 28px;
         cursor: pointer;
         white-space: nowrap;
-        transition: all 100ms;
+        transition: all 120ms;
+        align-self: stretch;
+        display: inline-flex; align-items: center; justify-content: center;
+        gap: 8px;
+        min-height: 64px;
+        box-shadow: 0 0 0 0 rgba(215,255,58,0);
+      }
+      .vlt-yield-claim strong {
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: 22px; letter-spacing: -0.02em; color: #0E0E0E;
+        text-transform: none;
       }
       .vlt-yield-claim:hover:not(:disabled) {
-        background: var(--ink); color: var(--accent);
+        background: #F9F6F0; color: #0E0E0E; border-color: #F9F6F0;
+        box-shadow: 0 0 0 4px rgba(215,255,58,0.2);
       }
       .vlt-yield-claim:disabled {
-        background: var(--paper); color: var(--text-3);
-        cursor: not-allowed; opacity: 0.7;
+        background: transparent; border-color: rgba(249,246,240,0.18);
+        color: rgba(249,246,240,0.4);
+        cursor: not-allowed;
       }
 
       /* ── §02 DEPOSIT / WITHDRAW ── */
@@ -1336,8 +1448,9 @@ function Style() {
         .vlt-hero-inner { grid-template-columns: 1fr; gap: 40px; }
         .vlt-hero-art { order: -1; }
         .vlt-deposit-card { grid-template-columns: 1fr; gap: 18px; }
-        .vlt-yield-card { grid-template-columns: 1fr; gap: 24px; }
-        .vlt-yield-meta { border-left: none; padding-left: 0; border-top: 1px solid var(--hairline); padding-top: 18px; }
+        .vlt-yield-card { grid-template-columns: 1fr; gap: 24px; padding: 28px; }
+        .vlt-yield-meta { border-left: none; padding-left: 0; border-top: 1px solid rgba(249,246,240,0.14); padding-top: 20px; }
+        .vlt-yield-claim { min-height: 56px; }
         .vlt-portrait-card { grid-template-columns: 1fr; gap: 18px; }
         .vlt-portrait-art { max-width: 220px; }
         .vlt-upgrade-grid { grid-template-columns: repeat(2, 1fr); }
