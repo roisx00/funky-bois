@@ -31,6 +31,7 @@ export default function VaultPage({ onNavigate }) {
   const toast = useToast();
 
   const [vault, setVault]   = useState(null);
+  const [stats, setStats]   = useState(null);  // global TVL snapshot
   const [loading, setLoading] = useState(true);
   const [busy, setBusy]     = useState(false);
 
@@ -77,9 +78,17 @@ export default function VaultPage({ onNavigate }) {
 
   const refresh = useCallback(async () => {
     try {
-      const r = await fetch('/api/vault', { credentials: 'same-origin' });
-      const d = await r.json();
-      if (r.ok && d.vault) setVault(d.vault);
+      // Run personal vault + public TVL snapshot in parallel.
+      const [vaultR, statsR] = await Promise.all([
+        fetch('/api/vault', { credentials: 'same-origin' }),
+        fetch('/api/vault-stats'),
+      ]);
+      const v = await vaultR.json();
+      if (vaultR.ok && v.vault) setVault(v.vault);
+      if (statsR.ok) {
+        const s = await statsR.json();
+        setStats(s);
+      }
     } catch { /* swallow */ }
     setLoading(false);
   }, []);
@@ -310,10 +319,17 @@ export default function VaultPage({ onNavigate }) {
               <span className="vlt-kicker-dot" />
               <span>THE 1969</span>
               <span className="vlt-tag-sep">·</span>
-              <span>VAULT NO.</span>
-              <span className="vlt-tag-id">#{(vault.userId || '').slice(0, 6).toUpperCase()}</span>
+              <span>YOUR KEEP</span>
               <span className="vlt-tag-sep">·</span>
-              <span className="vlt-tag-status">{vault.burnCount === 0 ? 'INTACT' : 'REBUILT ×' + vault.burnCount}</span>
+              <span className="vlt-tag-status">
+                {vault.burnCount === 0
+                  ? 'STILL STANDING'
+                  : vault.burnCount === 1
+                    ? 'REBUILT ONCE'
+                    : vault.burnCount === 2
+                      ? 'REBUILT TWICE'
+                      : `REBUILT ${vault.burnCount} TIMES`}
+              </span>
             </div>
             <h1 className="vlt-hero-title">
               @{xUser?.username}<span className="vlt-hero-poss">'s</span>
@@ -507,6 +523,25 @@ export default function VaultPage({ onNavigate }) {
         </div>
       </section>
 
+      {/* ─── GLOBAL TVL STRIP ────────────────────────────────── */}
+      {/* Aggregate snapshot across every Vault on the system. Refreshes
+          on the same cadence as the personal chronicle. Cached server-side
+          for 30s so this strip can be hammered without DB load. */}
+      <section className="vlt-tvl">
+        <div className="vlt-tvl-inner">
+          <div className="vlt-tvl-head">
+            <span className="vlt-tvl-kicker"><span className="vlt-tvl-dot" /> ECONOMY</span>
+            <span className="vlt-tvl-sub">Across every keep. Real numbers, real time.</span>
+          </div>
+          <div className="vlt-tvl-grid">
+            <TvlCell num={(stats?.bustsDeposited || 0).toLocaleString()}   label="BUSTS locked"     unit="cumulative TVL" hero />
+            <TvlCell num={(stats?.portraitsBonded || 0).toLocaleString()}  label="portraits bound"  unit={stats ? `of ${stats.vaultsActive.toLocaleString()} vaults` : '—'} />
+            <TvlCell num={(stats?.yieldDistributed || 0).toLocaleString()} label="BUSTS distributed" unit="lifetime yield paid" />
+            <TvlCell num={(stats?.vaultsActive || 0).toLocaleString()}     label="vaults active"    unit="standing" />
+          </div>
+        </div>
+      </section>
+
       {/* ─── §03 YIELD ───────────────────────────────────────── */}
       <section className="vlt-section">
         <SectionHead n="03" title="Yield" sub="Real-time BUSTS for what you keep inside. 0.1% per day on deposited BUSTS. +10 BUSTS/day flat while a portrait is bound. Settles to your balance whenever you claim or move funds." />
@@ -611,6 +646,19 @@ function ChronCell({ num, label, unit, hero }) {
       <div className="vlt-chron-meta">
         <span className="vlt-chron-label">{label}</span>
         {unit ? <span className="vlt-chron-unit">{unit}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function TvlCell({ num, label, unit, hero }) {
+  return (
+    <div className={`vlt-tvl-cell ${hero ? 'hero' : ''}`}>
+      {hero ? <span className="vlt-tvl-cell-dot" /> : null}
+      <div className="vlt-tvl-num">{num}</div>
+      <div className="vlt-tvl-meta">
+        <span className="vlt-tvl-label">{label}</span>
+        {unit ? <span className="vlt-tvl-unit">{unit}</span> : null}
       </div>
     </div>
   );
@@ -1211,6 +1259,79 @@ function Style() {
       .vlt-chronicle-compact .vlt-chron-num { font-size: 26px; }
       .vlt-chronicle-compact .vlt-chron-cell { padding: 0 16px; gap: 4px; }
       .vlt-chronicle-compact .vlt-chron-cell.hero { padding: 4px 16px; }
+
+      /* ── GLOBAL TVL STRIP ──
+         Dark inverse of the chronicle so the system-wide aggregate
+         visually distinguishes itself from the holder's personal numbers
+         that sit just above it. */
+      .vlt-tvl {
+        background: #0E0E0E; color: #F9F6F0;
+        padding: 22px 24px;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+      }
+      .vlt-tvl-inner {
+        max-width: 1180px; margin: 0 auto;
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 28px; align-items: center;
+      }
+      .vlt-tvl-head {
+        display: flex; flex-direction: column; gap: 4px;
+        padding-right: 22px;
+        border-right: 1px solid rgba(249,246,240,0.14);
+      }
+      .vlt-tvl-kicker {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.22em; text-transform: uppercase;
+        color: rgba(249,246,240,0.6);
+        display: inline-flex; align-items: center; gap: 10px;
+      }
+      .vlt-tvl-dot {
+        width: 8px; height: 8px; background: var(--accent);
+        border: 1px solid var(--ink); border-radius: 50%;
+        box-shadow: 0 0 0 3px rgba(215,255,58,0.18);
+      }
+      .vlt-tvl-sub {
+        font-family: Georgia, serif; font-style: italic;
+        font-size: 12px; line-height: 1.4;
+        color: rgba(249,246,240,0.55);
+      }
+      .vlt-tvl-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+      }
+      .vlt-tvl-cell {
+        display: flex; flex-direction: column; gap: 4px;
+        padding: 4px 18px; position: relative;
+      }
+      .vlt-tvl-cell + .vlt-tvl-cell::before {
+        content: ''; position: absolute; left: 0; top: 4px; bottom: 4px;
+        width: 1px; background: rgba(249,246,240,0.14);
+      }
+      .vlt-tvl-cell.hero { background: rgba(215,255,58,0.10); padding: 8px 18px; }
+      .vlt-tvl-cell-dot {
+        position: absolute; top: 10px; right: 14px;
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--accent); border: 1px solid var(--ink);
+      }
+      .vlt-tvl-num {
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: 28px; letter-spacing: -0.02em;
+        color: #F9F6F0; line-height: 1;
+      }
+      .vlt-tvl-cell.hero .vlt-tvl-num { color: var(--accent); }
+      .vlt-tvl-meta { display: flex; flex-direction: column; gap: 2px; }
+      .vlt-tvl-label {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: rgba(249,246,240,0.65);
+      }
+      .vlt-tvl-unit {
+        font-family: var(--font-mono); font-size: 9px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: rgba(249,246,240,0.4);
+      }
       .vlt-section-head { max-width: 720px; margin-bottom: 32px; }
       .vlt-section-num {
         font-family: var(--font-mono); font-size: 11px;
@@ -1772,6 +1893,14 @@ function Style() {
 
       /* ── 760 — LARGE PHONE ── deeper rebalancing */
       @media (max-width: 760px) {
+        .vlt-tvl { padding: 18px 16px; }
+        .vlt-tvl-inner { grid-template-columns: 1fr; gap: 14px; }
+        .vlt-tvl-head { padding-right: 0; padding-bottom: 12px; border-right: none; border-bottom: 1px solid rgba(249,246,240,0.14); }
+        .vlt-tvl-grid { grid-template-columns: repeat(2, 1fr); gap: 14px 0; }
+        .vlt-tvl-cell { padding: 8px 14px; }
+        .vlt-tvl-cell:nth-child(2)::before { display: block; }
+        .vlt-tvl-cell:nth-child(n+3) { border-top: 1px solid rgba(249,246,240,0.14); padding-top: 14px; }
+        .vlt-tvl-num { font-size: 24px; }
         .vlt-hero { padding: 56px 18px 60px; }
         .vlt-hero-tag {
           flex-wrap: wrap; gap: 6px 8px; padding: 8px 10px;

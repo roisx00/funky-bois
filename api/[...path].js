@@ -21,6 +21,7 @@ import adminMintWallets    from './_routes/admin-mint-wallets.js';
 import adminSuspend        from './_routes/admin-suspend.js';
 import adminGiftTrait      from './_routes/admin-gift-trait.js';
 import vaultRoute          from './_routes/vault.js';
+import vaultStats          from './_routes/vault-stats.js';
 import vaultDeposit        from './_routes/vault-deposit.js';
 import vaultUpgrade        from './_routes/vault-upgrade.js';
 import vaultWithdraw       from './_routes/vault-withdraw.js';
@@ -94,6 +95,7 @@ const ROUTES = {
   'admin-suspend':       adminSuspend,
   'admin-gift-trait':    adminGiftTrait,
   'vault':               vaultRoute,
+  'vault-stats':         vaultStats,
   'vault-deposit':       vaultDeposit,
   'vault-upgrade':       vaultUpgrade,
   'vault-withdraw':      vaultWithdraw,
