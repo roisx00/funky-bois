@@ -4,6 +4,14 @@ export const ELEMENT_TYPES = [
   'background', 'outfit', 'skin', 'eyes', 'facial_hair', 'hair', 'headwear', 'face_mark',
 ];
 
+// Subset of ELEMENT_TYPES that the public drop engine releases. 'eyes'
+// and 'skin' are intentionally excluded — they are admin-grant /
+// auto-assigned only. Keep this list private; never expose it on the
+// public drop page.
+export const DROP_POOL_TYPES = [
+  'background', 'outfit', 'facial_hair', 'hair', 'headwear', 'face_mark',
+];
+
 export const ELEMENT_VARIANTS = {
   background: [
     { name: 'Paper', rarity: 'common' },     { name: 'Concrete', rarity: 'common' },
@@ -83,7 +91,10 @@ export function pickRandomElement() {
     if (r < acc) { rarity = k; break; }
   }
   const pool = [];
-  for (const t of ELEMENT_TYPES) {
+  // Drop pool is restricted to DROP_POOL_TYPES — 'eyes' and 'skin' are
+  // never released through the public drop and are filled by admin
+  // grant or auto-assignment only.
+  for (const t of DROP_POOL_TYPES) {
     ELEMENT_VARIANTS[t].forEach((v, idx) => {
       if (v.rarity === rarity) pool.push({ type: t, variant: idx, name: v.name, rarity: v.rarity });
     });
@@ -91,7 +102,7 @@ export function pickRandomElement() {
   if (pool.length === 0) {
     // Shouldn't happen — every rarity has variants — but fall back to
     // the first common so the handler never returns undefined.
-    for (const t of ELEMENT_TYPES) {
+    for (const t of DROP_POOL_TYPES) {
       ELEMENT_VARIANTS[t].forEach((v, idx) => {
         if (v.rarity === 'common' && pool.length === 0) {
           pool.push({ type: t, variant: idx, name: v.name, rarity: v.rarity });

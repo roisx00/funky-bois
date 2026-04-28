@@ -5,13 +5,11 @@ import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import ElementCard from '../components/ElementCard';
 import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
-import { MysteryBoxOpener } from '../components/MysteryBox';
 import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
 import { mintBindMessage } from '../utils/wlMessage';
 
 const TABS = [
   { id: 'overview',  label: 'Overview' },
-  { id: 'boxes',     label: 'Mystery Boxes' },
   { id: 'tasks',     label: 'Tasks' },
   { id: 'inventory', label: 'Inventory' },
   { id: 'gift',      label: 'Gift' },
@@ -161,12 +159,6 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
             </div>
             <div style={{ border: '1px solid var(--hairline)', background: 'var(--paper-2)' }}>
               <ShortcutRow
-                kicker="BOXES"
-                title="Open a Mystery Box"
-                meta="Spend BUSTS for better odds"
-                onClick={() => setTab('boxes')}
-              />
-              <ShortcutRow
                 kicker="TASKS"
                 title="Complete X tasks"
                 meta={`${taskCount} live`}
@@ -198,21 +190,6 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
 
             <ConnectDiscord username={discordUsername} inviteUrl={discordInviteUrl} />
           </div>
-        </div>
-      )}
-
-      {/* ─── Mystery Boxes ─── */}
-      {tab === 'boxes' && (
-        <div>
-          <div style={{ marginBottom: 32, maxWidth: 640 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 500, letterSpacing: '-0.03em', marginBottom: 10 }}>
-              Mystery boxes.
-            </h2>
-            <p style={{ fontSize: 14, color: 'var(--text-3)', lineHeight: 1.55 }}>
-              Spend BUSTS on one of three box tiers. Only the flagship Mystery Box reliably pulls ultra-rare traits.
-            </p>
-          </div>
-          <MysteryBoxOpener />
         </div>
       )}
 
