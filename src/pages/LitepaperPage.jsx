@@ -359,7 +359,173 @@ export default function LitepaperPage({ onNavigate }) {
             </Body>
           </Section>
 
-          <Section n="11" title="The Doctrine">
+          <Section n="11" title="The Vault">
+            <Body>
+              The Vault is the holder's persistent surface inside the project — a
+              procedurally generated architectural keep, derived deterministically from
+              the holder's identity, owned by them alone. Where the portrait is the
+              <em> object </em>they minted, the Vault is the <em>place</em> they keep.
+              It is where BUSTS is stored, where yield accrues, where upgrades stack,
+              and where future games are played.
+            </Body>
+            <Body>
+              At launch, the Vault runs entirely off-chain. BUSTS deposits, the bound
+              portrait, accrued yield, and every upgrade are entries in the same
+              ledger that runs the rest of the project's economy. After mint, the
+              Vault transitions on-chain in lockstep with the BUSTS ERC-20: state
+              snapshots from the off-chain ledger become the genesis of the on-chain
+              contracts, and the same mechanics — deposit, withdraw, bind, claim —
+              are reproduced as smart-contract calls. The off-chain rehearsal is
+              deliberate. Mechanics are stress-tested with real users and real
+              economic stakes before any of it touches the chain.
+            </Body>
+
+            <Pull>Every holder is given an architectural keep. Every keep is unique. None can be traded.</Pull>
+
+            <Body>
+              <strong>Composition.</strong> The Vault is rendered as a piece of pixel
+              architecture. Four trait dimensions — frame, wall, sigil, and door — each
+              roll independently from a deterministic hash of the holder's identifier.
+              Four base frame styles (square keep · arched gate · cathedral · monolith),
+              four wall material variants, six sigil glyphs, and a door whose hardware
+              evolves with tier (rivets at fortified, lockplate at heavy, lit sigil at
+              supreme). The combinatorial space is large enough that no two Vaults are
+              identical; the deterministic seed guarantees the same Vault is recovered
+              from the same identity at any future point.
+            </Body>
+
+            <VaultAnatomy />
+
+            <Body>
+              <strong>Power.</strong> Every Vault carries a Power score, which gates its
+              participation in games and modulates its yield. Power is computed from
+              four inputs:
+            </Body>
+            <Body>
+              <em>Base.</em> A flat starting allocation granted to every holder at
+              vault genesis.<br/>
+              <em>Deposits.</em> One Power per fifty BUSTS held in the Vault, capped to
+              prevent purely capital-driven dominance.<br/>
+              <em>Upgrades.</em> Permanent Power gain from each tier purchased across
+              the eight upgrade tracks (see §07).<br/>
+              <em>Decay.</em> Multiplicative penalty applied per recorded burn, capped
+              so a Vault can never be reduced below a recoverable floor.
+            </Body>
+            <Body>
+              The composition is intentional. Capital alone cannot dominate; play and
+              participation are the only paths to the upper Power band, and burns are
+              survivable rather than terminal. The Vault is designed to age, not to be
+              optimised once and forgotten.
+            </Body>
+
+            <Body>
+              <strong>Yield.</strong> A Vault earns BUSTS continuously as long as it
+              holds value inside it. Two yield streams compose, both linear in time:
+            </Body>
+            <Body>
+              <em>Capital yield.</em> 0.1% per day on deposited BUSTS, paid as a fraction
+              accruing every second. Sub-unit fractions are preserved across deposits
+              and withdraws — settlement advances the last-paid timestamp by exactly
+              the time consumed for whole credited units, so no second of yield is
+              ever lost or double-counted.<br/>
+              <em>Bond yield.</em> A flat additional rate while a portrait is bound to
+              the Vault. The portrait remains the holder's, stays in the gallery, and
+              can be unbound at any moment; the bond is functional, not custodial.
+            </Body>
+            <Body>
+              Pending yield is settled into the holder's BUSTS balance whenever a
+              rate-affecting action is taken (deposit, withdraw, bind, unbind) or whenever
+              the holder explicitly claims. Settlement is transactional: the same call
+              that updates the rate also captures the yield earned at the prior rate,
+              guaranteeing no retroactive over- or under-payment.
+            </Body>
+
+            <YieldEngine />
+
+            <Body>
+              <strong>Reinforcement.</strong> The eight oaths described in §07 manifest
+              materially in the Vault as eight upgrade tracks — walls, watchtower,
+              vanguard, wards, sentries, beacon, forge, oath. Each track has three
+              tiers; each tier is purchased with BUSTS, contributes a permanent
+              Power increment, and unlocks defensive behaviour relevant to the
+              gameplay system below. Upgrades are non-refundable. They survive burns.
+              They are part of the Vault's history.
+            </Body>
+
+            <Body>
+              <strong>Gameplay.</strong> Post-mint, Vaults become the unit of competition
+              across a sequence of seasonal game modes — competitive, collaborative,
+              and ritual. The catalog is intentionally not enumerated here, but every
+              mode shares a common loop:
+            </Body>
+
+            <GameLoop />
+
+            <Body>
+              A holder enters a game with their Vault as the participant. Entry is
+              gated by Power band, BUSTS stake, or both. The match resolves through
+              the mode's specific mechanics — single-player against the house,
+              cooperative against a shared adversary, head-to-head against another
+              holder, or scheduled ritual mechanics with collective stakes. Two
+              outcomes are possible:
+            </Body>
+            <Body>
+              <em>Victory.</em> Rewards are paid out at a multiplier on the entry
+              stake. A small Power increment is recorded against the Vault. The
+              Vault's history accumulates a documented win.<br/>
+              <em>Defeat.</em> The Vault is <strong>not destroyed</strong>. The
+              holder's portrait remains theirs, the bound portrait remains bound, the
+              upgrades remain. What is reduced is Power — a multiplicative decay is
+              applied, capped to keep the Vault recoverable, and the burn is recorded
+              in the Vault's chronicle. A defeated Vault can re-enter, defend itself,
+              and recover its Power through play and reinforcement.
+            </Body>
+
+            <Body>
+              The asymmetry is deliberate. A win is rewarding; a loss is consequential
+              but never terminal. The Vault is designed to be played repeatedly, not
+              gambled once. The discipline against pay-to-win is enforced at the
+              Power formula: capital can fund deposits, but only sustained play and
+              reinforcement push a Vault into the upper bands where the highest-stake
+              modes unlock.
+            </Body>
+
+            <ProgressionDiagram />
+
+            <Body>
+              <strong>What waits inside.</strong> Every Vault contains material that
+              has not been disclosed. Some is procedurally seeded at genesis and
+              concealed behind the door until specific conditions are met. Some
+              accumulates over the holder's playthrough and is revealed in the
+              post-mint reveal moment. The full inventory is intentionally not
+              published. Holders should expect the Vault they open after mint to
+              contain meaningfully more than the Vault they configured before mint.
+              The reveal is part of the design.
+            </Body>
+
+            <Body>
+              <strong>On-chain transition.</strong> All of the above is implemented
+              off-chain at launch. Deposits, withdraws, bonding, yield settlement,
+              upgrades, and game outcomes are recorded in the project's append-only
+              ledger. Post-mint, the same state machine is reproduced on-chain in a
+              dedicated Vault contract paired with the BUSTS ERC-20. The off-chain
+              ledger snapshot is the genesis state. Holders carry every BUSTS, every
+              upgrade tier, every recorded burn, and every game result into the
+              on-chain instance unchanged. Nothing is reset. Nothing is rebought.
+            </Body>
+
+            <Pull big lime>The Vault must not burn again.</Pull>
+
+            <Body>
+              The doctrine inherited from 1977 is the design constraint that shaped
+              every decision in this section. Burns are survivable. Power decays
+              cap at recoverable floors. Upgrades persist through losses. The Vault
+              is built to take damage, record it, and stand again — because the
+              version that did not is the reason this paper exists.
+            </Body>
+          </Section>
+
+          <Section n="12" title="The Doctrine">
             <Body>
               The project has one rule. It was not chosen by committee. It was inherited
               from the lesson of 1977, repeated by the Third Assembly because the lesson
@@ -473,7 +639,8 @@ function TableOfContents() {
     ['08', 'The BUSTS Economy'],
     ['09', 'The Mint'],
     ['10', 'Post-Mint'],
-    ['11', 'The Doctrine'],
+    ['11', 'The Vault'],
+    ['12', 'The Doctrine'],
   ];
   return (
     <div style={{ marginBottom: 56 }}>
@@ -518,7 +685,8 @@ function TOCSticky({ activeSection }) {
     ['8', 'BUSTS Economy'],
     ['9', 'The Mint'],
     ['10', 'Post-Mint'],
-    ['11', 'Doctrine'],
+    ['11', 'The Vault'],
+    ['12', 'Doctrine'],
   ];
   return (
     <aside className="lp-toc" style={{
@@ -947,6 +1115,126 @@ function RoadCard({ label, body, accent }) {
       <div style={{ fontFamily: 'Georgia,serif', fontSize: 14, lineHeight: 1.65, color: 'var(--ink)' }}>
         {body}
       </div>
+    </div>
+  );
+}
+
+// 9. Vault anatomy — the four trait dimensions that compose every keep
+function VaultAnatomy() {
+  return (
+    <DiagramFrame caption="figure 9 · vault anatomy · four deterministic dimensions">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
+        <AnatomyCell axis="FRAME" rolls="4" examples="square keep · arched gate · cathedral · monolith" />
+        <AnatomyCell axis="WALL"  rolls="4" examples="ashlar · iron-banded · mortared · plate" />
+        <AnatomyCell axis="SIGIL" rolls="6" examples="six glyphs · illuminated at supreme tier" />
+        <AnatomyCell axis="DOOR"  rolls="3" examples="bare · fortified · heavy · supreme (lit)" lime />
+      </div>
+    </DiagramFrame>
+  );
+}
+function AnatomyCell({ axis, rolls, examples, lime }) {
+  return (
+    <div style={{
+      padding: 16, borderRight: '1px solid var(--ink)',
+      background: lime ? 'rgba(215,255,58,0.12)' : 'transparent',
+      minHeight: 150,
+    }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.22em', color: 'var(--text-4)', marginBottom: 6 }}>{axis}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 28, color: 'var(--ink)', marginBottom: 12, lineHeight: 1 }}>×{rolls}</div>
+      <div style={{ fontFamily: 'Georgia,serif', fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-3)' }}>{examples}</div>
+    </div>
+  );
+}
+
+// 10. Yield engine — how deposits/portrait/upgrades translate to BUSTS
+function YieldEngine() {
+  return (
+    <DiagramFrame caption="figure 10 · yield engine · inputs → power → settled BUSTS">
+      <div style={{ border: '1px solid var(--ink)', padding: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderBottom: '1px solid var(--ink)' }}>
+          <YieldStage label="INPUTS" body="BUSTS deposit · portrait bond · upgrade tier" />
+          <YieldStage label="STATE" body="POWER score · yield rate · bond bonus · burn count" lime />
+          <YieldStage label="OUTPUT" body="continuous accrual → settled to BUSTS balance on action or claim" />
+        </div>
+        <div style={{ padding: 16, fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: 1.7, color: 'var(--text-3)', letterSpacing: '0.04em' }}>
+          rate = 0.1%/day · deposited &nbsp;+&nbsp; bond_rate · has_portrait &nbsp;+&nbsp; (upgrade_modifiers)<br/>
+          settle(t) = floor(rate · Δt) → user.busts += credited · last_paid_at += time_consumed_for_whole_units
+        </div>
+      </div>
+    </DiagramFrame>
+  );
+}
+function YieldStage({ label, body, lime }) {
+  return (
+    <div style={{
+      padding: 18, borderRight: '1px solid var(--ink)',
+      background: lime ? 'rgba(215,255,58,0.12)' : 'transparent',
+    }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.22em', color: 'var(--text-4)', marginBottom: 8 }}>{label}</div>
+      <div style={{ fontFamily: 'Georgia,serif', fontSize: 13.5, lineHeight: 1.6, color: 'var(--ink)' }}>{body}</div>
+    </div>
+  );
+}
+
+// 11. Game loop — entry → match → win/loss branches with outcomes
+function GameLoop() {
+  return (
+    <DiagramFrame caption="figure 11 · gameplay loop · win and loss are asymmetric">
+      <div style={{ border: '1px solid var(--ink)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', borderBottom: '1px solid var(--ink)' }}>
+          <LoopStage label="01 · ENTRY"
+            body="Holder enters a game with their Vault as the participant. Power band and BUSTS stake gate the available modes." />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', borderBottom: '1px solid var(--ink)' }}>
+          <LoopStage label="02 · MATCH"
+            body="Mode-specific mechanics resolve — solo vs. house, cooperative, head-to-head, or scheduled ritual. Anti-cheat and result attestation handled by the same architecture securing the drop engine." />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+          <LoopStage label="03A · VICTORY" lime
+            body="Reward paid at a multiplier on the entry stake. Power increments. Win recorded in the Vault chronicle." />
+          <LoopStage label="03B · DEFEAT"
+            body="Vault NOT destroyed. Portrait, deposits, upgrades all preserved. Power decays multiplicatively, capped at a recoverable floor. Burn recorded." />
+        </div>
+      </div>
+    </DiagramFrame>
+  );
+}
+function LoopStage({ label, body, lime }) {
+  return (
+    <div style={{
+      padding: '18px 20px', borderRight: '1px solid var(--ink)',
+      background: lime ? 'rgba(215,255,58,0.12)' : 'transparent',
+    }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.22em', color: 'var(--ink)', fontWeight: 700, marginBottom: 8 }}>{label}</div>
+      <div style={{ fontFamily: 'Georgia,serif', fontSize: 13.5, lineHeight: 1.65, color: 'var(--ink)' }}>{body}</div>
+    </div>
+  );
+}
+
+// 12. Progression diagram — the long-arc Vault lifecycle
+function ProgressionDiagram() {
+  return (
+    <DiagramFrame caption="figure 12 · vault progression · long-arc lifecycle">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
+        <ProgCell label="01" title="Genesis"      body="Vault generated from holder identity. Base Power. Empty deposits. No bond." />
+        <ProgCell label="02" title="Reinforce"    body="Deposit BUSTS. Bind portrait. Buy first upgrade tiers. Power climbs." />
+        <ProgCell label="03" title="Play"         body="Enter games. Stake BUSTS. Win or lose. Outcomes recorded permanently." lime />
+        <ProgCell label="04" title="Cycle"        body="Recover from burns through play and upgrades. Vault accumulates history. No reset." />
+        <ProgCell label="05" title="Reveal"       body="Post-mint, the door opens. What was concealed is shown. The on-chain transition begins." />
+      </div>
+    </DiagramFrame>
+  );
+}
+function ProgCell({ label, title, body, lime }) {
+  return (
+    <div style={{
+      padding: 16, borderRight: '1px solid var(--ink)',
+      background: lime ? 'rgba(215,255,58,0.12)' : 'transparent',
+      minHeight: 200,
+    }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.22em', color: 'var(--text-4)', marginBottom: 6 }}>§{label}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 22, color: 'var(--ink)', marginBottom: 10, letterSpacing: '-0.01em' }}>{title}</div>
+      <div style={{ fontFamily: 'Georgia,serif', fontSize: 12.5, lineHeight: 1.6, color: 'var(--ink)' }}>{body}</div>
     </div>
   );
 }
