@@ -3,11 +3,16 @@
 // Editorial structure (top → bottom):
 //   HERO BAND              vault SVG large + 4 floating stat plinths
 //   CHRONICLE STRIP        4 inline stats + lifetime yield earned
-//   §01 YIELD              live ticker · current rate · Claim button
-//   §02 DEPOSIT / WITHDRAW one card with mode toggle, projection, chips
-//   §03 PORTRAIT VAULT     deposit/withdraw your portrait for +10/day
+//   §01 DEPOSIT / WITHDRAW one card with mode toggle, projection, chips
+//   §02 PORTRAIT VAULT     deposit/withdraw your portrait for +10/day
+//   §03 YIELD              live ticker · current rate · Claim button
 //   §04 REINFORCE          8-track upgrade grid with pixel icons
 //   §05 WHAT WAITS         post-mint reveal teaser
+//
+// Why the order: deposit + portrait sit closest to the hero so the
+// vault SVG (with its door-open animation) stays in viewport while the
+// user is acting. Yield is a passive readout — it works fine further
+// down the page.
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useGame } from '../context/GameContext';
@@ -34,8 +39,12 @@ export default function VaultPage({ onNavigate }) {
   const [bustsAmount, setBustsAmount] = useState('');
 
   // Deposit animation: doors-open → coin-flies-in → doors-shut → flash
+  // Used for both BUSTS deposit (kind='busts', shows '+N') and portrait
+  // deposit (kind='portrait', shows the OpenSea-style chip with the
+  // portrait icon).
   const [animPhase, setAnimPhase]   = useState('idle');   // idle | opening | depositing | closing | flash
   const [animAmount, setAnimAmount] = useState(0);
+  const [animKind, setAnimKind]     = useState('busts');  // 'busts' | 'portrait'
   const animTimers = useRef([]);
   useEffect(() => () => { animTimers.current.forEach(clearTimeout); }, []);
 
@@ -54,9 +63,10 @@ export default function VaultPage({ onNavigate }) {
     setConfirmState(null);
   }
 
-  function playDepositAnim(amount) {
+  function playDepositAnim({ kind = 'busts', amount = 0 } = {}) {
     animTimers.current.forEach(clearTimeout);
     animTimers.current = [];
+    setAnimKind(kind);
     setAnimAmount(amount);
     setAnimPhase('opening');
     animTimers.current.push(setTimeout(() => setAnimPhase('depositing'), 380));
@@ -159,7 +169,7 @@ export default function VaultPage({ onNavigate }) {
     }
     const ok = await askConfirm(bustsMode === 'deposit' ? {
       title: 'Confirm deposit',
-      kicker: '§02 · DEPOSIT',
+      kicker: '§01 · DEPOSIT',
       body: 'BUSTS move from your balance into the vault. Earn yield while inside. Withdraw anytime.',
       items: [
         { label: 'Amount', value: `${amountInput.toLocaleString()} BUSTS` },
@@ -170,7 +180,7 @@ export default function VaultPage({ onNavigate }) {
       tone: 'accent',
     } : {
       title: 'Confirm withdraw',
-      kicker: '§02 · WITHDRAW',
+      kicker: '§01 · WITHDRAW',
       body: 'Pending yield settles to your balance first, then BUSTS leave the vault.',
       items: [
         { label: 'Amount', value: `${amountInput.toLocaleString()} BUSTS` },
@@ -194,7 +204,7 @@ export default function VaultPage({ onNavigate }) {
       if (!r.ok) { toast.error(d?.error || d?.hint || 'Action failed.'); setBusy(false); return; }
       if (d.yieldCredited > 0) toast.success(`+${d.yieldCredited.toLocaleString()} yield credited along the way.`);
       toast.success(`${bustsMode === 'deposit' ? 'Deposited' : 'Withdrew'} ${amountInput.toLocaleString()} BUSTS.`);
-      if (bustsMode === 'deposit') playDepositAnim(amountInput);
+      if (bustsMode === 'deposit') playDepositAnim({ kind: 'busts', amount: amountInput });
       setBustsAmount('');
       await Promise.all([refresh(), refreshMe()]);
     } catch (e) { toast.error(e?.message || 'Network error.'); }
@@ -210,7 +220,7 @@ export default function VaultPage({ onNavigate }) {
     }
     const ok = await askConfirm(isDeposit ? {
       title: 'Bind portrait',
-      kicker: '§03 · PORTRAIT',
+      kicker: '§02 · PORTRAIT',
       body: 'Your portrait stays yours, stays in the gallery. While bound, the vault earns a flat rate on top of BUSTS yield.',
       items: [
         { label: 'Bonus', value: '+10 BUSTS / day' },
@@ -220,7 +230,7 @@ export default function VaultPage({ onNavigate }) {
       tone: 'accent',
     } : {
       title: 'Unbind portrait',
-      kicker: '§03 · PORTRAIT',
+      kicker: '§02 · PORTRAIT',
       body: 'Pending yield settles first. Your portrait returns to you. The +10 / day bonus stops immediately.',
       items: [
         { label: 'Rate change', value: '−10 BUSTS / day' },
@@ -243,6 +253,7 @@ export default function VaultPage({ onNavigate }) {
       if (!r.ok) { toast.error(d?.error || d?.hint || 'Action failed.'); setBusy(false); return; }
       if (d.yieldCredited > 0) toast.success(`+${d.yieldCredited.toLocaleString()} yield credited.`);
       toast.success(isDeposit ? 'Portrait deposited.' : 'Portrait withdrawn.');
+      if (isDeposit) playDepositAnim({ kind: 'portrait' });
       await Promise.all([refresh(), refreshMe()]);
     } catch (e) { toast.error(e?.message || 'Network error.'); }
     finally { setBusy(false); }
@@ -363,9 +374,11 @@ export default function VaultPage({ onNavigate }) {
                 <span className="vlt-anim-door vlt-anim-door-r" />
                 <span className="vlt-anim-glow" />
               </div>
-              <div className="vlt-anim-coin" aria-hidden="true">
-                <span className="vlt-anim-coin-disc">$</span>
-                <span className="vlt-anim-coin-amt">+{animAmount.toLocaleString()}</span>
+              <div className={`vlt-anim-coin vlt-anim-coin-${animKind}`} aria-hidden="true">
+                <span className="vlt-anim-coin-disc">{animKind === 'portrait' ? '◐' : '$'}</span>
+                <span className="vlt-anim-coin-amt">
+                  {animKind === 'portrait' ? 'PORTRAIT' : `+${animAmount.toLocaleString()}`}
+                </span>
               </div>
               <div className="vlt-anim-flash" aria-hidden="true" />
             </div>
@@ -396,15 +409,12 @@ export default function VaultPage({ onNavigate }) {
         </div>
       </section>
 
-      {/* ─── §01 YIELD ───────────────────────────────────────── */}
+      {/* ─── §01 DEPOSIT / WITHDRAW ──────────────────────────── */}
+      {/* Promoted to §01 so the user sees the vault SVG (above) while
+          they interact with deposit + portrait — the door-open animation
+          plays in their viewport instead of being scrolled past. */}
       <section className="vlt-section">
-        <SectionHead n="01" title="Yield" sub="Real-time BUSTS for what you keep inside. 0.1% per day on deposited BUSTS. +10 BUSTS/day flat while a portrait is bound. Settles to your balance whenever you claim or move funds." />
-        <YieldCard vault={vault} dailyRate={dailyRate} busy={busy} onClaim={handleClaim} />
-      </section>
-
-      {/* ─── §02 DEPOSIT / WITHDRAW ──────────────────────────── */}
-      <section className="vlt-section">
-        <SectionHead n="02" title={bustsMode === 'deposit' ? 'Deposit' : 'Withdraw'} sub="Move BUSTS in to earn yield + add power. Move them out anytime. No lock-up. No fee." />
+        <SectionHead n="01" title={bustsMode === 'deposit' ? 'Deposit' : 'Withdraw'} sub="Move BUSTS in to earn yield + add power. Move them out anytime. No lock-up. No fee." />
 
         <div className="vlt-deposit-card">
           <div className="vlt-deposit-projection">
@@ -482,9 +492,9 @@ export default function VaultPage({ onNavigate }) {
         </div>
       </section>
 
-      {/* ─── §03 PORTRAIT VAULT ──────────────────────────────── */}
+      {/* ─── §02 PORTRAIT VAULT ──────────────────────────────── */}
       <section className="vlt-section">
-        <SectionHead n="03" title="Portrait" sub="Bind your portrait to the vault for a flat +10 BUSTS / day on top of the BUSTS yield. The portrait stays yours, stays in the gallery. Withdraw anytime." />
+        <SectionHead n="02" title="Portrait" sub="Bind your portrait to the vault for a flat +10 BUSTS / day on top of the BUSTS yield. The portrait stays yours, stays in the gallery. Withdraw anytime." />
         <PortraitCard
           ownedPortrait={ownedPortrait}
           isInVault={isPortraitInVault}
@@ -492,6 +502,12 @@ export default function VaultPage({ onNavigate }) {
           onAction={handlePortraitAction}
           onNavigate={onNavigate}
         />
+      </section>
+
+      {/* ─── §03 YIELD ───────────────────────────────────────── */}
+      <section className="vlt-section">
+        <SectionHead n="03" title="Yield" sub="Real-time BUSTS for what you keep inside. 0.1% per day on deposited BUSTS. +10 BUSTS/day flat while a portrait is bound. Settles to your balance whenever you claim or move funds." />
+        <YieldCard vault={vault} dailyRate={dailyRate} busy={busy} onClaim={handleClaim} />
       </section>
 
       {/* ─── §04 REINFORCE ───────────────────────────────────── */}

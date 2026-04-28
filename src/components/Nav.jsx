@@ -12,6 +12,7 @@ const BASE_PAGES = [
   { id: 'drop',     label: 'Drop' },
   { id: 'gallery',  label: 'Gallery' },
   { id: '1969',     label: '1969' },
+  { id: 'vault',    label: 'Vault' },
   // 'litepaper' route is intentionally NOT in the public nav while the
   // team reviews. Direct URL the1969.io/litepaper still works. Add the
   // entry back here when ready to go public.
