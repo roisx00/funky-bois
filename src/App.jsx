@@ -13,6 +13,7 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import CollabPage from './pages/CollabPage';
 import LorePage1969 from './pages/LorePage1969';
 import LitepaperPage from './pages/LitepaperPage';
+import VaultPage from './pages/VaultPage';
 import { handleXCallback, startXLogin } from './utils/xAuth';
 import { useToast } from './components/Toast';
 import './App.css';
@@ -55,7 +56,9 @@ function BuilderGate({ navigate }) {
 // 'art' is currently hidden — kept out of VALID_PAGES so direct URL hits
 // resolve to home. Re-enable later by adding it back here AND restoring
 // the Nav entry + route render below.
-const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'collab', '1969', 'litepaper'];
+// 'vault' is reachable by direct URL only during Phase 1 review; add to
+// Nav.jsx BASE_PAGES when ready to surface publicly.
+const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'collab', '1969', 'litepaper', 'vault'];
 
 function pathToPage(pathname) {
   const clean = pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -158,6 +161,7 @@ function AppInner() {
       {page === 'collab' && <CollabPage onNavigate={navigate} />}
       {page === '1969' && <LorePage1969 onNavigate={navigate} />}
       {page === 'litepaper' && <LitepaperPage onNavigate={navigate} />}
+      {page === 'vault' && <VaultPage onNavigate={navigate} />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}
     </>
   );

@@ -20,6 +20,9 @@ import mintBindWallet      from './_routes/mint-bind-wallet.js';
 import adminMintWallets    from './_routes/admin-mint-wallets.js';
 import adminSuspend        from './_routes/admin-suspend.js';
 import adminGiftTrait      from './_routes/admin-gift-trait.js';
+import vaultRoute          from './_routes/vault.js';
+import vaultDeposit        from './_routes/vault-deposit.js';
+import vaultUpgrade        from './_routes/vault-upgrade.js';
 import suspensionAppeal    from './_routes/suspension-appeal.js';
 import adminSuspensionAppeals from './_routes/admin-suspension-appeals.js';
 import adminWhitelist      from './_routes/admin-whitelist.js';
@@ -87,6 +90,9 @@ const ROUTES = {
   'admin-mint-wallets':  adminMintWallets,
   'admin-suspend':       adminSuspend,
   'admin-gift-trait':    adminGiftTrait,
+  'vault':               vaultRoute,
+  'vault-deposit':       vaultDeposit,
+  'vault-upgrade':       vaultUpgrade,
   'suspension-appeal':   suspensionAppeal,
   'admin-suspension-appeals': adminSuspensionAppeals,
   'admin-whitelist':     adminWhitelist,
