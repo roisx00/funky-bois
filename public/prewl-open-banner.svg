@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <!-- paper bg -->
+  <rect width="1920" height="1080" fill="#F9F6F0"/>
+
+  <!-- top + bottom inner rules -->
+  <line x1="60" y1="80" x2="1860" y2="80" stroke="#0E0E0E" stroke-width="1"/>
+  <line x1="60" y1="1000" x2="1860" y2="1000" stroke="#0E0E0E" stroke-width="1"/>
+
+  <!-- top meta strip -->
+  <text x="60" y="64" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#0E0E0E">THE 1969 · PRE-WHITELIST · ETHEREUM</text>
+  <text x="1860" y="64" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#0E0E0E">ISSUE 2026-04-28</text>
+
+  <!-- subtle paper texture -->
+  <g opacity="0.04">
+    <line x1="0" y1="270" x2="1920" y2="270" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="0" y1="540" x2="1920" y2="540" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="0" y1="810" x2="1920" y2="810" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="384" y1="0" x2="384" y2="1080" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="768" y1="0" x2="768" y2="1080" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="1152" y1="0" x2="1152" y2="1080" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="1536" y1="0" x2="1536" y2="1080" stroke="#0E0E0E" stroke-width="1"/>
+  </g>
+
+  <!-- corner brackets -->
+  <g stroke="#0E0E0E" stroke-width="2" fill="none">
+    <path d="M 60 110 L 60 150 M 60 110 L 100 110"/>
+    <path d="M 1860 110 L 1860 150 M 1860 110 L 1820 110"/>
+  </g>
+
+  <!-- LEFT-SIDE TYPOGRAPHIC STACK -->
+
+  <!-- KICKER -->
+  <g transform="translate(120, 220)">
+    <circle cx="6" cy="-4" r="6" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
+    <text x="22" y="0" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="4" fill="#0E0E0E">PRE-WHITELIST · APPLICATIONS OPEN</text>
+  </g>
+
+  <!-- HEADLINE -->
+  <text x="120" y="370"
+        font-family="'Instrument Serif', Georgia, serif"
+        font-style="italic" font-weight="500"
+        font-size="140" fill="#0E0E0E"
+        letter-spacing="-2.5">apply for a</text>
+  <text x="120" y="500"
+        font-family="'Instrument Serif', Georgia, serif"
+        font-style="italic" font-weight="500"
+        font-size="140" fill="#0E0E0E"
+        letter-spacing="-2.5">seat at the</text>
+  <text x="120" y="630"
+        font-family="'Instrument Serif', Georgia, serif"
+        font-style="italic" font-weight="500"
+        font-size="140" fill="#0E0E0E"
+        letter-spacing="-2.5">assembly.</text>
+
+  <!-- LIME ACCENT RULE -->
+  <line x1="120" y1="670" x2="280" y2="670" stroke="#D7FF3A" stroke-width="6"/>
+
+  <!-- SUBLINE -->
+  <text x="120" y="740"
+        font-family="Georgia, serif" font-style="italic"
+        font-size="26" fill="#3A3A3A">A finite list. A manual review. A guaranteed mint for every approved holder.</text>
+
+  <!-- BULLETS -->
+  <g font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#5C5C5C">
+    <text x="120" y="810">·  NO FARMING</text>
+    <text x="120" y="840">·  NO SHORTCUTS</text>
+    <text x="120" y="870">·  SHOW UP. STAND FOR IT.</text>
+  </g>
+
+  <!-- ─── RIGHT-SIDE STAMP / SEAL ─── -->
+  <g transform="translate(1440, 460)">
+    <!-- outer frame -->
+    <rect x="-220" y="-220" width="440" height="440" fill="#0E0E0E"/>
+    <!-- glow -->
+    <radialGradient id="g" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#D7FF3A" stop-opacity="0.15"/>
+      <stop offset="60%" stop-color="#D7FF3A" stop-opacity="0"/>
+    </radialGradient>
+    <rect x="-220" y="-220" width="440" height="440" fill="url(#g)"/>
+
+    <!-- corner brackets in lime -->
+    <g stroke="#D7FF3A" stroke-width="3" fill="none">
+      <path d="M -200 -200 L -200 -160 M -200 -200 L -160 -200"/>
+      <path d="M  200 -200 L  200 -160 M  200 -200 L  160 -200"/>
+      <path d="M -200  200 L -200  160 M -200  200 L -160  200"/>
+      <path d="M  200  200 L  200  160 M  200  200 L  160  200"/>
+    </g>
+
+    <!-- big 'OPEN' stamp -->
+    <text x="0" y="-30" text-anchor="middle"
+          font-family="ui-monospace, 'JetBrains Mono', monospace"
+          font-size="14" letter-spacing="6" fill="#D7FF3A" opacity="0.85">STATUS</text>
+    <text x="0" y="80" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="160" fill="#D7FF3A"
+          letter-spacing="-2">OPEN</text>
+    <text x="0" y="135" text-anchor="middle"
+          font-family="ui-monospace, 'JetBrains Mono', monospace"
+          font-size="13" letter-spacing="6" fill="#F9F6F0" opacity="0.6">PRE-WHITELIST · 2026</text>
+
+    <!-- ⌬ sigil top -->
+    <text x="0" y="-110" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-size="48" fill="#D7FF3A">⌬</text>
+  </g>
+
+  <!-- DOCTRINE -->
+  <text x="120" y="930"
+        font-family="ui-monospace, 'JetBrains Mono', monospace"
+        font-size="13" letter-spacing="4" fill="#0E0E0E" opacity="0.7">⌬ THE VAULT MUST NOT BURN AGAIN</text>
+
+  <!-- footer -->
+  <text x="60" y="1050" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#0E0E0E">the1969.io/drop</text>
+  <text x="960" y="1050" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#5C5C5C">APPLY NOW</text>
+  <text x="1860" y="1050" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#0E0E0E">@the1969eth</text>
+</svg>
