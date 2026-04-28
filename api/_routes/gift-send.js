@@ -27,28 +27,23 @@ export default async function handler(req, res) {
   const variantInfo = ELEMENT_VARIANTS[elementType]?.[v];
   if (!variantInfo) return bad(res, 400, 'unknown_element');
 
-  // ── FREEZE RULE ──
-  // If the sender has built a portrait using THIS EXACT (type, variant),
-  // it's permanently non-giftable for them — even future-acquired copies.
-  // Prevents the recycling exploit:
-  //   1) A gifts 8 traits to B
-  //   2) B builds (consumes them)
-  //   3) A gifts same 8 traits to B again
-  //   4) B gifts them BACK to A for another cycle
-  // With freeze, step 4 fails because B "already used" those traits.
-  const frozen = one(await sql`
-    SELECT 1 AS hit FROM completed_nfts
-     WHERE user_id = ${user.id}
-       AND (elements ->> ${elementType})::int = ${v}
-     LIMIT 1
-  `);
-  if (frozen) {
-    return bad(res, 403, 'trait_frozen', {
-      type: elementType,
-      variant: v,
-      hint: 'You already used this trait in your portrait — it is permanently frozen for you.',
-    });
-  }
+  // ── FREEZE RULE — REMOVED ──────────────────────────────────────
+  // Prior versions blocked gifting any (type, variant) the user had
+  // already used in their portrait, even if they held a legitimate
+  // duplicate in inventory. Real users with extra copies were caught
+  // by this. Reported by @zgravityspace among others.
+  //
+  // The original concern (sybil rings recycling traits across accounts)
+  // is now covered by other layers:
+  //   - drop_eligible flips to FALSE after build, so a built account
+  //     can no longer claim drops to recycle traits to siblings
+  //   - manual pre-WL admin review filters obvious sybil patterns
+  //   - the 250ms auto-trap suspends accounts firing automated claims
+  //   - the previous 444-account sybil ring is already banned
+  //
+  // The atomic inventory UPDATE below is the sole gating check. If you
+  // have at least 1 in inventory you can gift it — including duplicates
+  // of a trait you already used in your portrait.
 
   // Atomic remove from inventory: only if the user owns at least 1
   const removed = one(await sql`
