@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import {
-  buildVaultSVG, vaultTraits, computePower, totalUpgradeBonus,
+  buildVaultSVG, vaultTraits,
   powerTierOf, POWER_TIER_LABELS, UPGRADE_CATALOG,
 } from '../data/vaults';
 
@@ -223,7 +223,6 @@ export default function VaultPage({ onNavigate }) {
           {Object.entries(UPGRADE_CATALOG).map(([track, cat]) => (
             <UpgradeCard
               key={track}
-              track={track}
               cat={cat}
               owned={vault.upgrades.filter((u) => u.track === track)}
               busy={busy}
@@ -251,7 +250,7 @@ function StatCell({ label, main, sub, accent }) {
   );
 }
 
-function UpgradeCard({ track, cat, owned, busy, onBuy }) {
+function UpgradeCard({ cat, owned, busy, onBuy }) {
   const currentTier = owned.length ? Math.max(...owned.map((u) => u.tier)) : 0;
   const nextTier = currentTier + 1;
   const maxed = nextTier > cat.tiers.length;
@@ -314,7 +313,7 @@ function Style() {
         background: #0E0E0E;
         border: 1px solid var(--ink);
         padding: 24px;
-        aspect-ratio: 240 / 200;
+        aspect-ratio: 320 / 240;
       }
       .vault-action-card {
         border: 1px solid var(--hairline);
