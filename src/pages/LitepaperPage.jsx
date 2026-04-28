@@ -337,11 +337,13 @@ export default function LitepaperPage({ onNavigate }) {
             <PostMintGrid />
 
             <Body>
-              Games are the most visible category. The intent is a sequence of
-              competitive and collaborative experiences that share the eight-oath
-              identity, the BUSTS economy, and the same anti-bot architecture. Each
-              game is shipped as a discrete release with its own announcement; the
-              first will follow the mint within weeks.
+              Experiences are the most visible category. The intent is a sequence of
+              releases — competitive, collaborative, and ritual — that share the
+              eight-oath identity, the BUSTS economy, and the same anti-bot
+              architecture. Each release is shipped on its own announcement and
+              evaluated on its own merits. The first will follow the mint within weeks.
+              The shape of each release is intentionally not enumerated here; the
+              project commits to <em>shipping</em>, not to a specific list of features.
             </Body>
             <Body>
               The on-chain BUSTS transition is the second category. Its timing depends
@@ -924,7 +926,7 @@ function PostMintGrid() {
   return (
     <DiagramFrame caption="figure 8 · post-mint roadmap">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0, border: '1px solid var(--ink)' }}>
-        <RoadCard label="GAMES" body="A sequence of competitive and collaborative games sharing the eight-oath identity, the BUSTS economy, and the same anti-bot stack. First release within weeks of mint." />
+        <RoadCard label="EXPERIENCES" body="A sequence of releases — competitive, collaborative, ritual — sharing the eight-oath identity, the BUSTS economy, and the same anti-bot stack. Shape decided per release. First release within weeks of mint." />
         <RoadCard label="$BUSTS" body="On-chain transition of the BUSTS economy. Genesis snapshot taken from the off-chain ledger. Schedule depends on regulatory clarity and ledger maturity." accent />
         <RoadCard label="UTILITY" body="Post-mint, held tokens gain functions they do not have at mint. The catalog is intentionally open. Each addition is documented in the Archive when it ships." />
       </div>
