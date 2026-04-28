@@ -46,7 +46,7 @@
   <g transform="translate(100, 480)">
     <rect x="0" y="0" width="540" height="380" fill="rgba(215,255,58,0.08)" stroke="#D7FF3A" stroke-width="2"/>
     <text x="32" y="56" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="4" fill="#D7FF3A" opacity="0.85">CUMULATIVE TVL</text>
-    <text x="32" y="240" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="180" fill="#D7FF3A" letter-spacing="-3">83,210</text>
+    <text x="32" y="240" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="140" fill="#D7FF3A" letter-spacing="-2">83,210</text>
     <text x="32" y="290" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="20" letter-spacing="6" fill="#F9F6F0">BUSTS LOCKED</text>
     <line x1="32" y1="320" x2="120" y2="320" stroke="#D7FF3A" stroke-width="3"/>
     <text x="32" y="350" font-family="Georgia, serif" font-style="italic" font-size="16" fill="#F9F6F0" opacity="0.7">held inside the keeps.</text>
@@ -56,7 +56,7 @@
   <g transform="translate(680, 480)">
     <rect x="0" y="0" width="540" height="380" fill="transparent" stroke="rgba(249,246,240,0.18)" stroke-width="2"/>
     <text x="32" y="56" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="4" fill="#F9F6F0" opacity="0.55">PORTRAITS BOUND</text>
-    <text x="32" y="240" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="180" fill="#F9F6F0" letter-spacing="-3">168</text>
+    <text x="32" y="240" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="140" fill="#F9F6F0" letter-spacing="-2">168</text>
     <text x="32" y="290" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="20" letter-spacing="6" fill="#F9F6F0">PORTRAITS</text>
     <line x1="32" y1="320" x2="120" y2="320" stroke="#D7FF3A" stroke-width="3"/>
     <text x="32" y="350" font-family="Georgia, serif" font-style="italic" font-size="16" fill="#F9F6F0" opacity="0.7">already bonded to a keep.</text>
@@ -66,7 +66,7 @@
   <g transform="translate(1260, 480)">
     <rect x="0" y="0" width="540" height="380" fill="transparent" stroke="rgba(249,246,240,0.18)" stroke-width="2"/>
     <text x="32" y="56" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="4" fill="#F9F6F0" opacity="0.55">VAULTS ACTIVE</text>
-    <text x="32" y="240" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="180" fill="#F9F6F0" letter-spacing="-3">931</text>
+    <text x="32" y="240" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="140" fill="#F9F6F0" letter-spacing="-2">931</text>
     <text x="32" y="290" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="20" letter-spacing="6" fill="#F9F6F0">KEEPS STANDING</text>
     <line x1="32" y1="320" x2="120" y2="320" stroke="#D7FF3A" stroke-width="3"/>
     <text x="32" y="350" font-family="Georgia, serif" font-style="italic" font-size="16" fill="#F9F6F0" opacity="0.7">claimed and active.</text>
