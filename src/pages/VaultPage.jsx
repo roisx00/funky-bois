@@ -1443,38 +1443,189 @@ function Style() {
         display: block; margin-bottom: 6px;
       }
 
-      /* ── RESPONSIVE ── */
-      @media (max-width: 980px) {
+      /* ── RESPONSIVE ──
+         Breakpoints: 1024 (tablet), 760 (large phone), 480 (small phone).
+         Mobile-first principles: stack to 1col, soften pads, scale type. */
+
+      /* ── 1024 — TABLET ── stack hero, 2-col upgrades, single-col yield + deposit + portrait + chronicle */
+      @media (max-width: 1024px) {
+        .vlt-hero { padding: 64px 22px 72px; }
         .vlt-hero-inner { grid-template-columns: 1fr; gap: 40px; }
-        .vlt-hero-art { order: -1; }
-        .vlt-deposit-card { grid-template-columns: 1fr; gap: 18px; }
-        .vlt-yield-card { grid-template-columns: 1fr; gap: 24px; padding: 28px; }
-        .vlt-yield-meta { border-left: none; padding-left: 0; border-top: 1px solid rgba(249,246,240,0.14); padding-top: 20px; }
-        .vlt-yield-claim { min-height: 56px; }
-        .vlt-portrait-card { grid-template-columns: 1fr; gap: 18px; }
-        .vlt-portrait-art { max-width: 220px; }
-        .vlt-upgrade-grid { grid-template-columns: repeat(2, 1fr); }
-        .vlt-section { padding: 48px 18px; }
-        .vlt-section-title { font-size: 38px; }
+        .vlt-hero-art { order: -1; max-width: 560px; }
+        .vlt-yield-card {
+          grid-template-columns: 1fr; gap: 24px; padding: 28px 24px;
+        }
+        .vlt-yield-meta {
+          border-left: none; padding-left: 0;
+          border-top: 1px solid rgba(249,246,240,0.14); padding-top: 20px;
+        }
+        .vlt-yield-claim { min-height: 60px; align-self: stretch; }
+        .vlt-deposit-card { grid-template-columns: 1fr; gap: 18px; padding: 24px; }
+        .vlt-portrait-card { grid-template-columns: 1fr; gap: 18px; padding: 22px; }
+        .vlt-portrait-art { max-width: 240px; margin: 0 auto; }
+        .vlt-upgrade-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .vlt-section { padding: 56px 22px; }
+        .vlt-section-head { margin-bottom: 24px; }
+        .vlt-section-title { font-size: 40px; }
         .vlt-chronicle-inner { grid-template-columns: 1fr; gap: 20px; }
-        .vlt-chronicle-head { padding-right: 0; border-right: none; padding-bottom: 16px; border-bottom: 1px solid var(--hairline); }
-        .vlt-chron-stats { grid-template-columns: repeat(2, 1fr); gap: 18px 0; }
+        .vlt-chronicle-head {
+          padding-right: 0; border-right: none;
+          padding-bottom: 16px; border-bottom: 1px solid var(--hairline);
+        }
+        .vlt-chron-stats { grid-template-columns: repeat(4, 1fr); }
+        .vlt-chron-num { font-size: 30px; }
       }
-      @media (max-width: 560px) {
-        .vlt-hero { padding: 56px 18px 64px; }
-        .vlt-hero-title { font-size: 48px; }
-        .vlt-hero-tag { flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
-        .vlt-ledger-power-val { font-size: 56px; }
-        .vlt-ledger-row { grid-template-columns: 110px 1fr; gap: 8px; }
-        .vlt-ledger-row-unit { grid-column: 2; text-align: left; }
-        .vlt-yield-whole { font-size: 48px; }
-        .vlt-upgrade-grid { grid-template-columns: 1fr; }
-        .vlt-chron-stats { grid-template-columns: 1fr; }
-        .vlt-chron-cell { padding: 12px 0; }
-        .vlt-chron-cell + .vlt-chron-cell::before { left: 0; right: 0; top: 0; height: 1px; width: auto; bottom: auto; }
+
+      /* ── 760 — LARGE PHONE ── deeper rebalancing */
+      @media (max-width: 760px) {
+        .vlt-hero { padding: 56px 18px 60px; }
+        .vlt-hero-tag {
+          flex-wrap: wrap; gap: 6px 8px; padding: 8px 10px;
+          font-size: 9px; letter-spacing: 0.16em;
+        }
+        .vlt-hero-title { font-size: clamp(44px, 11vw, 64px); line-height: 0.95; }
+        .vlt-hero-sub { font-size: 15px; line-height: 1.6; margin-bottom: 28px; }
+        .vlt-ledger-power-val { font-size: clamp(56px, 14vw, 72px); }
+        .vlt-ledger-power-num { gap: 10px; flex-wrap: wrap; }
+        .vlt-ledger-tier { font-size: 9px; padding: 4px 8px; }
+        .vlt-ledger-row {
+          grid-template-columns: 1fr auto;
+          row-gap: 4px; column-gap: 12px;
+          padding: 12px 0;
+        }
+        .vlt-ledger-row-label { grid-column: 1 / -1; }
+        .vlt-ledger-row-val { font-size: 24px; }
+        .vlt-ledger-row-unit { text-align: right; align-self: baseline; }
+
+        .vlt-art-marks {
+          flex-direction: column; align-items: flex-start; gap: 8px;
+        }
+        .vlt-art-frame { padding: 14px; }
+        .vlt-art-caption { font-size: 9px; gap: 10px; flex-wrap: wrap; }
+
+        .vlt-section { padding: 44px 16px; }
+        .vlt-section-title { font-size: 32px; }
+        .vlt-section-sub { font-size: 14px; }
+
+        /* yield card */
+        .vlt-yield-card { padding: 22px 18px; gap: 20px; }
+        .vlt-yield-card::before { width: 3px; }
+        .vlt-yield-num { gap: 10px; flex-wrap: wrap; }
+        .vlt-yield-whole { font-size: clamp(48px, 13vw, 64px); }
+        .vlt-yield-unit { font-size: 10px; }
+        .vlt-yield-ticker { flex-wrap: wrap; row-gap: 4px; font-size: 10px; }
+        .vlt-yield-ticker-meta {
+          padding-left: 0; border-left: none; border-top: 1px solid rgba(249,246,240,0.18);
+          padding-top: 4px; width: 100%;
+        }
+        .vlt-yield-stat { grid-template-columns: 1fr; gap: 4px; padding: 8px 0; border-bottom: 1px dashed rgba(249,246,240,0.12); }
+        .vlt-yield-stat:last-child { border-bottom: none; }
+        .vlt-yield-stat-val { font-size: 22px; }
+        .vlt-yield-stat-unit { margin-left: 0; }
+        .vlt-yield-claim {
+          padding: 0 18px; min-height: 56px; font-size: 11px;
+          letter-spacing: 0.1em; gap: 6px;
+        }
+        .vlt-yield-claim strong { font-size: 18px; }
+
+        /* deposit */
+        .vlt-deposit-card { padding: 18px; gap: 16px; }
+        .vlt-deposit-projection { padding: 14px; }
+        .vlt-mode-toggle { margin-bottom: 10px; }
+        .vlt-mode-btn { padding: 9px 0; font-size: 10px; }
+        .vlt-proj-value { font-size: 22px; }
+        .vlt-deposit-chips { gap: 6px; }
+        .vlt-chip { padding: 7px 10px; font-size: 11px; }
+        .vlt-chip-max { margin-left: 0; }
+        .vlt-deposit-input-row { flex-direction: column; gap: 10px; }
+        .vlt-deposit-input-row input { width: 100%; padding: 12px 14px; }
+        .vlt-deposit-go { width: 100%; justify-content: center; }
+        .vlt-deposit-balance { font-size: 10px; text-align: center; }
+
+        /* portrait */
+        .vlt-portrait-card { padding: 18px; text-align: center; }
+        .vlt-portrait-art { max-width: 200px; }
+        .vlt-portrait-body { align-items: center; }
+        .vlt-portrait-name { font-size: 22px; }
+        .vlt-portrait-empty-mark { font-size: 64px; }
+
+        /* upgrades */
+        .vlt-upgrade-grid { grid-template-columns: 1fr; gap: 10px; }
+        .vlt-up-card { padding: 16px; flex-direction: row; align-items: flex-start; gap: 14px; }
+        .vlt-up-icon { flex-shrink: 0; }
+        .vlt-up-body { flex: 1; }
+
+        /* chronicle */
+        .vlt-chronicle { padding: 28px 18px; }
+        .vlt-chron-stats {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0;
+        }
+        .vlt-chron-cell { padding: 14px 16px; }
+        .vlt-chron-cell:nth-child(2n)::before {
+          content: ''; position: absolute; left: 0; top: 8px; bottom: 8px;
+          width: 1px; background: var(--hairline);
+        }
+        .vlt-chron-cell:nth-child(n+3) { border-top: 1px solid var(--hairline); }
         .vlt-chron-cell.hero { padding: 14px 16px; }
-        .vlt-art-marks { flex-direction: column; align-items: flex-start; gap: 8px; }
-        .vlt-waits-card { flex-direction: column; align-items: flex-start; padding: 24px; gap: 16px; }
+        .vlt-chron-num { font-size: 28px; }
+
+        /* what waits */
+        .vlt-waits-card {
+          flex-direction: column; align-items: flex-start;
+          padding: 22px; gap: 14px;
+        }
+        .vlt-waits-lock { font-size: 48px; }
+        .vlt-waits-text { font-size: 14px; }
+      }
+
+      /* ── 480 — SMALL PHONE ── tightest fit */
+      @media (max-width: 480px) {
+        .vlt-hero { padding: 44px 14px 52px; }
+        .vlt-hero-inner { gap: 32px; }
+        .vlt-hero-tag {
+          font-size: 8px; padding: 6px 8px; gap: 4px 6px;
+        }
+        .vlt-hero-tag .vlt-tag-sep:nth-of-type(2) { display: none; }
+        .vlt-hero-title { font-size: clamp(38px, 11vw, 52px); }
+        .vlt-ledger { padding-top: 18px; }
+        .vlt-ledger-power { margin-bottom: 16px; }
+        .vlt-ledger-power-val { font-size: clamp(44px, 14vw, 56px); }
+        .vlt-ledger-row-val { font-size: 20px; }
+
+        .vlt-section { padding: 36px 14px; }
+        .vlt-section-num { font-size: 10px; }
+        .vlt-section-title { font-size: 28px; }
+        .vlt-section-sub { font-size: 13px; }
+
+        .vlt-yield-card { padding: 18px 14px; }
+        .vlt-yield-whole { font-size: clamp(40px, 13vw, 52px); }
+        .vlt-yield-stat-val { font-size: 20px; }
+        .vlt-yield-stat-sources { flex-wrap: wrap; gap: 8px; }
+        .vlt-yield-claim { font-size: 10px; min-height: 52px; }
+        .vlt-yield-claim strong { font-size: 16px; }
+
+        .vlt-deposit-card { padding: 14px; }
+        .vlt-deposit-projection { padding: 12px; }
+        .vlt-proj-value { font-size: 20px; }
+
+        .vlt-up-card { padding: 14px; gap: 10px; }
+        .vlt-up-name { font-size: 18px; }
+        .vlt-up-icon { width: 34px; height: 34px; }
+        .vlt-up-icon svg { width: 22px; height: 22px; }
+
+        .vlt-chronicle { padding: 22px 14px; }
+        .vlt-chron-stats { grid-template-columns: 1fr; gap: 0; }
+        .vlt-chron-cell { padding: 12px 14px; }
+        .vlt-chron-cell::before { display: none; }
+        .vlt-chron-cell + .vlt-chron-cell {
+          border-top: 1px solid var(--hairline);
+        }
+        .vlt-chron-cell:nth-child(n+3) { border-top: 1px solid var(--hairline); }
+        .vlt-chron-cell.hero { padding: 14px 16px; }
+        .vlt-chron-num { font-size: 26px; }
+
+        .vlt-waits-card { padding: 18px; }
       }
     `}</style>
   );
