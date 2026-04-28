@@ -56,15 +56,18 @@
   <line x1="120" y1="670" x2="280" y2="670" stroke="#D7FF3A" stroke-width="6"/>
 
   <!-- SUBLINE -->
-  <text x="120" y="740"
+  <text x="120" y="730"
         font-family="Georgia, serif" font-style="italic"
-        font-size="26" fill="#3A3A3A">A finite list. A manual review. A guaranteed mint for every approved holder.</text>
+        font-size="26" fill="#3A3A3A">A finite list. A manual review. Approval grants drop access.</text>
+  <text x="120" y="765"
+        font-family="Georgia, serif" font-style="italic"
+        font-size="26" fill="#3A3A3A">Building a portrait earns the guaranteed seat.</text>
 
   <!-- BULLETS -->
   <g font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#5C5C5C">
-    <text x="120" y="810">·  NO FARMING</text>
-    <text x="120" y="840">·  NO SHORTCUTS</text>
-    <text x="120" y="870">·  SHOW UP. STAND FOR IT.</text>
+    <text x="120" y="820">·  APPROVED  →  DROP ACCESS · TIER 2 (FCFS)</text>
+    <text x="120" y="850">·  BUILT  →  TIER 1 · GUARANTEED SEAT</text>
+    <text x="120" y="880">·  SHOW UP. STAND FOR IT.</text>
   </g>
 
   <!-- ─── RIGHT-SIDE STAMP / SEAL ─── -->
