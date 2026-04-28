@@ -99,11 +99,15 @@ export default function VaultPage({ onNavigate }) {
   }, [authenticated, refresh]);
 
   // ── derived: live exact yield + daily rate ──────────────────────
+  // Daily rate combines the BUSTS-deposit yield (0.1% / day) and the
+  // flat portrait bond bonus (+10 / day). Returned as a number; the UI
+  // formats it with up to 2 decimals so small deposits don't display
+  // as "1" when they're actually accruing 1.50/day.
   const dailyRate = useMemo(() => {
     if (!vault) return 0;
     const bustsRate = vault.bustsDeposited * 0.001;
     const portraitRate = vault.portraitId ? 10 : 0;
-    return Math.floor(bustsRate + portraitRate);
+    return bustsRate + portraitRate;
   }, [vault]);
 
   const amountInput = useMemo(() => Math.trunc(Number(bustsAmount)) || 0, [bustsAmount]);
@@ -363,7 +367,7 @@ export default function VaultPage({ onNavigate }) {
                     EARNING
                     {dailyRate > 0 ? <span className="vlt-live-dot" /> : null}
                   </span>
-                  <span className="vlt-ledger-row-val">{dailyRate.toLocaleString()}</span>
+                  <span className="vlt-ledger-row-val">{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}</span>
                   <span className="vlt-ledger-row-unit">BUSTS / DAY</span>
                 </div>
                 <div className="vlt-ledger-row">
@@ -729,7 +733,7 @@ function YieldCard({ vault, dailyRate, busy, onClaim }) {
       <div className="vlt-yield-meta">
         <div className="vlt-yield-stat">
           <span className="vlt-yield-stat-label">DAILY RATE</span>
-          <span className="vlt-yield-stat-val">{dailyRate.toLocaleString()}</span>
+          <span className="vlt-yield-stat-val">{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}</span>
           <span className="vlt-yield-stat-unit">BUSTS / DAY</span>
         </div>
         <div className="vlt-yield-stat">
