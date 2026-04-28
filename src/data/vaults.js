@@ -619,6 +619,28 @@ export function buildVaultSVG({ userId, power, burnCount }) {
 }
 
 // ═════════════════════════════════════════════════════════════════════
+// YIELD CONFIG (mirror api/_lib/vaults.js — keep in sync)
+// ═════════════════════════════════════════════════════════════════════
+const SECONDS_PER_DAY = 86400;
+export const YIELD_RATE_BUSTS_PER_SEC    = 0.001 / SECONDS_PER_DAY;  // 0.1%/day
+export const YIELD_RATE_PORTRAIT_PER_SEC = 10    / SECONDS_PER_DAY;  // 10/day flat
+
+// Live, sub-second yield projection used by the ticker. Returns the
+// fractional accrued amount since lastYieldAt — the integer portion is
+// what the server will credit on settle, the fraction is the "ticking"
+// remainder we can show alongside.
+export function projectYieldExact({ bustsDeposited, hasPortrait, lastYieldAt, now = Date.now() }) {
+  const lastTs = lastYieldAt instanceof Date
+    ? lastYieldAt.getTime()
+    : new Date(lastYieldAt).getTime();
+  const totalRate = (bustsDeposited || 0) * YIELD_RATE_BUSTS_PER_SEC
+                  + (hasPortrait ? YIELD_RATE_PORTRAIT_PER_SEC : 0);
+  if (totalRate <= 0) return 0;
+  const secondsSince = Math.max(0, (now - lastTs) / 1000);
+  return totalRate * secondsSince;
+}
+
+// ═════════════════════════════════════════════════════════════════════
 // SERVER-SHARED MATH (kept here for client renders; mirror in api/_lib/vaults.js)
 // ═════════════════════════════════════════════════════════════════════
 export function computePower({ bustsDeposited, burnCount, upgradeBonusTotal }) {

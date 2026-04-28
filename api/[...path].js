@@ -23,6 +23,9 @@ import adminGiftTrait      from './_routes/admin-gift-trait.js';
 import vaultRoute          from './_routes/vault.js';
 import vaultDeposit        from './_routes/vault-deposit.js';
 import vaultUpgrade        from './_routes/vault-upgrade.js';
+import vaultWithdraw       from './_routes/vault-withdraw.js';
+import vaultPortrait       from './_routes/vault-portrait.js';
+import vaultClaimYield     from './_routes/vault-claim-yield.js';
 import suspensionAppeal    from './_routes/suspension-appeal.js';
 import adminSuspensionAppeals from './_routes/admin-suspension-appeals.js';
 import adminWhitelist      from './_routes/admin-whitelist.js';
@@ -93,6 +96,9 @@ const ROUTES = {
   'vault':               vaultRoute,
   'vault-deposit':       vaultDeposit,
   'vault-upgrade':       vaultUpgrade,
+  'vault-withdraw':      vaultWithdraw,
+  'vault-portrait':      vaultPortrait,
+  'vault-claim-yield':   vaultClaimYield,
   'suspension-appeal':   suspensionAppeal,
   'admin-suspension-appeals': adminSuspensionAppeals,
   'admin-whitelist':     adminWhitelist,

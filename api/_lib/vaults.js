@@ -5,6 +5,47 @@
 // If the costs/bonuses ever drift, server-side balance checks will
 // disagree with the client UI.
 
+// ─── YIELD CONFIG ─────────────────────────────────────────────────
+// Off-chain BUSTS yield while assets are deposited in the vault.
+// Pre-mint: settled in the off-chain BUSTS ledger.
+// Post-mint: same math, settled in $BUSTS on-chain.
+//   BUSTS deposit yield   = 0.1% per day   (1,000 deposited → 1/day)
+//   Portrait deposit bonus = 10 BUSTS/day flat (single portrait per vault)
+const SECONDS_PER_DAY = 86400;
+export const YIELD_RATE_BUSTS_PER_SEC    = 0.001 / SECONDS_PER_DAY;  // ~1.157e-8
+export const YIELD_RATE_PORTRAIT_PER_SEC = 10    / SECONDS_PER_DAY;  // ~1.157e-4
+
+// Compute the pending whole BUSTS a vault has accrued since lastYieldAt.
+// Fractional leftovers stay on the clock — when we credit N whole BUSTS,
+// we advance lastYieldAt by exactly the time it took to earn N (not all
+// the way to "now"), so the user never loses sub-unit accrual.
+//
+// Returns { pendingWhole, pendingExact, totalRate, newLastYieldAt }.
+// Caller decides whether to credit (>=1) or skip (0).
+export function settleYield({ bustsDeposited, hasPortrait, lastYieldAt }) {
+  const lastTs = lastYieldAt instanceof Date
+    ? lastYieldAt.getTime()
+    : new Date(lastYieldAt).getTime();
+  const totalRate = (bustsDeposited || 0) * YIELD_RATE_BUSTS_PER_SEC
+                  + (hasPortrait ? YIELD_RATE_PORTRAIT_PER_SEC : 0);
+  if (totalRate <= 0) {
+    return { pendingWhole: 0, pendingExact: 0, totalRate: 0, newLastYieldAt: new Date(lastTs) };
+  }
+  const secondsSince = Math.max(0, (Date.now() - lastTs) / 1000);
+  const pendingExact = totalRate * secondsSince;
+  const pendingWhole = Math.floor(pendingExact);
+  let newLastYieldAt;
+  if (pendingWhole > 0) {
+    // Advance lastYieldAt by exactly the time those whole units took.
+    const secondsConsumed = pendingWhole / totalRate;
+    newLastYieldAt = new Date(lastTs + secondsConsumed * 1000);
+  } else {
+    // Sub-unit accrual: leave lastYieldAt alone so it keeps building.
+    newLastYieldAt = new Date(lastTs);
+  }
+  return { pendingWhole, pendingExact, totalRate, newLastYieldAt };
+}
+
 export const UPGRADE_CATALOG = {
   walls:      { label: 'Walls',      tagline: 'Stone thickness',      tiers: [{ cost:  300, bonus: 50 },  { cost: 1000, bonus: 150 }, { cost: 3000, bonus: 400 }] },
   watchtower: { label: 'Watchtower', tagline: 'Sight + range',        tiers: [{ cost:  500, bonus: 60 },  { cost: 1500, bonus: 180 }, { cost: 4000, bonus: 450 }] },

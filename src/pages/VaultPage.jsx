@@ -1,35 +1,37 @@
-// THE 1969 — Vault page (v2 layout)
+// THE 1969 — Vault page (v3 — yield mechanic)
 //
 // Editorial structure (top → bottom):
-//   1. HERO BAND — full-width dark, vault rendered large, floating stat
-//      plinths beside it, tier badge prominent
-//   2. CHRONICLE STRIP — paper, horizontal stat ribbon below the hero
-//   3. §01 DEPOSIT — quick-amount chips + custom input + projected
-//      power preview ("after this deposit your vault would be at X")
-//   4. §02 UPGRADES — 8-track grid (was 4), each card has a pixel icon,
-//      labeled tagline, segmented progress bar, next-tier cost/bonus
-//   5. §03 WHAT WAITS — small post-mint reveal teaser
-//
-// Phase 2 (the actual defense game) ships next at /vault/play.
+//   HERO BAND              vault SVG large + 4 floating stat plinths
+//   CHRONICLE STRIP        4 inline stats + lifetime yield earned
+//   §01 YIELD              live ticker · current rate · Claim button
+//   §02 DEPOSIT / WITHDRAW one card with mode toggle, projection, chips
+//   §03 PORTRAIT VAULT     deposit/withdraw your portrait for +10/day
+//   §04 REINFORCE          8-track upgrade grid with pixel icons
+//   §05 WHAT WAITS         post-mint reveal teaser
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
+import { buildNFTSVG } from '../data/elements';
 import {
   buildVaultSVG, vaultTraits,
   powerTierOf, POWER_TIER_LABELS, UPGRADE_CATALOG, UPGRADE_ICONS,
+  projectYieldExact,
 } from '../data/vaults';
 
 const QUICK_DEPOSIT = [100, 500, 1000, 5000, 10000];
 
 export default function VaultPage({ onNavigate }) {
-  const { authenticated, xUser, bustsBalance, refreshMe } = useGame();
+  const { authenticated, xUser, bustsBalance, completedNFTs, refreshMe } = useGame();
   const toast = useToast();
 
-  const [vault, setVault]               = useState(null);
-  const [loading, setLoading]           = useState(true);
-  const [busy, setBusy]                 = useState(false);
-  const [depositInput, setDepositInput] = useState('');
+  const [vault, setVault]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy]     = useState(false);
+
+  // §02 deposit/withdraw form mode
+  const [bustsMode, setBustsMode]     = useState('deposit'); // 'deposit' | 'withdraw'
+  const [bustsAmount, setBustsAmount] = useState('');
 
   const refresh = useCallback(async () => {
     try {
@@ -45,20 +47,23 @@ export default function VaultPage({ onNavigate }) {
     refresh();
   }, [authenticated, refresh]);
 
-  // Live power projection from the deposit input
-  const depositAmt = useMemo(() => {
-    const n = Math.trunc(Number(depositInput));
-    return Number.isFinite(n) && n > 0 ? n : 0;
-  }, [depositInput]);
+  // ── derived: live exact yield + daily rate ──────────────────────
+  const dailyRate = useMemo(() => {
+    if (!vault) return 0;
+    const bustsRate = vault.bustsDeposited * 0.001;
+    const portraitRate = vault.portraitId ? 10 : 0;
+    return Math.floor(bustsRate + portraitRate);
+  }, [vault]);
+
+  const amountInput = useMemo(() => Math.trunc(Number(bustsAmount)) || 0, [bustsAmount]);
   const projectedPower = useMemo(() => {
     if (!vault) return 0;
-    if (!depositAmt) return vault.power;
-    // Mirror computePower: floor((100 + (deposits + amt)/50 + bonus) * 0.9^burns)
-    const newDeposits = vault.bustsDeposited + depositAmt;
+    if (!amountInput || bustsMode !== 'deposit') return vault.power;
+    const newDeposits = vault.bustsDeposited + amountInput;
     const raw = 100 + Math.floor(newDeposits / 50) + (vault.upgradeBonus || 0);
     const decay = Math.pow(0.9, vault.burnCount || 0);
     return Math.max(1, Math.floor(raw * decay));
-  }, [vault, depositAmt]);
+  }, [vault, amountInput, bustsMode]);
 
   if (!authenticated) {
     return (
@@ -88,31 +93,86 @@ export default function VaultPage({ onNavigate }) {
   const tier      = powerTierOf(power);
   const tierLabel = POWER_TIER_LABELS[tier];
   const traits    = vaultTraits(vault.userId);
+  const ownedPortrait = (completedNFTs || [])[0]; // user has 1 portrait max
+  const isPortraitInVault = !!vault.portraitId;
 
-  async function handleDeposit() {
-    const amount = Math.trunc(Number(depositInput));
-    if (!Number.isFinite(amount) || amount < 10) { toast.error('Min deposit is 10 BUSTS.'); return; }
-    if (amount > bustsBalance)                   { toast.error(`You only have ${bustsBalance.toLocaleString()} BUSTS.`); return; }
+  // ── handlers ─────────────────────────────────────────────────────
+  async function handleClaim() {
     if (busy) return;
-    if (!window.confirm(`Deposit ${amount.toLocaleString()} BUSTS into your vault?\n\nLocked until post-mint reveal. Increases vault power.`)) return;
     setBusy(true);
     try {
-      const r = await fetch('/api/vault-deposit', {
+      const r = await fetch('/api/vault-claim-yield', { method: 'POST', credentials: 'same-origin' });
+      const d = await r.json();
+      if (!r.ok) { toast.error(d?.error || 'Claim failed.'); setBusy(false); return; }
+      if (d.credited > 0) toast.success(`+${d.credited.toLocaleString()} BUSTS claimed.`);
+      else toast.info?.('Nothing to claim yet.');
+      await Promise.all([refresh(), refreshMe()]);
+    } catch (e) { toast.error(e?.message || 'Network error.'); }
+    finally { setBusy(false); }
+  }
+
+  async function handleBustsAction() {
+    if (busy) return;
+    if (amountInput < (bustsMode === 'deposit' ? 10 : 1)) {
+      toast.error(bustsMode === 'deposit' ? 'Min deposit is 10 BUSTS.' : 'Enter an amount to withdraw.');
+      return;
+    }
+    if (bustsMode === 'deposit' && amountInput > bustsBalance) {
+      toast.error(`You only have ${bustsBalance.toLocaleString()} BUSTS.`);
+      return;
+    }
+    if (bustsMode === 'withdraw' && amountInput > vault.bustsDeposited) {
+      toast.error(`Vault has only ${vault.bustsDeposited.toLocaleString()} BUSTS.`);
+      return;
+    }
+    if (!window.confirm(`${bustsMode === 'deposit' ? 'Deposit' : 'Withdraw'} ${amountInput.toLocaleString()} BUSTS?`)) return;
+    setBusy(true);
+    try {
+      const url = bustsMode === 'deposit' ? '/api/vault-deposit' : '/api/vault-withdraw';
+      const r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount: amountInput }),
       });
       const d = await r.json();
-      if (!r.ok) { toast.error(d?.error || d?.hint || 'Deposit failed.'); setBusy(false); return; }
-      toast.success(`Deposited ${amount.toLocaleString()} BUSTS. Vault power rising.`);
-      setDepositInput('');
+      if (!r.ok) { toast.error(d?.error || d?.hint || 'Action failed.'); setBusy(false); return; }
+      if (d.yieldCredited > 0) toast.success(`+${d.yieldCredited.toLocaleString()} yield credited along the way.`);
+      toast.success(`${bustsMode === 'deposit' ? 'Deposited' : 'Withdrew'} ${amountInput.toLocaleString()} BUSTS.`);
+      setBustsAmount('');
       await Promise.all([refresh(), refreshMe()]);
-    } catch (e) {
-      toast.error(e?.message || 'Network error.');
-    } finally {
-      setBusy(false);
+    } catch (e) { toast.error(e?.message || 'Network error.'); }
+    finally { setBusy(false); }
+  }
+
+  async function handlePortraitAction(action) {
+    if (busy) return;
+    const isDeposit = action === 'deposit';
+    if (isDeposit && !ownedPortrait) {
+      toast.error('You need to build a portrait first.');
+      return;
     }
+    if (!window.confirm(isDeposit
+      ? `Deposit your portrait into the vault?\n\nEarns +10 BUSTS/day flat. Withdraw anytime.`
+      : `Withdraw your portrait from the vault?\n\nYield rate decreases by 10/day.`
+    )) return;
+    setBusy(true);
+    try {
+      const r = await fetch('/api/vault-portrait', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(isDeposit
+          ? { action: 'deposit', portraitId: ownedPortrait?.id }
+          : { action: 'withdraw' }),
+      });
+      const d = await r.json();
+      if (!r.ok) { toast.error(d?.error || d?.hint || 'Action failed.'); setBusy(false); return; }
+      if (d.yieldCredited > 0) toast.success(`+${d.yieldCredited.toLocaleString()} yield credited.`);
+      toast.success(isDeposit ? 'Portrait deposited.' : 'Portrait withdrawn.');
+      await Promise.all([refresh(), refreshMe()]);
+    } catch (e) { toast.error(e?.message || 'Network error.'); }
+    finally { setBusy(false); }
   }
 
   async function handleUpgrade(track) {
@@ -137,90 +197,146 @@ export default function VaultPage({ onNavigate }) {
       if (!r.ok) { toast.error(d?.error || d?.hint || 'Upgrade failed.'); setBusy(false); return; }
       toast.success(`${cat.label} tier ${d.tier} purchased. +${d.bonus} power.`);
       await Promise.all([refresh(), refreshMe()]);
-    } catch (e) {
-      toast.error(e?.message || 'Network error.');
-    } finally {
-      setBusy(false);
-    }
+    } catch (e) { toast.error(e?.message || 'Network error.'); }
+    finally { setBusy(false); }
   }
 
   return (
     <div className="vault-page-v2">
       <Style />
 
-      {/* ─── HERO BAND ─────────────────────────────────────────── */}
+      {/* ─── HERO ─────────────────────────────────────────────── */}
       <section className="vlt-hero">
+        <div className="vlt-hero-grid" aria-hidden="true" />
         <div className="vlt-hero-inner">
           <div className="vlt-hero-meta">
-            <span className="vlt-kicker">
+            <div className="vlt-hero-tag">
               <span className="vlt-kicker-dot" />
-              THE 1969 · YOUR VAULT
-            </span>
+              <span>THE 1969</span>
+              <span className="vlt-tag-sep">·</span>
+              <span>VAULT NO.</span>
+              <span className="vlt-tag-id">#{(vault.userId || '').slice(0, 6).toUpperCase()}</span>
+              <span className="vlt-tag-sep">·</span>
+              <span className="vlt-tag-status">{vault.burnCount === 0 ? 'INTACT' : 'REBUILT ×' + vault.burnCount}</span>
+            </div>
             <h1 className="vlt-hero-title">
-              @{xUser?.username}'s<br/>
-              <em>vault.</em>
+              @{xUser?.username}<span className="vlt-hero-poss">'s</span>
+              <span className="vlt-hero-title-line2"><em>vault.</em></span>
             </h1>
             <p className="vlt-hero-sub">
-              Every vault is uniquely composed from your X identity.
-              Deposit BUSTS to strengthen it. Upgrade its defenses.
-              Soon, you will defend it.
-              <br/><em>The Vault must not burn again.</em>
+              Composed from your X identity. Stronger with every deposit.
+              Earning while it stands. <em>The Vault must not burn again.</em>
             </p>
 
-            {/* Stat plinths beside the vault */}
-            <div className="vlt-stat-plinths">
-              <Plinth label="POWER" main={power.toLocaleString()} sub={tierLabel} accent={tier >= 3} />
-              <Plinth label="LOCKED INSIDE" main={vault.bustsDeposited.toLocaleString()} sub="BUSTS" />
-              <Plinth label="TIER" main={`§${tier}`} sub={tierLabel} />
-              <Plinth label="BURN COUNT" main={String(vault.burnCount)} sub={vault.burnCount === 0 ? 'still standing' : 'has been burned'} />
+            <div className="vlt-ledger">
+              <div className="vlt-ledger-power">
+                <div className="vlt-ledger-power-label">CURRENT POWER</div>
+                <div className="vlt-ledger-power-num">
+                  <span className="vlt-ledger-power-val">{power.toLocaleString()}</span>
+                  <span className={`vlt-ledger-tier ${tier >= 3 ? 'high' : ''}`}>{tierLabel}</span>
+                </div>
+                <div className="vlt-ledger-power-bar">
+                  <span style={{ width: `${Math.min(100, (power / 500) * 100)}%` }} />
+                </div>
+              </div>
+
+              <div className="vlt-ledger-rows">
+                <div className="vlt-ledger-row">
+                  <span className="vlt-ledger-row-label">LOCKED INSIDE</span>
+                  <span className="vlt-ledger-row-val">{vault.bustsDeposited.toLocaleString()}</span>
+                  <span className="vlt-ledger-row-unit">BUSTS</span>
+                </div>
+                <div className={`vlt-ledger-row ${dailyRate > 0 ? 'live' : ''}`}>
+                  <span className="vlt-ledger-row-label">
+                    EARNING
+                    {dailyRate > 0 ? <span className="vlt-live-dot" /> : null}
+                  </span>
+                  <span className="vlt-ledger-row-val">{dailyRate.toLocaleString()}</span>
+                  <span className="vlt-ledger-row-unit">BUSTS / DAY</span>
+                </div>
+                <div className="vlt-ledger-row">
+                  <span className="vlt-ledger-row-label">BURN COUNT</span>
+                  <span className="vlt-ledger-row-val">{vault.burnCount}</span>
+                  <span className="vlt-ledger-row-unit">{vault.burnCount === 0 ? 'STILL STANDING' : 'HAS BEEN BURNED'}</span>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="vlt-hero-art">
+            <div className="vlt-art-marks">
+              <span className="vlt-art-mark">FILE / VLT-{(vault.userId || '').slice(0, 4).toUpperCase()}</span>
+              <span className="vlt-art-mark vlt-art-mark-tier">TIER {tier} · {tierLabel.toUpperCase()}</span>
+            </div>
             <div
               className="vlt-art-frame"
               dangerouslySetInnerHTML={{ __html: buildVaultSVG({ userId: vault.userId, power, burnCount: vault.burnCount }) }}
             />
             <div className="vlt-art-caption">
-              <span>FRAME · {traits.frame + 1}/4</span>
-              <span>WALL · {traits.wall + 1}/4</span>
-              <span>SIGIL · {traits.sigil + 1}/6</span>
+              <span><b>FRAME</b> {traits.frame + 1}/4</span>
+              <span className="vlt-cap-sep" />
+              <span><b>WALL</b> {traits.wall + 1}/4</span>
+              <span className="vlt-cap-sep" />
+              <span><b>SIGIL</b> {traits.sigil + 1}/6</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── CHRONICLE STRIP ──────────────────────────────────── */}
+      {/* ─── CHRONICLE STRIP ─────────────────────────────────── */}
       <section className="vlt-chronicle">
         <div className="vlt-chronicle-inner">
-          <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
+          <div className="vlt-chronicle-head">
+            <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
+            <span className="vlt-chronicle-sub">A running ledger of what your vault has done.</span>
+          </div>
           <div className="vlt-chron-stats">
-            <ChronCell num={vault.bustsDeposited.toLocaleString()} label="BUSTS deposited" />
-            <ChronCell num={String(vault.winCount)} label="defenses held" />
-            <ChronCell num={String(vault.burnCount)} label="times burned" />
-            <ChronCell num={String(daysSince(vault.createdAt))} label="days standing" />
+            <ChronCell num={vault.bustsDeposited.toLocaleString()} label="BUSTS deposited" unit="cumulative" />
+            <ChronCell num={isPortraitInVault ? '1' : '0'} label="portrait bound" unit={isPortraitInVault ? 'active' : '—'} />
+            <ChronCell num={vault.lifetimeYieldPaid.toLocaleString()} label="yield earned" unit="lifetime" hero />
+            <ChronCell num={String(vault.burnCount)} label="times burned" unit={vault.burnCount === 0 ? 'never' : 'survived'} />
           </div>
         </div>
       </section>
 
-      {/* ─── §01 DEPOSIT ──────────────────────────────────────── */}
+      {/* ─── §01 YIELD ───────────────────────────────────────── */}
       <section className="vlt-section">
-        <SectionHead n="01" title="Deposit" sub="Add BUSTS to the vault. Locked until post-mint reveal. Every 50 BUSTS = +1 power." />
+        <SectionHead n="01" title="Yield" sub="Real-time BUSTS for what you keep inside. 0.1% per day on deposited BUSTS. +10 BUSTS/day flat while a portrait is bound. Settles to your balance whenever you claim or move funds." />
+        <YieldCard vault={vault} dailyRate={dailyRate} busy={busy} onClaim={handleClaim} />
+      </section>
+
+      {/* ─── §02 DEPOSIT / WITHDRAW ──────────────────────────── */}
+      <section className="vlt-section">
+        <SectionHead n="02" title={bustsMode === 'deposit' ? 'Deposit' : 'Withdraw'} sub="Move BUSTS in to earn yield + add power. Move them out anytime. No lock-up. No fee." />
 
         <div className="vlt-deposit-card">
           <div className="vlt-deposit-projection">
+            <div className="vlt-mode-toggle">
+              <button
+                className={`vlt-mode-btn ${bustsMode === 'deposit' ? 'active' : ''}`}
+                onClick={() => { setBustsMode('deposit'); setBustsAmount(''); }}
+              >Deposit</button>
+              <button
+                className={`vlt-mode-btn ${bustsMode === 'withdraw' ? 'active' : ''}`}
+                onClick={() => { setBustsMode('withdraw'); setBustsAmount(''); }}
+              >Withdraw</button>
+            </div>
             <div className="vlt-proj-row">
-              <span className="vlt-proj-label">Current</span>
-              <span className="vlt-proj-value">{power.toLocaleString()} <small>POWER</small></span>
+              <span className="vlt-proj-label">{bustsMode === 'deposit' ? 'Vault now' : 'Vault now'}</span>
+              <span className="vlt-proj-value">{vault.bustsDeposited.toLocaleString()} <small>BUSTS</small></span>
             </div>
             <div className="vlt-proj-arrow">↓</div>
             <div className="vlt-proj-row vlt-proj-after">
-              <span className="vlt-proj-label">After deposit</span>
+              <span className="vlt-proj-label">After {bustsMode}</span>
               <span className="vlt-proj-value">
-                {projectedPower.toLocaleString()} <small>POWER</small>
-                {projectedPower > power && <span className="vlt-proj-delta">+{(projectedPower - power).toLocaleString()}</span>}
+                {Math.max(0, vault.bustsDeposited + (bustsMode === 'deposit' ? amountInput : -amountInput)).toLocaleString()} <small>BUSTS</small>
               </span>
             </div>
+            {bustsMode === 'deposit' && amountInput > 0 ? (
+              <div className="vlt-proj-power">
+                Power: {power.toLocaleString()} → <strong>{projectedPower.toLocaleString()}</strong>
+              </div>
+            ) : null}
           </div>
 
           <div className="vlt-deposit-form">
@@ -229,9 +345,9 @@ export default function VaultPage({ onNavigate }) {
                 <button
                   key={amt}
                   type="button"
-                  className={`vlt-chip ${Number(depositInput) === amt ? 'active' : ''}`}
-                  onClick={() => setDepositInput(String(amt))}
-                  disabled={amt > bustsBalance}
+                  className={`vlt-chip ${Number(bustsAmount) === amt ? 'active' : ''}`}
+                  onClick={() => setBustsAmount(String(amt))}
+                  disabled={amt > (bustsMode === 'deposit' ? bustsBalance : vault.bustsDeposited)}
                 >
                   {amt >= 1000 ? `${amt / 1000}K` : amt}
                 </button>
@@ -239,8 +355,7 @@ export default function VaultPage({ onNavigate }) {
               <button
                 type="button"
                 className="vlt-chip vlt-chip-max"
-                onClick={() => setDepositInput(String(bustsBalance))}
-                disabled={bustsBalance < 10}
+                onClick={() => setBustsAmount(String(bustsMode === 'deposit' ? bustsBalance : vault.bustsDeposited))}
               >
                 MAX
               </button>
@@ -248,48 +363,60 @@ export default function VaultPage({ onNavigate }) {
             <div className="vlt-deposit-input-row">
               <input
                 type="number"
-                min="10"
-                max="100000"
-                value={depositInput}
-                onChange={(e) => setDepositInput(e.target.value)}
+                min={bustsMode === 'deposit' ? 10 : 1}
+                value={bustsAmount}
+                onChange={(e) => setBustsAmount(e.target.value)}
                 placeholder="Custom amount"
               />
               <button
-                className="btn btn-solid btn-arrow vlt-deposit-go"
-                disabled={busy || !depositInput || Number(depositInput) < 10}
-                onClick={handleDeposit}
+                className={`btn btn-${bustsMode === 'deposit' ? 'solid' : 'ghost'} btn-arrow vlt-deposit-go`}
+                disabled={busy || !bustsAmount || amountInput < (bustsMode === 'deposit' ? 10 : 1)}
+                onClick={handleBustsAction}
               >
-                {busy ? 'Working…' : 'Deposit'}
+                {busy ? 'Working…' : (bustsMode === 'deposit' ? 'Deposit' : 'Withdraw')}
               </button>
             </div>
             <div className="vlt-deposit-balance">
-              {bustsBalance.toLocaleString()} BUSTS available
+              {bustsMode === 'deposit'
+                ? `${bustsBalance.toLocaleString()} BUSTS in your balance`
+                : `${vault.bustsDeposited.toLocaleString()} BUSTS in your vault`}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── §02 UPGRADES ─────────────────────────────────────── */}
+      {/* ─── §03 PORTRAIT VAULT ──────────────────────────────── */}
       <section className="vlt-section">
-        <SectionHead n="02" title="Reinforce" sub="Eight tracks. Three tiers each. Each upgrade boosts power permanently and unlocks stronger active defenses during play." />
+        <SectionHead n="03" title="Portrait" sub="Bind your portrait to the vault for a flat +10 BUSTS / day on top of the BUSTS yield. The portrait stays yours, stays in the gallery. Withdraw anytime." />
+        <PortraitCard
+          ownedPortrait={ownedPortrait}
+          isInVault={isPortraitInVault}
+          busy={busy}
+          onAction={handlePortraitAction}
+          onNavigate={onNavigate}
+        />
+      </section>
 
+      {/* ─── §04 REINFORCE ───────────────────────────────────── */}
+      <section className="vlt-section">
+        <SectionHead n="04" title="Reinforce" sub="Eight tracks. Three tiers each. Each upgrade boosts power permanently and unlocks stronger active defenses during play." />
         <div className="vlt-upgrade-grid">
           {Object.entries(UPGRADE_CATALOG).map(([track, cat]) => (
             <UpgradeCard
               key={track}
-              track={track}
               cat={cat}
               owned={vault.upgrades.filter((u) => u.track === track)}
               busy={busy}
               onBuy={() => handleUpgrade(track)}
+              iconHtml={UPGRADE_ICONS[track] || ''}
             />
           ))}
         </div>
       </section>
 
-      {/* ─── §03 WHAT WAITS ───────────────────────────────────── */}
+      {/* ─── §05 WHAT WAITS ──────────────────────────────────── */}
       <section className="vlt-section vlt-waits">
-        <SectionHead n="03" title="What waits" sub="The vault opens after the assembly mints. What you'll find inside is recorded but not announced. Deposits accumulate. The reveal is coming." />
+        <SectionHead n="05" title="What waits" sub="The vault opens after the assembly mints. What you find inside is recorded but not announced. Deposits accumulate. Yield compounds. The reveal is coming." />
         <div className="vlt-waits-card">
           <div className="vlt-waits-lock">⌬</div>
           <div className="vlt-waits-text">
@@ -306,21 +433,15 @@ export default function VaultPage({ onNavigate }) {
 // SUB-COMPONENTS
 // ─────────────────────────────────────────────────────────────────────
 
-function Plinth({ label, main, sub, accent }) {
+function ChronCell({ num, label, unit, hero }) {
   return (
-    <div className={`vlt-plinth ${accent ? 'vlt-plinth-accent' : ''}`}>
-      <div className="vlt-plinth-label">{label}</div>
-      <div className="vlt-plinth-main">{main}</div>
-      <div className="vlt-plinth-sub">{sub}</div>
-    </div>
-  );
-}
-
-function ChronCell({ num, label }) {
-  return (
-    <div className="vlt-chron-cell">
+    <div className={`vlt-chron-cell ${hero ? 'hero' : ''}`}>
+      {hero ? <span className="vlt-chron-dot" /> : null}
       <div className="vlt-chron-num">{num}</div>
-      <div className="vlt-chron-label">{label}</div>
+      <div className="vlt-chron-meta">
+        <span className="vlt-chron-label">{label}</span>
+        {unit ? <span className="vlt-chron-unit">{unit}</span> : null}
+      </div>
     </div>
   );
 }
@@ -335,17 +456,131 @@ function SectionHead({ n, title, sub }) {
   );
 }
 
-function UpgradeCard({ track, cat, owned, busy, onBuy }) {
+// Live yield ticker — counts up by the second and lets the user claim
+// to their balance.
+function YieldCard({ vault, dailyRate, busy, onClaim }) {
+  const [exact, setExact] = useState(0);
+  const lastVaultRef = useRef(null);
+
+  useEffect(() => {
+    lastVaultRef.current = vault;
+    const tick = () => {
+      const v = lastVaultRef.current;
+      if (!v) return;
+      const e = projectYieldExact({
+        bustsDeposited: v.bustsDeposited,
+        hasPortrait: !!v.portraitId,
+        lastYieldAt: v.lastYieldAt,
+      });
+      setExact(e);
+    };
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [vault]);
+
+  const whole = Math.floor(exact);
+  const frac  = (exact - whole).toFixed(4).slice(1); // ".XXXX"
+  const canClaim = whole >= 1;
+
+  return (
+    <div className="vlt-yield-card">
+      <div className="vlt-yield-main">
+        <div className="vlt-yield-label">PENDING</div>
+        <div className="vlt-yield-num">
+          <span className="vlt-yield-whole">{whole.toLocaleString()}</span>
+          <span className="vlt-yield-frac">{frac}</span>
+        </div>
+        <div className="vlt-yield-unit">BUSTS</div>
+      </div>
+      <div className="vlt-yield-meta">
+        <div className="vlt-yield-rate">
+          <span className="vlt-yield-rate-label">RATE</span>
+          <span className="vlt-yield-rate-val">{dailyRate.toLocaleString()} <small>BUSTS / day</small></span>
+        </div>
+        <div className="vlt-yield-rate">
+          <span className="vlt-yield-rate-label">SOURCES</span>
+          <span className="vlt-yield-rate-val">
+            {vault.bustsDeposited > 0 ? `${(vault.bustsDeposited * 0.001).toFixed(2)}/d busts` : '—'}
+            {vault.portraitId ? ' · 10/d portrait' : ''}
+          </span>
+        </div>
+        <div className="vlt-yield-rate">
+          <span className="vlt-yield-rate-label">LIFETIME EARNED</span>
+          <span className="vlt-yield-rate-val">{vault.lifetimeYieldPaid.toLocaleString()} <small>BUSTS</small></span>
+        </div>
+      </div>
+      <button
+        className="vlt-yield-claim"
+        disabled={busy || !canClaim}
+        onClick={onClaim}
+      >
+        {busy ? 'Working…' : canClaim ? `Claim ${whole.toLocaleString()} BUSTS →` : 'Nothing to claim'}
+      </button>
+    </div>
+  );
+}
+
+function PortraitCard({ ownedPortrait, isInVault, busy, onAction, onNavigate }) {
+  // Three states:
+  //   1. portrait IS in vault → show it, "Withdraw" CTA
+  //   2. user has portrait but not deposited → show it, "Deposit" CTA
+  //   3. user has NO portrait → empty state, link to /build
+  if (isInVault && ownedPortrait) {
+    return (
+      <div className="vlt-portrait-card vlt-portrait-active">
+        <div className="vlt-portrait-art" dangerouslySetInnerHTML={{ __html: buildNFTSVG(ownedPortrait.elements || {}) }} />
+        <div className="vlt-portrait-body">
+          <div className="vlt-yield-label">DEPOSITED</div>
+          <div className="vlt-portrait-name">Your portrait is in the vault.</div>
+          <div className="vlt-portrait-bonus">earning <strong>+10 BUSTS / day</strong></div>
+          <button className="vlt-up-buy" disabled={busy} onClick={() => onAction('withdraw')}>
+            {busy ? '…' : 'Withdraw portrait'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (ownedPortrait) {
+    return (
+      <div className="vlt-portrait-card">
+        <div className="vlt-portrait-art" dangerouslySetInnerHTML={{ __html: buildNFTSVG(ownedPortrait.elements || {}) }} />
+        <div className="vlt-portrait-body">
+          <div className="vlt-yield-label">AVAILABLE</div>
+          <div className="vlt-portrait-name">Bind your portrait to the vault.</div>
+          <div className="vlt-portrait-bonus">+10 BUSTS / day · withdraw anytime</div>
+          <button className="btn btn-solid btn-sm" disabled={busy} onClick={() => onAction('deposit')}>
+            {busy ? '…' : 'Deposit portrait'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="vlt-portrait-card vlt-portrait-empty">
+      <div className="vlt-portrait-empty-mark">∎</div>
+      <div className="vlt-portrait-body">
+        <div className="vlt-yield-label">NO PORTRAIT</div>
+        <div className="vlt-portrait-name">Build a portrait first.</div>
+        <div className="vlt-portrait-bonus">Once built, you can bind it here for +10 BUSTS / day.</div>
+        <button className="btn btn-ghost btn-sm" onClick={() => onNavigate?.('builder')}>
+          Go to builder →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function UpgradeCard({ cat, owned, busy, onBuy, iconHtml }) {
   const currentTier = owned.length ? Math.max(...owned.map((u) => u.tier)) : 0;
   const nextTier    = currentTier + 1;
   const maxed       = nextTier > cat.tiers.length;
   const next        = !maxed ? cat.tiers[nextTier - 1] : null;
   const lit         = currentTier > 0;
-
   return (
     <div className={`vlt-up-card ${lit ? 'lit' : ''} ${maxed ? 'maxed' : ''}`}>
       <div className="vlt-up-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="28" height="28" dangerouslySetInnerHTML={{ __html: UPGRADE_ICONS[track] || '' }} />
+        <svg viewBox="0 0 24 24" width="28" height="28" dangerouslySetInnerHTML={{ __html: iconHtml }} />
       </div>
       <div className="vlt-up-body">
         <div className="vlt-up-name">{cat.label}</div>
@@ -364,11 +599,7 @@ function UpgradeCard({ track, cat, owned, busy, onBuy }) {
               <span className="vlt-up-cost">{next.cost.toLocaleString()} BUSTS</span>
               <span className="vlt-up-bonus">+{next.bonus} power</span>
             </div>
-            <button
-              className="vlt-up-buy"
-              disabled={busy}
-              onClick={onBuy}
-            >
+            <button className="vlt-up-buy" disabled={busy} onClick={onBuy}>
               {busy ? '…' : `Buy tier ${nextTier}`}
             </button>
           </>
@@ -378,176 +609,369 @@ function UpgradeCard({ track, cat, owned, busy, onBuy }) {
   );
 }
 
-function daysSince(ts) {
-  if (!ts) return 0;
-  const ms = Date.now() - ts;
-  return Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)));
-}
-
 // ─────────────────────────────────────────────────────────────────────
-// STYLE — heavy inline because this page demands a coherent look. Kept
-// scoped under .vault-page-v2 so it doesn't bleed into the rest of the site.
+// STYLE
 // ─────────────────────────────────────────────────────────────────────
 function Style() {
   return (
     <style>{`
       .vault-page-v2 { color: var(--ink); }
 
-      /* ─── HERO BAND ───────────────────────────────────────── */
+      /* ── HERO ── */
       .vlt-hero {
-        background: #0E0E0E;
-        color: #F9F6F0;
-        padding: 80px 24px 96px;
-        position: relative;
-        overflow: hidden;
-        border-bottom: 1px solid var(--ink);
+        background: #0B0B0B; color: #F9F6F0;
+        padding: 80px 24px 88px; position: relative;
+        overflow: hidden; border-bottom: 1px solid var(--ink);
       }
       .vlt-hero::before {
-        /* atmospheric grain */
-        content: '';
-        position: absolute; inset: 0;
+        content: ''; position: absolute; inset: 0;
         background:
-          radial-gradient(circle at 50% 0%, rgba(215,255,58,0.04), transparent 50%),
-          radial-gradient(circle at 80% 100%, rgba(215,255,58,0.03), transparent 60%);
+          radial-gradient(ellipse 800px 360px at 75% 30%, rgba(215,255,58,0.06), transparent 70%),
+          radial-gradient(ellipse 600px 400px at 15% 90%, rgba(215,255,58,0.025), transparent 70%);
         pointer-events: none;
       }
+      .vlt-hero-grid {
+        position: absolute; inset: 0; pointer-events: none;
+        background-image:
+          linear-gradient(to right, rgba(249,246,240,0.025) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(249,246,240,0.018) 1px, transparent 1px);
+        background-size: 64px 64px;
+        mask-image: radial-gradient(ellipse 100% 80% at 50% 50%, #000 40%, transparent 100%);
+      }
       .vlt-hero-inner {
-        max-width: 1180px; margin: 0 auto;
-        display: grid;
-        grid-template-columns: 1fr 1.2fr;
-        gap: 48px;
-        align-items: center;
-        position: relative; z-index: 1;
+        max-width: 1220px; margin: 0 auto;
+        display: grid; grid-template-columns: 1fr 1.05fr;
+        gap: 64px; align-items: center; position: relative; z-index: 1;
       }
       .vlt-kicker {
         font-family: var(--font-mono); font-size: 11px;
         letter-spacing: 0.18em; text-transform: uppercase;
         color: rgba(249,246,240,0.6);
         display: inline-flex; align-items: center; gap: 10px;
-        margin-bottom: 18px;
       }
       .vlt-kicker-dot {
         width: 8px; height: 8px; background: var(--accent);
         border: 1px solid var(--ink); border-radius: 50%;
+        box-shadow: 0 0 0 3px rgba(215,255,58,0.18);
       }
+      /* ── HERO META ── */
+      .vlt-hero-tag {
+        display: inline-flex; align-items: center; gap: 10px;
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.2em; text-transform: uppercase;
+        color: rgba(249,246,240,0.55);
+        padding: 8px 14px;
+        border: 1px solid rgba(249,246,240,0.14);
+        background: rgba(249,246,240,0.02);
+        margin-bottom: 22px; backdrop-filter: blur(2px);
+      }
+      .vlt-tag-sep { color: rgba(249,246,240,0.25); }
+      .vlt-tag-id { color: var(--accent); font-weight: 600; }
+      .vlt-tag-status { color: #F9F6F0; font-weight: 600; }
       .vlt-hero-title {
-        font-family: var(--font-display);
-        font-style: italic; font-weight: 500;
-        font-size: clamp(56px, 8vw, 96px);
-        letter-spacing: -0.025em; line-height: 0.95;
-        margin: 0 0 18px;
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: clamp(56px, 7.5vw, 92px); letter-spacing: -0.03em;
+        line-height: 0.92; margin: 0 0 20px;
+        color: #F9F6F0;
+      }
+      .vlt-hero-poss { color: rgba(249,246,240,0.45); font-style: italic; }
+      .vlt-hero-title-line2 { display: block; }
+      .vlt-hero-title-line2 em {
+        background: linear-gradient(180deg, #F9F6F0 0%, #F9F6F0 60%, var(--accent) 60%, var(--accent) 100%);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
       .vlt-hero-sub {
         font-family: Georgia, serif; font-size: 16px;
-        line-height: 1.65; color: rgba(249,246,240,0.7);
-        max-width: 480px; margin: 0 0 32px;
+        line-height: 1.65; color: rgba(249,246,240,0.65);
+        max-width: 480px; margin: 0 0 36px;
       }
-      .vlt-stat-plinths {
-        display: grid; grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+      .vlt-hero-sub em { color: rgba(249,246,240,0.85); font-style: italic; }
+
+      /* ── HERO LEDGER ── */
+      .vlt-ledger {
+        border-top: 1px solid rgba(249,246,240,0.16);
+        padding-top: 24px;
       }
-      .vlt-plinth {
-        background: rgba(249,246,240,0.05);
-        border: 1px solid rgba(249,246,240,0.18);
-        padding: 12px 16px;
+      .vlt-ledger-power { margin-bottom: 22px; }
+      .vlt-ledger-power-label {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.22em; text-transform: uppercase;
+        color: rgba(249,246,240,0.45); margin-bottom: 8px;
       }
-      .vlt-plinth-accent {
-        border-color: var(--accent);
+      .vlt-ledger-power-num {
+        display: flex; align-items: baseline; gap: 14px;
+        margin-bottom: 10px;
+      }
+      .vlt-ledger-power-val {
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: clamp(64px, 8vw, 88px); letter-spacing: -0.035em;
+        line-height: 1; color: #F9F6F0;
+      }
+      .vlt-ledger-tier {
+        font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+        letter-spacing: 0.22em; text-transform: uppercase;
+        padding: 5px 10px; border: 1px solid rgba(249,246,240,0.3);
+        color: rgba(249,246,240,0.7);
+        align-self: flex-end; margin-bottom: 12px;
+      }
+      .vlt-ledger-tier.high {
+        border-color: var(--accent); color: var(--accent);
         background: rgba(215,255,58,0.08);
       }
-      .vlt-plinth-label {
-        font-family: var(--font-mono); font-size: 10px;
-        letter-spacing: 0.18em; text-transform: uppercase;
-        color: rgba(249,246,240,0.5);
-        margin-bottom: 6px;
+      .vlt-ledger-power-bar {
+        height: 3px; background: rgba(249,246,240,0.1);
+        position: relative; overflow: hidden;
       }
-      .vlt-plinth-main {
-        font-family: var(--font-display); font-style: italic;
-        font-weight: 500; font-size: 32px;
-        letter-spacing: -0.02em; line-height: 1;
+      .vlt-ledger-power-bar span {
+        position: absolute; left: 0; top: 0; bottom: 0;
+        background: var(--accent);
+        box-shadow: 0 0 14px rgba(215,255,58,0.5);
+        transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .vlt-ledger-rows {
+        display: flex; flex-direction: column;
+        border-top: 1px dashed rgba(249,246,240,0.15);
+      }
+      .vlt-ledger-row {
+        display: grid;
+        grid-template-columns: 130px 1fr auto;
+        align-items: baseline;
+        gap: 16px;
+        padding: 14px 0;
+        border-bottom: 1px dashed rgba(249,246,240,0.15);
+      }
+      .vlt-ledger-row-label {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.2em; text-transform: uppercase;
+        color: rgba(249,246,240,0.5);
+        display: inline-flex; align-items: center; gap: 8px;
+      }
+      .vlt-ledger-row-val {
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: 28px; letter-spacing: -0.02em; line-height: 1;
         color: #F9F6F0;
       }
-      .vlt-plinth-sub {
+      .vlt-ledger-row-unit {
         font-family: var(--font-mono); font-size: 10px;
-        color: rgba(249,246,240,0.55);
-        margin-top: 4px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: rgba(249,246,240,0.4);
+        text-align: right;
       }
-      .vlt-hero-art {
-        display: flex; flex-direction: column; gap: 14px;
+      .vlt-ledger-row.live .vlt-ledger-row-val { color: var(--accent); }
+      .vlt-live-dot {
+        width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+        box-shadow: 0 0 8px var(--accent);
+        animation: vltPulse 1.6s ease-in-out infinite;
       }
-      .vlt-art-frame {
-        background: #050505;
-        border: 1px solid rgba(249,246,240,0.18);
-        padding: 18px;
-        aspect-ratio: 320 / 240;
-        box-shadow: 0 30px 80px rgba(0,0,0,0.5);
-      }
-      .vlt-art-caption {
-        display: flex; justify-content: space-between;
-        font-family: var(--font-mono); font-size: 10px;
-        letter-spacing: 0.18em; color: rgba(249,246,240,0.45);
+      @keyframes vltPulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.7); }
       }
 
-      /* ─── CHRONICLE STRIP ─────────────────────────────────── */
+      /* ── HERO ART ── */
+      .vlt-hero-art { display: flex; flex-direction: column; gap: 14px; position: relative; }
+      .vlt-art-marks {
+        display: flex; justify-content: space-between; align-items: center;
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.2em; text-transform: uppercase;
+      }
+      .vlt-art-mark { color: rgba(249,246,240,0.42); }
+      .vlt-art-mark-tier {
+        color: var(--accent); font-weight: 600;
+        padding: 5px 10px; border: 1px solid rgba(215,255,58,0.4);
+        background: rgba(215,255,58,0.05);
+      }
+      .vlt-art-frame {
+        background:
+          repeating-linear-gradient(45deg, rgba(249,246,240,0.012) 0 1px, transparent 1px 12px),
+          radial-gradient(ellipse at center, #0F0F0F 0%, #050505 100%);
+        border: 1px solid rgba(249,246,240,0.22);
+        padding: 22px; aspect-ratio: 320 / 240;
+        box-shadow:
+          inset 0 1px 0 rgba(249,246,240,0.06),
+          0 40px 100px rgba(0,0,0,0.7),
+          0 0 0 1px rgba(249,246,240,0.02);
+        position: relative;
+      }
+      .vlt-art-frame::before, .vlt-art-frame::after {
+        content: ''; position: absolute;
+        width: 14px; height: 14px;
+        border: 1px solid rgba(215,255,58,0.5);
+      }
+      .vlt-art-frame::before { top: 6px; left: 6px; border-right: none; border-bottom: none; }
+      .vlt-art-frame::after  { bottom: 6px; right: 6px; border-left: none; border-top: none; }
+      .vlt-art-caption {
+        display: flex; align-items: center; gap: 14px;
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.18em; color: rgba(249,246,240,0.55);
+        padding-top: 4px;
+      }
+      .vlt-art-caption b {
+        color: rgba(249,246,240,0.4); font-weight: 400;
+        margin-right: 6px;
+      }
+      .vlt-cap-sep {
+        flex: 1; height: 1px; background: rgba(249,246,240,0.12);
+      }
+
+      /* ── CHRONICLE STRIP ── */
       .vlt-chronicle {
-        background: var(--paper-2);
+        background: var(--paper);
         border-bottom: 1px solid var(--hairline);
-        padding: 28px 24px;
+        padding: 36px 24px;
+        position: relative;
+      }
+      .vlt-chronicle::before {
+        content: ''; position: absolute; top: 0; left: 50%;
+        transform: translateX(-50%);
+        width: min(1180px, calc(100% - 48px));
+        height: 2px; background: var(--ink);
       }
       .vlt-chronicle-inner {
         max-width: 1180px; margin: 0 auto;
-        display: flex; flex-wrap: wrap; gap: 28px;
-        align-items: center;
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 36px; align-items: stretch;
       }
-      .vlt-chronicle .vlt-kicker {
-        color: var(--text-4);
-        margin-bottom: 0;
-        margin-right: 12px;
+      .vlt-chronicle-head {
+        display: flex; flex-direction: column; gap: 8px;
+        padding-right: 28px; border-right: 1px solid var(--hairline);
+      }
+      .vlt-chronicle .vlt-kicker { color: var(--text-4); }
+      .vlt-chronicle-sub {
+        font-family: Georgia, serif; font-style: italic;
+        font-size: 13px; line-height: 1.5; color: var(--text-3);
       }
       .vlt-chron-stats {
-        display: flex; gap: 32px; flex: 1; flex-wrap: wrap;
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 0;
       }
-      .vlt-chron-cell { display: flex; flex-direction: column; gap: 2px; }
+      .vlt-chron-cell {
+        display: flex; flex-direction: column; gap: 6px;
+        padding: 0 24px; position: relative;
+      }
+      .vlt-chron-cell + .vlt-chron-cell::before {
+        content: ''; position: absolute; left: 0; top: 8px; bottom: 8px;
+        width: 1px; background: var(--hairline);
+      }
+      .vlt-chron-cell.hero { background: rgba(215,255,58,0.08); padding: 8px 24px; }
+      .vlt-chron-dot {
+        position: absolute; top: 12px; right: 16px;
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--accent); border: 1px solid var(--ink);
+      }
       .vlt-chron-num {
-        font-family: var(--font-display); font-style: italic;
-        font-weight: 500; font-size: 26px; color: var(--ink);
-        letter-spacing: -0.015em;
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: 36px; color: var(--ink); letter-spacing: -0.025em;
+        line-height: 1;
+      }
+      .vlt-chron-cell.hero .vlt-chron-num { color: var(--ink); }
+      .vlt-chron-meta {
+        display: flex; flex-direction: column; gap: 2px;
       }
       .vlt-chron-label {
         font-family: var(--font-mono); font-size: 10px;
-        letter-spacing: 0.16em; text-transform: uppercase;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--text-3);
+      }
+      .vlt-chron-unit {
+        font-family: var(--font-mono); font-size: 9px;
+        letter-spacing: 0.18em; text-transform: uppercase;
         color: var(--text-4);
       }
 
-      /* ─── SECTIONS ────────────────────────────────────────── */
-      .vlt-section {
-        max-width: 1180px; margin: 0 auto;
-        padding: 64px 24px;
-      }
-      .vlt-section-head {
-        max-width: 720px; margin-bottom: 32px;
-      }
+      /* ── SECTIONS ── */
+      .vlt-section { max-width: 1180px; margin: 0 auto; padding: 64px 24px; }
+      .vlt-section-head { max-width: 720px; margin-bottom: 32px; }
       .vlt-section-num {
         font-family: var(--font-mono); font-size: 11px;
-        letter-spacing: 0.2em; color: var(--text-4);
-        margin-bottom: 8px;
+        letter-spacing: 0.2em; color: var(--text-4); margin-bottom: 8px;
       }
       .vlt-section-title {
-        font-family: var(--font-display); font-style: italic;
-        font-weight: 500; font-size: 48px;
-        letter-spacing: -0.02em; line-height: 1;
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: 48px; letter-spacing: -0.02em; line-height: 1;
         margin: 0 0 14px;
       }
       .vlt-section-sub {
         font-family: Georgia, serif; font-size: 16px;
-        line-height: 1.65; color: var(--text-3);
-        margin: 0;
+        line-height: 1.65; color: var(--text-3); margin: 0;
       }
 
-      /* ─── DEPOSIT CARD ────────────────────────────────────── */
-      .vlt-deposit-card {
+      /* ── §01 YIELD ── */
+      .vlt-yield-card {
+        background: var(--paper-2);
+        border: 1px solid var(--ink);
+        padding: 36px 36px 32px;
         display: grid;
-        grid-template-columns: 280px 1fr;
+        grid-template-columns: 1fr 1.4fr auto;
+        gap: 36px;
+        align-items: center;
+      }
+      .vlt-yield-main { display: flex; flex-direction: column; gap: 4px; }
+      .vlt-yield-label {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.22em; text-transform: uppercase;
+        color: var(--text-4);
+      }
+      .vlt-yield-num {
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        line-height: 1; color: var(--ink);
+        display: flex; align-items: baseline; gap: 6px;
+      }
+      .vlt-yield-whole { font-size: 64px; letter-spacing: -0.025em; }
+      .vlt-yield-frac {
+        font-size: 22px; color: var(--accent);
+        font-family: var(--font-mono); font-style: normal;
+        letter-spacing: 0;
+      }
+      .vlt-yield-unit {
+        font-family: var(--font-mono); font-size: 11px;
+        letter-spacing: 0.18em; color: var(--text-3); margin-top: 4px;
+      }
+      .vlt-yield-meta {
+        display: grid; gap: 12px;
+        border-left: 1px solid var(--hairline);
+        padding-left: 28px;
+      }
+      .vlt-yield-rate { display: flex; flex-direction: column; gap: 2px; }
+      .vlt-yield-rate-label {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--text-4);
+      }
+      .vlt-yield-rate-val {
+        font-family: var(--font-display); font-style: italic;
+        font-weight: 500; font-size: 18px;
+        color: var(--ink);
+      }
+      .vlt-yield-rate-val small {
+        font-family: var(--font-mono); font-size: 10px;
+        font-style: normal; color: var(--text-4);
+        margin-left: 4px;
+      }
+      .vlt-yield-claim {
+        background: var(--accent);
+        border: 1px solid var(--ink);
+        color: var(--ink);
+        font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+        letter-spacing: 0.08em; text-transform: uppercase;
+        padding: 16px 24px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 100ms;
+      }
+      .vlt-yield-claim:hover:not(:disabled) {
+        background: var(--ink); color: var(--accent);
+      }
+      .vlt-yield-claim:disabled {
+        background: var(--paper); color: var(--text-3);
+        cursor: not-allowed; opacity: 0.7;
+      }
+
+      /* ── §02 DEPOSIT / WITHDRAW ── */
+      .vlt-deposit-card {
+        display: grid; grid-template-columns: 280px 1fr;
         gap: 32px;
         background: var(--paper-2);
         border: 1px solid var(--ink);
@@ -558,6 +982,21 @@ function Style() {
         padding: 18px; border: 1px solid var(--hairline);
         background: var(--paper);
       }
+      .vlt-mode-toggle {
+        display: flex; gap: 0; margin-bottom: 12px;
+        border: 1px solid var(--ink);
+      }
+      .vlt-mode-btn {
+        flex: 1;
+        background: var(--paper);
+        border: none; border-right: 1px solid var(--ink);
+        font-family: var(--font-mono); font-size: 11px;
+        letter-spacing: 0.12em; text-transform: uppercase;
+        color: var(--text-3);
+        padding: 8px 0; cursor: pointer;
+      }
+      .vlt-mode-btn:last-child { border-right: none; }
+      .vlt-mode-btn.active { background: var(--ink); color: var(--paper); }
       .vlt-proj-row { display: flex; flex-direction: column; gap: 2px; }
       .vlt-proj-label {
         font-family: var(--font-mono); font-size: 10px;
@@ -566,69 +1005,47 @@ function Style() {
       }
       .vlt-proj-value {
         font-family: var(--font-display); font-style: italic;
-        font-weight: 500; font-size: 28px;
+        font-weight: 500; font-size: 26px;
         letter-spacing: -0.02em; color: var(--ink);
       }
       .vlt-proj-value small {
         font-family: var(--font-mono); font-size: 9px;
-        letter-spacing: 0.18em; color: var(--text-4);
-        margin-left: 6px;
+        letter-spacing: 0.18em; color: var(--text-4); margin-left: 6px;
       }
       .vlt-proj-arrow {
         font-family: var(--font-mono); font-size: 18px;
-        color: var(--text-4); text-align: center;
-        padding: 4px 0;
+        color: var(--text-4); text-align: center; padding: 4px 0;
       }
-      .vlt-proj-after .vlt-proj-value {
-        color: var(--ink);
+      .vlt-proj-power {
+        font-family: var(--font-mono); font-size: 11px;
+        color: var(--text-3); margin-top: 8px;
+        letter-spacing: 0.06em;
       }
-      .vlt-proj-delta {
-        background: var(--accent);
-        color: var(--ink);
-        font-family: var(--font-mono); font-size: 10px;
-        font-weight: 700;
-        padding: 2px 6px;
-        margin-left: 8px;
-        letter-spacing: 0.04em;
-      }
+      .vlt-proj-power strong { color: var(--ink); }
       .vlt-deposit-form { display: flex; flex-direction: column; gap: 14px; }
-      .vlt-deposit-chips {
-        display: flex; gap: 8px; flex-wrap: wrap;
-      }
+      .vlt-deposit-chips { display: flex; gap: 8px; flex-wrap: wrap; }
       .vlt-chip {
         background: transparent;
         border: 1px solid var(--hairline);
         color: var(--ink);
         font-family: var(--font-mono); font-size: 12px;
         font-weight: 500; letter-spacing: 0.06em;
-        padding: 8px 14px;
-        cursor: pointer;
+        padding: 8px 14px; cursor: pointer;
         transition: all 100ms;
       }
       .vlt-chip:hover:not(:disabled) {
-        border-color: var(--ink);
-        background: var(--paper-2);
+        border-color: var(--ink); background: var(--paper-2);
       }
       .vlt-chip.active {
-        background: var(--ink); color: var(--paper);
-        border-color: var(--ink);
+        background: var(--ink); color: var(--paper); border-color: var(--ink);
       }
-      .vlt-chip:disabled {
-        opacity: 0.35; cursor: not-allowed;
-      }
-      .vlt-chip-max {
-        margin-left: auto;
-        border-color: var(--accent);
-      }
-      .vlt-deposit-input-row {
-        display: flex; gap: 10px;
-      }
+      .vlt-chip:disabled { opacity: 0.35; cursor: not-allowed; }
+      .vlt-chip-max { margin-left: auto; border-color: var(--accent); }
+      .vlt-deposit-input-row { display: flex; gap: 10px; }
       .vlt-deposit-input-row input {
-        flex: 1;
-        padding: 11px 14px;
+        flex: 1; padding: 11px 14px;
         font-family: var(--font-mono); font-size: 14px;
-        background: var(--paper);
-        border: 1px solid var(--ink);
+        background: var(--paper); border: 1px solid var(--ink);
       }
       .vlt-deposit-go { white-space: nowrap; }
       .vlt-deposit-balance {
@@ -636,22 +1053,52 @@ function Style() {
         letter-spacing: 0.06em; color: var(--text-3);
       }
 
-      /* ─── UPGRADE GRID ────────────────────────────────────── */
+      /* ── §03 PORTRAIT ── */
+      .vlt-portrait-card {
+        display: grid; grid-template-columns: 200px 1fr; gap: 28px;
+        align-items: center;
+        padding: 24px 28px;
+        border: 1px solid var(--ink);
+        background: var(--paper-2);
+      }
+      .vlt-portrait-active { background: linear-gradient(180deg, rgba(215,255,58,0.08), transparent 60%); }
+      .vlt-portrait-empty { background: var(--paper); }
+      .vlt-portrait-art {
+        aspect-ratio: 1;
+        border: 1px solid var(--hairline);
+        background: #1a1a1a; padding: 8px;
+        image-rendering: pixelated;
+      }
+      .vlt-portrait-art svg { width: 100%; height: 100%; image-rendering: pixelated; }
+      .vlt-portrait-body { display: flex; flex-direction: column; gap: 6px; }
+      .vlt-portrait-name {
+        font-family: var(--font-display); font-style: italic;
+        font-weight: 500; font-size: 26px; letter-spacing: -0.015em;
+        color: var(--ink); margin-top: 2px;
+      }
+      .vlt-portrait-bonus {
+        font-family: Georgia, serif; font-size: 14px;
+        color: var(--text-3); margin-bottom: 12px;
+      }
+      .vlt-portrait-bonus strong { color: var(--ink); }
+      .vlt-portrait-empty-mark {
+        font-family: var(--font-mono); font-size: 96px;
+        color: var(--hairline); text-align: center;
+        line-height: 1;
+      }
+
+      /* ── §04 UPGRADES ── */
       .vlt-upgrade-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 14px;
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
       }
       .vlt-up-card {
         background: var(--paper);
         border: 1px solid var(--ink);
         padding: 18px 18px 16px;
         display: flex; flex-direction: column; gap: 12px;
-        position: relative;
-        transition: border-color 120ms;
+        position: relative; transition: border-color 120ms;
       }
       .vlt-up-card.lit {
-        border-color: var(--ink);
         background: linear-gradient(180deg, rgba(215,255,58,0.06), transparent 40%);
       }
       .vlt-up-card.maxed {
@@ -666,53 +1113,34 @@ function Style() {
         color: var(--ink);
       }
       .vlt-up-card.lit .vlt-up-icon {
-        background: var(--ink);
-        color: var(--accent);
-        border-color: var(--ink);
+        background: var(--ink); color: var(--accent); border-color: var(--ink);
       }
       .vlt-up-card.maxed .vlt-up-icon {
-        background: var(--accent);
-        color: var(--ink);
-        border-color: var(--ink);
+        background: var(--accent); color: var(--ink); border-color: var(--ink);
       }
       .vlt-up-body { display: flex; flex-direction: column; gap: 6px; }
       .vlt-up-name {
-        font-family: var(--font-display); font-style: italic;
-        font-weight: 500; font-size: 22px;
-        letter-spacing: -0.015em; line-height: 1.1;
+        font-family: var(--font-display); font-style: italic; font-weight: 500;
+        font-size: 22px; letter-spacing: -0.015em; line-height: 1.1;
         color: var(--ink);
       }
       .vlt-up-tagline {
         font-family: var(--font-mono); font-size: 10px;
         letter-spacing: 0.12em; text-transform: uppercase;
-        color: var(--text-4);
-        margin-bottom: 4px;
+        color: var(--text-4); margin-bottom: 4px;
       }
-      .vlt-up-progress {
-        display: flex; gap: 4px;
-        margin-bottom: 8px;
-      }
-      .vlt-up-seg {
-        flex: 1; height: 5px;
-        background: var(--hairline);
-      }
+      .vlt-up-progress { display: flex; gap: 4px; margin-bottom: 8px; }
+      .vlt-up-seg { flex: 1; height: 5px; background: var(--hairline); }
       .vlt-up-seg.on { background: var(--accent); }
       .vlt-up-next {
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        gap: 8px;
+        display: grid; grid-template-columns: auto 1fr auto; gap: 8px;
         font-family: var(--font-mono); font-size: 11px;
-        color: var(--text-3);
-        margin-bottom: 10px;
-        align-items: baseline;
+        color: var(--text-3); margin-bottom: 10px; align-items: baseline;
       }
-      .vlt-up-cost {
-        text-align: right; color: var(--ink); font-weight: 600;
-      }
+      .vlt-up-cost { text-align: right; color: var(--ink); font-weight: 600; }
       .vlt-up-bonus {
         grid-column: 1 / -1;
-        font-size: 10px; color: var(--text-4);
-        letter-spacing: 0.1em;
+        font-size: 10px; color: var(--text-4); letter-spacing: 0.1em;
       }
       .vlt-up-buy {
         background: transparent;
@@ -720,10 +1148,8 @@ function Style() {
         color: var(--ink);
         font-family: var(--font-mono); font-size: 11px;
         font-weight: 600; letter-spacing: 0.08em;
-        padding: 8px 12px;
-        cursor: pointer;
-        text-transform: uppercase;
-        transition: all 120ms;
+        padding: 8px 12px; cursor: pointer;
+        text-transform: uppercase; transition: all 120ms;
       }
       .vlt-up-buy:hover:not(:disabled) {
         background: var(--ink); color: var(--paper);
@@ -731,11 +1157,11 @@ function Style() {
       .vlt-up-buy:disabled { opacity: 0.5; cursor: not-allowed; }
       .vlt-up-maxed {
         font-family: var(--font-mono); font-size: 10px;
-        letter-spacing: 0.16em; color: var(--ink);
-        font-weight: 700; margin-top: 4px;
+        letter-spacing: 0.16em; color: var(--ink); font-weight: 700;
+        margin-top: 4px;
       }
 
-      /* ─── §03 WHAT WAITS ──────────────────────────────────── */
+      /* ── §05 WHAT WAITS ── */
       .vlt-waits-card {
         display: flex; align-items: center; gap: 28px;
         padding: 36px 32px;
@@ -743,8 +1169,7 @@ function Style() {
         border: 1px solid var(--ink);
       }
       .vlt-waits-lock {
-        font-size: 64px; line-height: 1;
-        color: var(--accent);
+        font-size: 64px; line-height: 1; color: var(--accent);
         font-family: serif;
       }
       .vlt-waits-text {
@@ -753,25 +1178,40 @@ function Style() {
       }
       .vlt-waits-text strong {
         font-family: var(--font-mono); font-weight: 700;
-        color: var(--accent);
-        font-size: 11px; letter-spacing: 0.18em;
+        color: var(--accent); font-size: 11px; letter-spacing: 0.18em;
         display: block; margin-bottom: 6px;
       }
 
-      /* ─── RESPONSIVE ─────────────────────────────────────── */
+      /* ── RESPONSIVE ── */
       @media (max-width: 980px) {
-        .vlt-hero-inner { grid-template-columns: 1fr; gap: 32px; }
+        .vlt-hero-inner { grid-template-columns: 1fr; gap: 40px; }
+        .vlt-hero-art { order: -1; }
         .vlt-deposit-card { grid-template-columns: 1fr; gap: 18px; }
+        .vlt-yield-card { grid-template-columns: 1fr; gap: 24px; }
+        .vlt-yield-meta { border-left: none; padding-left: 0; border-top: 1px solid var(--hairline); padding-top: 18px; }
+        .vlt-portrait-card { grid-template-columns: 1fr; gap: 18px; }
+        .vlt-portrait-art { max-width: 220px; }
         .vlt-upgrade-grid { grid-template-columns: repeat(2, 1fr); }
         .vlt-section { padding: 48px 18px; }
         .vlt-section-title { font-size: 38px; }
+        .vlt-chronicle-inner { grid-template-columns: 1fr; gap: 20px; }
+        .vlt-chronicle-head { padding-right: 0; border-right: none; padding-bottom: 16px; border-bottom: 1px solid var(--hairline); }
+        .vlt-chron-stats { grid-template-columns: repeat(2, 1fr); gap: 18px 0; }
       }
       @media (max-width: 560px) {
         .vlt-hero { padding: 56px 18px 64px; }
         .vlt-hero-title { font-size: 48px; }
-        .vlt-stat-plinths { grid-template-columns: 1fr; }
+        .vlt-hero-tag { flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
+        .vlt-ledger-power-val { font-size: 56px; }
+        .vlt-ledger-row { grid-template-columns: 110px 1fr; gap: 8px; }
+        .vlt-ledger-row-unit { grid-column: 2; text-align: left; }
+        .vlt-yield-whole { font-size: 48px; }
         .vlt-upgrade-grid { grid-template-columns: 1fr; }
-        .vlt-chron-stats { gap: 18px; }
+        .vlt-chron-stats { grid-template-columns: 1fr; }
+        .vlt-chron-cell { padding: 12px 0; }
+        .vlt-chron-cell + .vlt-chron-cell::before { left: 0; right: 0; top: 0; height: 1px; width: auto; bottom: auto; }
+        .vlt-chron-cell.hero { padding: 14px 16px; }
+        .vlt-art-marks { flex-direction: column; align-items: flex-start; gap: 8px; }
         .vlt-waits-card { flex-direction: column; align-items: flex-start; padding: 24px; gap: 16px; }
       }
     `}</style>
