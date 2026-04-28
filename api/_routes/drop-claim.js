@@ -60,31 +60,17 @@ export default async function handler(req, res) {
   const sessId = getCurrentSessionId();
   if (!isSessionActive(sessId)) return bad(res, 409, 'no_active_session');
 
-  // ── ANTI-BOT TIME GATE (two layers) ──────────────────────────────
-  // Layer A · auto-trap. Anything under 250ms after session open is
-  // physiologically impossible for a human (mean reaction time is
-  // ~250ms BEFORE a network round-trip). If we see a claim that fast,
-  // the account is automated. Suspend it immediately and return.
-  // The user's inventory + claim history is preserved for audit, but
-  // requireActiveUser will block all future endpoints they try.
+  // ── ANTI-BOT TIME GATE (rejection-only mode) ─────────────────────
+  // Auto-suspend was disabled per direction. The time gate still
+  // rejects fast claims so bots can't actually claim, but the account
+  // is no longer banned automatically. Admin reviews suspension
+  // decisions manually now via the Admin panel.
   //
-  // Layer B · warmup window. Real users who bound a wallet, armed the
-  // claim early, and clicked exactly at :00 might land in 250-800ms.
-  // We don't suspend, just reject — they can retry once past the
-  // warmup. Bots that retry will hit Layer A again next session.
+  // <250ms   → reject (impossible for humans; almost certainly automated)
+  // 250-800ms → reject with warmup hint (could be a fast real user;
+  //             they retry and succeed past the warmup)
+  // >=800ms  → normal claim flow
   const sinceOpenMs = Date.now() - Number(sessId);
-  if (sinceOpenMs >= 0 && sinceOpenMs < 250) {
-    await sql`
-      UPDATE users
-         SET suspended = TRUE,
-             drop_eligible = FALSE,
-             updated_at = now()
-       WHERE id = ${user.id}
-    `;
-    return bad(res, 425, 'auto_suspended_bot_speed', {
-      hint: 'Your account fired a claim faster than humanly possible. This is an automated tool. Account suspended pending review.',
-    });
-  }
   if (sinceOpenMs >= 0 && sinceOpenMs < 800) {
     return bad(res, 425, 'window_warmup', {
       hint: 'The drop window is still warming up. Try again in a moment.',
