@@ -18,7 +18,7 @@ export default function WalletBridge() {
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const {
-    isWalletConnected, walletAddress, bridgeWallet, disconnectWallet,
+    isWalletConnected, walletAddress, walletBound, bridgeWallet,
     completedNFTs, authenticated, recordWhitelist, xUser, isWhitelisted,
   } = useGame();
 
@@ -27,14 +27,27 @@ export default function WalletBridge() {
   // pester the user repeatedly.
   const lastAttemptedRef = useRef('');
 
-  // 1. Mirror wagmi state into GameContext
+  // 1. Mirror wagmi state into GameContext — but ONLY before the user
+  //    has bound a wallet on the server. Once the server has a bound
+  //    wallet (walletBound = true), the bound address is the source of
+  //    truth. We do NOT let a wagmi session swap (user connected wallet
+  //    B on another dapp, came back here) overwrite or "disconnect"
+  //    the server-bound wallet — the displayed address must remain
+  //    whatever the user signed for.
+  //
+  //    Reported: after binding, visiting another site and connecting a
+  //    different wallet caused the displayed wallet to switch on return,
+  //    even though the actual mint allowlist still pointed to the
+  //    originally-bound wallet. Cosmetic but very confusing.
   useEffect(() => {
+    if (walletBound) return; // server-bound is the source of truth
     if (isConnected && address && address !== walletAddress) {
       bridgeWallet(address);
-    } else if (!isConnected && isWalletConnected) {
-      disconnectWallet();
     }
-  }, [isConnected, address, walletAddress, isWalletConnected, bridgeWallet, disconnectWallet]);
+    // Note: we deliberately do NOT call disconnectWallet() anymore.
+    // wagmi can disconnect/reconnect freely; the UI keeps showing the
+    // server-bound wallet until a new bind transaction is signed.
+  }, [isConnected, address, walletAddress, isWalletConnected, walletBound, bridgeWallet]);
 
   // 2. Auto-persist wallet to DB when: logged in with X AND connected a
   //    wallet AND has a built portrait. Server requires a signature of a
@@ -46,6 +59,13 @@ export default function WalletBridge() {
     if (!isConnected || !address) return;
     if (!completedNFTs?.length) return;
     if (!xUser?.username) return;
+
+    // Server already has a wallet bound. Do NOT prompt a re-bind just
+    // because wagmi happens to be connected to a different address
+    // right now (user connected wallet B on another dapp). The bound
+    // wallet stays the bound wallet until the user explicitly rebinds
+    // through the dashboard flow with their original wallet.
+    if (walletBound) return;
 
     // Already whitelisted with THIS wallet → don't prompt again ever.
     // This is the critical fix: lastAttemptedRef only persists within
@@ -102,7 +122,7 @@ export default function WalletBridge() {
         console.warn('[WalletBridge] whitelist record error:', e?.message || e);
       }
     })();
-  }, [authenticated, isConnected, address, completedNFTs, xUser, recordWhitelist, signMessageAsync, isWhitelisted, walletAddress]);
+  }, [authenticated, isConnected, address, completedNFTs, xUser, recordWhitelist, signMessageAsync, isWhitelisted, walletAddress, walletBound]);
 
   return null;
 }
