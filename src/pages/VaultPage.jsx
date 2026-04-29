@@ -464,93 +464,99 @@ export default function VaultPage({ onNavigate }) {
         </div>
       </section>
 
-      {/* ─── STATE — power, live ticker, stat rows + vault art ──── */}
-      {/* Pulled out of the hero so deposit lives front-and-center; the
-          vault SVG anchors this section, with all the readouts grouped
-          beside it. */}
-      <section className="vlt-state">
-        <div className="vlt-state-inner">
-          <div className="vlt-state-art">
-            <div className="vlt-art-marks">
-              <span className="vlt-art-mark">FILE / VLT-{(vault.userId || '').slice(0, 4).toUpperCase()}</span>
-              <span className="vlt-art-mark vlt-art-mark-tier">TIER {tier} · {tierLabel.toUpperCase()}</span>
-            </div>
-            <div className={`vlt-art-frame vlt-anim-host vlt-anim-${animPhase}`}>
-              <div
-                className="vlt-art-svg"
-                dangerouslySetInnerHTML={{ __html: buildVaultSVG({ userId: vault.userId, power, burnCount: vault.burnCount }) }}
-              />
-              <div className="vlt-anim-doors" aria-hidden="true">
-                <span className="vlt-anim-door vlt-anim-door-l" />
-                <span className="vlt-anim-door vlt-anim-door-r" />
-                <span className="vlt-anim-glow" />
-              </div>
-              <div className={`vlt-anim-coin vlt-anim-coin-${animKind}`} aria-hidden="true">
-                <span className="vlt-anim-coin-disc">{animKind === 'portrait' ? '◐' : '$'}</span>
-                <span className="vlt-anim-coin-amt">
-                  {animKind === 'portrait' ? 'PORTRAIT' : `+${animAmount.toLocaleString()}`}
-                </span>
-              </div>
-              <div className="vlt-anim-flash" aria-hidden="true" />
-            </div>
-            <div className="vlt-art-caption">
-              <span><b>FRAME</b> {traits.frame + 1}/4</span>
-              <span className="vlt-cap-sep" />
-              <span><b>WALL</b> {traits.wall + 1}/4</span>
-              <span className="vlt-cap-sep" />
-              <span><b>SIGIL</b> {traits.sigil + 1}/6</span>
-            </div>
+      {/* ─── STATE — vault on a pedestal ──────────────────────── */}
+      {/* Cinematic dark stage. The vault SVG is the hero of this
+          section; everything else (power, traits, live ticker, stat
+          tiles) supports it. Vault should always feel celebrated,
+          never crammed beside a stats column. */}
+      <section className="vlt-state-v2">
+        <div className="vlt-state-bg" aria-hidden="true">
+          <span className="vlt-state-spot" />
+          <span className="vlt-state-grid" />
+        </div>
+
+        <div className="vlt-state-stage">
+          <div className="vlt-state-stage-marks">
+            <span className="vlt-state-mark">FILE · VLT-{(vault.userId || '').slice(0, 4).toUpperCase()}</span>
+            <span className={`vlt-state-tier-pill ${tier >= 3 ? 'high' : ''}`}>
+              TIER {tier} · {tierLabel.toUpperCase()}
+            </span>
           </div>
 
-          <div className="vlt-state-stats">
-            <div className="vlt-state-power">
-              <div className="vlt-state-power-head">
-                <div className="vlt-state-power-label">CURRENT POWER</div>
-                <span className={`vlt-ledger-tier ${tier >= 3 ? 'high' : ''}`}>{tierLabel}</span>
-              </div>
-              <div className="vlt-state-power-val">{power.toLocaleString()}</div>
-              <PowerMilestones power={power} tier={tier} />
+          <div className={`vlt-state-vault vlt-anim-host vlt-anim-${animPhase}`}>
+            <div
+              className="vlt-state-vault-svg"
+              dangerouslySetInnerHTML={{ __html: buildVaultSVG({ userId: vault.userId, power, burnCount: vault.burnCount }) }}
+            />
+            <div className="vlt-anim-doors" aria-hidden="true">
+              <span className="vlt-anim-door vlt-anim-door-l" />
+              <span className="vlt-anim-door vlt-anim-door-r" />
+              <span className="vlt-anim-glow" />
             </div>
+            <div className={`vlt-anim-coin vlt-anim-coin-${animKind}`} aria-hidden="true">
+              <span className="vlt-anim-coin-disc">{animKind === 'portrait' ? '◐' : '$'}</span>
+              <span className="vlt-anim-coin-amt">
+                {animKind === 'portrait' ? 'PORTRAIT' : `+${animAmount.toLocaleString()}`}
+              </span>
+            </div>
+            <div className="vlt-anim-flash" aria-hidden="true" />
+          </div>
 
-            <div className={`vlt-state-live ${ratePerSec > 0 ? 'on' : ''}`}>
-              <div className="vlt-state-live-head">
-                <span className="vlt-state-live-label">LIVE PENDING</span>
+          <div className="vlt-state-traits">
+            <span><b>FRAME</b> {traits.frame + 1}/4</span>
+            <span className="vlt-state-traits-sep" />
+            <span><b>WALL</b> {traits.wall + 1}/4</span>
+            <span className="vlt-state-traits-sep" />
+            <span><b>SIGIL</b> {traits.sigil + 1}/6</span>
+          </div>
+        </div>
+
+        <div className="vlt-state-readout">
+          <div className="vlt-state-power-block">
+            <div className="vlt-state-power-kicker">CURRENT POWER</div>
+            <div className="vlt-state-power-numeral">{power.toLocaleString()}</div>
+            <div className="vlt-state-power-tag">{tierLabel.toUpperCase()}</div>
+          </div>
+
+          <PowerMilestones power={power} tier={tier} />
+
+          <div className="vlt-state-tiles">
+            <div className={`vlt-state-tile vlt-state-tile-live ${ratePerSec > 0 ? 'on' : ''}`}>
+              <div className="vlt-state-tile-head">
+                <span className="vlt-state-tile-label">LIVE PENDING</span>
                 {ratePerSec > 0 ? (
                   <span className="vlt-state-live-pulse">
                     <span className="vlt-state-live-pulse-dot" />EARNING
                   </span>
-                ) : (
-                  <span className="vlt-state-live-idle">IDLE</span>
-                )}
+                ) : <span className="vlt-state-live-idle">IDLE</span>}
               </div>
-              <div className="vlt-state-live-num">
+              <div className="vlt-state-tile-num">
                 <span className="vlt-state-live-whole">{Math.floor(heroLiveYield).toLocaleString()}</span>
                 <span className="vlt-state-live-frac">{(heroLiveYield - Math.floor(heroLiveYield)).toFixed(4).slice(1)}</span>
-                <span className="vlt-state-live-unit">BUSTS</span>
               </div>
-              <div className="vlt-state-live-meta">
+              <div className="vlt-state-tile-meta">
                 <span>+{ratePerSec.toFixed(5)}<small>/sec</small></span>
                 <span className="vlt-state-live-sep">·</span>
                 <span>{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}<small>/day</small></span>
               </div>
             </div>
 
-            <div className="vlt-state-rows">
-              <div className="vlt-state-row">
-                <span className="vlt-state-row-label">LOCKED INSIDE</span>
-                <span className="vlt-state-row-val">{vault.bustsDeposited.toLocaleString()}</span>
-                <span className="vlt-state-row-unit">BUSTS</span>
-              </div>
-              <div className="vlt-state-row">
-                <span className="vlt-state-row-label">LIFETIME EARNED</span>
-                <span className="vlt-state-row-val">{vault.lifetimeYieldPaid.toLocaleString()}</span>
-                <span className="vlt-state-row-unit">BUSTS</span>
-              </div>
-              <div className="vlt-state-row">
-                <span className="vlt-state-row-label">BURN COUNT</span>
-                <span className="vlt-state-row-val">{vault.burnCount}</span>
-                <span className="vlt-state-row-unit">{vault.burnCount === 0 ? 'STILL STANDING' : 'HAS BEEN BURNED'}</span>
-              </div>
+            <div className="vlt-state-tile">
+              <div className="vlt-state-tile-label">LOCKED INSIDE</div>
+              <div className="vlt-state-tile-num"><span className="vlt-state-live-whole">{vault.bustsDeposited.toLocaleString()}</span></div>
+              <div className="vlt-state-tile-meta">BUSTS</div>
+            </div>
+
+            <div className="vlt-state-tile">
+              <div className="vlt-state-tile-label">LIFETIME EARNED</div>
+              <div className="vlt-state-tile-num"><span className="vlt-state-live-whole">{vault.lifetimeYieldPaid.toLocaleString()}</span></div>
+              <div className="vlt-state-tile-meta">BUSTS · paid out</div>
+            </div>
+
+            <div className="vlt-state-tile">
+              <div className="vlt-state-tile-label">BURN COUNT</div>
+              <div className="vlt-state-tile-num"><span className="vlt-state-live-whole">{vault.burnCount}</span></div>
+              <div className="vlt-state-tile-meta">{vault.burnCount === 0 ? 'STILL STANDING' : 'has been burned'}</div>
             </div>
           </div>
         </div>
@@ -2861,224 +2867,275 @@ function Style() {
       .vlt-hp-btn.solid:hover:not(:disabled) { background: #F9F6F0; }
       .vlt-hp-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-      /* ── STATE section (vault SVG + power/live/stats) ── */
-      .vlt-state {
-        max-width: 1180px; margin: 0 auto; padding: 36px 24px;
-        background: var(--paper);
-        border-bottom: 1px solid var(--hairline);
-      }
-      .vlt-state-inner {
-        display: grid;
-        grid-template-columns: minmax(280px, 380px) 1fr;
-        gap: 36px;
-        align-items: start;
-      }
-      .vlt-state-art {
+      /* ── STATE V2 — vault on a pedestal, cinematic dark stage ── */
+      .vlt-state-v2 {
         position: relative;
-        background: #0B0B0B;
-        padding: 18px;
-        border: 1px solid #0E0E0E;
+        background: #0A0A0A;
+        color: #F9F6F0;
+        padding: 56px 24px 64px;
+        border-bottom: 1px solid #0E0E0E;
+        overflow: hidden;
       }
-      .vlt-state-art .vlt-art-marks {
-        display: flex; justify-content: space-between;
-        margin-bottom: 10px;
-        font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 9px; letter-spacing: 2px;
-        color: rgba(249,246,240,0.5);
+      .vlt-state-bg {
+        position: absolute; inset: 0;
+        pointer-events: none;
       }
-      .vlt-state-art .vlt-art-mark-tier {
-        background: #D7FF3A; color: #0E0E0E;
-        padding: 3px 8px; font-weight: 700;
+      .vlt-state-spot {
+        position: absolute;
+        left: 50%; top: 30%;
+        width: 800px; height: 800px;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(ellipse at center,
+          rgba(215,255,58,0.10) 0%,
+          rgba(215,255,58,0.04) 30%,
+          transparent 60%);
+        filter: blur(2px);
       }
-      .vlt-state-art .vlt-art-caption {
-        margin-top: 10px;
-        display: flex; justify-content: center;
-        gap: 14px;
-        font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 9px; letter-spacing: 2px;
-        color: rgba(249,246,240,0.5);
-      }
-      .vlt-state-art .vlt-art-caption b { color: #F9F6F0; }
-      .vlt-state-art .vlt-cap-sep {
-        width: 1px; height: 10px; background: rgba(249,246,240,0.2);
+      .vlt-state-grid {
+        position: absolute; inset: 0;
+        background-image:
+          linear-gradient(rgba(215,255,58,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(215,255,58,0.04) 1px, transparent 1px);
+        background-size: 56px 56px;
+        opacity: 0.5;
+        mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
       }
 
-      .vlt-state-stats {
-        display: flex; flex-direction: column;
-        gap: 22px;
+      .vlt-state-stage {
+        position: relative; z-index: 1;
+        max-width: 720px; margin: 0 auto;
       }
-      .vlt-state-power-head {
-        display: flex; align-items: baseline; justify-content: space-between;
-        gap: 12px;
-      }
-      .vlt-state-power-label {
+      .vlt-state-stage-marks {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 14px;
         font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 10px; letter-spacing: 2.5px;
-        color: var(--text-3, #5C5C5C);
       }
-      .vlt-state-power .vlt-ledger-tier {
-        font-family: var(--font-mono, ui-monospace, monospace);
+      .vlt-state-mark {
         font-size: 10px; letter-spacing: 2.5px;
-        background: var(--ink, #0E0E0E);
-        color: var(--paper, #F9F6F0);
-        padding: 3px 8px;
+        color: rgba(249,246,240,0.45);
+      }
+      .vlt-state-tier-pill {
+        font-size: 10px; letter-spacing: 2.5px;
+        background: rgba(249,246,240,0.06);
+        border: 1px solid rgba(249,246,240,0.15);
+        color: rgba(249,246,240,0.85);
+        padding: 4px 10px;
         font-weight: 700;
       }
-      .vlt-state-power .vlt-ledger-tier.high {
+      .vlt-state-tier-pill.high {
         background: #D7FF3A; color: #0E0E0E;
-      }
-      .vlt-state-power-val {
-        font-family: 'Instrument Serif', Georgia, serif;
-        font-size: 64px; font-style: italic;
-        line-height: 1;
-        color: var(--ink, #0E0E0E);
-        letter-spacing: -1px;
-        font-feature-settings: 'tnum';
+        border-color: #D7FF3A;
+        box-shadow: 0 0 16px rgba(215,255,58,0.45);
       }
 
-      /* Re-style the milestones for paper background */
-      .vlt-state .vlt-milestones-track {
-        background: rgba(14,14,14,0.08);
+      .vlt-state-vault {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        max-width: 560px; margin: 0 auto;
+        display: flex; align-items: center; justify-content: center;
+        padding: 24px;
       }
-      .vlt-state .vlt-milestones-fill {
-        background: linear-gradient(90deg, #0E0E0E, #5C5C5C);
-        box-shadow: none;
-      }
-      .vlt-state .vlt-milestones-peg-dot {
-        background: var(--paper, #F9F6F0);
-        border-color: rgba(14,14,14,0.2);
-      }
-      .vlt-state .vlt-milestones-peg.lit .vlt-milestones-peg-dot {
-        background: #0E0E0E; border-color: #0E0E0E;
-        box-shadow: 0 0 0 3px rgba(215,255,58,0.45);
-      }
-      .vlt-state .vlt-milestones-peg.cur .vlt-milestones-peg-dot {
-        background: #D7FF3A; border-color: #0E0E0E;
-        box-shadow: 0 0 0 4px rgba(215,255,58,0.35);
-      }
-      .vlt-state .vlt-milestones-peg-label,
-      .vlt-state .vlt-milestones-peg-thresh {
-        color: var(--text-3, #5C5C5C);
-      }
-      .vlt-state .vlt-milestones-peg.lit .vlt-milestones-peg-label { color: var(--ink, #0E0E0E); }
-      .vlt-state .vlt-milestones-peg.cur .vlt-milestones-peg-label { color: #0E0E0E; font-weight: 700; }
-      .vlt-state .vlt-milestones-cta {
-        color: var(--text-3, #5C5C5C);
-      }
-      .vlt-state .vlt-milestones-cta strong { color: var(--ink, #0E0E0E); }
-
-      /* Live ticker (paper variant) */
-      .vlt-state-live {
-        padding: 14px 16px;
-        border: 1px solid var(--hairline);
-        background: var(--paper-2, #F4F0E8);
-        position: relative; overflow: hidden;
-      }
-      .vlt-state-live.on {
-        border-color: rgba(14,14,14,0.4);
-        background: linear-gradient(135deg, rgba(215,255,58,0.18), transparent 70%), var(--paper-2, #F4F0E8);
-      }
-      .vlt-state-live.on::before {
+      .vlt-state-vault::before {
+        /* corner marks like a museum exhibit */
         content: '';
-        position: absolute; left: 0; top: 0; bottom: 0;
-        width: 3px; background: #0E0E0E;
-        animation: vlt-live-pulse 1.6s ease-in-out infinite;
+        position: absolute; inset: 0;
+        background:
+          linear-gradient(to right, #D7FF3A 14px, transparent 14px) top left/24px 1px no-repeat,
+          linear-gradient(to bottom, #D7FF3A 14px, transparent 14px) top left/1px 24px no-repeat,
+          linear-gradient(to left, #D7FF3A 14px, transparent 14px) top right/24px 1px no-repeat,
+          linear-gradient(to bottom, #D7FF3A 14px, transparent 14px) top right/1px 24px no-repeat,
+          linear-gradient(to right, #D7FF3A 14px, transparent 14px) bottom left/24px 1px no-repeat,
+          linear-gradient(to top, #D7FF3A 14px, transparent 14px) bottom left/1px 24px no-repeat,
+          linear-gradient(to left, #D7FF3A 14px, transparent 14px) bottom right/24px 1px no-repeat,
+          linear-gradient(to top, #D7FF3A 14px, transparent 14px) bottom right/1px 24px no-repeat;
+        opacity: 0.75;
+        pointer-events: none;
       }
-      .vlt-state-live-head {
-        display: flex; justify-content: space-between; align-items: center;
+      .vlt-state-vault-svg {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        filter: drop-shadow(0 16px 48px rgba(215,255,58,0.18));
+      }
+      .vlt-state-vault-svg > svg,
+      .vlt-state-vault-svg > * > svg,
+      .vlt-state-vault-svg svg {
+        width: 100%; height: 100%; max-width: 100%; max-height: 100%;
+      }
+
+      .vlt-state-traits {
+        display: flex; align-items: center; justify-content: center;
+        gap: 20px;
+        margin-top: 20px;
         font-family: var(--font-mono, ui-monospace, monospace);
         font-size: 10px; letter-spacing: 2.5px;
+        color: rgba(249,246,240,0.55);
       }
-      .vlt-state-live-label { color: var(--text-3, #5C5C5C); }
+      .vlt-state-traits b { color: #F9F6F0; font-weight: 700; margin-right: 6px; }
+      .vlt-state-traits-sep {
+        width: 1px; height: 10px;
+        background: rgba(249,246,240,0.2);
+      }
+
+      .vlt-state-readout {
+        position: relative; z-index: 1;
+        max-width: 1080px; margin: 48px auto 0;
+        display: flex; flex-direction: column; gap: 22px;
+      }
+      .vlt-state-power-block {
+        text-align: center;
+      }
+      .vlt-state-power-kicker {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 3px;
+        color: rgba(249,246,240,0.45);
+        margin-bottom: 6px;
+      }
+      .vlt-state-power-numeral {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 110px;
+        font-style: italic;
+        line-height: 0.9;
+        letter-spacing: -3px;
+        color: #F9F6F0;
+        font-feature-settings: 'tnum';
+      }
+      .vlt-state-power-tag {
+        margin-top: 10px;
+        display: inline-block;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 3px;
+        color: #D7FF3A;
+        padding: 5px 12px;
+        border: 1px solid rgba(215,255,58,0.45);
+        font-weight: 700;
+      }
+
+      /* Milestones bar — full width on the dark stage */
+      .vlt-state-readout .vlt-milestones { margin: 8px 0; }
+      .vlt-state-readout .vlt-milestones-track {
+        background: rgba(255,255,255,0.08);
+      }
+      .vlt-state-readout .vlt-milestones-fill {
+        background: linear-gradient(90deg, #D7FF3A, #d7ff3a99);
+        box-shadow: 0 0 18px rgba(215,255,58,0.35);
+      }
+      .vlt-state-readout .vlt-milestones-peg-dot {
+        background: #1a1a1a;
+        border-color: rgba(255,255,255,0.2);
+      }
+      .vlt-state-readout .vlt-milestones-peg.lit .vlt-milestones-peg-dot {
+        background: #D7FF3A;
+        border-color: #D7FF3A;
+        box-shadow: 0 0 10px rgba(215,255,58,0.6);
+      }
+      .vlt-state-readout .vlt-milestones-peg.cur .vlt-milestones-peg-dot {
+        width: 16px; height: 16px;
+        background: #fff; border-color: #D7FF3A;
+        box-shadow: 0 0 0 4px rgba(215,255,58,0.18), 0 0 16px rgba(215,255,58,0.55);
+      }
+      .vlt-state-readout .vlt-milestones-peg-label { color: rgba(249,246,240,0.5); }
+      .vlt-state-readout .vlt-milestones-peg.lit .vlt-milestones-peg-label { color: rgba(249,246,240,0.85); }
+      .vlt-state-readout .vlt-milestones-peg.cur .vlt-milestones-peg-label { color: #D7FF3A; font-weight: 700; }
+      .vlt-state-readout .vlt-milestones-peg-thresh { color: rgba(249,246,240,0.4); }
+      .vlt-state-readout .vlt-milestones-cta {
+        text-align: center;
+        color: rgba(249,246,240,0.6);
+      }
+      .vlt-state-readout .vlt-milestones-cta strong { color: #D7FF3A; }
+
+      /* 4-tile readout strip */
+      .vlt-state-tiles {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: rgba(249,246,240,0.12);
+        border: 1px solid rgba(249,246,240,0.12);
+      }
+      .vlt-state-tile {
+        background: #0E0E0E;
+        padding: 18px 20px;
+        display: flex; flex-direction: column; gap: 6px;
+      }
+      .vlt-state-tile-live {
+        position: relative;
+        background: linear-gradient(135deg, rgba(215,255,58,0.04), transparent 60%), #0E0E0E;
+      }
+      .vlt-state-tile-live.on {
+        background: linear-gradient(135deg, rgba(215,255,58,0.14), transparent 65%), #0E0E0E;
+      }
+      .vlt-state-tile-live.on::before {
+        content: '';
+        position: absolute; left: 0; top: 0; bottom: 0;
+        width: 2px; background: #D7FF3A;
+        box-shadow: 0 0 12px rgba(215,255,58,0.6);
+        animation: vlt-live-pulse 1.6s ease-in-out infinite;
+      }
+      .vlt-state-tile-head {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 8px;
+      }
+      .vlt-state-tile-label {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 2.5px;
+        color: rgba(249,246,240,0.5);
+      }
       .vlt-state-live-pulse {
         display: inline-flex; align-items: center; gap: 6px;
-        color: var(--ink, #0E0E0E); font-weight: 700;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 2.5px;
+        color: #D7FF3A; font-weight: 700;
       }
       .vlt-state-live-pulse-dot {
         width: 6px; height: 6px;
-        border-radius: 50%; background: #0E0E0E;
+        border-radius: 50%; background: #D7FF3A;
+        box-shadow: 0 0 8px #D7FF3A;
         animation: vlt-live-pulse 1.2s ease-in-out infinite;
       }
-      .vlt-state-live-idle { color: var(--text-3, #5C5C5C); opacity: 0.5; }
-      .vlt-state-live-num {
-        margin-top: 6px;
-        display: flex; align-items: baseline; gap: 4px;
+      .vlt-state-live-idle {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 2.5px;
+        color: rgba(249,246,240,0.3);
+      }
+      .vlt-state-tile-num {
+        display: flex; align-items: baseline; gap: 2px;
         font-family: 'Instrument Serif', Georgia, serif;
         font-style: italic;
-        line-height: 1;
         font-feature-settings: 'tnum';
+        line-height: 1;
       }
       .vlt-state-live-whole {
-        font-size: 44px; color: var(--ink, #0E0E0E);
+        font-size: 36px;
+        color: #F9F6F0;
+        letter-spacing: -1px;
       }
       .vlt-state-live-frac {
-        font-size: 22px; color: var(--text-2, #3A3A3A);
+        font-size: 20px;
+        color: rgba(249,246,240,0.55);
       }
-      .vlt-state-live.on .vlt-state-live-frac { color: #0E0E0E; }
-      .vlt-state-live-unit {
+      .vlt-state-tile-live.on .vlt-state-live-frac { color: #D7FF3A; }
+      .vlt-state-tile-meta {
         font-family: var(--font-mono, ui-monospace, monospace);
-        font-style: normal;
-        font-size: 10px;
-        letter-spacing: 2px;
-        color: var(--text-3, #5C5C5C);
-        margin-left: 6px;
+        font-size: 10px; letter-spacing: 1.5px;
+        color: rgba(249,246,240,0.5);
+        display: flex; align-items: center; gap: 6px;
       }
-      .vlt-state-live-meta {
-        margin-top: 6px;
-        font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 11px;
-        letter-spacing: 1px;
-        color: var(--text-3, #5C5C5C);
-        display: flex; align-items: center; gap: 8px;
+      .vlt-state-tile-meta small {
+        font-size: 8px; opacity: 0.7; letter-spacing: 1.5px;
+        margin-left: 1px;
       }
-      .vlt-state-live-meta small {
-        font-size: 9px; opacity: 0.65; letter-spacing: 1.5px;
-        margin-left: 2px;
-      }
-      .vlt-state-live-sep { opacity: 0.4; }
+      .vlt-state-live-sep { opacity: 0.35; }
 
-      .vlt-state-rows {
-        display: flex; flex-direction: column;
-        border-top: 1px solid var(--hairline);
-      }
-      .vlt-state-row {
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        align-items: baseline;
-        gap: 12px;
-        padding: 10px 0;
-        border-bottom: 1px solid var(--hairline);
-      }
-      .vlt-state-row-label {
-        font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 10px; letter-spacing: 2px;
-        color: var(--text-3, #5C5C5C);
-      }
-      .vlt-state-row-val {
-        font-family: 'Instrument Serif', Georgia, serif;
-        font-size: 22px; font-style: italic;
-        line-height: 1;
-        color: var(--ink, #0E0E0E);
-        font-feature-settings: 'tnum';
-      }
-      .vlt-state-row-unit {
-        font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 10px; letter-spacing: 2px;
-        color: var(--text-3, #5C5C5C);
-        opacity: 0.7;
-      }
-
-      /* Stack on tablet/mobile */
       @media (max-width: 880px) {
-        .vlt-state-inner { grid-template-columns: 1fr; gap: 24px; }
-        .vlt-state-art { max-width: 420px; margin: 0 auto; }
-        .vlt-state-power-val { font-size: 52px; }
-        .vlt-state-live-whole { font-size: 36px; }
+        .vlt-state-v2 { padding: 36px 18px 44px; }
+        .vlt-state-power-numeral { font-size: 88px; }
+        .vlt-state-tiles { grid-template-columns: repeat(2, 1fr); }
+        .vlt-state-vault { max-width: 420px; }
       }
-      @media (max-width: 720px) {
-        .vlt-state { padding: 24px 16px; }
-        .vlt-act-balance-val { font-size: 24px; }
-        .vlt-state-power-val { font-size: 44px; }
+      @media (max-width: 520px) {
+        .vlt-state-power-numeral { font-size: 72px; }
+        .vlt-state-tiles { grid-template-columns: 1fr; }
+        .vlt-state-traits { gap: 14px; font-size: 9px; }
+        .vlt-state-live-whole { font-size: 30px; }
       }
 
       /* ═══════════════════════════════════════════════════════════════
