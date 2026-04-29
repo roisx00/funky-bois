@@ -28,6 +28,7 @@ import { sql, one } from '../_lib/db.js';
 import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { mintBindMessage } from '../_lib/wlMessage.js';
+import { getConfigInt } from '../_lib/config.js';
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
 const SIG_RE  = /^0x[a-fA-F0-9]+$/;
@@ -36,6 +37,19 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
+
+  // Hard cutoff: wallet binding closes 6 hours before mint start.
+  // Stored as a UNIX-seconds timestamp in app_config under
+  // 'mint_wallet_cutoff'. After this moment the allowlist CSV is
+  // frozen and uploaded to OpenSea — any later bind has no effect on
+  // the actual mint, so we reject server-side.
+  const cutoffSecs = await getConfigInt('mint_wallet_cutoff', 0);
+  if (cutoffSecs && Math.floor(Date.now() / 1000) > cutoffSecs) {
+    return bad(res, 410, 'wallet_submission_closed', {
+      cutoffSecs,
+      hint: 'Wallet submission closed 6 hours before mint. The allowlist is frozen.',
+    });
+  }
 
   const { walletAddress, signature } = (await readBody(req)) || {};
   if (!walletAddress || !ADDR_RE.test(walletAddress)) return bad(res, 400, 'invalid_wallet');

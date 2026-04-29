@@ -11,6 +11,7 @@ import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { whitelistClaimMessage } from '../_lib/wlMessage.js';
 import { settleReferralIfPending } from '../_lib/referral.js';
+import { getConfigInt } from '../_lib/config.js';
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
 const SIG_RE  = /^0x[a-fA-F0-9]+$/;
@@ -19,6 +20,17 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
   const user = await requireUser(req, res);
   if (!user) return;
+
+  // Hard cutoff: wallet binding closes 6 hours before mint start. Same
+  // gate as /api/mint-bind-wallet, applied here so the build-flow path
+  // also rejects late binds. After cutoff the allowlist CSV is frozen.
+  const cutoffSecs = await getConfigInt('mint_wallet_cutoff', 0);
+  if (cutoffSecs && Math.floor(Date.now() / 1000) > cutoffSecs) {
+    return bad(res, 410, 'wallet_submission_closed', {
+      cutoffSecs,
+      hint: 'Wallet submission closed 6 hours before mint. The allowlist is frozen.',
+    });
+  }
 
   // Follower gate removed — see drop-claim.js.
 

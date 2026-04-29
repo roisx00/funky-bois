@@ -25,7 +25,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
     pendingBustsTransfers, sendBusts, claimBustsTransfer,
     xUser, referralCount, discordUsername, discordInviteUrl,
     dropEligible, walletBound, walletAddress: serverWalletAddress,
-    bindMintWallet,
+    bindMintWallet, mintWalletCutoffMs,
   } = useGame();
   const normalized = initialTab === 'elements' ? 'inventory' : initialTab;
   const [tab, setTab] = useState(normalized);
@@ -115,6 +115,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
             serverWalletAddress={serverWalletAddress}
             xUsername={xUser?.username}
             bindMintWallet={bindMintWallet}
+            cutoffMs={mintWalletCutoffMs}
           />
 
           {completedNFTs.length === 0 && (
@@ -1167,13 +1168,29 @@ function ShortcutRow({ kicker, title, meta, badge, onClick, last }) {
 function MintWalletCard({
   hasBuilt, isWhitelisted, dropEligible,
   walletBound, serverWalletAddress, xUsername,
-  bindMintWallet,
+  bindMintWallet, cutoffMs,
 }) {
   const toast = useToast();
   const { address: wagmiAddress, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const { openConnectModal } = useConnectModal();
   const [busy, setBusy] = useState(false);
+
+  // Wallet-bind cutoff countdown. Tick every second so the displayed
+  // "X hours, Y minutes, Z seconds" stays live without remounts.
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!cutoffMs) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [cutoffMs]);
+  const cutoffPassed = !!cutoffMs && now >= cutoffMs;
+  const cutoffSoon   = !!cutoffMs && !cutoffPassed && (cutoffMs - now) < 24 * 60 * 60 * 1000;
+  const remaining = cutoffMs && !cutoffPassed ? cutoffMs - now : 0;
+  const remD = Math.floor(remaining / 86400000);
+  const remH = Math.floor((remaining / 3600000) % 24);
+  const remM = Math.floor((remaining / 60000) % 60);
+  const remS = Math.floor((remaining / 1000) % 60);
 
   // Tier the user lands on once their wallet is bound. Builders go to
   // Tier 1; pre-WL non-builders go to Tier 2. If they later build,
@@ -1189,6 +1206,10 @@ function MintWalletCard({
 
   async function handleBind() {
     if (busy) return;
+    if (cutoffPassed) {
+      toast.error('Wallet submission has closed.');
+      return;
+    }
     setBusy(true);
     try {
       // Step 1: ensure a wagmi connection exists. If not, pop the
@@ -1301,10 +1322,56 @@ function MintWalletCard({
         </div>
       </div>
 
-      <button className="btn btn-solid btn-sm btn-arrow" onClick={handleBind} disabled={busy}>
-        {busy
-          ? 'Working…'
-          : (!isConnected ? 'Connect wallet' : 'Sign & submit')}
+      {/* Countdown / closed banner */}
+      {cutoffMs ? (
+        cutoffPassed ? (
+          <div style={{
+            padding: '14px 18px', marginBottom: 14,
+            border: '1px solid var(--ink)', background: 'var(--ink)', color: 'var(--paper)',
+          }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 4, opacity: 0.7 }}>
+              SUBMISSION CLOSED
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 18 }}>
+              Wallet binding is locked.
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.6, marginTop: 4 }}>
+              The allowlist froze 6 hours before mint.
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            padding: '14px 18px', marginBottom: 14,
+            border: `1px solid ${cutoffSoon ? 'var(--ink)' : 'var(--hairline)'}`,
+            background: cutoffSoon ? 'rgba(215,255,58,0.12)' : 'var(--paper-2)',
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em',
+              textTransform: 'uppercase', color: cutoffSoon ? 'var(--ink)' : 'var(--text-4)',
+              marginBottom: 4, fontWeight: cutoffSoon ? 700 : 400,
+            }}>
+              {cutoffSoon ? 'CLOSING SOON · BIND NOW' : 'SUBMISSION CLOSES IN'}
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 500,
+              fontSize: 28, letterSpacing: '-0.02em', color: 'var(--ink)',
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {remD > 0 ? `${remD}d ` : ''}{String(remH).padStart(2, '0')}h {String(remM).padStart(2, '0')}m {String(remS).padStart(2, '0')}s
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+              Wallet binding closes 6 hours before mint. The allowlist is frozen at that moment.
+            </div>
+          </div>
+        )
+      ) : null}
+
+      <button className="btn btn-solid btn-sm btn-arrow" onClick={handleBind} disabled={busy || cutoffPassed}>
+        {cutoffPassed
+          ? 'Submission closed'
+          : busy
+            ? 'Working…'
+            : (!isConnected ? 'Connect wallet' : 'Sign & submit')}
       </button>
     </div>
   );

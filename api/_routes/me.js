@@ -3,7 +3,7 @@ import { getSessionUser, isAdminUser } from '../_lib/auth.js';
 import { ok } from '../_lib/json.js';
 import { ELEMENT_VARIANTS, getCurrentSessionId } from '../_lib/elements.js';
 import { markOnline } from '../_lib/presence.js';
-import { getConfig } from '../_lib/config.js';
+import { getConfig, getConfigInt } from '../_lib/config.js';
 
 export default async function handler(req, res) {
   const user = await getSessionUser(req);
@@ -53,12 +53,18 @@ export default async function handler(req, res) {
   const mySessionClaims = one(myClaimsRow)?.cnt ?? 0;
   const prewlOpenFlag = await getConfig('prewl_applications_open', '1');
   const prewlApplicationsOpen = String(prewlOpenFlag) === '1';
+  // Wallet-bind cutoff timestamp (UNIX seconds). Set in app_config under
+  // 'mint_wallet_cutoff'. Returned as milliseconds so the client can
+  // pass it straight to Date.now() math for the countdown.
+  const mintWalletCutoffSecs = await getConfigInt('mint_wallet_cutoff', 0);
+  const mintWalletCutoffMs = mintWalletCutoffSecs ? mintWalletCutoffSecs * 1000 : null;
 
   ok(res, {
     authenticated: true,
     sessId,
     mySessionClaims,
     prewlApplicationsOpen,
+    mintWalletCutoffMs,
     user: {
       id:              user.id,
       xUsername:       user.x_username,

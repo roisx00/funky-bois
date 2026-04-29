@@ -120,6 +120,7 @@ function emptyState() {
     supplyCap:        1969,
     recentClaims:     [],
     prewlApplicationsOpen: true,
+    mintWalletCutoffMs: null,
   };
 }
 
@@ -170,6 +171,7 @@ function reducer(state, action) {
           ? Math.max(me.mySessionClaims, state.mySessionClaims)
           : state.mySessionClaims,
         prewlApplicationsOpen: me.prewlApplicationsOpen !== false,
+        mintWalletCutoffMs: typeof me.mintWalletCutoffMs === 'number' ? me.mintWalletCutoffMs : null,
       };
     }
 
