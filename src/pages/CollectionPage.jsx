@@ -312,10 +312,12 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
   const [sendQty, setSendQty]       = useState(1);
   const [sending, setSending]       = useState(false);
 
-  // Build a Set of "frozen" (type:variant) keys — any trait the user
-  // has already used in their built portrait. Frozen traits cannot be
-  // gifted, even if the user acquires a new copy later. Mirrors the
-  // server-side check in api/_routes/gift-send.js.
+  // (type:variant) keys for traits used in the user's built portrait.
+  // Used as a VISUAL LABEL only — the row in inventory means the user
+  // owns a spare copy (otherwise it would have qty 0 and be deleted),
+  // so gifting the spare is allowed. The "FROZEN" badge just tells
+  // the holder "this is the trait you minted with" so they don't gift
+  // their last copy without realizing.
   const frozenKeys = useMemo(() => {
     const set = new Set();
     for (const nft of completedNFTs || []) {
@@ -342,10 +344,6 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
 
   const handleSend = async () => {
     if (!selected || !toUsername.trim() || sending) return;
-    if (selected && frozenKeys.has(`${selected.type}:${selected.variant}`)) {
-      toast.error('This element is frozen — you already used it in your portrait.');
-      return;
-    }
     const clean = normalizeXHandle(toUsername);
     if (!clean || !isValidXHandle(clean)) {
       toast.error('Enter a valid X handle (letters, digits, underscore).');
@@ -441,21 +439,16 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
               ) : (
                 inventory.map((item) => {
                   const isSelected = selected?.type === item.type && selected?.variant === item.variant;
-                  const frozen = isFrozen(item);
+                  const usedInBuild = isFrozen(item);
                   return (
                     <button
                       key={item.id}
                       type="button"
                       onClick={() => {
-                        if (frozen) {
-                          toast.error('This element is frozen — you already used it in your portrait.');
-                          return;
-                        }
                         setSelected({ type: item.type, variant: item.variant, name: item.name, rarity: item.rarity });
                       }}
-                      className={`gift-trait-card${isSelected ? ' selected' : ''}${frozen ? ' frozen' : ''}`}
-                      aria-disabled={frozen}
-                      title={frozen ? 'Frozen · used in your built portrait' : undefined}
+                      className={`gift-trait-card${isSelected ? ' selected' : ''}`}
+                      title={usedInBuild ? 'This trait is in your built bust. The row in inventory is a spare copy and can be gifted.' : undefined}
                     >
                       <div className="gift-trait-art">
                         <svg
@@ -467,15 +460,15 @@ function GiftSection({ inventory, pendingGifts, xUser, sendGift, claimGift, comp
                         {item.quantity > 1 && (
                           <span className="gift-trait-qty">×{item.quantity}</span>
                         )}
-                        {frozen && (
-                          <span className="gift-trait-frozen-badge">FROZEN</span>
+                        {usedInBuild && (
+                          <span className="gift-trait-frozen-badge">USED IN BUST</span>
                         )}
                       </div>
                       <div className="gift-trait-info">
                         <div className="gift-trait-type">{(ELEMENT_LABELS[item.type] || item.type).toUpperCase()}</div>
                         <div className="gift-trait-name">{item.name}</div>
-                        {frozen && (
-                          <div className="gift-trait-frozen-note">Used in your bust</div>
+                        {usedInBuild && (
+                          <div className="gift-trait-frozen-note">Spare copy · giftable</div>
                         )}
                       </div>
                     </button>
