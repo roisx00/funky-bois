@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto;display:block">
   <rect width="1080" height="1350" fill="#F9F6F0"/>
   <line x1="60" y1="110" x2="1020" y2="110" stroke="#0E0E0E" stroke-width="1"/>
   <line x1="60" y1="1240" x2="1020" y2="1240" stroke="#0E0E0E" stroke-width="1"/>
