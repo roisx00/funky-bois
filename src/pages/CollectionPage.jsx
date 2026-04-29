@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useAccount, useSignMessage } from 'wagmi';
-import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useAccount, useSignMessage, useDisconnect } from 'wagmi';
+import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import ElementCard from '../components/ElementCard';
@@ -1167,6 +1167,8 @@ function MintWalletCard({
   const { address: wagmiAddress, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const { openConnectModal } = useConnectModal();
+  const { openAccountModal } = useAccountModal();
+  const { disconnect } = useDisconnect();
   const [busy, setBusy] = useState(false);
 
   // Wallet-bind cutoff countdown. Tick every second so the displayed
@@ -1205,12 +1207,33 @@ function MintWalletCard({
     }
     setBusy(true);
     try {
-      // Step 1: ensure a wagmi connection exists. If not, pop the
-      // RainbowKit modal — user picks wallet, returns connected.
+      // Step 1: ensure a wagmi connection exists. RainbowKit's
+      // useConnectModal returns openConnectModal = undefined when
+      // wagmi already considers the wallet connected (e.g. cached
+      // from a previous session, or a different X account). The
+      // simple `if (openConnectModal) openConnectModal()` was a
+      // silent no-op in that case — the toast appeared, no popup,
+      // user got stuck. Fixed with the same fallback ladder used
+      // in Nav.jsx:
+      //   1. modal available → open it (normal path)
+      //   2. wagmi already connected → open account modal so the
+      //      user can disconnect from there
+      //   3. account modal also missing → force a wagmi disconnect
+      //      to reset state, ask the user to retry
       let address = wagmiAddress;
       if (!isConnected || !address) {
-        if (openConnectModal) openConnectModal();
-        toast.info?.('Open the wallet connect popup, then click again to sign.');
+        if (openConnectModal) {
+          openConnectModal();
+          toast.info?.('Open the wallet connect popup, then click again to sign.');
+        } else if (isConnected && openAccountModal) {
+          openAccountModal();
+          toast.info?.('Confirm or switch wallet in the account modal, then click again.');
+        } else if (isConnected) {
+          try { disconnect(); } catch (e) { console.warn('[mint-bind] disconnect failed:', e); }
+          toast.info?.('Resetting wallet — try again in a moment.');
+        } else {
+          toast.error('Wallet connector unavailable. Refresh the page and try again.');
+        }
         setBusy(false);
         return;
       }
