@@ -3297,6 +3297,9 @@ function Style() {
       .vlt-chronicle-v2 { padding: 28px 28px 36px; }
       .vlt-chronicle-v2 .vlt-chronicle-inner {
         max-width: 1080px; margin: 0 auto;
+        display: block;
+        grid-template-columns: none;
+        gap: 0;
       }
       .vlt-ch-head {
         display: flex; align-items: center; justify-content: space-between;
