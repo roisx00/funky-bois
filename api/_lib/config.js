@@ -15,6 +15,11 @@ export async function getConfig(key, fallback = null) {
 
 export async function getConfigInt(key, fallback) {
   const v = await getConfig(key, null);
+  // Critical: Number(null) === 0 and Number('') === 0, both 'finite'.
+  // Without these guards, a missing row would silently return 0 and
+  // bypass the caller's fallback — which has burned us once already
+  // (portrait_build_cap missing → cap of 0 → every build rejected).
+  if (v === null || v === undefined || v === '') return fallback;
   const n = Number(v);
   return Number.isFinite(n) ? Math.trunc(n) : fallback;
 }
