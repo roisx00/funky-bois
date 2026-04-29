@@ -14,17 +14,30 @@
 // sky above, plinth + cast shadow below.
 
 // ─── Power thresholds ───────────────────────────────────────────────
-//   tier 0: 0-249    base       austere stone, no embellishment
-//   tier 1: 250-499  fortified  iron banding, rivets, hinges
-//   tier 2: 500-999  heavy      architectural ornaments, buttresses
-//   tier 3: 1000+    supreme    lime-glow inscriptions, witnesses, fog
+// Ten tiers across the realistic power range. Caps tuned so an active
+// holder reaches BASTION (~tier 5) with moderate deposits + a few
+// upgrades; STRONGHOLD onward demands real commitment; ETERNAL is
+// reserved for whales + maxed upgrade tracks. Keep ordered ascending.
+export const POWER_TIER_THRESHOLDS = [0, 200, 450, 800, 1300, 2000, 3000, 4500, 6500, 9000];
+export const POWER_TIER_LABELS = [
+  'Base',       //  0 — austere stone
+  'Hold',       //  1 — first reinforcement
+  'Fortified',  //  2 — iron banding
+  'Watched',    //  3 — sentries posted
+  'Heavy',      //  4 — buttresses, ornaments
+  'Bastion',    //  5 — front-line keep
+  'Citadel',    //  6 — central stronghold
+  'Stronghold', //  7 — impregnable
+  'Supreme',    //  8 — lime inscriptions
+  'Eternal',    //  9 — witnesses, fog, lore
+];
+
 export function powerTierOf(power) {
-  if (power >= 1000) return 3;
-  if (power >= 500)  return 2;
-  if (power >= 250)  return 1;
+  for (let i = POWER_TIER_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (power >= POWER_TIER_THRESHOLDS[i]) return i;
+  }
   return 0;
 }
-export const POWER_TIER_LABELS = ['Base', 'Fortified', 'Heavy', 'Supreme'];
 
 // Stable hash from a string (user_id) to a 32-bit integer.
 // FNV-1a + mulberry32 — deterministic, no deps.

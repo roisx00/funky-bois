@@ -20,7 +20,8 @@ import { useToast } from '../components/Toast';
 import { buildNFTSVG } from '../data/elements';
 import {
   buildVaultSVG, vaultTraits,
-  powerTierOf, POWER_TIER_LABELS, UPGRADE_CATALOG, UPGRADE_ICONS,
+  powerTierOf, POWER_TIER_LABELS, POWER_TIER_THRESHOLDS,
+  UPGRADE_CATALOG, UPGRADE_ICONS,
   projectYieldExact,
 } from '../data/vaults';
 
@@ -790,40 +791,53 @@ function ClaimResultModal({ result, onClose }) {
 // Replaces the single-fill power bar. Four pegs at the official tier
 // thresholds with the user's current position marked, plus a one-line
 // "X to FORTIFIED" target so the next reach feels concrete.
-const TIER_THRESHOLDS = [0, 250, 500, 1000];
-const TIER_NAMES      = ['BASE', 'FORTIFIED', 'HEAVY', 'SUPREME'];
-
+// Imported from src/data/vaults.js — the source of truth for tier names
+// and thresholds lives there. Don't redefine here; just re-import.
 function PowerMilestones({ power, tier }) {
-  const next = tier < 3 ? TIER_THRESHOLDS[tier + 1] : null;
+  const last = POWER_TIER_THRESHOLDS.length - 1;
+  const next = tier < last ? POWER_TIER_THRESHOLDS[tier + 1] : null;
   const toGo = next != null ? Math.max(0, next - power) : 0;
-  // Track fill: % of the way from current tier's start to the next tier.
-  const tierStart = TIER_THRESHOLDS[tier];
-  const tierEnd   = next != null ? next : tierStart + 1;
-  const pct = next != null
-    ? Math.max(0, Math.min(100, ((power - tierStart) / (tierEnd - tierStart)) * 100))
-    : 100;
+  // Track fill: % of the way from BASE (0) to ETERNAL (max threshold)
+  // computed against the current power. With 10 tiers, fill the bar by
+  // overall progress instead of per-tier so the visual stays smooth.
+  const max = POWER_TIER_THRESHOLDS[last];
+  const pct = Math.max(0, Math.min(100, (power / max) * 100));
 
+  // With 10 pegs, per-peg labels overlap. Only label the user's current
+  // tier and the next target; other pegs render as plain dots. The
+  // current tier name is also shown big in the State power-tag pill,
+  // so this caption is supportive, not redundant.
   return (
     <div className="vlt-milestones">
-      <div className="vlt-milestones-track">
+      <div className="vlt-milestones-track is-dense">
         <span className="vlt-milestones-fill" style={{ width: `${pct}%` }} />
-        {TIER_THRESHOLDS.map((t, i) => (
-          <span
-            key={t}
-            className={`vlt-milestones-peg ${power >= t ? 'lit' : ''} ${tier === i ? 'cur' : ''}`}
-            style={{ left: `${(i / (TIER_THRESHOLDS.length - 1)) * 100}%` }}
-            title={`${TIER_NAMES[i]} · ${t.toLocaleString()}`}
-          >
-            <span className="vlt-milestones-peg-dot" />
-            <span className="vlt-milestones-peg-label">{TIER_NAMES[i]}</span>
-            <span className="vlt-milestones-peg-thresh">{t.toLocaleString()}</span>
-          </span>
-        ))}
+        {POWER_TIER_THRESHOLDS.map((t, i) => {
+          const isLit = power >= t;
+          const isCur = tier === i;
+          const isNext = tier + 1 === i;
+          const showLabel = isCur || isNext || i === 0 || i === last;
+          return (
+            <span
+              key={t}
+              className={`vlt-milestones-peg ${isLit ? 'lit' : ''} ${isCur ? 'cur' : ''} ${showLabel ? '' : 'dim'}`}
+              style={{ left: `${(i / last) * 100}%` }}
+              title={`${POWER_TIER_LABELS[i].toUpperCase()} · ${t.toLocaleString()}`}
+            >
+              <span className="vlt-milestones-peg-dot" />
+              {showLabel ? (
+                <>
+                  <span className="vlt-milestones-peg-label">{POWER_TIER_LABELS[i].toUpperCase()}</span>
+                  <span className="vlt-milestones-peg-thresh">{t.toLocaleString()}</span>
+                </>
+              ) : null}
+            </span>
+          );
+        })}
       </div>
       <div className="vlt-milestones-cta">
         {next != null
-          ? <><strong>{toGo.toLocaleString()}</strong> POWER TO {TIER_NAMES[tier + 1]}</>
-          : <strong>SUPREME · all tiers reached</strong>}
+          ? <><strong>{toGo.toLocaleString()}</strong> POWER TO {POWER_TIER_LABELS[tier + 1].toUpperCase()}</>
+          : <strong>ETERNAL · all tiers reached</strong>}
       </div>
     </div>
   );
@@ -3355,6 +3369,17 @@ function Style() {
       .vlt-milestones-peg-thresh { top: 28px; font-size: 8px; opacity: 0.6; }
       .vlt-milestones-peg.lit .vlt-milestones-peg-label { color: rgba(249,246,240,0.85); }
       .vlt-milestones-peg.cur .vlt-milestones-peg-label { color: #D7FF3A; font-weight: 700; }
+
+      /* 10-tier dense layout — minor pegs render as small unlabelled
+         dots so the bar stays clean; only BASE / current / next /
+         ETERNAL get text. */
+      .vlt-milestones-track.is-dense .vlt-milestones-peg.dim .vlt-milestones-peg-dot {
+        width: 8px; height: 8px;
+        opacity: 0.55;
+      }
+      .vlt-milestones-track.is-dense .vlt-milestones-peg.dim.lit .vlt-milestones-peg-dot {
+        opacity: 1;
+      }
       .vlt-milestones-peg:first-child  { transform: translate(0,    -50%); }
       .vlt-milestones-peg:first-child  .vlt-milestones-peg-label,
       .vlt-milestones-peg:first-child  .vlt-milestones-peg-thresh { left: 0; }
