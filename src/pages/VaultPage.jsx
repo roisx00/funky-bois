@@ -384,64 +384,93 @@ export default function VaultPage({ onNavigate }) {
               Composed from your X identity. Stronger with every deposit.
               Earning while it stands. <em>The Vault must not burn again.</em>
             </p>
-
-            <div className="vlt-ledger">
-              <div className="vlt-ledger-power">
-                <div className="vlt-ledger-power-label">CURRENT POWER</div>
-                <div className="vlt-ledger-power-num">
-                  <span className="vlt-ledger-power-val">{power.toLocaleString()}</span>
-                  <span className={`vlt-ledger-tier ${tier >= 3 ? 'high' : ''}`}>{tierLabel}</span>
-                </div>
-                <PowerMilestones power={power} tier={tier} />
-              </div>
-
-              {/* Hero live ticker — the page's loudest signal that the
-                  vault is *working*. Numbers tick every 250ms. */}
-              <div className={`vlt-ledger-live ${ratePerSec > 0 ? 'on' : ''}`}>
-                <div className="vlt-ledger-live-head">
-                  <span className="vlt-ledger-live-label">LIVE PENDING</span>
-                  {ratePerSec > 0 ? (
-                    <span className="vlt-ledger-live-pulse">
-                      <span className="vlt-ledger-live-pulse-dot" />
-                      EARNING
-                    </span>
-                  ) : (
-                    <span className="vlt-ledger-live-idle">IDLE</span>
-                  )}
-                </div>
-                <div className="vlt-ledger-live-num">
-                  <span className="vlt-ledger-live-whole">{Math.floor(heroLiveYield).toLocaleString()}</span>
-                  <span className="vlt-ledger-live-frac">{(heroLiveYield - Math.floor(heroLiveYield)).toFixed(4).slice(1)}</span>
-                  <span className="vlt-ledger-live-unit">BUSTS</span>
-                </div>
-                <div className="vlt-ledger-live-meta">
-                  <span>+{ratePerSec.toFixed(5)}<small>/sec</small></span>
-                  <span className="vlt-ledger-live-sep">·</span>
-                  <span>{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}<small>/day</small></span>
-                </div>
-              </div>
-
-              <div className="vlt-ledger-rows">
-                <div className="vlt-ledger-row">
-                  <span className="vlt-ledger-row-label">LOCKED INSIDE</span>
-                  <span className="vlt-ledger-row-val">{vault.bustsDeposited.toLocaleString()}</span>
-                  <span className="vlt-ledger-row-unit">BUSTS</span>
-                </div>
-                <div className="vlt-ledger-row">
-                  <span className="vlt-ledger-row-label">LIFETIME EARNED</span>
-                  <span className="vlt-ledger-row-val">{vault.lifetimeYieldPaid.toLocaleString()}</span>
-                  <span className="vlt-ledger-row-unit">BUSTS</span>
-                </div>
-                <div className="vlt-ledger-row">
-                  <span className="vlt-ledger-row-label">BURN COUNT</span>
-                  <span className="vlt-ledger-row-val">{vault.burnCount}</span>
-                  <span className="vlt-ledger-row-unit">{vault.burnCount === 0 ? 'STILL STANDING' : 'HAS BEEN BURNED'}</span>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="vlt-hero-art">
+          {/* Hero action panel: BUSTS deposit/withdraw + portrait bind.
+              Replaces the SVG art column so the most-used controls sit
+              at the top of the page where the eye lands. */}
+          <div className="vlt-hero-actions">
+            <div className="vlt-act-tabs">
+              <button
+                className={`vlt-act-tab ${bustsMode === 'deposit' ? 'active' : ''}`}
+                onClick={() => { setBustsMode('deposit'); setBustsAmount(''); }}
+              >Deposit</button>
+              <button
+                className={`vlt-act-tab ${bustsMode === 'withdraw' ? 'active' : ''}`}
+                onClick={() => { setBustsMode('withdraw'); setBustsAmount(''); }}
+              >Withdraw</button>
+            </div>
+
+            <div className="vlt-act-busts">
+              <div className="vlt-act-balance-row">
+                <span>
+                  <span className="vlt-act-balance-label">{bustsMode === 'deposit' ? 'IN YOUR BALANCE' : 'IN YOUR VAULT'}</span>
+                  <span className="vlt-act-balance-val">
+                    {(bustsMode === 'deposit' ? bustsBalance : vault.bustsDeposited).toLocaleString()}
+                    <small>BUSTS</small>
+                  </span>
+                </span>
+                {bustsMode === 'deposit' && amountInput > 0 ? (
+                  <span className="vlt-act-power">
+                    Power: {power.toLocaleString()} → <strong>{projectedPower.toLocaleString()}</strong>
+                  </span>
+                ) : null}
+              </div>
+              <div className="vlt-act-chips">
+                {QUICK_DEPOSIT.map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    className={`vlt-act-chip ${Number(bustsAmount) === amt ? 'active' : ''}`}
+                    onClick={() => setBustsAmount(String(amt))}
+                    disabled={amt > (bustsMode === 'deposit' ? bustsBalance : vault.bustsDeposited)}
+                  >
+                    {amt >= 1000 ? `${amt / 1000}K` : amt}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="vlt-act-chip vlt-act-chip-max"
+                  onClick={() => setBustsAmount(String(bustsMode === 'deposit' ? bustsBalance : vault.bustsDeposited))}
+                >MAX</button>
+              </div>
+              <div className="vlt-act-input-row">
+                <input
+                  type="number"
+                  min={bustsMode === 'deposit' ? 10 : 1}
+                  value={bustsAmount}
+                  onChange={(e) => setBustsAmount(e.target.value)}
+                  placeholder="Custom amount"
+                />
+                <button
+                  className="vlt-act-go"
+                  disabled={busy || !bustsAmount || amountInput < (bustsMode === 'deposit' ? 10 : 1)}
+                  onClick={handleBustsAction}
+                >
+                  {busy ? '…' : (bustsMode === 'deposit' ? 'Deposit →' : 'Withdraw →')}
+                </button>
+              </div>
+            </div>
+
+            <div className="vlt-act-divider"><span>PORTRAIT</span></div>
+            <HeroPortrait
+              ownedPortrait={ownedPortrait}
+              isInVault={isPortraitInVault}
+              busy={busy}
+              onAction={handlePortraitAction}
+              onNavigate={onNavigate}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── STATE — power, live ticker, stat rows + vault art ──── */}
+      {/* Pulled out of the hero so deposit lives front-and-center; the
+          vault SVG anchors this section, with all the readouts grouped
+          beside it. */}
+      <section className="vlt-state">
+        <div className="vlt-state-inner">
+          <div className="vlt-state-art">
             <div className="vlt-art-marks">
               <span className="vlt-art-mark">FILE / VLT-{(vault.userId || '').slice(0, 4).toUpperCase()}</span>
               <span className="vlt-art-mark vlt-art-mark-tier">TIER {tier} · {tierLabel.toUpperCase()}</span>
@@ -472,102 +501,59 @@ export default function VaultPage({ onNavigate }) {
               <span><b>SIGIL</b> {traits.sigil + 1}/6</span>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ─── §01 DEPOSIT / WITHDRAW ──────────────────────────── */}
-      {/* Promoted to §01 so the user sees the vault SVG (above) while
-          they interact with deposit + portrait — the door-open animation
-          plays in their viewport instead of being scrolled past. */}
-      <section className="vlt-section">
-        <SectionHead n="01" title={bustsMode === 'deposit' ? 'Deposit' : 'Withdraw'} sub="Move BUSTS in to earn yield + add power. Move them out anytime. No lock-up. No fee." />
-
-        <div className="vlt-deposit-card">
-          <div className="vlt-deposit-projection">
-            <div className="vlt-mode-toggle">
-              <button
-                className={`vlt-mode-btn ${bustsMode === 'deposit' ? 'active' : ''}`}
-                onClick={() => { setBustsMode('deposit'); setBustsAmount(''); }}
-              >Deposit</button>
-              <button
-                className={`vlt-mode-btn ${bustsMode === 'withdraw' ? 'active' : ''}`}
-                onClick={() => { setBustsMode('withdraw'); setBustsAmount(''); }}
-              >Withdraw</button>
-            </div>
-            <div className="vlt-proj-row">
-              <span className="vlt-proj-label">{bustsMode === 'deposit' ? 'Vault now' : 'Vault now'}</span>
-              <span className="vlt-proj-value">{vault.bustsDeposited.toLocaleString()} <small>BUSTS</small></span>
-            </div>
-            <div className="vlt-proj-arrow">↓</div>
-            <div className="vlt-proj-row vlt-proj-after">
-              <span className="vlt-proj-label">After {bustsMode}</span>
-              <span className="vlt-proj-value">
-                {Math.max(0, vault.bustsDeposited + (bustsMode === 'deposit' ? amountInput : -amountInput)).toLocaleString()} <small>BUSTS</small>
-              </span>
-            </div>
-            {bustsMode === 'deposit' && amountInput > 0 ? (
-              <div className="vlt-proj-power">
-                Power: {power.toLocaleString()} → <strong>{projectedPower.toLocaleString()}</strong>
+          <div className="vlt-state-stats">
+            <div className="vlt-state-power">
+              <div className="vlt-state-power-head">
+                <div className="vlt-state-power-label">CURRENT POWER</div>
+                <span className={`vlt-ledger-tier ${tier >= 3 ? 'high' : ''}`}>{tierLabel}</span>
               </div>
-            ) : null}
-          </div>
+              <div className="vlt-state-power-val">{power.toLocaleString()}</div>
+              <PowerMilestones power={power} tier={tier} />
+            </div>
 
-          <div className="vlt-deposit-form">
-            <div className="vlt-deposit-chips">
-              {QUICK_DEPOSIT.map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  className={`vlt-chip ${Number(bustsAmount) === amt ? 'active' : ''}`}
-                  onClick={() => setBustsAmount(String(amt))}
-                  disabled={amt > (bustsMode === 'deposit' ? bustsBalance : vault.bustsDeposited)}
-                >
-                  {amt >= 1000 ? `${amt / 1000}K` : amt}
-                </button>
-              ))}
-              <button
-                type="button"
-                className="vlt-chip vlt-chip-max"
-                onClick={() => setBustsAmount(String(bustsMode === 'deposit' ? bustsBalance : vault.bustsDeposited))}
-              >
-                MAX
-              </button>
+            <div className={`vlt-state-live ${ratePerSec > 0 ? 'on' : ''}`}>
+              <div className="vlt-state-live-head">
+                <span className="vlt-state-live-label">LIVE PENDING</span>
+                {ratePerSec > 0 ? (
+                  <span className="vlt-state-live-pulse">
+                    <span className="vlt-state-live-pulse-dot" />EARNING
+                  </span>
+                ) : (
+                  <span className="vlt-state-live-idle">IDLE</span>
+                )}
+              </div>
+              <div className="vlt-state-live-num">
+                <span className="vlt-state-live-whole">{Math.floor(heroLiveYield).toLocaleString()}</span>
+                <span className="vlt-state-live-frac">{(heroLiveYield - Math.floor(heroLiveYield)).toFixed(4).slice(1)}</span>
+                <span className="vlt-state-live-unit">BUSTS</span>
+              </div>
+              <div className="vlt-state-live-meta">
+                <span>+{ratePerSec.toFixed(5)}<small>/sec</small></span>
+                <span className="vlt-state-live-sep">·</span>
+                <span>{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}<small>/day</small></span>
+              </div>
             </div>
-            <div className="vlt-deposit-input-row">
-              <input
-                type="number"
-                min={bustsMode === 'deposit' ? 10 : 1}
-                value={bustsAmount}
-                onChange={(e) => setBustsAmount(e.target.value)}
-                placeholder="Custom amount"
-              />
-              <button
-                className={`btn btn-${bustsMode === 'deposit' ? 'solid' : 'ghost'} btn-arrow vlt-deposit-go`}
-                disabled={busy || !bustsAmount || amountInput < (bustsMode === 'deposit' ? 10 : 1)}
-                onClick={handleBustsAction}
-              >
-                {busy ? 'Working…' : (bustsMode === 'deposit' ? 'Deposit' : 'Withdraw')}
-              </button>
-            </div>
-            <div className="vlt-deposit-balance">
-              {bustsMode === 'deposit'
-                ? `${bustsBalance.toLocaleString()} BUSTS in your balance`
-                : `${vault.bustsDeposited.toLocaleString()} BUSTS in your vault`}
+
+            <div className="vlt-state-rows">
+              <div className="vlt-state-row">
+                <span className="vlt-state-row-label">LOCKED INSIDE</span>
+                <span className="vlt-state-row-val">{vault.bustsDeposited.toLocaleString()}</span>
+                <span className="vlt-state-row-unit">BUSTS</span>
+              </div>
+              <div className="vlt-state-row">
+                <span className="vlt-state-row-label">LIFETIME EARNED</span>
+                <span className="vlt-state-row-val">{vault.lifetimeYieldPaid.toLocaleString()}</span>
+                <span className="vlt-state-row-unit">BUSTS</span>
+              </div>
+              <div className="vlt-state-row">
+                <span className="vlt-state-row-label">BURN COUNT</span>
+                <span className="vlt-state-row-val">{vault.burnCount}</span>
+                <span className="vlt-state-row-unit">{vault.burnCount === 0 ? 'STILL STANDING' : 'HAS BEEN BURNED'}</span>
+              </div>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* ─── §02 PORTRAIT VAULT ──────────────────────────────── */}
-      <section className="vlt-section">
-        <SectionHead n="02" title="Portrait" sub="Bind your portrait to the vault for a flat +10 BUSTS / day on top of the BUSTS yield. The portrait stays yours, stays in the gallery. Withdraw anytime." />
-        <PortraitCard
-          ownedPortrait={ownedPortrait}
-          isInVault={isPortraitInVault}
-          busy={busy}
-          onAction={handlePortraitAction}
-          onNavigate={onNavigate}
-        />
       </section>
 
       {/* ─── CHRONICLE TIMELINE ──────────────────────────────── */}
@@ -1140,52 +1126,44 @@ function YieldCard({ vault, dailyRate, busy, onClaim }) {
   );
 }
 
-function PortraitCard({ ownedPortrait, isInVault, busy, onAction, onNavigate }) {
-  // Three states:
-  //   1. portrait IS in vault → show it, "Withdraw" CTA
-  //   2. user has portrait but not deposited → show it, "Deposit" CTA
-  //   3. user has NO portrait → empty state, link to /build
+// Compact portrait bind/withdraw row for the hero action panel.
+function HeroPortrait({ ownedPortrait, isInVault, busy, onAction, onNavigate }) {
   if (isInVault && ownedPortrait) {
     return (
-      <div className="vlt-portrait-card vlt-portrait-active">
-        <div className="vlt-portrait-art" dangerouslySetInnerHTML={{ __html: buildNFTSVG(ownedPortrait.elements || {}) }} />
-        <div className="vlt-portrait-body">
-          <div className="vlt-yield-label">DEPOSITED</div>
-          <div className="vlt-portrait-name">Your portrait is in the vault.</div>
-          <div className="vlt-portrait-bonus">earning <strong>+10 BUSTS / day</strong></div>
-          <button className="vlt-up-buy" disabled={busy} onClick={() => onAction('withdraw')}>
-            {busy ? '…' : 'Withdraw portrait'}
-          </button>
+      <div className="vlt-hp vlt-hp-active">
+        <div className="vlt-hp-art" dangerouslySetInnerHTML={{ __html: buildNFTSVG(ownedPortrait.elements || {}) }} />
+        <div className="vlt-hp-body">
+          <div className="vlt-hp-tag">BOUND</div>
+          <div className="vlt-hp-line">earning <strong>+10 BUSTS / day</strong></div>
         </div>
+        <button className="vlt-hp-btn ghost" disabled={busy} onClick={() => onAction('withdraw')}>
+          {busy ? '…' : 'Withdraw'}
+        </button>
       </div>
     );
   }
   if (ownedPortrait) {
     return (
-      <div className="vlt-portrait-card">
-        <div className="vlt-portrait-art" dangerouslySetInnerHTML={{ __html: buildNFTSVG(ownedPortrait.elements || {}) }} />
-        <div className="vlt-portrait-body">
-          <div className="vlt-yield-label">AVAILABLE</div>
-          <div className="vlt-portrait-name">Bind your portrait to the vault.</div>
-          <div className="vlt-portrait-bonus">+10 BUSTS / day · withdraw anytime</div>
-          <button className="btn btn-solid btn-sm" disabled={busy} onClick={() => onAction('deposit')}>
-            {busy ? '…' : 'Deposit portrait'}
-          </button>
+      <div className="vlt-hp">
+        <div className="vlt-hp-art" dangerouslySetInnerHTML={{ __html: buildNFTSVG(ownedPortrait.elements || {}) }} />
+        <div className="vlt-hp-body">
+          <div className="vlt-hp-tag">AVAILABLE</div>
+          <div className="vlt-hp-line">+10 BUSTS / day · withdraw anytime</div>
         </div>
+        <button className="vlt-hp-btn solid" disabled={busy} onClick={() => onAction('deposit')}>
+          {busy ? '…' : 'Bind →'}
+        </button>
       </div>
     );
   }
   return (
-    <div className="vlt-portrait-card vlt-portrait-empty">
-      <div className="vlt-portrait-empty-mark">∎</div>
-      <div className="vlt-portrait-body">
-        <div className="vlt-yield-label">NO PORTRAIT</div>
-        <div className="vlt-portrait-name">Build a portrait first.</div>
-        <div className="vlt-portrait-bonus">Once built, you can bind it here for +10 BUSTS / day.</div>
-        <button className="btn btn-ghost btn-sm" onClick={() => onNavigate?.('builder')}>
-          Go to builder →
-        </button>
+    <div className="vlt-hp vlt-hp-empty">
+      <div className="vlt-hp-art-empty">∎</div>
+      <div className="vlt-hp-body">
+        <div className="vlt-hp-tag">NO PORTRAIT</div>
+        <div className="vlt-hp-line">Build one to bind it here for +10 BUSTS / day.</div>
       </div>
+      <button className="vlt-hp-btn ghost" onClick={() => onNavigate?.('builder')}>Build →</button>
     </div>
   );
 }
@@ -2575,6 +2553,434 @@ function Style() {
         .vlt-chron-num { font-size: 26px; }
 
         .vlt-waits-card { padding: 18px; }
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+         V4 — Hero deposit panel + standalone STATE section
+         ═══════════════════════════════════════════════════════════════ */
+
+      /* Hero action panel — replaces the SVG art column. Lives on the
+         dark hero so it has white-on-dark form styling. */
+      .vlt-hero-actions {
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(255,255,255,0.10);
+        padding: 22px;
+        align-self: start;
+      }
+      .vlt-act-tabs {
+        display: flex;
+        border: 1px solid rgba(249,246,240,0.85);
+        margin-bottom: 16px;
+      }
+      .vlt-act-tab {
+        flex: 1;
+        background: transparent;
+        border: 0;
+        border-right: 1px solid rgba(249,246,240,0.85);
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(249,246,240,0.7);
+        padding: 9px 0;
+        cursor: pointer;
+        transition: all 150ms ease;
+      }
+      .vlt-act-tab:last-child { border-right: 0; }
+      .vlt-act-tab:hover { color: #F9F6F0; }
+      .vlt-act-tab.active {
+        background: #D7FF3A;
+        color: #0E0E0E;
+        font-weight: 700;
+      }
+      .vlt-act-busts { display: flex; flex-direction: column; gap: 12px; }
+      .vlt-act-balance-row {
+        display: flex; justify-content: space-between; align-items: baseline;
+        flex-wrap: wrap; gap: 8px;
+      }
+      .vlt-act-balance-label {
+        display: block;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 2.5px;
+        color: rgba(249,246,240,0.5);
+        margin-bottom: 4px;
+      }
+      .vlt-act-balance-val {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 28px; font-style: italic;
+        color: #F9F6F0;
+        line-height: 1;
+      }
+      .vlt-act-balance-val small {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-style: normal;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: rgba(249,246,240,0.45);
+        margin-left: 8px;
+      }
+      .vlt-act-power {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px;
+        letter-spacing: 1.5px;
+        color: rgba(215,255,58,0.85);
+      }
+      .vlt-act-power strong { color: #D7FF3A; }
+      .vlt-act-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+      .vlt-act-chip {
+        background: transparent;
+        border: 1px solid rgba(249,246,240,0.18);
+        color: rgba(249,246,240,0.75);
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 11px;
+        padding: 7px 11px;
+        cursor: pointer;
+        letter-spacing: 0.5px;
+        transition: all 150ms ease;
+      }
+      .vlt-act-chip:hover:not(:disabled) {
+        border-color: #D7FF3A;
+        color: #D7FF3A;
+      }
+      .vlt-act-chip.active {
+        background: #F9F6F0;
+        color: #0E0E0E;
+        border-color: #F9F6F0;
+        font-weight: 700;
+      }
+      .vlt-act-chip:disabled { opacity: 0.3; cursor: not-allowed; }
+      .vlt-act-chip-max {
+        margin-left: auto;
+        border-color: #D7FF3A;
+        color: #D7FF3A;
+      }
+      .vlt-act-input-row { display: flex; gap: 8px; }
+      .vlt-act-input-row input {
+        flex: 1;
+        padding: 11px 14px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 14px;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid rgba(249,246,240,0.2);
+        color: #F9F6F0;
+      }
+      .vlt-act-input-row input:focus {
+        outline: none; border-color: #D7FF3A;
+      }
+      .vlt-act-go {
+        padding: 0 18px;
+        background: #D7FF3A;
+        color: #0E0E0E;
+        border: 0;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 150ms ease;
+      }
+      .vlt-act-go:hover:not(:disabled) {
+        background: #F9F6F0;
+      }
+      .vlt-act-go:disabled {
+        background: rgba(249,246,240,0.15);
+        color: rgba(249,246,240,0.4);
+        cursor: not-allowed;
+      }
+
+      .vlt-act-divider {
+        margin: 22px 0 14px;
+        display: flex; align-items: center; gap: 10px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 3px;
+        color: rgba(249,246,240,0.4);
+      }
+      .vlt-act-divider::before,
+      .vlt-act-divider::after {
+        content: '';
+        flex: 1; height: 1px;
+        background: rgba(249,246,240,0.12);
+      }
+
+      /* Compact portrait bind row inside hero panel */
+      .vlt-hp {
+        display: grid;
+        grid-template-columns: 56px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid rgba(249,246,240,0.12);
+      }
+      .vlt-hp-active { border-color: rgba(215,255,58,0.4); }
+      .vlt-hp-empty { border-style: dashed; }
+      .vlt-hp-art {
+        width: 56px; height: 56px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #0a0a0a;
+        flex-shrink: 0;
+      }
+      .vlt-hp-art > svg, .vlt-hp-art > * > svg {
+        width: 100%; height: 100%;
+      }
+      .vlt-hp-art-empty {
+        width: 56px; height: 56px;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(249,246,240,0.04);
+        color: rgba(249,246,240,0.3);
+        font-size: 20px;
+      }
+      .vlt-hp-body { min-width: 0; }
+      .vlt-hp-tag {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 2px;
+        color: rgba(249,246,240,0.45);
+        margin-bottom: 3px;
+      }
+      .vlt-hp-active .vlt-hp-tag { color: #D7FF3A; }
+      .vlt-hp-line {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 11px;
+        color: rgba(249,246,240,0.75);
+        line-height: 1.35;
+      }
+      .vlt-hp-line strong { color: #F9F6F0; font-weight: 700; }
+      .vlt-hp-btn {
+        background: transparent;
+        border: 1px solid rgba(249,246,240,0.4);
+        color: #F9F6F0;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        padding: 8px 12px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 150ms ease;
+      }
+      .vlt-hp-btn.solid { background: #D7FF3A; color: #0E0E0E; border-color: #D7FF3A; font-weight: 700; }
+      .vlt-hp-btn:hover:not(:disabled) { background: #F9F6F0; color: #0E0E0E; border-color: #F9F6F0; }
+      .vlt-hp-btn.solid:hover:not(:disabled) { background: #F9F6F0; }
+      .vlt-hp-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+      /* ── STATE section (vault SVG + power/live/stats) ── */
+      .vlt-state {
+        max-width: 1180px; margin: 0 auto; padding: 36px 24px;
+        background: var(--paper);
+        border-bottom: 1px solid var(--hairline);
+      }
+      .vlt-state-inner {
+        display: grid;
+        grid-template-columns: minmax(280px, 380px) 1fr;
+        gap: 36px;
+        align-items: start;
+      }
+      .vlt-state-art {
+        position: relative;
+        background: #0B0B0B;
+        padding: 18px;
+        border: 1px solid #0E0E0E;
+      }
+      .vlt-state-art .vlt-art-marks {
+        display: flex; justify-content: space-between;
+        margin-bottom: 10px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 2px;
+        color: rgba(249,246,240,0.5);
+      }
+      .vlt-state-art .vlt-art-mark-tier {
+        background: #D7FF3A; color: #0E0E0E;
+        padding: 3px 8px; font-weight: 700;
+      }
+      .vlt-state-art .vlt-art-caption {
+        margin-top: 10px;
+        display: flex; justify-content: center;
+        gap: 14px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 2px;
+        color: rgba(249,246,240,0.5);
+      }
+      .vlt-state-art .vlt-art-caption b { color: #F9F6F0; }
+      .vlt-state-art .vlt-cap-sep {
+        width: 1px; height: 10px; background: rgba(249,246,240,0.2);
+      }
+
+      .vlt-state-stats {
+        display: flex; flex-direction: column;
+        gap: 22px;
+      }
+      .vlt-state-power-head {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 12px;
+      }
+      .vlt-state-power-label {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 2.5px;
+        color: var(--text-3, #5C5C5C);
+      }
+      .vlt-state-power .vlt-ledger-tier {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 2.5px;
+        background: var(--ink, #0E0E0E);
+        color: var(--paper, #F9F6F0);
+        padding: 3px 8px;
+        font-weight: 700;
+      }
+      .vlt-state-power .vlt-ledger-tier.high {
+        background: #D7FF3A; color: #0E0E0E;
+      }
+      .vlt-state-power-val {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 64px; font-style: italic;
+        line-height: 1;
+        color: var(--ink, #0E0E0E);
+        letter-spacing: -1px;
+        font-feature-settings: 'tnum';
+      }
+
+      /* Re-style the milestones for paper background */
+      .vlt-state .vlt-milestones-track {
+        background: rgba(14,14,14,0.08);
+      }
+      .vlt-state .vlt-milestones-fill {
+        background: linear-gradient(90deg, #0E0E0E, #5C5C5C);
+        box-shadow: none;
+      }
+      .vlt-state .vlt-milestones-peg-dot {
+        background: var(--paper, #F9F6F0);
+        border-color: rgba(14,14,14,0.2);
+      }
+      .vlt-state .vlt-milestones-peg.lit .vlt-milestones-peg-dot {
+        background: #0E0E0E; border-color: #0E0E0E;
+        box-shadow: 0 0 0 3px rgba(215,255,58,0.45);
+      }
+      .vlt-state .vlt-milestones-peg.cur .vlt-milestones-peg-dot {
+        background: #D7FF3A; border-color: #0E0E0E;
+        box-shadow: 0 0 0 4px rgba(215,255,58,0.35);
+      }
+      .vlt-state .vlt-milestones-peg-label,
+      .vlt-state .vlt-milestones-peg-thresh {
+        color: var(--text-3, #5C5C5C);
+      }
+      .vlt-state .vlt-milestones-peg.lit .vlt-milestones-peg-label { color: var(--ink, #0E0E0E); }
+      .vlt-state .vlt-milestones-peg.cur .vlt-milestones-peg-label { color: #0E0E0E; font-weight: 700; }
+      .vlt-state .vlt-milestones-cta {
+        color: var(--text-3, #5C5C5C);
+      }
+      .vlt-state .vlt-milestones-cta strong { color: var(--ink, #0E0E0E); }
+
+      /* Live ticker (paper variant) */
+      .vlt-state-live {
+        padding: 14px 16px;
+        border: 1px solid var(--hairline);
+        background: var(--paper-2, #F4F0E8);
+        position: relative; overflow: hidden;
+      }
+      .vlt-state-live.on {
+        border-color: rgba(14,14,14,0.4);
+        background: linear-gradient(135deg, rgba(215,255,58,0.18), transparent 70%), var(--paper-2, #F4F0E8);
+      }
+      .vlt-state-live.on::before {
+        content: '';
+        position: absolute; left: 0; top: 0; bottom: 0;
+        width: 3px; background: #0E0E0E;
+        animation: vlt-live-pulse 1.6s ease-in-out infinite;
+      }
+      .vlt-state-live-head {
+        display: flex; justify-content: space-between; align-items: center;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 2.5px;
+      }
+      .vlt-state-live-label { color: var(--text-3, #5C5C5C); }
+      .vlt-state-live-pulse {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--ink, #0E0E0E); font-weight: 700;
+      }
+      .vlt-state-live-pulse-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%; background: #0E0E0E;
+        animation: vlt-live-pulse 1.2s ease-in-out infinite;
+      }
+      .vlt-state-live-idle { color: var(--text-3, #5C5C5C); opacity: 0.5; }
+      .vlt-state-live-num {
+        margin-top: 6px;
+        display: flex; align-items: baseline; gap: 4px;
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-style: italic;
+        line-height: 1;
+        font-feature-settings: 'tnum';
+      }
+      .vlt-state-live-whole {
+        font-size: 44px; color: var(--ink, #0E0E0E);
+      }
+      .vlt-state-live-frac {
+        font-size: 22px; color: var(--text-2, #3A3A3A);
+      }
+      .vlt-state-live.on .vlt-state-live-frac { color: #0E0E0E; }
+      .vlt-state-live-unit {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-style: normal;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+        margin-left: 6px;
+      }
+      .vlt-state-live-meta {
+        margin-top: 6px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 11px;
+        letter-spacing: 1px;
+        color: var(--text-3, #5C5C5C);
+        display: flex; align-items: center; gap: 8px;
+      }
+      .vlt-state-live-meta small {
+        font-size: 9px; opacity: 0.65; letter-spacing: 1.5px;
+        margin-left: 2px;
+      }
+      .vlt-state-live-sep { opacity: 0.4; }
+
+      .vlt-state-rows {
+        display: flex; flex-direction: column;
+        border-top: 1px solid var(--hairline);
+      }
+      .vlt-state-row {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        align-items: baseline;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--hairline);
+      }
+      .vlt-state-row-label {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+      }
+      .vlt-state-row-val {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 22px; font-style: italic;
+        line-height: 1;
+        color: var(--ink, #0E0E0E);
+        font-feature-settings: 'tnum';
+      }
+      .vlt-state-row-unit {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+        opacity: 0.7;
+      }
+
+      /* Stack on tablet/mobile */
+      @media (max-width: 880px) {
+        .vlt-state-inner { grid-template-columns: 1fr; gap: 24px; }
+        .vlt-state-art { max-width: 420px; margin: 0 auto; }
+        .vlt-state-power-val { font-size: 52px; }
+        .vlt-state-live-whole { font-size: 36px; }
+      }
+      @media (max-width: 720px) {
+        .vlt-state { padding: 24px 16px; }
+        .vlt-act-balance-val { font-size: 24px; }
+        .vlt-state-power-val { font-size: 44px; }
       }
 
       /* ═══════════════════════════════════════════════════════════════
