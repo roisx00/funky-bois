@@ -23,9 +23,25 @@ export default function DropPage() {
     authenticated, xUser, suspended,
     dropEligible, preWhitelist, completedNFTs, isAdmin,
     refreshMe, loginWithX, recentClaims,
-    prewlApplicationsOpen,
+    prewlApplicationsOpen, dropCutoffMs,
   } = useGame();
   const toast = useToast();
+
+  // Drop closes 12h before mint. Tick every second so the live
+  // countdown stays current; cleanup on unmount avoids leaks.
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!dropCutoffMs) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [dropCutoffMs]);
+  const dropClosed   = !!dropCutoffMs && now >= dropCutoffMs;
+  const dropClosingSoon = !!dropCutoffMs && !dropClosed && (dropCutoffMs - now) < 24 * 60 * 60 * 1000;
+  const dropRem  = dropCutoffMs && !dropClosed ? dropCutoffMs - now : 0;
+  const dropRemD = Math.floor(dropRem / 86400000);
+  const dropRemH = Math.floor((dropRem / 3600000) % 24);
+  const dropRemM = Math.floor((dropRem / 60000) % 60);
+  const dropRemS = Math.floor((dropRem / 1000) % 60);
 
   const isActive       = sessionStatus.isActive;
   const windowOpen     = sessionStatus.windowOpen;
@@ -71,6 +87,10 @@ export default function DropPage() {
 
   const handleClaim = async () => {
     if (busy) return;
+    if (dropClosed) {
+      toast.error('The drop has closed.');
+      return;
+    }
     setBusy(true);
     const r = await claimElement();
     setBusy(false);
@@ -109,6 +129,62 @@ export default function DropPage() {
 
   return (
     <div className="page drop-v2-page">
+      {/* ────────── DROP CUTOFF COUNTDOWN ──────────
+          Hard close 12h before mint. Banner sits at the very top of
+          the page so every visitor sees it. Three states: counting,
+          urgent (under 24h), and closed. */}
+      {dropCutoffMs ? (
+        dropClosed ? (
+          <div style={{
+            padding: '18px 24px', marginBottom: 24,
+            background: '#0E0E0E', color: '#F9F6F0',
+            border: '1px solid #0E0E0E',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
+          }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', opacity: 0.7, marginBottom: 4 }}>
+                DROP CLOSED
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 22, letterSpacing: '-0.02em' }}>
+                The drop ended 12 hours before mint.
+              </div>
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.18em', opacity: 0.55 }}>
+              SECURE YOUR SEAT FROM DASHBOARD &gt; OVERVIEW
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            padding: '18px 24px', marginBottom: 24,
+            background: dropClosingSoon ? 'rgba(215,255,58,0.14)' : 'var(--paper-2)',
+            border: `1px solid ${dropClosingSoon ? 'var(--ink)' : 'var(--hairline)'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
+          }}>
+            <div>
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontSize: 11,
+                letterSpacing: '0.22em', textTransform: 'uppercase',
+                color: dropClosingSoon ? 'var(--ink)' : 'var(--text-4)',
+                fontWeight: dropClosingSoon ? 700 : 400,
+                marginBottom: 4,
+              }}>
+                {dropClosingSoon ? 'DROP CLOSING SOON' : 'DROP CLOSES IN'}
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 500,
+                fontSize: 32, letterSpacing: '-0.02em', color: 'var(--ink)',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {dropRemD > 0 ? `${dropRemD}d ` : ''}{String(dropRemH).padStart(2, '0')}h {String(dropRemM).padStart(2, '0')}m {String(dropRemS).padStart(2, '0')}s
+              </div>
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.18em', color: 'var(--text-3)', maxWidth: 360, lineHeight: 1.55 }}>
+              The drop closes 12 hours before mint. After that, no new traits release. Build your portrait now.
+            </div>
+          </div>
+        )
+      ) : null}
+
       {/* ────────── HERO STRIP ────────── */}
       <div className="drop-v3-hero">
         <div className="drop-v3-hero-left">

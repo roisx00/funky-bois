@@ -121,6 +121,7 @@ function emptyState() {
     recentClaims:     [],
     prewlApplicationsOpen: true,
     mintWalletCutoffMs: null,
+    dropCutoffMs: null,
   };
 }
 
@@ -172,6 +173,7 @@ function reducer(state, action) {
           : state.mySessionClaims,
         prewlApplicationsOpen: me.prewlApplicationsOpen !== false,
         mintWalletCutoffMs: typeof me.mintWalletCutoffMs === 'number' ? me.mintWalletCutoffMs : null,
+        dropCutoffMs:       typeof me.dropCutoffMs === 'number'       ? me.dropCutoffMs       : null,
       };
     }
 

@@ -59,12 +59,17 @@ export default async function handler(req, res) {
   const mintWalletCutoffSecs = await getConfigInt('mint_wallet_cutoff', 0);
   const mintWalletCutoffMs = mintWalletCutoffSecs ? mintWalletCutoffSecs * 1000 : null;
 
+  // Drop cutoff timestamp (UNIX seconds). Drop closes 12h before mint.
+  const dropCutoffSecs = await getConfigInt('drop_cutoff', 0);
+  const dropCutoffMs = dropCutoffSecs ? dropCutoffSecs * 1000 : null;
+
   ok(res, {
     authenticated: true,
     sessId,
     mySessionClaims,
     prewlApplicationsOpen,
     mintWalletCutoffMs,
+    dropCutoffMs,
     user: {
       id:              user.id,
       xUsername:       user.x_username,

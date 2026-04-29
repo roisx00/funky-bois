@@ -37,6 +37,17 @@ export default async function handler(req, res) {
   const user = await requireUser(req, res);
   if (!user) return;
 
+  // Hard cutoff: drop closes 12 hours before mint start. Stored as a
+  // UNIX-seconds timestamp under app_config.drop_cutoff. After this
+  // point no new traits release and the build flow ends.
+  const dropCutoffSecs = await getConfigInt('drop_cutoff', 0);
+  if (dropCutoffSecs && Math.floor(Date.now() / 1000) > dropCutoffSecs) {
+    return bad(res, 410, 'drop_closed', {
+      cutoffSecs: dropCutoffSecs,
+      hint: 'The drop closed 12 hours before mint. Bind your wallet from Dashboard > Overview.',
+    });
+  }
+
   // ── Gates ──
   // Note: previously gated on x_followers >= 20. Removed because the
   // follower count was captured at X sign-in and never refreshed,
