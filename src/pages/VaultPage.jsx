@@ -571,20 +571,20 @@ export default function VaultPage({ onNavigate }) {
       </section>
 
       {/* ─── CHRONICLE TIMELINE ──────────────────────────────── */}
-      {/* Two-column: summary card on the left (uses the kicker's old
-          empty space), grouped event diary on the right. Events are
-          de-duped server-side and grouped by day. */}
+      {/* Compact single-line event rows with a horizontal stat strip
+          on top. The previous two-column with serif rows was eating
+          ~600px tall for 9 events; this layout fits the same 9 in
+          ~280px. */}
       <section className="vlt-chronicle vlt-chronicle-timeline">
         <div className="vlt-chronicle-inner">
-          <div className="vlt-chronicle-aside">
-            <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
-            <h3 className="vlt-aside-title">Your vault, in motion.</h3>
-            <p className="vlt-chronicle-sub">A running diary of every move — every deposit, every bond, every claim. Newest at the top.</p>
+          <div className="vlt-chronicle-bar">
+            <div className="vlt-chronicle-bar-head">
+              <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
+              <span className="vlt-chronicle-sub">A diary of every move on your vault.</span>
+            </div>
             <ChronicleSummary events={activity} vault={vault} />
           </div>
-          <div className="vlt-chronicle-main">
-            <ActivityTimeline events={activity} />
-          </div>
+          <ActivityTimeline events={activity} />
         </div>
       </section>
 
@@ -901,30 +901,20 @@ function ActivityTimeline({ events }) {
           <div className="vlt-timeline-day">{g.label}</div>
           <ul className="vlt-timeline-list">
             {g.items.map((ev, i) => (
-              <li key={`${ev.kind}-${ev.at}-${i}`} className={`vlt-timeline-item vlt-timeline-${ev.kind}`}>
+              <li key={`${ev.kind}-${ev.at}-${i}`} className={`vlt-timeline-row vlt-timeline-${ev.kind}`}>
                 <span className={`vlt-timeline-glyph tone-${ACTIVITY_TONE[ev.kind] || 'in'}`}>
                   {ACTIVITY_GLYPH[ev.kind] || '·'}
                 </span>
-                <div className="vlt-timeline-body">
-                  <div className="vlt-timeline-label">{ev.label}</div>
-                  <div className="vlt-timeline-meta">
-                    <span>{relativeTime(ev.at)}</span>
-                    {ev.amount != null ? (
-                      <>
-                        <span className="vlt-timeline-meta-sep">·</span>
-                        <span className="vlt-timeline-amount">
-                          {ACTIVITY_TONE[ev.kind] === 'out' ? '−' : '+'}{ev.amount.toLocaleString()}
-                          {ev.sub ? <small>{` ${ev.sub}`}</small> : null}
-                        </span>
-                      </>
-                    ) : ev.sub ? (
-                      <>
-                        <span className="vlt-timeline-meta-sep">·</span>
-                        <span><small>{ev.sub}</small></span>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
+                <span className="vlt-timeline-label">{ev.label}</span>
+                <span className="vlt-timeline-amount">
+                  {ev.amount != null ? (
+                    <>
+                      <strong>{ACTIVITY_TONE[ev.kind] === 'out' ? '−' : '+'}{ev.amount.toLocaleString()}</strong>
+                      {ev.sub ? <small>{ev.sub}</small> : null}
+                    </>
+                  ) : ev.sub ? <small>{ev.sub}</small> : null}
+                </span>
+                <span className="vlt-timeline-time">{relativeTime(ev.at)}</span>
               </li>
             ))}
           </ul>
@@ -934,66 +924,38 @@ function ActivityTimeline({ events }) {
   );
 }
 
-// Compact roll-up shown in the Chronicle's left column.
+// Horizontal stat strip atop the timeline — 4 dense tiles, tight.
 function ChronicleSummary({ events, vault }) {
-  const stats = (() => {
-    let depCount = 0, depSum = 0;
-    let wdCount = 0,  wdSum = 0;
-    let yieldCount = 0, yieldSum = 0;
-    let upgrades = 0;
-    let portraitMoves = 0;
-    for (const ev of events || []) {
-      if (ev.kind === 'deposit')         { depCount++; depSum += ev.amount || 0; }
-      else if (ev.kind === 'withdraw')   { wdCount++;  wdSum  += ev.amount || 0; }
-      else if (ev.kind === 'yield_claim'){ yieldCount++; yieldSum += ev.amount || 0; }
-      else if (ev.kind === 'upgrade')    { upgrades++; }
-      else if (ev.kind === 'portrait_bind' || ev.kind === 'portrait_unbind') portraitMoves++;
-    }
-    return { depCount, depSum, wdCount, wdSum, yieldCount, yieldSum, upgrades, portraitMoves };
-  })();
-
-  const lastEvent = (events || [])[0];
+  let depSum = 0, wdSum = 0, yieldSum = 0, claimCount = 0;
+  for (const ev of events || []) {
+    if (ev.kind === 'deposit')          depSum   += ev.amount || 0;
+    else if (ev.kind === 'withdraw')    wdSum    += ev.amount || 0;
+    else if (ev.kind === 'yield_claim') { yieldSum += ev.amount || 0; claimCount++; }
+  }
   return (
-    <div className="vlt-aside-summary">
-      <div className="vlt-aside-row">
-        <span className="vlt-aside-row-label">RECENT MOVES</span>
-        <span className="vlt-aside-row-val">{(events || []).length}</span>
-        <span className="vlt-aside-row-unit">events shown</span>
+    <div className="vlt-aside-stats">
+      <div className="vlt-aside-stat">
+        <span className="vlt-aside-stat-val">{(events || []).length}</span>
+        <span className="vlt-aside-stat-label">moves</span>
       </div>
-      <div className="vlt-aside-row">
-        <span className="vlt-aside-row-label">DEPOSITS</span>
-        <span className="vlt-aside-row-val">{stats.depSum.toLocaleString()}</span>
-        <span className="vlt-aside-row-unit">{stats.depCount} {stats.depCount === 1 ? 'event' : 'events'}</span>
+      <div className="vlt-aside-stat">
+        <span className="vlt-aside-stat-val">+{depSum.toLocaleString()}</span>
+        <span className="vlt-aside-stat-label">deposited</span>
       </div>
-      {stats.wdCount > 0 ? (
-        <div className="vlt-aside-row">
-          <span className="vlt-aside-row-label">WITHDRAWALS</span>
-          <span className="vlt-aside-row-val">{stats.wdSum.toLocaleString()}</span>
-          <span className="vlt-aside-row-unit">{stats.wdCount} {stats.wdCount === 1 ? 'event' : 'events'}</span>
+      {wdSum > 0 ? (
+        <div className="vlt-aside-stat">
+          <span className="vlt-aside-stat-val">−{wdSum.toLocaleString()}</span>
+          <span className="vlt-aside-stat-label">withdrawn</span>
         </div>
       ) : null}
-      <div className="vlt-aside-row">
-        <span className="vlt-aside-row-label">YIELD CLAIMED</span>
-        <span className="vlt-aside-row-val">{stats.yieldSum.toLocaleString()}</span>
-        <span className="vlt-aside-row-unit">{stats.yieldCount} claims</span>
+      <div className="vlt-aside-stat">
+        <span className="vlt-aside-stat-val">{yieldSum.toLocaleString()}</span>
+        <span className="vlt-aside-stat-label">yield · {claimCount} claims</span>
       </div>
-      {stats.upgrades > 0 ? (
-        <div className="vlt-aside-row">
-          <span className="vlt-aside-row-label">UPGRADES BOUGHT</span>
-          <span className="vlt-aside-row-val">{stats.upgrades}</span>
-          <span className="vlt-aside-row-unit">tier purchases</span>
-        </div>
-      ) : null}
-      <div className="vlt-aside-row vlt-aside-row-pad">
-        <span className="vlt-aside-row-label">LIFETIME EARNED</span>
-        <span className="vlt-aside-row-val vlt-aside-row-val-hero">{(vault?.lifetimeYieldPaid || 0).toLocaleString()}</span>
-        <span className="vlt-aside-row-unit">BUSTS</span>
+      <div className="vlt-aside-stat hero">
+        <span className="vlt-aside-stat-val">{(vault?.lifetimeYieldPaid || 0).toLocaleString()}</span>
+        <span className="vlt-aside-stat-label">lifetime earned</span>
       </div>
-      {lastEvent ? (
-        <div className="vlt-aside-last">
-          Last move: <strong>{lastEvent.label}</strong> · {relativeTime(lastEvent.at)}
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -2770,117 +2732,85 @@ function Style() {
       }
       .vlt-ledger-live-sep { opacity: 0.35; }
 
-      /* ── Activity timeline (replaces stat strip) ── */
-      .vlt-chronicle-timeline { padding: 48px 28px; }
+      /* ── Activity timeline (compact single-line rows) ── */
+      .vlt-chronicle-timeline { padding: 24px 28px; }
       .vlt-chronicle-timeline .vlt-chronicle-inner {
-        max-width: 1180px; margin: 0 auto;
-        display: grid;
-        grid-template-columns: 320px 1fr;
-        gap: 56px;
-        align-items: start;
+        max-width: 1080px; margin: 0 auto;
       }
-      .vlt-chronicle-aside { position: sticky; top: 24px; }
-      .vlt-aside-title {
-        font-family: 'Instrument Serif', Georgia, serif;
-        font-size: 38px;
-        line-height: 1.05;
-        margin: 14px 0 10px;
-        color: var(--ink, #0E0E0E);
-        letter-spacing: -0.5px;
-      }
-      .vlt-aside-summary {
-        margin-top: 22px;
-        border-top: 1px solid var(--hairline);
-      }
-      .vlt-aside-row {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        align-items: baseline;
-        column-gap: 12px;
-        padding: 10px 0;
+      .vlt-chronicle-bar {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 24px;
+        padding-bottom: 12px; margin-bottom: 8px;
         border-bottom: 1px solid var(--hairline);
+        flex-wrap: wrap;
       }
-      .vlt-aside-row-label {
-        grid-column: 1; grid-row: 1;
-        font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 10px; letter-spacing: 2px;
-        color: var(--text-3, #5C5C5C);
+      .vlt-chronicle-bar-head {
+        display: flex; flex-direction: column; gap: 2px;
       }
-      .vlt-aside-row-val {
-        grid-column: 2; grid-row: 1 / span 2;
+      .vlt-aside-stats {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+      .vlt-aside-stat {
+        display: flex; flex-direction: column; gap: 2px;
+        padding: 0 14px;
+        border-left: 1px solid var(--hairline);
+        min-width: 70px;
+      }
+      .vlt-aside-stat:first-child { border-left: 0; padding-left: 0; }
+      .vlt-aside-stat-val {
         font-family: 'Instrument Serif', Georgia, serif;
-        font-size: 26px;
-        line-height: 1;
+        font-size: 22px; line-height: 1;
         color: var(--ink, #0E0E0E);
         font-feature-settings: 'tnum';
-        align-self: center;
       }
-      .vlt-aside-row-val-hero {
-        font-size: 36px;
+      .vlt-aside-stat-label {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+      }
+      .vlt-aside-stat.hero .vlt-aside-stat-val {
         color: #0E0E0E;
         background: linear-gradient(180deg, transparent 60%, rgba(215,255,58,0.55) 60%);
         padding: 0 4px;
-      }
-      .vlt-aside-row-unit {
-        grid-column: 1; grid-row: 2;
-        font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 10px; letter-spacing: 1px;
-        color: var(--text-3, #5C5C5C);
-        opacity: 0.75;
-      }
-      .vlt-aside-row-pad { padding-top: 18px; }
-      .vlt-aside-last {
-        margin-top: 18px;
-        font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 10px; letter-spacing: 1.5px;
-        color: var(--text-3, #5C5C5C);
-        line-height: 1.5;
-      }
-      .vlt-aside-last strong {
-        color: var(--ink, #0E0E0E); font-weight: 700;
       }
 
       .vlt-timeline {
         list-style: none; margin: 0; padding: 0;
         position: relative;
       }
-      .vlt-timeline-group { list-style: none; margin: 0 0 24px; padding: 0; }
+      .vlt-timeline-group { list-style: none; margin: 0 0 8px; padding: 0; }
       .vlt-timeline-group:last-child { margin-bottom: 0; }
       .vlt-timeline-day {
         font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 10px; letter-spacing: 3px;
+        font-size: 9px; letter-spacing: 3px;
         color: var(--text-3, #5C5C5C);
-        margin: 0 0 6px 0;
-        padding-bottom: 6px;
-        border-bottom: 1px solid var(--hairline);
+        margin: 8px 0 0 0;
+        padding: 6px 0 4px 0;
       }
       .vlt-timeline-list {
         list-style: none; margin: 0; padding: 0;
-        position: relative;
       }
-      .vlt-timeline-list::before {
-        content: '';
-        position: absolute; left: 17px; top: 14px; bottom: 14px;
-        width: 1px; background: var(--hairline);
-      }
-      .vlt-timeline-item {
+      .vlt-timeline-row {
         display: grid;
-        grid-template-columns: 36px 1fr;
-        gap: 14px;
-        padding: 12px 0;
+        grid-template-columns: 22px 1fr auto auto;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 4px;
         border-bottom: 1px solid var(--hairline);
-        position: relative;
+        transition: background 150ms ease;
       }
-      .vlt-timeline-item:last-child { border-bottom: 0; }
+      .vlt-timeline-row:last-child { border-bottom: 0; }
+      .vlt-timeline-row:hover { background: rgba(14,14,14,0.02); }
       .vlt-timeline-glyph {
-        position: relative;
         display: flex; align-items: center; justify-content: center;
-        width: 36px; height: 36px; border-radius: 50%;
-        font-size: 18px; font-weight: 700;
+        width: 22px; height: 22px; border-radius: 50%;
+        font-size: 12px; font-weight: 700;
         background: var(--paper, #F9F6F0);
         border: 1px solid var(--hairline);
         color: var(--ink, #0E0E0E);
-        z-index: 1;
+        flex-shrink: 0;
       }
       .vlt-timeline-glyph.tone-in {
         background: #0E0E0E; color: #D7FF3A;
@@ -2890,29 +2820,41 @@ function Style() {
         background: #F9F6F0; color: #5C5C5C;
         border-color: #C5C2BA;
       }
-      .vlt-timeline-body { min-width: 0; }
       .vlt-timeline-label {
-        font-family: 'Instrument Serif', Georgia, serif;
-        font-size: 22px;
+        font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
+        font-style: italic;
+        font-size: 16px;
         line-height: 1.2;
         color: var(--ink, #0E0E0E);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
-      .vlt-timeline-meta {
-        margin-top: 4px;
+      .vlt-timeline-amount {
         font-family: var(--font-mono, ui-monospace, monospace);
         font-size: 11px;
-        letter-spacing: 1.5px;
+        letter-spacing: 1px;
         color: var(--text-3, #5C5C5C);
-        display: flex; align-items: center; gap: 8px;
-        flex-wrap: wrap;
+        font-feature-settings: 'tnum';
+        display: flex; align-items: baseline; gap: 4px;
+        white-space: nowrap;
       }
-      .vlt-timeline-meta-sep { opacity: 0.4; }
-      .vlt-timeline-amount {
-        color: var(--ink, #0E0E0E);
-        font-weight: 700;
+      .vlt-timeline-amount strong {
+        color: var(--ink, #0E0E0E); font-weight: 700;
+        font-size: 12px;
       }
       .vlt-timeline-amount small {
-        font-weight: 400; opacity: 0.65; margin-left: 2px;
+        font-size: 9px; opacity: 0.65; letter-spacing: 1.5px;
+      }
+      .vlt-timeline-time {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: var(--text-3, #5C5C5C);
+        opacity: 0.7;
+        white-space: nowrap;
+        min-width: 56px;
+        text-align: right;
       }
       .vlt-timeline-empty {
         display: flex; align-items: center; gap: 18px;
