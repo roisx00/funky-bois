@@ -547,6 +547,12 @@ export default function VaultPage({ onNavigate }) {
               <div className="vlt-state-tile-meta">BUSTS</div>
             </div>
 
+            <div className={`vlt-state-tile ${vault.portraitId ? 'is-bound' : ''}`}>
+              <div className="vlt-state-tile-label">PORTRAIT</div>
+              <div className="vlt-state-tile-num"><span className="vlt-state-live-whole">{vault.portraitId ? '1' : '0'}</span></div>
+              <div className="vlt-state-tile-meta">{vault.portraitId ? 'BOUND · +10 / day' : 'NONE BOUND'}</div>
+            </div>
+
             <div className="vlt-state-tile">
               <div className="vlt-state-tile-label">LIFETIME EARNED</div>
               <div className="vlt-state-tile-num"><span className="vlt-state-live-whole">{vault.lifetimeYieldPaid.toLocaleString()}</span></div>
@@ -3043,14 +3049,16 @@ function Style() {
       }
       .vlt-state-readout .vlt-milestones-cta strong { color: #D7FF3A; }
 
-      /* 4-tile readout strip */
+      /* 5-tile readout strip */
       .vlt-state-tiles {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 1px;
         background: rgba(249,246,240,0.12);
         border: 1px solid rgba(249,246,240,0.12);
       }
+      .vlt-state-tile.is-bound .vlt-state-live-whole { color: #D7FF3A; }
+      .vlt-state-tile.is-bound .vlt-state-tile-meta { color: rgba(215,255,58,0.85); }
       .vlt-state-tile {
         background: #0E0E0E;
         padding: 18px 20px;
