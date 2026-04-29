@@ -51,6 +51,7 @@ import leaderboardHandler  from './_routes/leaderboard.js';
 import preWhitelistApply   from './_routes/pre-whitelist-apply.js';
 import adminPreWhitelist   from './_routes/admin-pre-whitelist.js';
 import adminPreWhitelistDecide from './_routes/admin-pre-whitelist-decide.js';
+import adminPrewlGrant   from './_routes/admin-prewl-grant.js';
 import artHandler             from './_routes/art.js';
 import artSubmitHandler       from './_routes/art-submit.js';
 import artImageHandler        from './_routes/art-image.js';
@@ -128,6 +129,7 @@ const ROUTES = {
   'pre-whitelist-apply': preWhitelistApply,
   'admin-pre-whitelist': adminPreWhitelist,
   'admin-pre-whitelist-decide': adminPreWhitelistDecide,
+  'admin-prewl-grant':   adminPrewlGrant,
   'art':                  artHandler,
   'art-submit':           artSubmitHandler,
   'art-vote':             artVoteHandler,

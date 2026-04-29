@@ -1795,8 +1795,95 @@ function PreWhitelistQueue() {
 
   const setNote = (id, val) => setNoteFor((prev) => ({ ...prev, [id]: val }));
 
+  // Direct grant — approves a user by X handle even if they never
+  // applied (or were already rejected). Bumps approved count + flips
+  // drop_eligible. Shows the resulting status as a brief toast-style
+  // message inline.
+  const [grantHandle, setGrantHandle] = useState('');
+  const [grantNote, setGrantNote] = useState('');
+  const [granting, setGranting] = useState(false);
+  const [grantMsg, setGrantMsg] = useState(null);
+  const grantNow = async () => {
+    if (!grantHandle.trim() || granting) return;
+    setGranting(true);
+    setGrantMsg(null);
+    try {
+      const r = await fetch('/api/admin-prewl-grant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ xUsername: grantHandle.trim(), note: grantNote.trim() || null }),
+      });
+      const d = await r.json();
+      if (!r.ok || d.error) {
+        setGrantMsg({ kind: 'error', text: d.error ? `${d.error}${d.handle ? ` (${d.handle})` : ''}` : 'Grant failed' });
+      } else if (d.alreadyEligible) {
+        setGrantMsg({ kind: 'info', text: `@${d.xUsername} is already eligible.` });
+      } else {
+        setGrantMsg({ kind: 'ok', text: `Granted @${d.xUsername}${d.hadPortraitAlready ? ' (already had a portrait)' : ''}.` });
+        setGrantHandle('');
+        setGrantNote('');
+        setCounts((prev) => ({ ...prev, approved: (prev.approved || 0) + 1 }));
+        if (tab === 'approved') load('approved');
+      }
+    } catch (e) {
+      setGrantMsg({ kind: 'error', text: e?.message || 'Network error' });
+    } finally {
+      setGranting(false);
+    }
+  };
+
   return (
     <section className="admin-roster" style={{ marginTop: 0, marginBottom: 32 }}>
+      {/* Direct-grant form: bypass the application flow when admin wants
+          to add a holder manually (DM, off-platform recruit, etc). */}
+      <div style={{
+        marginBottom: 18, padding: 14,
+        border: '1px solid var(--hairline)', background: 'var(--paper-2)',
+      }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-4)', marginBottom: 8 }}>
+          Direct grant · pre-whitelist
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="@handle (no @ needed)"
+            value={grantHandle}
+            onChange={(e) => setGrantHandle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') grantNow(); }}
+            style={{ flex: '1 1 200px', minWidth: 180, padding: '8px 12px', fontFamily: 'var(--font-mono)', fontSize: 13, border: '1px solid var(--ink)', background: 'var(--paper)' }}
+          />
+          <input
+            type="text"
+            placeholder="Note (optional)"
+            value={grantNote}
+            onChange={(e) => setGrantNote(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') grantNow(); }}
+            style={{ flex: '2 1 280px', minWidth: 200, padding: '8px 12px', fontFamily: 'var(--font-mono)', fontSize: 13, border: '1px solid var(--hairline)', background: 'var(--paper)' }}
+          />
+          <button
+            className="btn btn-solid btn-sm"
+            onClick={grantNow}
+            disabled={!grantHandle.trim() || granting}
+          >
+            {granting ? 'Granting…' : 'Grant pre-WL →'}
+          </button>
+        </div>
+        {grantMsg && (
+          <div style={{
+            marginTop: 10, padding: '8px 12px',
+            background: grantMsg.kind === 'ok' ? 'rgba(215,255,58,0.18)'
+                      : grantMsg.kind === 'error' ? 'rgba(196,53,43,0.12)'
+                      : 'var(--paper)',
+            border: `1px solid ${grantMsg.kind === 'error' ? 'var(--red, #c4352b)' : 'var(--hairline)'}`,
+            fontFamily: 'var(--font-mono)', fontSize: 12,
+            color: grantMsg.kind === 'error' ? 'var(--red, #c4352b)' : 'var(--ink)',
+          }}>
+            {grantMsg.text}
+          </div>
+        )}
+      </div>
+
       <div className="admin-roster-head">
         <div>
           <div className="admin-roster-title">Drop pre-whitelist queue</div>
