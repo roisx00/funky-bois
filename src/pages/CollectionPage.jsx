@@ -907,13 +907,13 @@ function TasksTab() {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// Follow @the1969eth. One-shot task, +50 BUSTS. Intent-click trust
+// Follow @the1969eth. One-shot task, +10 BUSTS. Intent-click trust
 // signal like share-on-X. After claim the card flips to "followed" and
 // is inert forever for this user.
 // ══════════════════════════════════════════════════════════════════════
 const FOLLOW_OPENED_KEY = 't1969:follow-opened';
 const FOLLOW_HANDLE = 'the1969eth';
-const FOLLOW_REWARD = 50;
+const FOLLOW_REWARD = 10;
 
 function FollowTaskCard() {
   const toast = useToast();

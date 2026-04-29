@@ -60,6 +60,15 @@ export default async function handler(req, res) {
   const xAvatar    = x.profile_image_url || null;
   const xFollowers = Number(x.public_metrics?.followers_count) || 0;
 
+  // Capture client IP for the referral anti-sybil filter. Vercel sets
+  // x-forwarded-for as a chain (client, proxy, ...); we want the first
+  // entry. This is recorded ONCE on first sign-in only — we never
+  // overwrite a prior IP, so VPN-hopping after signup doesn't shake off
+  // the original fingerprint. See settleReferralIfPending().
+  const xff = req.headers['x-forwarded-for'] || '';
+  const signupIp = (Array.isArray(xff) ? xff[0] : String(xff))
+    .split(',')[0].trim() || req.headers['x-real-ip'] || null;
+
   // ── 3. Upsert user ──
   // Two conflict surfaces:
   //   • UNIQUE(x_id)       — same X account signing in again. Normal.
@@ -74,13 +83,17 @@ export default async function handler(req, res) {
   let upserted;
   try {
     upserted = one(await sql`
-      INSERT INTO users (x_id, x_username, x_name, x_avatar, referral_code, x_followers)
-      VALUES (${xId}, ${xUsername}, ${xName}, ${xAvatar}, ${xUsername}, ${xFollowers})
+      INSERT INTO users (x_id, x_username, x_name, x_avatar, referral_code, x_followers, signup_ip)
+      VALUES (${xId}, ${xUsername}, ${xName}, ${xAvatar}, ${xUsername}, ${xFollowers}, ${signupIp})
       ON CONFLICT (x_id) DO UPDATE
         SET x_username = EXCLUDED.x_username,
             x_name     = EXCLUDED.x_name,
             x_avatar   = EXCLUDED.x_avatar,
             x_followers = EXCLUDED.x_followers,
+            -- COALESCE: only stamp signup_ip on the first sign-in. Once
+            -- set, the original IP is locked in even if the user signs
+            -- in later from a VPN.
+            signup_ip  = COALESCE(users.signup_ip, EXCLUDED.signup_ip),
             updated_at = now()
       RETURNING id, x_username, x_avatar, x_name, busts_balance, is_whitelisted, referred_by_user
     `);
@@ -98,6 +111,7 @@ export default async function handler(req, res) {
                x_name      = ${xName},
                x_avatar    = ${xAvatar},
                x_followers = ${xFollowers},
+               signup_ip   = COALESCE(signup_ip, ${signupIp}),
                updated_at  = now()
          WHERE id = ${seed.id}
         RETURNING id, x_username, x_avatar, x_name, busts_balance, is_whitelisted, referred_by_user

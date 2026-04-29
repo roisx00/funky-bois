@@ -7,18 +7,18 @@
 //   1. Per-user rate limit (already existed) — stops frontend loops.
 //   2. Per-IP rate limit — raises the cost of farming by rotating X
 //      accounts from a single host.
-//   3. Best-effort Nitter scrape of the target's followers list. If
-//      we positively see the user there, verified. If the scrape says
-//      "definitely not present on any mirror we could reach", reject.
-//      If Nitter is flaky (null), fall back to honor system and tag
-//      the ledger row so admins can audit later.
+//   3. Nitter scrape of the target's followers list. We pay ONLY on a
+//      positive verification. Inconclusive results (Nitter mirrors
+//      flaky) return verification_unavailable; the user retries later.
+//      No honor-system fallback — that bucket leaked 479,500 BUSTS
+//      across 9,590 self-claims with no proof of follow.
 import { sql, one } from '../_lib/db.js';
 import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { ok, bad } from '../_lib/json.js';
 import { rateLimit, clientIp } from '../_lib/ratelimit.js';
 import { userFollowsTarget } from '../_lib/nitter.js';
 
-const FOLLOW_REWARD = 50;
+const FOLLOW_REWARD = 10;
 const FOLLOW_TARGET = 'the1969eth';
 
 export default async function handler(req, res) {
@@ -35,10 +35,10 @@ export default async function handler(req, res) {
   const ip = clientIp(req);
   if (!(await rateLimit(res, ip, { name: 'follow_claim_ip', max: 5, windowSecs: 86400 }))) return;
 
-  // ── Best-effort verification ──
+  // ── Hard verification (no honor fallback) ──
   // Returns: true (definitely follows), false (definitely NOT on any
   // reachable mirror), null (inconclusive — mirror dead or user deep in
-  // list). We only reject on explicit false.
+  // list). We pay ONLY on true. Inconclusive => 503 retry-later.
   let verified = null;
   try {
     verified = await userFollowsTarget(FOLLOW_TARGET, user.x_username);
@@ -48,6 +48,11 @@ export default async function handler(req, res) {
   if (verified === false) {
     return bad(res, 403, 'not_following', {
       hint: `Follow @${FOLLOW_TARGET} on X first, then retry.`,
+    });
+  }
+  if (verified !== true) {
+    return bad(res, 503, 'verification_unavailable', {
+      hint: 'Could not verify your follow right now. Wait a minute and retry — we only credit on confirmed follows.',
     });
   }
 
@@ -63,18 +68,15 @@ export default async function handler(req, res) {
   }
 
   await sql`UPDATE users SET busts_balance = busts_balance + ${FOLLOW_REWARD} WHERE id = ${user.id}`;
-  const reason = verified === true
-    ? 'Followed @the1969eth on X (verified)'
-    : 'Followed @the1969eth on X (unverified · honor)';
   await sql`
     INSERT INTO busts_ledger (user_id, amount, reason)
-    VALUES (${user.id}, ${FOLLOW_REWARD}, ${reason})
+    VALUES (${user.id}, ${FOLLOW_REWARD}, 'Followed @the1969eth on X (verified)')
   `;
 
   ok(res, {
     claimed: true,
     reward: FOLLOW_REWARD,
     claimedAt: updated.follow_claimed_at,
-    verified: verified === true,
+    verified: true,
   });
 }

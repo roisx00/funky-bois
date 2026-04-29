@@ -32,6 +32,8 @@ export default function VaultPage({ onNavigate }) {
 
   const [vault, setVault]   = useState(null);
   const [stats, setStats]   = useState(null);  // global TVL snapshot
+  const [activity, setActivity]   = useState([]);   // personal vault timeline
+  const [leaders, setLeaders]     = useState(null); // { top, me }
   const [loading, setLoading] = useState(true);
   const [busy, setBusy]     = useState(false);
 
@@ -85,17 +87,19 @@ export default function VaultPage({ onNavigate }) {
 
   const refresh = useCallback(async () => {
     try {
-      // Run personal vault + public TVL snapshot in parallel.
-      const [vaultR, statsR] = await Promise.all([
+      // Personal vault + public TVL + personal activity + leaderboard,
+      // all in parallel. The leaderboard endpoint is cached so it's cheap.
+      const [vaultR, statsR, actR, lbR] = await Promise.all([
         fetch('/api/vault', { credentials: 'same-origin' }),
         fetch('/api/vault-stats'),
+        fetch('/api/vault-activity', { credentials: 'same-origin' }),
+        fetch('/api/vault-leaderboard', { credentials: 'same-origin' }),
       ]);
       const v = await vaultR.json();
       if (vaultR.ok && v.vault) setVault(v.vault);
-      if (statsR.ok) {
-        const s = await statsR.json();
-        setStats(s);
-      }
+      if (statsR.ok) setStats(await statsR.json());
+      if (actR.ok)   setActivity((await actR.json()).events || []);
+      if (lbR.ok)    setLeaders(await lbR.json());
     } catch { /* swallow */ }
     setLoading(false);
   }, []);
@@ -115,6 +119,32 @@ export default function VaultPage({ onNavigate }) {
     const bustsRate = vault.bustsDeposited * 0.001;
     const portraitRate = vault.portraitId ? 10 : 0;
     return bustsRate + portraitRate;
+  }, [vault]);
+
+  // Hero live yield ticker — ticks the projected pending yield every
+  // 250ms so the page feels like it's actually working FOR the user.
+  // Independent of the YieldCard ticker; both read from the same vault
+  // snapshot but render at different prominence.
+  const [heroLiveYield, setHeroLiveYield] = useState(0);
+  useEffect(() => {
+    if (!vault) { setHeroLiveYield(0); return; }
+    const tick = () => {
+      const e = projectYieldExact({
+        bustsDeposited: vault.bustsDeposited,
+        hasPortrait: !!vault.portraitId,
+        lastYieldAt: vault.lastYieldAt,
+      });
+      setHeroLiveYield(e);
+    };
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [vault]);
+
+  // Per-second rate (sum of busts deposit yield + portrait flat).
+  const ratePerSec = useMemo(() => {
+    if (!vault) return 0;
+    return vault.bustsDeposited * 0.001 / 86400 + (vault.portraitId ? 10 / 86400 : 0);
   }, [vault]);
 
   const amountInput = useMemo(() => Math.trunc(Number(bustsAmount)) || 0, [bustsAmount]);
@@ -362,8 +392,32 @@ export default function VaultPage({ onNavigate }) {
                   <span className="vlt-ledger-power-val">{power.toLocaleString()}</span>
                   <span className={`vlt-ledger-tier ${tier >= 3 ? 'high' : ''}`}>{tierLabel}</span>
                 </div>
-                <div className="vlt-ledger-power-bar">
-                  <span style={{ width: `${Math.min(100, (power / 500) * 100)}%` }} />
+                <PowerMilestones power={power} tier={tier} />
+              </div>
+
+              {/* Hero live ticker — the page's loudest signal that the
+                  vault is *working*. Numbers tick every 250ms. */}
+              <div className={`vlt-ledger-live ${ratePerSec > 0 ? 'on' : ''}`}>
+                <div className="vlt-ledger-live-head">
+                  <span className="vlt-ledger-live-label">LIVE PENDING</span>
+                  {ratePerSec > 0 ? (
+                    <span className="vlt-ledger-live-pulse">
+                      <span className="vlt-ledger-live-pulse-dot" />
+                      EARNING
+                    </span>
+                  ) : (
+                    <span className="vlt-ledger-live-idle">IDLE</span>
+                  )}
+                </div>
+                <div className="vlt-ledger-live-num">
+                  <span className="vlt-ledger-live-whole">{Math.floor(heroLiveYield).toLocaleString()}</span>
+                  <span className="vlt-ledger-live-frac">{(heroLiveYield - Math.floor(heroLiveYield)).toFixed(4).slice(1)}</span>
+                  <span className="vlt-ledger-live-unit">BUSTS</span>
+                </div>
+                <div className="vlt-ledger-live-meta">
+                  <span>+{ratePerSec.toFixed(5)}<small>/sec</small></span>
+                  <span className="vlt-ledger-live-sep">·</span>
+                  <span>{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}<small>/day</small></span>
                 </div>
               </div>
 
@@ -373,13 +427,10 @@ export default function VaultPage({ onNavigate }) {
                   <span className="vlt-ledger-row-val">{vault.bustsDeposited.toLocaleString()}</span>
                   <span className="vlt-ledger-row-unit">BUSTS</span>
                 </div>
-                <div className={`vlt-ledger-row ${dailyRate > 0 ? 'live' : ''}`}>
-                  <span className="vlt-ledger-row-label">
-                    EARNING
-                    {dailyRate > 0 ? <span className="vlt-live-dot" /> : null}
-                  </span>
-                  <span className="vlt-ledger-row-val">{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}</span>
-                  <span className="vlt-ledger-row-unit">BUSTS / DAY</span>
+                <div className="vlt-ledger-row">
+                  <span className="vlt-ledger-row-label">LIFETIME EARNED</span>
+                  <span className="vlt-ledger-row-val">{vault.lifetimeYieldPaid.toLocaleString()}</span>
+                  <span className="vlt-ledger-row-unit">BUSTS</span>
                 </div>
                 <div className="vlt-ledger-row">
                   <span className="vlt-ledger-row-label">BURN COUNT</span>
@@ -519,22 +570,30 @@ export default function VaultPage({ onNavigate }) {
         />
       </section>
 
-      {/* ─── CHRONICLE STRIP ─────────────────────────────────── */}
-      {/* Moved below the action sections so the vault hero sits as close
-          as possible to deposit + portrait — the door-open animation
-          stays in the user's viewport while they act. */}
-      <section className="vlt-chronicle vlt-chronicle-compact">
+      {/* ─── CHRONICLE TIMELINE ──────────────────────────────── */}
+      {/* A live diary of what your vault has done — deposits, portrait
+          bond/unbind, upgrades, yield claims. Editorial, not a stat
+          grid. The diary feel is what makes the vault feel alive. */}
+      <section className="vlt-chronicle vlt-chronicle-timeline">
         <div className="vlt-chronicle-inner">
           <div className="vlt-chronicle-head">
             <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
-            <span className="vlt-chronicle-sub">A running ledger of what your vault has done.</span>
+            <span className="vlt-chronicle-sub">A running diary of what your vault has done.</span>
           </div>
-          <div className="vlt-chron-stats">
-            <ChronCell num={vault.bustsDeposited.toLocaleString()} label="BUSTS deposited" unit="cumulative" />
-            <ChronCell num={isPortraitInVault ? '1' : '0'} label="portrait bound" unit={isPortraitInVault ? 'active' : '—'} />
-            <ChronCell num={vault.lifetimeYieldPaid.toLocaleString()} label="yield earned" unit="lifetime" hero />
-            <ChronCell num={String(vault.burnCount)} label="times burned" unit={vault.burnCount === 0 ? 'never' : 'survived'} />
+          <ActivityTimeline events={activity} />
+        </div>
+      </section>
+
+      {/* ─── LEADERBOARD ─────────────────────────────────────── */}
+      {/* Top 20 vaults by power. Pinned own-rank below the cut. Social
+          pressure → deposits → upgrades. */}
+      <section className="vlt-leaderboard">
+        <div className="vlt-leaderboard-inner">
+          <div className="vlt-leaderboard-head">
+            <span className="vlt-kicker"><span className="vlt-kicker-dot" /> STANDINGS</span>
+            <span className="vlt-chronicle-sub">The strongest keeps in the realm.</span>
           </div>
+          <Leaderboard data={leaders} />
         </div>
       </section>
 
@@ -731,16 +790,177 @@ function ClaimResultModal({ result, onClose }) {
   );
 }
 
-function ChronCell({ num, label, unit, hero }) {
+// ─── HERO MILESTONES ────────────────────────────────────────────────
+// Replaces the single-fill power bar. Four pegs at the official tier
+// thresholds with the user's current position marked, plus a one-line
+// "X to FORTIFIED" target so the next reach feels concrete.
+const TIER_THRESHOLDS = [0, 250, 500, 1000];
+const TIER_NAMES      = ['BASE', 'FORTIFIED', 'HEAVY', 'SUPREME'];
+
+function PowerMilestones({ power, tier }) {
+  const next = tier < 3 ? TIER_THRESHOLDS[tier + 1] : null;
+  const toGo = next != null ? Math.max(0, next - power) : 0;
+  // Track fill: % of the way from current tier's start to the next tier.
+  const tierStart = TIER_THRESHOLDS[tier];
+  const tierEnd   = next != null ? next : tierStart + 1;
+  const pct = next != null
+    ? Math.max(0, Math.min(100, ((power - tierStart) / (tierEnd - tierStart)) * 100))
+    : 100;
+
   return (
-    <div className={`vlt-chron-cell ${hero ? 'hero' : ''}`}>
-      {hero ? <span className="vlt-chron-dot" /> : null}
-      <div className="vlt-chron-num">{num}</div>
-      <div className="vlt-chron-meta">
-        <span className="vlt-chron-label">{label}</span>
-        {unit ? <span className="vlt-chron-unit">{unit}</span> : null}
+    <div className="vlt-milestones">
+      <div className="vlt-milestones-track">
+        <span className="vlt-milestones-fill" style={{ width: `${pct}%` }} />
+        {TIER_THRESHOLDS.map((t, i) => (
+          <span
+            key={t}
+            className={`vlt-milestones-peg ${power >= t ? 'lit' : ''} ${tier === i ? 'cur' : ''}`}
+            style={{ left: `${(i / (TIER_THRESHOLDS.length - 1)) * 100}%` }}
+            title={`${TIER_NAMES[i]} · ${t.toLocaleString()}`}
+          >
+            <span className="vlt-milestones-peg-dot" />
+            <span className="vlt-milestones-peg-label">{TIER_NAMES[i]}</span>
+            <span className="vlt-milestones-peg-thresh">{t.toLocaleString()}</span>
+          </span>
+        ))}
+      </div>
+      <div className="vlt-milestones-cta">
+        {next != null
+          ? <><strong>{toGo.toLocaleString()}</strong> POWER TO {TIER_NAMES[tier + 1]}</>
+          : <strong>SUPREME · all tiers reached</strong>}
       </div>
     </div>
+  );
+}
+
+// ─── ACTIVITY TIMELINE ──────────────────────────────────────────────
+// Editorial diary of vault events. Renders as a vertical track with
+// glyph + label + amount, grouped naturally by recency.
+const ACTIVITY_GLYPH = {
+  deposit:         '↧',
+  withdraw:        '↥',
+  portrait_bind:   '◐',
+  portrait_unbind: '◑',
+  upgrade:         '⌬',
+  yield_claim:     '⊹',
+};
+const ACTIVITY_TONE = {
+  deposit:         'in',
+  withdraw:        'out',
+  portrait_bind:   'in',
+  portrait_unbind: 'out',
+  upgrade:         'in',
+  yield_claim:     'in',
+};
+
+function ActivityTimeline({ events }) {
+  if (!events || !events.length) {
+    return (
+      <div className="vlt-timeline-empty">
+        <div className="vlt-timeline-empty-mark">∅</div>
+        <div>
+          <strong>The page is blank.</strong>
+          <p>Once you deposit, bind a portrait, or claim yield, every move shows up here as a dated entry.</p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <ol className="vlt-timeline">
+      {events.map((ev, i) => (
+        <li key={`${ev.kind}-${ev.at}-${i}`} className={`vlt-timeline-item vlt-timeline-${ev.kind}`}>
+          <span className={`vlt-timeline-glyph tone-${ACTIVITY_TONE[ev.kind] || 'in'}`}>
+            {ACTIVITY_GLYPH[ev.kind] || '·'}
+          </span>
+          <div className="vlt-timeline-body">
+            <div className="vlt-timeline-label">{ev.label}</div>
+            <div className="vlt-timeline-meta">
+              <span>{relativeTime(ev.at)}</span>
+              {ev.amount != null ? (
+                <>
+                  <span className="vlt-timeline-meta-sep">·</span>
+                  <span className="vlt-timeline-amount">
+                    {ACTIVITY_TONE[ev.kind] === 'out' ? '−' : '+'}{ev.amount.toLocaleString()}
+                    {ev.sub ? <small>{` ${ev.sub}`}</small> : null}
+                  </span>
+                </>
+              ) : ev.sub ? (
+                <>
+                  <span className="vlt-timeline-meta-sep">·</span>
+                  <span><small>{ev.sub}</small></span>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function relativeTime(iso) {
+  const t = new Date(iso).getTime();
+  const sec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (sec < 60)        return `${sec}s ago`;
+  if (sec < 3600)      return `${Math.floor(sec / 60)}m ago`;
+  if (sec < 86400)     return `${Math.floor(sec / 3600)}h ago`;
+  if (sec < 86400 * 7) return `${Math.floor(sec / 86400)}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// ─── LEADERBOARD ────────────────────────────────────────────────────
+function Leaderboard({ data }) {
+  if (!data || !data.top) {
+    return <div className="vlt-leaderboard-empty">Standings unavailable.</div>;
+  }
+  const { top, me } = data;
+  return (
+    <>
+      <ol className="vlt-lb-list">
+        {top.map((row) => {
+          const mine = me && me.xUsername === row.xUsername;
+          return (
+            <li key={row.rank} className={`vlt-lb-row ${mine ? 'mine' : ''} ${row.rank <= 3 ? `top-${row.rank}` : ''}`}>
+              <span className="vlt-lb-rank">{row.rank.toString().padStart(2, '0')}</span>
+              <span className="vlt-lb-handle">
+                {row.xAvatar ? <img src={row.xAvatar} alt="" /> : <span className="vlt-lb-handle-fallback">@</span>}
+                <span className="vlt-lb-handle-name">@{row.xUsername}</span>
+                {row.hasPortrait ? <span className="vlt-lb-bound" title="Portrait bound">◐</span> : null}
+              </span>
+              <span className="vlt-lb-power">
+                <span className="vlt-lb-power-val">{row.power.toLocaleString()}</span>
+                <span className="vlt-lb-power-unit">power</span>
+              </span>
+              <span className="vlt-lb-yield">
+                <span className="vlt-lb-yield-val">{row.lifetimeYield.toLocaleString()}</span>
+                <span className="vlt-lb-yield-unit">earned</span>
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      {me && !me.inTop ? (
+        <div className="vlt-lb-self">
+          <span className="vlt-lb-self-label">YOU</span>
+          <div className="vlt-lb-row mine self-row">
+            <span className="vlt-lb-rank">#{me.rank}</span>
+            <span className="vlt-lb-handle">
+              {me.xAvatar ? <img src={me.xAvatar} alt="" /> : <span className="vlt-lb-handle-fallback">@</span>}
+              <span className="vlt-lb-handle-name">@{me.xUsername}</span>
+              {me.hasPortrait ? <span className="vlt-lb-bound" title="Portrait bound">◐</span> : null}
+            </span>
+            <span className="vlt-lb-power">
+              <span className="vlt-lb-power-val">{me.power.toLocaleString()}</span>
+              <span className="vlt-lb-power-unit">power</span>
+            </span>
+            <span className="vlt-lb-yield">
+              <span className="vlt-lb-yield-val">{me.lifetimeYield.toLocaleString()}</span>
+              <span className="vlt-lb-yield-unit">earned</span>
+            </span>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -2290,6 +2510,380 @@ function Style() {
         .vlt-chron-num { font-size: 26px; }
 
         .vlt-waits-card { padding: 18px; }
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+         V3 ADDITIONS — Hero live ticker, milestones, timeline, leaderboard
+         ═══════════════════════════════════════════════════════════════ */
+
+      /* ── Power milestones (replaces the simple bar) ── */
+      .vlt-milestones { margin-top: 16px; }
+      .vlt-milestones-track {
+        position: relative;
+        height: 4px;
+        background: rgba(255,255,255,0.08);
+        margin: 0 6px 36px 6px;
+        border-radius: 999px;
+      }
+      .vlt-milestones-fill {
+        position: absolute; top: 0; left: 0; height: 100%;
+        background: linear-gradient(90deg, #D7FF3A, #d7ff3a99);
+        border-radius: 999px;
+        transition: width 600ms cubic-bezier(.2,.8,.2,1);
+        box-shadow: 0 0 18px rgba(215,255,58,0.35);
+      }
+      .vlt-milestones-peg {
+        position: absolute; top: 50%;
+        transform: translate(-50%, -50%);
+        display: flex; flex-direction: column; align-items: center;
+        gap: 4px;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .vlt-milestones-peg-dot {
+        display: block;
+        width: 12px; height: 12px;
+        background: #1a1a1a;
+        border: 2px solid rgba(255,255,255,0.2);
+        border-radius: 50%;
+        transition: all 200ms ease;
+      }
+      .vlt-milestones-peg.lit .vlt-milestones-peg-dot {
+        background: #D7FF3A;
+        border-color: #D7FF3A;
+        box-shadow: 0 0 10px rgba(215,255,58,0.6);
+      }
+      .vlt-milestones-peg.cur .vlt-milestones-peg-dot {
+        width: 16px; height: 16px;
+        background: #fff; border-color: #D7FF3A;
+        box-shadow: 0 0 0 4px rgba(215,255,58,0.18), 0 0 16px rgba(215,255,58,0.55);
+      }
+      .vlt-milestones-peg-label,
+      .vlt-milestones-peg-thresh {
+        position: absolute;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px;
+        letter-spacing: 1.5px;
+        color: rgba(249,246,240,0.5);
+      }
+      .vlt-milestones-peg-label  { top: 16px; }
+      .vlt-milestones-peg-thresh { top: 28px; font-size: 8px; opacity: 0.6; }
+      .vlt-milestones-peg.lit .vlt-milestones-peg-label { color: rgba(249,246,240,0.85); }
+      .vlt-milestones-peg.cur .vlt-milestones-peg-label { color: #D7FF3A; font-weight: 700; }
+      .vlt-milestones-peg:first-child  { transform: translate(0,    -50%); }
+      .vlt-milestones-peg:first-child  .vlt-milestones-peg-label,
+      .vlt-milestones-peg:first-child  .vlt-milestones-peg-thresh { left: 0; }
+      .vlt-milestones-peg:last-child   { transform: translate(-100%,-50%); }
+      .vlt-milestones-peg:last-child   .vlt-milestones-peg-label,
+      .vlt-milestones-peg:last-child   .vlt-milestones-peg-thresh { right: 0; }
+      .vlt-milestones-cta {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: rgba(249,246,240,0.55);
+        margin-top: 4px;
+      }
+      .vlt-milestones-cta strong { color: #D7FF3A; font-weight: 700; }
+
+      /* ── Hero live ticker block ── */
+      .vlt-ledger-live {
+        margin-top: 22px;
+        padding: 16px 18px;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px;
+        background:
+          radial-gradient(ellipse at top right, rgba(215,255,58,0.05), transparent 60%),
+          rgba(255,255,255,0.025);
+        position: relative;
+        overflow: hidden;
+      }
+      .vlt-ledger-live.on {
+        border-color: rgba(215,255,58,0.25);
+        background:
+          radial-gradient(ellipse at top right, rgba(215,255,58,0.10), transparent 65%),
+          rgba(215,255,58,0.025);
+      }
+      .vlt-ledger-live.on::before {
+        content: '';
+        position: absolute; left: 0; top: 0; bottom: 0;
+        width: 2px;
+        background: #D7FF3A;
+        box-shadow: 0 0 12px rgba(215,255,58,0.6);
+        animation: vlt-live-pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes vlt-live-pulse {
+        0%,100% { opacity: 1; }
+        50%     { opacity: 0.45; }
+      }
+      .vlt-ledger-live-head {
+        display: flex; align-items: center; justify-content: space-between;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 2.5px;
+      }
+      .vlt-ledger-live-label { color: rgba(249,246,240,0.55); }
+      .vlt-ledger-live-pulse {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: #D7FF3A; font-weight: 700;
+      }
+      .vlt-ledger-live-pulse-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%; background: #D7FF3A;
+        box-shadow: 0 0 8px #D7FF3A;
+        animation: vlt-live-pulse 1.2s ease-in-out infinite;
+      }
+      .vlt-ledger-live-idle { color: rgba(249,246,240,0.35); }
+      .vlt-ledger-live-num {
+        margin-top: 8px;
+        display: flex; align-items: baseline; gap: 4px;
+        font-family: 'Instrument Serif', Georgia, serif;
+        line-height: 1;
+      }
+      .vlt-ledger-live-whole {
+        font-size: 56px; color: #F9F6F0; letter-spacing: -2px;
+        font-feature-settings: 'tnum';
+      }
+      .vlt-ledger-live-frac {
+        font-size: 28px; color: rgba(249,246,240,0.55);
+        font-feature-settings: 'tnum';
+        font-variant-numeric: tabular-nums;
+      }
+      .vlt-ledger-live.on .vlt-ledger-live-frac { color: #D7FF3A; }
+      .vlt-ledger-live-unit {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 11px; letter-spacing: 2.5px;
+        color: rgba(249,246,240,0.5);
+        margin-left: 6px;
+      }
+      .vlt-ledger-live-meta {
+        margin-top: 10px;
+        display: flex; align-items: center; gap: 10px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 11px; letter-spacing: 1px;
+        color: rgba(249,246,240,0.55);
+      }
+      .vlt-ledger-live-meta small {
+        font-size: 9px; opacity: 0.65; letter-spacing: 1.5px;
+        margin-left: 2px;
+      }
+      .vlt-ledger-live-sep { opacity: 0.35; }
+
+      /* ── Activity timeline (replaces stat strip) ── */
+      .vlt-chronicle-timeline { padding: 36px 28px; }
+      .vlt-timeline {
+        list-style: none; margin: 24px 0 0; padding: 0;
+        position: relative;
+      }
+      .vlt-timeline::before {
+        content: '';
+        position: absolute; left: 17px; top: 8px; bottom: 8px;
+        width: 1px; background: var(--hairline);
+      }
+      .vlt-timeline-item {
+        display: grid;
+        grid-template-columns: 36px 1fr;
+        gap: 14px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--hairline);
+        position: relative;
+      }
+      .vlt-timeline-item:last-child { border-bottom: 0; }
+      .vlt-timeline-glyph {
+        position: relative;
+        display: flex; align-items: center; justify-content: center;
+        width: 36px; height: 36px; border-radius: 50%;
+        font-size: 18px; font-weight: 700;
+        background: var(--paper, #F9F6F0);
+        border: 1px solid var(--hairline);
+        color: var(--ink, #0E0E0E);
+        z-index: 1;
+      }
+      .vlt-timeline-glyph.tone-in {
+        background: #0E0E0E; color: #D7FF3A;
+        border-color: #0E0E0E;
+      }
+      .vlt-timeline-glyph.tone-out {
+        background: #F9F6F0; color: #5C5C5C;
+        border-color: #C5C2BA;
+      }
+      .vlt-timeline-body { min-width: 0; }
+      .vlt-timeline-label {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 22px;
+        line-height: 1.2;
+        color: var(--ink, #0E0E0E);
+      }
+      .vlt-timeline-meta {
+        margin-top: 4px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 11px;
+        letter-spacing: 1.5px;
+        color: var(--text-3, #5C5C5C);
+        display: flex; align-items: center; gap: 8px;
+        flex-wrap: wrap;
+      }
+      .vlt-timeline-meta-sep { opacity: 0.4; }
+      .vlt-timeline-amount {
+        color: var(--ink, #0E0E0E);
+        font-weight: 700;
+      }
+      .vlt-timeline-amount small {
+        font-weight: 400; opacity: 0.65; margin-left: 2px;
+      }
+      .vlt-timeline-empty {
+        display: flex; align-items: center; gap: 18px;
+        padding: 24px;
+        border: 1px dashed var(--hairline);
+        border-radius: 6px;
+        margin-top: 18px;
+      }
+      .vlt-timeline-empty-mark {
+        font-size: 36px; color: var(--text-3, #5C5C5C); line-height: 1;
+      }
+      .vlt-timeline-empty strong {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 22px; font-weight: 400;
+      }
+      .vlt-timeline-empty p {
+        margin: 4px 0 0; color: var(--text-3, #5C5C5C); font-size: 14px;
+      }
+
+      /* ── Leaderboard ── */
+      .vlt-leaderboard {
+        padding: 36px 28px;
+        background: var(--paper, #F9F6F0);
+        border-bottom: 1px solid var(--hairline);
+      }
+      .vlt-leaderboard-inner { max-width: 1080px; margin: 0 auto; }
+      .vlt-leaderboard-head {
+        display: flex; align-items: baseline; justify-content: space-between;
+        margin-bottom: 18px;
+        flex-wrap: wrap; gap: 8px;
+      }
+      .vlt-lb-list {
+        list-style: none; margin: 0; padding: 0;
+        border-top: 1px solid var(--hairline);
+      }
+      .vlt-lb-row {
+        display: grid;
+        grid-template-columns: 56px 1fr auto auto;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--hairline);
+        transition: background 200ms ease;
+      }
+      .vlt-lb-row:hover { background: rgba(14,14,14,0.025); }
+      .vlt-lb-row.mine {
+        background: rgba(215,255,58,0.18);
+        border-left: 3px solid #0E0E0E;
+        padding-left: 9px;
+      }
+      .vlt-lb-row.top-1 .vlt-lb-rank { color: #0E0E0E; font-weight: 700; font-size: 16px; }
+      .vlt-lb-row.top-2 .vlt-lb-rank { color: #0E0E0E; font-weight: 700; }
+      .vlt-lb-row.top-3 .vlt-lb-rank { color: #0E0E0E; font-weight: 700; }
+      .vlt-lb-rank {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 13px;
+        letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+        font-feature-settings: 'tnum';
+      }
+      .vlt-lb-handle {
+        display: flex; align-items: center; gap: 10px;
+        min-width: 0;
+      }
+      .vlt-lb-handle img {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #eee;
+        flex-shrink: 0;
+      }
+      .vlt-lb-handle-fallback {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        background: #0E0E0E; color: #D7FF3A;
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+      .vlt-lb-handle-name {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 18px;
+        color: var(--ink, #0E0E0E);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .vlt-lb-bound {
+        font-size: 14px; color: #0E0E0E;
+        background: #D7FF3A;
+        padding: 2px 6px;
+        border-radius: 999px;
+        line-height: 1;
+      }
+      .vlt-lb-power, .vlt-lb-yield {
+        display: flex; flex-direction: column; align-items: flex-end;
+        font-feature-settings: 'tnum';
+      }
+      .vlt-lb-power-val {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 22px;
+        line-height: 1;
+        color: var(--ink, #0E0E0E);
+      }
+      .vlt-lb-power-unit, .vlt-lb-yield-unit {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+        margin-top: 2px;
+      }
+      .vlt-lb-yield-val {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 14px;
+        color: var(--text-2, #3A3A3A);
+        font-weight: 700;
+      }
+      .vlt-lb-self {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 2px dashed var(--hairline);
+      }
+      .vlt-lb-self-label {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 3px;
+        color: var(--text-3, #5C5C5C);
+        display: block; margin-bottom: 6px;
+      }
+      .vlt-lb-self .self-row { border-bottom: 0; }
+      .vlt-leaderboard-empty {
+        padding: 24px;
+        text-align: center;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 12px; letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+      }
+
+      /* ── Mobile adjustments for the new pieces ── */
+      @media (max-width: 720px) {
+        .vlt-milestones-peg-thresh { display: none; }
+        .vlt-milestones-peg-label { font-size: 8px; }
+        .vlt-ledger-live-whole { font-size: 42px; }
+        .vlt-ledger-live-frac { font-size: 22px; }
+        .vlt-chronicle-timeline { padding: 22px 16px; }
+        .vlt-leaderboard { padding: 22px 16px; }
+        .vlt-lb-row {
+          grid-template-columns: 36px 1fr auto;
+          gap: 10px;
+          padding: 10px 8px;
+        }
+        .vlt-lb-yield { display: none; }
+        .vlt-lb-handle img,
+        .vlt-lb-handle-fallback { width: 26px; height: 26px; }
+        .vlt-lb-handle-name { font-size: 15px; }
+        .vlt-lb-power-val { font-size: 18px; }
+        .vlt-timeline-label { font-size: 18px; }
       }
     `}</style>
   );
