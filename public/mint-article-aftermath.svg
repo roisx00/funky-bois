@@ -81,12 +81,8 @@
     </g>
   </g>
 
-  <!-- DOCTRINE BAR -->
-  <line x1="60" y1="565" x2="1140" y2="565" stroke="#D7FF3A" stroke-width="2"/>
-  <text x="600" y="557" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="6" fill="#0E0E0E" opacity="0.7">⌬  THE VAULT MUST NOT BURN AGAIN  ⌬</text>
-
   <!-- footer -->
   <text x="60" y="640" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">opensea.io/collection/the1969</text>
-  <text x="600" y="640" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">§11 LITEPAPER</text>
+  <text x="600" y="640" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">⌬ THE VAULT MUST NOT BURN AGAIN</text>
   <text x="1140" y="640" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">@the1969eth</text>
 </svg>
