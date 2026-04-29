@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675">
+  <!-- paper bg -->
+  <rect width="1200" height="675" fill="#F9F6F0"/>
+
+  <!-- top + bottom rules -->
+  <line x1="60" y1="80" x2="1140" y2="80" stroke="#0E0E0E" stroke-width="1"/>
+  <line x1="60" y1="595" x2="1140" y2="595" stroke="#0E0E0E" stroke-width="1"/>
+
+  <!-- top meta -->
+  <text x="60" y="64" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">FIGURE B · TIER ELIGIBILITY · TWO-STAGE FUNNEL</text>
+  <text x="1140" y="64" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3" fill="#0E0E0E">PRE-MINT</text>
+
+  <!-- HEADLINE -->
+  <text x="60" y="160" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="58" fill="#0E0E0E" letter-spacing="-1.5">Who mints, when.</text>
+  <line x1="60" y1="184" x2="160" y2="184" stroke="#D7FF3A" stroke-width="5"/>
+  <text x="60" y="220" font-family="Georgia, serif" font-style="italic" font-size="17" fill="#3A3A3A">Pre-whitelist approval is the entry. Building a portrait promotes you to Tier 1.</text>
+
+  <!-- 3 TIER CARDS -->
+  <g transform="translate(60, 270)">
+    <!-- Tier 1 (lime hero) -->
+    <g>
+      <rect x="0" y="0" width="350" height="280" fill="rgba(215,255,58,0.12)" stroke="#0E0E0E" stroke-width="2"/>
+      <text x="22" y="40" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">§I · GUARANTEED</text>
+      <text x="22" y="86" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="38" fill="#0E0E0E" letter-spacing="-0.8">Tier 1</text>
+      <line x1="22" y1="100" x2="80" y2="100" stroke="#D7FF3A" stroke-width="3"/>
+      <text x="22" y="130" font-family="Georgia, serif" font-size="13" fill="#0E0E0E"><tspan font-weight="700">Path:</tspan> applied · approved · drop access ·</text>
+      <text x="22" y="148" font-family="Georgia, serif" font-size="13" fill="#0E0E0E">portrait built and submitted · wallet bound.</text>
+      <text x="22" y="184" font-family="Georgia, serif" font-style="italic" font-size="13" fill="#3A3A3A">Mint price 0.002 ETH. One per wallet. The</text>
+      <text x="22" y="202" font-family="Georgia, serif" font-style="italic" font-size="13" fill="#3A3A3A">window is yours by design.</text>
+      <line x1="22" y1="228" x2="328" y2="228" stroke="#0E0E0E" stroke-width="0.5" stroke-dasharray="2 3"/>
+      <text x="22" y="252" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" letter-spacing="2" fill="#0E0E0E" font-weight="700">→ DASHBOARD · OVERVIEW · CONNECT WALLET</text>
+    </g>
+
+    <!-- Tier 2 -->
+    <g transform="translate(370, 0)">
+      <rect x="0" y="0" width="350" height="280" fill="transparent" stroke="#0E0E0E" stroke-width="2"/>
+      <text x="22" y="40" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">§II · FIRST COME</text>
+      <text x="22" y="86" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="38" fill="#0E0E0E" letter-spacing="-0.8">Tier 2</text>
+      <line x1="22" y1="100" x2="80" y2="100" stroke="#D7FF3A" stroke-width="3"/>
+      <text x="22" y="130" font-family="Georgia, serif" font-size="13" fill="#0E0E0E"><tspan font-weight="700">Path:</tspan> applied · approved · drop access ·</text>
+      <text x="22" y="148" font-family="Georgia, serif" font-size="13" fill="#0E0E0E">portrait NOT built · wallet bound.</text>
+      <text x="22" y="184" font-family="Georgia, serif" font-style="italic" font-size="13" fill="#3A3A3A">Same price as Tier 1. Competitive window.</text>
+      <text x="22" y="202" font-family="Georgia, serif" font-style="italic" font-size="13" fill="#3A3A3A">Faster fingers settle the race.</text>
+      <line x1="22" y1="228" x2="328" y2="228" stroke="#0E0E0E" stroke-width="0.5" stroke-dasharray="2 3"/>
+      <text x="22" y="252" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" letter-spacing="2" fill="#0E0E0E" font-weight="700">→ DASHBOARD · OVERVIEW · CONNECT WALLET</text>
+    </g>
+
+    <!-- Public -->
+    <g transform="translate(740, 0)">
+      <rect x="0" y="0" width="340" height="280" fill="transparent" stroke="#0E0E0E" stroke-width="2"/>
+      <text x="22" y="40" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">§III · OPEN</text>
+      <text x="22" y="86" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="38" fill="#0E0E0E" letter-spacing="-0.8">Public</text>
+      <line x1="22" y1="100" x2="80" y2="100" stroke="#D7FF3A" stroke-width="3"/>
+      <text x="22" y="130" font-family="Georgia, serif" font-size="13" fill="#0E0E0E"><tspan font-weight="700">Path:</tspan> none required. Residual supply</text>
+      <text x="22" y="148" font-family="Georgia, serif" font-size="13" fill="#0E0E0E">opens to the broader market.</text>
+      <text x="22" y="184" font-family="Georgia, serif" font-style="italic" font-size="13" fill="#3A3A3A">0.005 ETH. Ten per wallet. While it lasts.</text>
+      <line x1="22" y1="228" x2="318" y2="228" stroke="#0E0E0E" stroke-width="0.5" stroke-dasharray="2 3"/>
+      <text x="22" y="252" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" letter-spacing="2" fill="#0E0E0E" font-weight="700">→ OPEN MARKET · OPENSEA</text>
+    </g>
+  </g>
+
+  <!-- ACTION BAR -->
+  <g transform="translate(60, 570)">
+    <rect x="0" y="0" width="1080" height="2" fill="#D7FF3A"/>
+  </g>
+
+  <!-- footer -->
+  <text x="60" y="640" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">opensea.io/collection/the1969</text>
+  <text x="1140" y="640" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">@the1969eth</text>
+</svg>
