@@ -152,6 +152,11 @@ export default function VaultPage({ onNavigate }) {
   const isPortraitInVault = !!vault.portraitId;
 
   // ── handlers ─────────────────────────────────────────────────────
+  // Celebration modal shown after a successful claim. Holds {credited,
+  // newBalance} so the user sees exactly what was settled to their
+  // BUSTS balance with brand-styled flair.
+  const [claimResult, setClaimResult] = useState(null);
+
   async function handleClaim() {
     if (busy) return;
     setBusy(true);
@@ -159,8 +164,12 @@ export default function VaultPage({ onNavigate }) {
       const r = await fetch('/api/vault-claim-yield', { method: 'POST', credentials: 'same-origin' });
       const d = await r.json();
       if (!r.ok) { toast.error(d?.error || 'Claim failed.'); setBusy(false); return; }
-      if (d.credited > 0) toast.success(`+${d.credited.toLocaleString()} BUSTS claimed.`);
-      else toast.info?.('Nothing to claim yet.');
+      if (d.credited > 0) {
+        // Show the celebration modal instead of just a toast.
+        setClaimResult({ credited: d.credited, newBalance: d.newBalance });
+      } else {
+        toast.info?.('Nothing to claim yet.');
+      }
       await Promise.all([refresh(), refreshMe()]);
     } catch (e) { toast.error(e?.message || 'Network error.'); }
     finally { setBusy(false); }
@@ -582,6 +591,7 @@ export default function VaultPage({ onNavigate }) {
       </section>
 
       <ConfirmModal state={confirmState} onClose={closeConfirm} />
+      <ClaimResultModal result={claimResult} onClose={() => setClaimResult(null)} />
     </div>
   );
 }
@@ -637,6 +647,83 @@ function ConfirmModal({ state, onClose }) {
             {confirmLabel || 'Confirm'} <span aria-hidden="true">→</span>
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Celebration modal shown after a successful yield claim. Animates the
+// credited amount counting up from 0 to the final value, paired with a
+// lime corner-bracket frame, sigil, and the new BUSTS balance.
+function ClaimResultModal({ result, onClose }) {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (!result) return undefined;
+
+    // Tick the display number from 0 → credited over ~700ms with a
+    // soft ease-out so the final number lands rather than blurs past.
+    setDisplay(0);
+    const target = result.credited;
+    const duration = 700;
+    const start = performance.now();
+    let raf;
+    function step(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(target * eased));
+      if (t < 1) raf = requestAnimationFrame(step);
+    }
+    raf = requestAnimationFrame(step);
+
+    function onKey(e) {
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') onClose();
+    }
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [result, onClose]);
+
+  if (!result) return null;
+  const { newBalance } = result;
+  return (
+    <div className="vlt-claim-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="vlt-claim-card" onClick={(e) => e.stopPropagation()}>
+        <span className="vlt-claim-corner vlt-claim-corner-tl" aria-hidden="true" />
+        <span className="vlt-claim-corner vlt-claim-corner-tr" aria-hidden="true" />
+        <span className="vlt-claim-corner vlt-claim-corner-bl" aria-hidden="true" />
+        <span className="vlt-claim-corner vlt-claim-corner-br" aria-hidden="true" />
+
+        <div className="vlt-claim-sigil" aria-hidden="true">⌬</div>
+        <div className="vlt-claim-kicker">YIELD CLAIMED</div>
+
+        <div className="vlt-claim-amount">
+          <span className="vlt-claim-plus">+</span>
+          <span className="vlt-claim-num">{display.toLocaleString()}</span>
+          <span className="vlt-claim-unit">BUSTS</span>
+        </div>
+
+        <div className="vlt-claim-rule" />
+
+        <p className="vlt-claim-sub">Settled to your balance.</p>
+
+        {typeof newBalance === 'number' ? (
+          <div className="vlt-claim-balance">
+            <span className="vlt-claim-balance-label">NEW BALANCE</span>
+            <span className="vlt-claim-balance-num">{newBalance.toLocaleString()} BUSTS</span>
+          </div>
+        ) : null}
+
+        <button className="vlt-claim-go" onClick={onClose} type="button" autoFocus>
+          Continue <span aria-hidden="true">→</span>
+        </button>
+
+        <div className="vlt-claim-doctrine">⌬  THE VAULT MUST NOT BURN AGAIN</div>
       </div>
     </div>
   );
@@ -1829,6 +1916,154 @@ function Style() {
       .vlt-confirm-danger .vlt-confirm-go:hover {
         background: var(--accent); border-color: var(--accent);
         box-shadow: 0 0 0 4px rgba(215,255,58,0.2);
+      }
+
+      /* ── CLAIM RESULT MODAL ──
+         Celebration variant. Same dark-ink card vocabulary as the
+         confirm modal but with brand-emblem styling — sigil at top,
+         lime corner brackets on all four corners, animated count-up,
+         doctrine line at bottom. */
+      .vlt-claim-backdrop {
+        position: fixed; inset: 0; z-index: 9999;
+        background: rgba(8, 8, 8, 0.82);
+        backdrop-filter: blur(6px);
+        display: flex; align-items: center; justify-content: center;
+        padding: 24px;
+        animation: vltFadeIn 200ms ease;
+      }
+      .vlt-claim-card {
+        position: relative;
+        width: 100%; max-width: 520px;
+        background: #0E0E0E;
+        border: 1px solid rgba(215,255,58,0.42);
+        padding: 56px 40px 32px;
+        text-align: center;
+        box-shadow:
+          0 30px 80px rgba(0,0,0,0.7),
+          0 0 0 1px rgba(215,255,58,0.06),
+          0 0 80px rgba(215,255,58,0.10);
+        animation: vltClaimEnter 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+      }
+      @keyframes vltClaimEnter {
+        from { opacity: 0; transform: translateY(20px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .vlt-claim-corner {
+        position: absolute; width: 18px; height: 18px;
+        border: 2px solid var(--accent);
+      }
+      .vlt-claim-corner-tl { top: 10px; left: 10px;     border-right: none; border-bottom: none; }
+      .vlt-claim-corner-tr { top: 10px; right: 10px;    border-left: none;  border-bottom: none; }
+      .vlt-claim-corner-bl { bottom: 10px; left: 10px;  border-right: none; border-top: none; }
+      .vlt-claim-corner-br { bottom: 10px; right: 10px; border-left: none;  border-top: none; }
+
+      .vlt-claim-sigil {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-style: italic; font-size: 64px; line-height: 1;
+        color: var(--accent);
+        margin-bottom: 14px;
+        text-shadow: 0 0 24px rgba(215,255,58,0.4);
+        animation: vltClaimSigilPulse 1.6s ease-in-out infinite;
+      }
+      @keyframes vltClaimSigilPulse {
+        0%, 100% { transform: scale(1); opacity: 0.95; }
+        50%      { transform: scale(1.04); opacity: 1; }
+      }
+
+      .vlt-claim-kicker {
+        font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+        letter-spacing: 0.32em; text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 28px;
+      }
+
+      .vlt-claim-amount {
+        display: inline-flex; align-items: baseline; gap: 8px;
+        margin-bottom: 4px;
+      }
+      .vlt-claim-plus {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: 56px; color: var(--accent);
+      }
+      .vlt-claim-num {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-style: italic; font-weight: 500;
+        font-size: 96px; line-height: 1;
+        letter-spacing: -0.03em;
+        color: #F9F6F0;
+        font-variant-numeric: tabular-nums;
+      }
+      .vlt-claim-unit {
+        font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+        letter-spacing: 0.22em; text-transform: uppercase;
+        color: rgba(249,246,240,0.6);
+      }
+
+      .vlt-claim-rule {
+        width: 100px; height: 4px; background: var(--accent);
+        margin: 18px auto 18px;
+      }
+
+      .vlt-claim-sub {
+        font-family: Georgia, serif; font-style: italic;
+        font-size: 16px; color: rgba(249,246,240,0.65);
+        margin: 0 0 22px;
+      }
+
+      .vlt-claim-balance {
+        display: inline-flex; align-items: baseline; gap: 14px;
+        padding: 10px 20px;
+        border: 1px solid rgba(249,246,240,0.16);
+        background: rgba(249,246,240,0.025);
+        margin-bottom: 26px;
+      }
+      .vlt-claim-balance-label {
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.22em; text-transform: uppercase;
+        color: rgba(249,246,240,0.45);
+      }
+      .vlt-claim-balance-num {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-style: italic; font-weight: 500; font-size: 22px;
+        color: #F9F6F0; letter-spacing: -0.01em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .vlt-claim-go {
+        display: inline-flex; align-items: center; justify-content: center;
+        gap: 10px;
+        background: var(--accent);
+        border: 1px solid var(--accent);
+        color: #0E0E0E;
+        font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        padding: 16px 36px;
+        cursor: pointer;
+        transition: all 140ms ease;
+      }
+      .vlt-claim-go:hover {
+        background: #F9F6F0; border-color: #F9F6F0;
+        box-shadow: 0 0 0 4px rgba(215,255,58,0.22);
+      }
+
+      .vlt-claim-doctrine {
+        margin-top: 26px;
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.32em; text-transform: uppercase;
+        color: rgba(249,246,240,0.32);
+      }
+
+      @media (max-width: 480px) {
+        .vlt-claim-card { padding: 44px 22px 24px; max-width: none; }
+        .vlt-claim-sigil { font-size: 52px; }
+        .vlt-claim-kicker { font-size: 10px; letter-spacing: 0.26em; margin-bottom: 22px; }
+        .vlt-claim-num { font-size: 72px; }
+        .vlt-claim-plus { font-size: 42px; }
+        .vlt-claim-balance { flex-direction: column; gap: 4px; padding: 10px 14px; }
+        .vlt-claim-balance-num { font-size: 20px; }
+        .vlt-claim-go { width: 100%; padding: 14px 20px; font-size: 12px; }
       }
 
       /* Modal responsive — works at every device width */
