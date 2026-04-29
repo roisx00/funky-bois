@@ -122,6 +122,8 @@ function emptyState() {
     prewlApplicationsOpen: true,
     mintWalletCutoffMs: null,
     dropCutoffMs: null,
+    buildCap: 1350,
+    buildCount: 0,
   };
 }
 
@@ -174,6 +176,8 @@ function reducer(state, action) {
         prewlApplicationsOpen: me.prewlApplicationsOpen !== false,
         mintWalletCutoffMs: typeof me.mintWalletCutoffMs === 'number' ? me.mintWalletCutoffMs : null,
         dropCutoffMs:       typeof me.dropCutoffMs === 'number'       ? me.dropCutoffMs       : null,
+        buildCap:           typeof me.buildCap === 'number' ? me.buildCap : 1350,
+        buildCount:         typeof me.buildCount === 'number' ? me.buildCount : 0,
       };
     }
 

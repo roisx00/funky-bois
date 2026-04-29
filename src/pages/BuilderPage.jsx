@@ -9,11 +9,77 @@ import { whitelistClaimMessage } from '../utils/wlMessage';
 
 const X_HANDLE = '@the1969eth';
 
+// Build-cap warning banner. Renders across every BuilderPage state
+// (empty, picking, submitted, celebration). Three modes:
+//   - quiet:  cap is set but supply is comfortable
+//   - urgent: < 100 portraits left → lime tint + ink border
+//   - closed: cap reached → dark inverse, build is locked
+function BuildCapBanner({ buildCount, buildCap, hasBuilt }) {
+  if (!buildCap) return null;
+  // If the user has already built, we don't push the urgency on them.
+  if (hasBuilt) return null;
+  const remaining = Math.max(0, buildCap - buildCount);
+  const closed = buildCount >= buildCap;
+  const urgent = !closed && remaining <= 100;
+  const pct = Math.min(100, Math.round((buildCount / buildCap) * 100));
+
+  if (closed) {
+    return (
+      <div style={{
+        padding: '18px 24px', marginBottom: 24,
+        background: '#0E0E0E', color: '#F9F6F0', border: '1px solid #0E0E0E',
+      }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', opacity: 0.7, marginBottom: 4 }}>
+          BUILD CLOSED
+        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 22, letterSpacing: '-0.02em' }}>
+          The {buildCap.toLocaleString()}-portrait cap was reached.
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.6, marginTop: 4 }}>
+          NO MORE PORTRAITS CAN BE COMPOSED. SECURE YOUR SEAT VIA DASHBOARD &gt; OVERVIEW.
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={{
+      padding: '14px 18px', marginBottom: 24,
+      background: urgent ? 'rgba(215,255,58,0.12)' : 'var(--paper-2)',
+      border: `1px solid ${urgent ? 'var(--ink)' : 'var(--hairline)'}`,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.22em',
+          textTransform: 'uppercase', color: urgent ? 'var(--ink)' : 'var(--text-4)',
+          fontWeight: urgent ? 700 : 400,
+        }}>
+          {urgent ? 'BUILD CLOSING SOON' : 'BUILD CAP'}
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 500,
+          fontSize: 18, color: 'var(--ink)', letterSpacing: '-0.01em',
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+          {buildCount.toLocaleString()} <span style={{ opacity: 0.4 }}>/</span> {buildCap.toLocaleString()}
+        </div>
+      </div>
+      <div style={{ height: 4, background: 'var(--hairline)', marginTop: 10, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, background: 'var(--accent)', transition: 'width 600ms cubic-bezier(0.2, 0.8, 0.2, 1)' }} />
+      </div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 10, lineHeight: 1.55 }}>
+        Once the {buildCap.toLocaleString()}-portrait cap is reached the build flow closes. {remaining.toLocaleString()} {remaining === 1 ? 'seat' : 'seats'} left. Compose now or fall back to the open round.
+      </div>
+    </div>
+  );
+}
+
 export default function BuilderPage({ onNavigate }) {
   const game = useGame();
   const inventory = Array.isArray(game.inventory) ? game.inventory : [];
   const completedNFTs = Array.isArray(game.completedNFTs) ? game.completedNFTs : [];
   const { completeNFT, markShared, recordWhitelist, xUser, walletAddress, isWalletConnected } = game;
+  const buildCap   = game.buildCap;
+  const buildCount = game.buildCount;
   const { openConnectModal } = useConnectModal();
   const { signMessageAsync } = useSignMessage();
   const toast = useToast();
@@ -244,6 +310,7 @@ export default function BuilderPage({ onNavigate }) {
   if (inventory.length === 0 && completedNFTs.length === 0) {
     return (
       <div className="builder-page">
+        <BuildCapBanner buildCount={buildCount} buildCap={buildCap} hasBuilt={false} />
         <div className="builder-empty">
           <div className="builder-empty-kicker">
             <span className="hero-eyebrow-dot" /> Builder
@@ -290,6 +357,7 @@ export default function BuilderPage({ onNavigate }) {
 
     return (
       <div className="builder-page builder-celebration">
+        <BuildCapBanner buildCount={buildCount} buildCap={buildCap} hasBuilt />
         <header className="builder-celebrate-head">
           <div className="builder-celebrate-kicker">
             <span className="hero-eyebrow-dot" />
@@ -467,6 +535,7 @@ export default function BuilderPage({ onNavigate }) {
 
   return (
     <div className="builder-page">
+      <BuildCapBanner buildCount={buildCount} buildCap={buildCap} hasBuilt={completedNFTs.length > 0} />
       {/* ── HEADER ── */}
       <header className="builder-header">
         <div className="builder-header-left">

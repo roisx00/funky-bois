@@ -63,6 +63,17 @@ export default async function handler(req, res) {
   const dropCutoffSecs = await getConfigInt('drop_cutoff', 0);
   const dropCutoffMs = dropCutoffSecs ? dropCutoffSecs * 1000 : null;
 
+  // Portrait-build cap state: how many active users have built so far,
+  // and the cap. Used by the build page to render a live progress bar
+  // and a "build closes when cap is reached" warning.
+  const buildCap = await getConfigInt('portrait_build_cap', 1350);
+  const buildCountRow = one(await sql`
+    SELECT COUNT(*)::int AS c FROM completed_nfts c
+    JOIN users u ON u.id = c.user_id
+    WHERE u.suspended = FALSE
+  `);
+  const buildCount = buildCountRow?.c || 0;
+
   ok(res, {
     authenticated: true,
     sessId,
@@ -70,6 +81,8 @@ export default async function handler(req, res) {
     prewlApplicationsOpen,
     mintWalletCutoffMs,
     dropCutoffMs,
+    buildCap,
+    buildCount,
     user: {
       id:              user.id,
       xUsername:       user.x_username,

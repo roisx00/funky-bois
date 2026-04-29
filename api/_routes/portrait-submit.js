@@ -18,7 +18,13 @@ import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { ELEMENT_TYPES, ELEMENT_VARIANTS } from '../_lib/elements.js';
 import { settleReferralIfPending } from '../_lib/referral.js';
+import { getConfigInt } from '../_lib/config.js';
 import { randomBytes } from 'crypto';
+
+// Hard portrait-build cap. Once we hit this number of finished portraits
+// across active (non-suspended) users, no further portraits can be
+// submitted. Override via app_config.portrait_build_cap if needed.
+const DEFAULT_BUILD_CAP = 1350;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
@@ -31,6 +37,23 @@ export default async function handler(req, res) {
 
   const { elements } = await readBody(req) || {};
   if (!elements || typeof elements !== 'object') return bad(res, 400, 'missing_elements');
+
+  // ── BUILD CAP ──
+  // Stop accepting new portraits once the cap is hit. Counts active
+  // users only so deleted/suspended sybils don't leave dead inventory.
+  const buildCap = await getConfigInt('portrait_build_cap', DEFAULT_BUILD_CAP);
+  const builtRow = one(await sql`
+    SELECT COUNT(*)::int AS c FROM completed_nfts c
+    JOIN users u ON u.id = c.user_id
+    WHERE u.suspended = FALSE
+  `);
+  const builtCount = builtRow?.c || 0;
+  if (builtCount >= buildCap) {
+    return bad(res, 410, 'build_capped', {
+      hint: `Build flow closed — the ${buildCap}-portrait cap was reached.`,
+      builtCount, buildCap,
+    });
+  }
 
   // ── HARD LOCK: one portrait per X account, ever ──
   // Checked BEFORE consuming traits so a rejected second-attempt doesn't
