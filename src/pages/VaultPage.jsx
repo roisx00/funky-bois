@@ -387,9 +387,56 @@ export default function VaultPage({ onNavigate }) {
             </p>
           </div>
 
-          {/* Hero action panel: BUSTS deposit/withdraw + portrait bind.
-              Replaces the SVG art column so the most-used controls sit
-              at the top of the page where the eye lands. */}
+          {/* Vault SVG lives in the hero now. The user wants the vault
+              visible the moment they land — and the deposit/portrait
+              panel moves down into the State section. */}
+          <div className="vlt-hero-vault">
+            <div className="vlt-hero-vault-marks">
+              <span className="vlt-state-mark">FILE · VLT-{(vault.userId || '').slice(0, 4).toUpperCase()}</span>
+              <span className={`vlt-state-tier-pill ${tier >= 3 ? 'high' : ''}`}>
+                TIER {tier} · {tierLabel.toUpperCase()}
+              </span>
+            </div>
+            <div className={`vlt-state-vault vlt-anim-host vlt-anim-${animPhase}`}>
+              <div
+                className="vlt-state-vault-svg"
+                dangerouslySetInnerHTML={{ __html: buildVaultSVG({ userId: vault.userId, power, burnCount: vault.burnCount }) }}
+              />
+              <div className="vlt-anim-doors" aria-hidden="true">
+                <span className="vlt-anim-door vlt-anim-door-l" />
+                <span className="vlt-anim-door vlt-anim-door-r" />
+                <span className="vlt-anim-glow" />
+              </div>
+              <div className={`vlt-anim-coin vlt-anim-coin-${animKind}`} aria-hidden="true">
+                <span className="vlt-anim-coin-disc">{animKind === 'portrait' ? '◐' : '$'}</span>
+                <span className="vlt-anim-coin-amt">
+                  {animKind === 'portrait' ? 'PORTRAIT' : `+${animAmount.toLocaleString()}`}
+                </span>
+              </div>
+              <div className="vlt-anim-flash" aria-hidden="true" />
+            </div>
+            <div className="vlt-state-traits">
+              <span><b>FRAME</b> {traits.frame + 1}/4</span>
+              <span className="vlt-state-traits-sep" />
+              <span><b>WALL</b> {traits.wall + 1}/4</span>
+              <span className="vlt-state-traits-sep" />
+              <span><b>SIGIL</b> {traits.sigil + 1}/6</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── STATE — deposit/portrait panel + power readout ──── */}
+      {/* The action panel anchors this section now (the vault moved up
+          into the hero). Power, milestones, live ticker, and stat
+          tiles sit below the panel. */}
+      <section className="vlt-state-v2">
+        <div className="vlt-state-bg" aria-hidden="true">
+          <span className="vlt-state-spot" />
+          <span className="vlt-state-grid" />
+        </div>
+
+        <div className="vlt-state-actions">
           <div className="vlt-hero-actions">
             <div className="vlt-act-tabs">
               <button
@@ -461,54 +508,6 @@ export default function VaultPage({ onNavigate }) {
               onAction={handlePortraitAction}
               onNavigate={onNavigate}
             />
-          </div>
-        </div>
-      </section>
-
-      {/* ─── STATE — vault on a pedestal ──────────────────────── */}
-      {/* Cinematic dark stage. The vault SVG is the hero of this
-          section; everything else (power, traits, live ticker, stat
-          tiles) supports it. Vault should always feel celebrated,
-          never crammed beside a stats column. */}
-      <section className="vlt-state-v2">
-        <div className="vlt-state-bg" aria-hidden="true">
-          <span className="vlt-state-spot" />
-          <span className="vlt-state-grid" />
-        </div>
-
-        <div className="vlt-state-stage">
-          <div className="vlt-state-stage-marks">
-            <span className="vlt-state-mark">FILE · VLT-{(vault.userId || '').slice(0, 4).toUpperCase()}</span>
-            <span className={`vlt-state-tier-pill ${tier >= 3 ? 'high' : ''}`}>
-              TIER {tier} · {tierLabel.toUpperCase()}
-            </span>
-          </div>
-
-          <div className={`vlt-state-vault vlt-anim-host vlt-anim-${animPhase}`}>
-            <div
-              className="vlt-state-vault-svg"
-              dangerouslySetInnerHTML={{ __html: buildVaultSVG({ userId: vault.userId, power, burnCount: vault.burnCount }) }}
-            />
-            <div className="vlt-anim-doors" aria-hidden="true">
-              <span className="vlt-anim-door vlt-anim-door-l" />
-              <span className="vlt-anim-door vlt-anim-door-r" />
-              <span className="vlt-anim-glow" />
-            </div>
-            <div className={`vlt-anim-coin vlt-anim-coin-${animKind}`} aria-hidden="true">
-              <span className="vlt-anim-coin-disc">{animKind === 'portrait' ? '◐' : '$'}</span>
-              <span className="vlt-anim-coin-amt">
-                {animKind === 'portrait' ? 'PORTRAIT' : `+${animAmount.toLocaleString()}`}
-              </span>
-            </div>
-            <div className="vlt-anim-flash" aria-hidden="true" />
-          </div>
-
-          <div className="vlt-state-traits">
-            <span><b>FRAME</b> {traits.frame + 1}/4</span>
-            <span className="vlt-state-traits-sep" />
-            <span><b>WALL</b> {traits.wall + 1}/4</span>
-            <span className="vlt-state-traits-sep" />
-            <span><b>SIGIL</b> {traits.sigil + 1}/6</span>
           </div>
         </div>
 
@@ -2669,13 +2668,32 @@ function Style() {
          V4 — Hero deposit panel + standalone STATE section
          ═══════════════════════════════════════════════════════════════ */
 
-      /* Hero action panel — replaces the SVG art column. Lives on the
-         dark hero so it has white-on-dark form styling. */
+      /* Hero vault — vault SVG anchors the hero right column. */
+      .vlt-hero-vault {
+        position: relative;
+        align-self: center;
+        max-width: 520px;
+        width: 100%;
+        margin: 0 auto;
+      }
+      .vlt-hero-vault-marks {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .vlt-hero-vault .vlt-state-vault {
+        max-width: 520px;
+      }
+
+      /* Action panel — lives in the State section now (deposit + portrait).
+         The white-on-dark form styling still works because State is dark. */
+      .vlt-state-actions {
+        position: relative; z-index: 1;
+        max-width: 720px; margin: 0 auto 32px;
+      }
       .vlt-hero-actions {
         background: rgba(255,255,255,0.025);
         border: 1px solid rgba(255,255,255,0.10);
         padding: 22px;
-        align-self: start;
       }
       .vlt-act-tabs {
         display: flex;
