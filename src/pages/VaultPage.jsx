@@ -557,20 +557,13 @@ export default function VaultPage({ onNavigate }) {
       </section>
 
       {/* ─── CHRONICLE TIMELINE ──────────────────────────────── */}
-      {/* Compact single-line event rows with a horizontal stat strip
-          on top. The previous two-column with serif rows was eating
-          ~600px tall for 9 events; this layout fits the same 9 in
-          ~280px. */}
-      <section className="vlt-chronicle vlt-chronicle-timeline">
+      {/* Single full-width column. Top bar = kicker + inline stats.
+          Filter chips. Timeline groups consecutive same-kind events
+          and paginates with "Show more" so 50+ events stays readable. */}
+      <section className="vlt-chronicle vlt-chronicle-v2">
         <div className="vlt-chronicle-inner">
-          <div className="vlt-chronicle-bar">
-            <div className="vlt-chronicle-bar-head">
-              <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
-              <span className="vlt-chronicle-sub">A diary of every move on your vault.</span>
-            </div>
-            <ChronicleSummary events={activity} vault={vault} />
-          </div>
-          <ActivityTimeline events={activity} />
+          <ChronicleHeader events={activity} vault={vault} />
+          <ChronicleBoard events={activity} />
         </div>
       </section>
 
@@ -844,31 +837,192 @@ const ACTIVITY_TONE = {
   yield_claim:     'in',
 };
 
-function ActivityTimeline({ events }) {
-  if (!events || !events.length) {
+// ─── CHRONICLE V2 — header strip, filter chips, board with grouping + pagination ───
+
+const CHRONICLE_FILTERS = [
+  { id: 'all',      label: 'ALL',       kinds: null },
+  { id: 'deposits', label: 'DEPOSITS',  kinds: ['deposit', 'withdraw'] },
+  { id: 'yield',    label: 'YIELD',     kinds: ['yield_claim'] },
+  { id: 'portrait', label: 'PORTRAIT',  kinds: ['portrait_bind', 'portrait_unbind'] },
+  { id: 'upgrades', label: 'UPGRADES',  kinds: ['upgrade'] },
+];
+
+function ChronicleHeader({ events, vault }) {
+  let depSum = 0, wdSum = 0, yieldSum = 0, claimCount = 0;
+  for (const ev of events || []) {
+    if (ev.kind === 'deposit')          depSum   += ev.amount || 0;
+    else if (ev.kind === 'withdraw')    wdSum    += ev.amount || 0;
+    else if (ev.kind === 'yield_claim') { yieldSum += ev.amount || 0; claimCount++; }
+  }
+  const lifetime = vault?.lifetimeYieldPaid || 0;
+  return (
+    <div className="vlt-ch-head">
+      <div className="vlt-ch-title">
+        <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
+        <span className="vlt-chronicle-sub">A diary of every move on your vault.</span>
+      </div>
+      <div className="vlt-ch-stats">
+        <div className="vlt-ch-stat">
+          <span className="vlt-ch-stat-val">{(events || []).length}</span>
+          <span className="vlt-ch-stat-label">moves</span>
+        </div>
+        <div className="vlt-ch-stat">
+          <span className="vlt-ch-stat-val">+{depSum.toLocaleString()}</span>
+          <span className="vlt-ch-stat-label">deposited</span>
+        </div>
+        {wdSum > 0 ? (
+          <div className="vlt-ch-stat">
+            <span className="vlt-ch-stat-val">−{wdSum.toLocaleString()}</span>
+            <span className="vlt-ch-stat-label">withdrawn</span>
+          </div>
+        ) : null}
+        <div className="vlt-ch-stat">
+          <span className="vlt-ch-stat-val">{yieldSum.toLocaleString()}</span>
+          <span className="vlt-ch-stat-label">yield · {claimCount}</span>
+        </div>
+        <div className="vlt-ch-stat hero">
+          <span className="vlt-ch-stat-val">{lifetime.toLocaleString()}</span>
+          <span className="vlt-ch-stat-label">lifetime earned</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChronicleBoard({ events }) {
+  const [filter, setFilter]   = useState('all');
+  const [showAll, setShowAll] = useState(false);
+  const PAGE = 8;
+
+  const filtered = useMemo(() => {
+    if (!events?.length) return [];
+    const f = CHRONICLE_FILTERS.find((x) => x.id === filter);
+    if (!f || !f.kinds) return events;
+    return events.filter((ev) => f.kinds.includes(ev.kind));
+  }, [events, filter]);
+
+  // Group consecutive same-kind events within a 2-hour window into a
+  // single "burst" row. Stops the timeline turning into 30 nearly
+  // identical "Deposited BUSTS" lines after a few minutes of fiddling.
+  const condensed = useMemo(() => {
+    const out = [];
+    let burst = null;
+    for (const ev of filtered) {
+      const t = new Date(ev.at).getTime();
+      if (burst
+          && burst.kind === ev.kind
+          && burst.label === ev.label
+          && Math.abs(burst.firstAt - t) <= 2 * 3600 * 1000) {
+        burst.count += 1;
+        burst.amount = (burst.amount || 0) + (ev.amount || 0);
+        burst.lastAt = t;
+        burst.items.push(ev);
+      } else {
+        if (burst) out.push(burst);
+        burst = {
+          kind: ev.kind, label: ev.label,
+          count: 1,
+          amount: ev.amount || 0,
+          sub: ev.sub,
+          firstAt: t, lastAt: t,
+          items: [ev],
+          singleSub: ev.sub,
+        };
+      }
+    }
+    if (burst) out.push(burst);
+    return out;
+  }, [filtered]);
+
+  const visible = showAll ? condensed : condensed.slice(0, PAGE);
+  const hidden  = condensed.length - visible.length;
+
+  if (!events?.length) {
     return (
       <div className="vlt-timeline-empty">
         <div className="vlt-timeline-empty-mark">∅</div>
         <div>
           <strong>The page is blank.</strong>
-          <p>Once you deposit, bind a portrait, or claim yield, every move shows up here as a dated entry.</p>
+          <p>Once you deposit, bind a portrait, or claim yield, every move shows up here.</p>
         </div>
       </div>
     );
   }
 
-  // Group by day bucket: today, yesterday, then by date label.
+  return (
+    <>
+      <div className="vlt-ch-filters">
+        {CHRONICLE_FILTERS.map((f) => (
+          <button
+            key={f.id}
+            className={`vlt-ch-filter ${filter === f.id ? 'active' : ''}`}
+            onClick={() => { setFilter(f.id); setShowAll(false); }}
+          >{f.label}</button>
+        ))}
+      </div>
+
+      {/* Group by day bucket: TODAY · YESTERDAY · N DAYS AGO. */}
+      <ol className="vlt-timeline">
+        {groupByDay(visible).map((g) => (
+          <li key={g.label} className="vlt-timeline-group">
+            <div className="vlt-timeline-day">{g.label}</div>
+            <ul className="vlt-timeline-list">
+              {g.items.map((b, i) => (
+                <li
+                  key={`${b.kind}-${b.firstAt}-${i}`}
+                  className={`vlt-timeline-row vlt-timeline-${b.kind} ${b.count > 1 ? 'is-burst' : ''}`}
+                >
+                  <span className={`vlt-timeline-glyph tone-${ACTIVITY_TONE[b.kind] || 'in'}`}>
+                    {ACTIVITY_GLYPH[b.kind] || '·'}
+                  </span>
+                  <span className="vlt-timeline-label">
+                    {b.label}
+                    {b.count > 1 ? <em className="vlt-timeline-burst">×{b.count}</em> : null}
+                  </span>
+                  <span className="vlt-timeline-amount">
+                    {b.amount > 0 ? (
+                      <>
+                        <strong>{ACTIVITY_TONE[b.kind] === 'out' ? '−' : '+'}{b.amount.toLocaleString()}</strong>
+                        {b.singleSub && b.count === 1 ? <small>{b.singleSub}</small> : null}
+                      </>
+                    ) : b.singleSub && b.count === 1 ? <small>{b.singleSub}</small> : null}
+                  </span>
+                  <span className="vlt-timeline-time">
+                    {b.count > 1
+                      ? <>{relativeTime(new Date(b.lastAt).toISOString())}<small className="vlt-timeline-span"> over {humanSpan(b.firstAt - b.lastAt)}</small></>
+                      : relativeTime(new Date(b.firstAt).toISOString())}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
+
+      {hidden > 0 ? (
+        <button className="vlt-ch-more" onClick={() => setShowAll(true)}>
+          Show {hidden} more →
+        </button>
+      ) : showAll && condensed.length > PAGE ? (
+        <button className="vlt-ch-more" onClick={() => setShowAll(false)}>
+          Collapse
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+function groupByDay(bursts) {
   const groups = [];
   const seen = new Map();
   const now = Date.now();
-  for (const ev of events) {
-    const t = new Date(ev.at).getTime();
-    const ageDays = Math.floor((now - t) / 86400000);
+  for (const b of bursts) {
+    const ageDays = Math.floor((now - b.lastAt) / 86400000);
     let label;
     if (ageDays === 0)      label = 'TODAY';
     else if (ageDays === 1) label = 'YESTERDAY';
     else if (ageDays < 7)   label = `${ageDays} DAYS AGO`;
-    else label = new Date(ev.at).toLocaleDateString(undefined, {
+    else label = new Date(b.lastAt).toLocaleDateString(undefined, {
       month: 'short', day: 'numeric',
     }).toUpperCase();
     let bucket = seen.get(label);
@@ -877,73 +1031,17 @@ function ActivityTimeline({ events }) {
       seen.set(label, bucket);
       groups.push(bucket);
     }
-    bucket.items.push(ev);
+    bucket.items.push(b);
   }
-
-  return (
-    <ol className="vlt-timeline">
-      {groups.map((g) => (
-        <li key={g.label} className="vlt-timeline-group">
-          <div className="vlt-timeline-day">{g.label}</div>
-          <ul className="vlt-timeline-list">
-            {g.items.map((ev, i) => (
-              <li key={`${ev.kind}-${ev.at}-${i}`} className={`vlt-timeline-row vlt-timeline-${ev.kind}`}>
-                <span className={`vlt-timeline-glyph tone-${ACTIVITY_TONE[ev.kind] || 'in'}`}>
-                  {ACTIVITY_GLYPH[ev.kind] || '·'}
-                </span>
-                <span className="vlt-timeline-label">{ev.label}</span>
-                <span className="vlt-timeline-amount">
-                  {ev.amount != null ? (
-                    <>
-                      <strong>{ACTIVITY_TONE[ev.kind] === 'out' ? '−' : '+'}{ev.amount.toLocaleString()}</strong>
-                      {ev.sub ? <small>{ev.sub}</small> : null}
-                    </>
-                  ) : ev.sub ? <small>{ev.sub}</small> : null}
-                </span>
-                <span className="vlt-timeline-time">{relativeTime(ev.at)}</span>
-              </li>
-            ))}
-          </ul>
-        </li>
-      ))}
-    </ol>
-  );
+  return groups;
 }
 
-// Horizontal stat strip atop the timeline — 4 dense tiles, tight.
-function ChronicleSummary({ events, vault }) {
-  let depSum = 0, wdSum = 0, yieldSum = 0, claimCount = 0;
-  for (const ev of events || []) {
-    if (ev.kind === 'deposit')          depSum   += ev.amount || 0;
-    else if (ev.kind === 'withdraw')    wdSum    += ev.amount || 0;
-    else if (ev.kind === 'yield_claim') { yieldSum += ev.amount || 0; claimCount++; }
-  }
-  return (
-    <div className="vlt-aside-stats">
-      <div className="vlt-aside-stat">
-        <span className="vlt-aside-stat-val">{(events || []).length}</span>
-        <span className="vlt-aside-stat-label">moves</span>
-      </div>
-      <div className="vlt-aside-stat">
-        <span className="vlt-aside-stat-val">+{depSum.toLocaleString()}</span>
-        <span className="vlt-aside-stat-label">deposited</span>
-      </div>
-      {wdSum > 0 ? (
-        <div className="vlt-aside-stat">
-          <span className="vlt-aside-stat-val">−{wdSum.toLocaleString()}</span>
-          <span className="vlt-aside-stat-label">withdrawn</span>
-        </div>
-      ) : null}
-      <div className="vlt-aside-stat">
-        <span className="vlt-aside-stat-val">{yieldSum.toLocaleString()}</span>
-        <span className="vlt-aside-stat-label">yield · {claimCount} claims</span>
-      </div>
-      <div className="vlt-aside-stat hero">
-        <span className="vlt-aside-stat-val">{(vault?.lifetimeYieldPaid || 0).toLocaleString()}</span>
-        <span className="vlt-aside-stat-label">lifetime earned</span>
-      </div>
-    </div>
-  );
+function humanSpan(ms) {
+  const sec = Math.max(0, Math.abs(ms) / 1000);
+  if (sec < 60)    return `${Math.round(sec)}s`;
+  if (sec < 3600)  return `${Math.round(sec / 60)}m`;
+  if (sec < 86400) return `${Math.round(sec / 3600)}h`;
+  return `${Math.round(sec / 86400)}d`;
 }
 
 function relativeTime(iso) {
@@ -3138,48 +3236,110 @@ function Style() {
       }
       .vlt-ledger-live-sep { opacity: 0.35; }
 
-      /* ── Activity timeline (compact single-line rows) ── */
-      .vlt-chronicle-timeline { padding: 24px 28px; }
-      .vlt-chronicle-timeline .vlt-chronicle-inner {
+      /* ── Chronicle v2 (single column, header bar + filters + board) ── */
+      .vlt-chronicle-v2 { padding: 28px 28px 36px; }
+      .vlt-chronicle-v2 .vlt-chronicle-inner {
         max-width: 1080px; margin: 0 auto;
       }
-      .vlt-chronicle-bar {
+      .vlt-ch-head {
         display: flex; align-items: center; justify-content: space-between;
-        gap: 24px;
-        padding-bottom: 12px; margin-bottom: 8px;
+        gap: 20px;
+        padding-bottom: 14px; margin-bottom: 14px;
         border-bottom: 1px solid var(--hairline);
         flex-wrap: wrap;
       }
-      .vlt-chronicle-bar-head {
-        display: flex; flex-direction: column; gap: 2px;
-      }
-      .vlt-aside-stats {
-        display: flex;
-        gap: 18px;
+      .vlt-ch-title { display: flex; flex-direction: column; gap: 4px; }
+      .vlt-ch-stats {
+        display: flex; gap: 0;
         flex-wrap: wrap;
       }
-      .vlt-aside-stat {
+      .vlt-ch-stat {
         display: flex; flex-direction: column; gap: 2px;
-        padding: 0 14px;
+        padding: 0 16px;
         border-left: 1px solid var(--hairline);
-        min-width: 70px;
+        min-width: 78px;
       }
-      .vlt-aside-stat:first-child { border-left: 0; padding-left: 0; }
-      .vlt-aside-stat-val {
+      .vlt-ch-stat:first-child { border-left: 0; padding-left: 0; }
+      .vlt-ch-stat-val {
         font-family: 'Instrument Serif', Georgia, serif;
-        font-size: 22px; line-height: 1;
+        font-size: 22px; line-height: 1; font-style: italic;
         color: var(--ink, #0E0E0E);
         font-feature-settings: 'tnum';
       }
-      .vlt-aside-stat-label {
+      .vlt-ch-stat-label {
         font-family: var(--font-mono, ui-monospace, monospace);
         font-size: 9px; letter-spacing: 2px;
         color: var(--text-3, #5C5C5C);
       }
-      .vlt-aside-stat.hero .vlt-aside-stat-val {
+      .vlt-ch-stat.hero .vlt-ch-stat-val {
         color: #0E0E0E;
         background: linear-gradient(180deg, transparent 60%, rgba(215,255,58,0.55) 60%);
         padding: 0 4px;
+      }
+
+      /* Filter chips */
+      .vlt-ch-filters {
+        display: flex; gap: 6px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .vlt-ch-filter {
+        background: transparent;
+        border: 1px solid var(--hairline);
+        color: var(--text-3, #5C5C5C);
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 2px;
+        padding: 6px 12px;
+        cursor: pointer;
+        transition: all 150ms ease;
+      }
+      .vlt-ch-filter:hover {
+        border-color: var(--ink, #0E0E0E);
+        color: var(--ink, #0E0E0E);
+      }
+      .vlt-ch-filter.active {
+        background: var(--ink, #0E0E0E);
+        color: var(--paper, #F9F6F0);
+        border-color: var(--ink, #0E0E0E);
+      }
+
+      /* Burst indicator (×3) and timing span */
+      .vlt-timeline-burst {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-style: normal;
+        font-size: 10px; letter-spacing: 1px;
+        background: #D7FF3A;
+        color: #0E0E0E;
+        padding: 1px 6px;
+        margin-left: 8px;
+        border-radius: 999px;
+        font-weight: 700;
+        vertical-align: middle;
+      }
+      .vlt-timeline-row.is-burst {
+        background: linear-gradient(90deg, rgba(215,255,58,0.12), transparent 60%);
+      }
+      .vlt-timeline-span {
+        opacity: 0.55; margin-left: 4px;
+        font-size: 9px;
+      }
+
+      /* Show more / collapse */
+      .vlt-ch-more {
+        margin-top: 14px;
+        background: transparent;
+        border: 1px solid var(--hairline);
+        color: var(--ink, #0E0E0E);
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 11px; letter-spacing: 1.5px;
+        padding: 10px 18px;
+        cursor: pointer;
+        width: 100%;
+        transition: all 150ms ease;
+      }
+      .vlt-ch-more:hover {
+        background: var(--ink, #0E0E0E);
+        color: var(--paper, #F9F6F0);
       }
 
       .vlt-timeline {

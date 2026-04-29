@@ -122,5 +122,7 @@ export default async function handler(req, res) {
 
   events.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
-  ok(res, { events: events.slice(0, 14) });
+  // 60 events is enough for 2-3 weeks of normal play; the UI shows
+  // 8 at a time with a "Show more" footer to expand.
+  ok(res, { events: events.slice(0, 60) });
 }
