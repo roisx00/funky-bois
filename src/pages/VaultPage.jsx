@@ -35,6 +35,13 @@ export default function VaultPage({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy]     = useState(false);
 
+  // Celebration modal shown after a successful claim. Must live at the
+  // top of the component, ABOVE the early-return guards for
+  // !authenticated and loading — otherwise React sees the hook order
+  // shift between renders and throws #310 ("Rendered fewer hooks than
+  // expected"). This was the cause of the vault page crash.
+  const [claimResult, setClaimResult] = useState(null);
+
   // §02 deposit/withdraw form mode
   const [bustsMode, setBustsMode]     = useState('deposit'); // 'deposit' | 'withdraw'
   const [bustsAmount, setBustsAmount] = useState('');
@@ -152,11 +159,6 @@ export default function VaultPage({ onNavigate }) {
   const isPortraitInVault = !!vault.portraitId;
 
   // ── handlers ─────────────────────────────────────────────────────
-  // Celebration modal shown after a successful claim. Holds {credited,
-  // newBalance} so the user sees exactly what was settled to their
-  // BUSTS balance with brand-styled flair.
-  const [claimResult, setClaimResult] = useState(null);
-
   async function handleClaim() {
     if (busy) return;
     setBusy(true);
