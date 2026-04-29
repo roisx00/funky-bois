@@ -14,11 +14,13 @@
 // sky above, plinth + cast shadow below.
 
 // ─── Power thresholds ───────────────────────────────────────────────
-// Ten tiers across the realistic power range. Caps tuned so an active
-// holder reaches BASTION (~tier 5) with moderate deposits + a few
-// upgrades; STRONGHOLD onward demands real commitment; ETERNAL is
-// reserved for whales + maxed upgrade tracks. Keep ordered ascending.
-export const POWER_TIER_THRESHOLDS = [0, 200, 450, 800, 1300, 2000, 3000, 4500, 6500, 9000];
+// Ten tiers tuned so the bar is a long-haul progression:
+//   100K BUSTS deposit = 2,000 power → FORTIFIED (tier 2). Active.
+//   500K BUSTS deposit = 10,000 power → HEAVY (tier 4). Whale.
+//   2M+ BUSTS deposit + maxed upgrade tracks → STRONGHOLD/SUPREME.
+//   ETERNAL (100,000 power) requires comprehensive commitment —
+//   reserved as a true endgame status, not a casual reach.
+export const POWER_TIER_THRESHOLDS = [0, 500, 1500, 3500, 6500, 12000, 20000, 35000, 60000, 100000];
 export const POWER_TIER_LABELS = [
   'Base',       //  0 — austere stone
   'Hold',       //  1 — first reinforcement
