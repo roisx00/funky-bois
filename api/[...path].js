@@ -7,7 +7,6 @@ import xMeHandler          from './_routes/x-me.js';
 import signOutHandler      from './_routes/sign-out.js';
 import dropClaimHandler    from './_routes/drop-claim.js';
 import dropStatusHandler   from './_routes/drop-status.js';
-import boxOpenHandler      from './_routes/box-open.js';
 import giftSendHandler     from './_routes/gift-send.js';
 import giftClaimHandler    from './_routes/gift-claim.js';
 import bustsSendHandler    from './_routes/busts-send.js';
@@ -81,7 +80,10 @@ const ROUTES = {
   'sign-out':            signOutHandler,
   'drop-claim':          dropClaimHandler,
   'drop-status':         dropStatusHandler,
-  'box-open':            boxOpenHandler,
+  // 'box-open' is intentionally NOT routed — the mystery-box feature
+  // is closed. The handler file stays on disk for archival but the
+  // endpoint is unreachable so no client (including stale cached pages
+  // or direct POSTs) can open boxes.
   'gift-send':           giftSendHandler,
   'gift-claim':          giftClaimHandler,
   'busts-send':          bustsSendHandler,
