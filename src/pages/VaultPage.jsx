@@ -571,29 +571,20 @@ export default function VaultPage({ onNavigate }) {
       </section>
 
       {/* ─── CHRONICLE TIMELINE ──────────────────────────────── */}
-      {/* A live diary of what your vault has done — deposits, portrait
-          bond/unbind, upgrades, yield claims. Editorial, not a stat
-          grid. The diary feel is what makes the vault feel alive. */}
+      {/* Two-column: summary card on the left (uses the kicker's old
+          empty space), grouped event diary on the right. Events are
+          de-duped server-side and grouped by day. */}
       <section className="vlt-chronicle vlt-chronicle-timeline">
         <div className="vlt-chronicle-inner">
-          <div className="vlt-chronicle-head">
+          <div className="vlt-chronicle-aside">
             <span className="vlt-kicker"><span className="vlt-kicker-dot" /> CHRONICLE</span>
-            <span className="vlt-chronicle-sub">A running diary of what your vault has done.</span>
+            <h3 className="vlt-aside-title">Your vault, in motion.</h3>
+            <p className="vlt-chronicle-sub">A running diary of every move — every deposit, every bond, every claim. Newest at the top.</p>
+            <ChronicleSummary events={activity} vault={vault} />
           </div>
-          <ActivityTimeline events={activity} />
-        </div>
-      </section>
-
-      {/* ─── LEADERBOARD ─────────────────────────────────────── */}
-      {/* Top 20 vaults by power. Pinned own-rank below the cut. Social
-          pressure → deposits → upgrades. */}
-      <section className="vlt-leaderboard">
-        <div className="vlt-leaderboard-inner">
-          <div className="vlt-leaderboard-head">
-            <span className="vlt-kicker"><span className="vlt-kicker-dot" /> STANDINGS</span>
-            <span className="vlt-chronicle-sub">The strongest keeps in the realm.</span>
+          <div className="vlt-chronicle-main">
+            <ActivityTimeline events={activity} />
           </div>
-          <Leaderboard data={leaders} />
         </div>
       </section>
 
@@ -636,6 +627,20 @@ export default function VaultPage({ onNavigate }) {
               iconHtml={UPGRADE_ICONS[track] || ''}
             />
           ))}
+        </div>
+      </section>
+
+      {/* ─── LEADERBOARD ─────────────────────────────────────── */}
+      {/* Lives at the bottom: it's a "look outward" social moment AFTER
+          the user has reviewed their own vault, deposited, claimed, and
+          considered upgrades. */}
+      <section className="vlt-leaderboard">
+        <div className="vlt-leaderboard-inner">
+          <div className="vlt-leaderboard-head">
+            <span className="vlt-kicker"><span className="vlt-kicker-dot" /> STANDINGS</span>
+            <span className="vlt-chronicle-sub">The strongest keeps in the realm.</span>
+          </div>
+          <Leaderboard data={leaders} />
         </div>
       </section>
 
@@ -865,36 +870,131 @@ function ActivityTimeline({ events }) {
       </div>
     );
   }
+
+  // Group by day bucket: today, yesterday, then by date label.
+  const groups = [];
+  const seen = new Map();
+  const now = Date.now();
+  for (const ev of events) {
+    const t = new Date(ev.at).getTime();
+    const ageDays = Math.floor((now - t) / 86400000);
+    let label;
+    if (ageDays === 0)      label = 'TODAY';
+    else if (ageDays === 1) label = 'YESTERDAY';
+    else if (ageDays < 7)   label = `${ageDays} DAYS AGO`;
+    else label = new Date(ev.at).toLocaleDateString(undefined, {
+      month: 'short', day: 'numeric',
+    }).toUpperCase();
+    let bucket = seen.get(label);
+    if (!bucket) {
+      bucket = { label, items: [] };
+      seen.set(label, bucket);
+      groups.push(bucket);
+    }
+    bucket.items.push(ev);
+  }
+
   return (
     <ol className="vlt-timeline">
-      {events.map((ev, i) => (
-        <li key={`${ev.kind}-${ev.at}-${i}`} className={`vlt-timeline-item vlt-timeline-${ev.kind}`}>
-          <span className={`vlt-timeline-glyph tone-${ACTIVITY_TONE[ev.kind] || 'in'}`}>
-            {ACTIVITY_GLYPH[ev.kind] || '·'}
-          </span>
-          <div className="vlt-timeline-body">
-            <div className="vlt-timeline-label">{ev.label}</div>
-            <div className="vlt-timeline-meta">
-              <span>{relativeTime(ev.at)}</span>
-              {ev.amount != null ? (
-                <>
-                  <span className="vlt-timeline-meta-sep">·</span>
-                  <span className="vlt-timeline-amount">
-                    {ACTIVITY_TONE[ev.kind] === 'out' ? '−' : '+'}{ev.amount.toLocaleString()}
-                    {ev.sub ? <small>{` ${ev.sub}`}</small> : null}
-                  </span>
-                </>
-              ) : ev.sub ? (
-                <>
-                  <span className="vlt-timeline-meta-sep">·</span>
-                  <span><small>{ev.sub}</small></span>
-                </>
-              ) : null}
-            </div>
-          </div>
+      {groups.map((g) => (
+        <li key={g.label} className="vlt-timeline-group">
+          <div className="vlt-timeline-day">{g.label}</div>
+          <ul className="vlt-timeline-list">
+            {g.items.map((ev, i) => (
+              <li key={`${ev.kind}-${ev.at}-${i}`} className={`vlt-timeline-item vlt-timeline-${ev.kind}`}>
+                <span className={`vlt-timeline-glyph tone-${ACTIVITY_TONE[ev.kind] || 'in'}`}>
+                  {ACTIVITY_GLYPH[ev.kind] || '·'}
+                </span>
+                <div className="vlt-timeline-body">
+                  <div className="vlt-timeline-label">{ev.label}</div>
+                  <div className="vlt-timeline-meta">
+                    <span>{relativeTime(ev.at)}</span>
+                    {ev.amount != null ? (
+                      <>
+                        <span className="vlt-timeline-meta-sep">·</span>
+                        <span className="vlt-timeline-amount">
+                          {ACTIVITY_TONE[ev.kind] === 'out' ? '−' : '+'}{ev.amount.toLocaleString()}
+                          {ev.sub ? <small>{` ${ev.sub}`}</small> : null}
+                        </span>
+                      </>
+                    ) : ev.sub ? (
+                      <>
+                        <span className="vlt-timeline-meta-sep">·</span>
+                        <span><small>{ev.sub}</small></span>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         </li>
       ))}
     </ol>
+  );
+}
+
+// Compact roll-up shown in the Chronicle's left column.
+function ChronicleSummary({ events, vault }) {
+  const stats = (() => {
+    let depCount = 0, depSum = 0;
+    let wdCount = 0,  wdSum = 0;
+    let yieldCount = 0, yieldSum = 0;
+    let upgrades = 0;
+    let portraitMoves = 0;
+    for (const ev of events || []) {
+      if (ev.kind === 'deposit')         { depCount++; depSum += ev.amount || 0; }
+      else if (ev.kind === 'withdraw')   { wdCount++;  wdSum  += ev.amount || 0; }
+      else if (ev.kind === 'yield_claim'){ yieldCount++; yieldSum += ev.amount || 0; }
+      else if (ev.kind === 'upgrade')    { upgrades++; }
+      else if (ev.kind === 'portrait_bind' || ev.kind === 'portrait_unbind') portraitMoves++;
+    }
+    return { depCount, depSum, wdCount, wdSum, yieldCount, yieldSum, upgrades, portraitMoves };
+  })();
+
+  const lastEvent = (events || [])[0];
+  return (
+    <div className="vlt-aside-summary">
+      <div className="vlt-aside-row">
+        <span className="vlt-aside-row-label">RECENT MOVES</span>
+        <span className="vlt-aside-row-val">{(events || []).length}</span>
+        <span className="vlt-aside-row-unit">events shown</span>
+      </div>
+      <div className="vlt-aside-row">
+        <span className="vlt-aside-row-label">DEPOSITS</span>
+        <span className="vlt-aside-row-val">{stats.depSum.toLocaleString()}</span>
+        <span className="vlt-aside-row-unit">{stats.depCount} {stats.depCount === 1 ? 'event' : 'events'}</span>
+      </div>
+      {stats.wdCount > 0 ? (
+        <div className="vlt-aside-row">
+          <span className="vlt-aside-row-label">WITHDRAWALS</span>
+          <span className="vlt-aside-row-val">{stats.wdSum.toLocaleString()}</span>
+          <span className="vlt-aside-row-unit">{stats.wdCount} {stats.wdCount === 1 ? 'event' : 'events'}</span>
+        </div>
+      ) : null}
+      <div className="vlt-aside-row">
+        <span className="vlt-aside-row-label">YIELD CLAIMED</span>
+        <span className="vlt-aside-row-val">{stats.yieldSum.toLocaleString()}</span>
+        <span className="vlt-aside-row-unit">{stats.yieldCount} claims</span>
+      </div>
+      {stats.upgrades > 0 ? (
+        <div className="vlt-aside-row">
+          <span className="vlt-aside-row-label">UPGRADES BOUGHT</span>
+          <span className="vlt-aside-row-val">{stats.upgrades}</span>
+          <span className="vlt-aside-row-unit">tier purchases</span>
+        </div>
+      ) : null}
+      <div className="vlt-aside-row vlt-aside-row-pad">
+        <span className="vlt-aside-row-label">LIFETIME EARNED</span>
+        <span className="vlt-aside-row-val vlt-aside-row-val-hero">{(vault?.lifetimeYieldPaid || 0).toLocaleString()}</span>
+        <span className="vlt-aside-row-unit">BUSTS</span>
+      </div>
+      {lastEvent ? (
+        <div className="vlt-aside-last">
+          Last move: <strong>{lastEvent.label}</strong> · {relativeTime(lastEvent.at)}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -2668,14 +2768,96 @@ function Style() {
       .vlt-ledger-live-sep { opacity: 0.35; }
 
       /* ── Activity timeline (replaces stat strip) ── */
-      .vlt-chronicle-timeline { padding: 36px 28px; }
+      .vlt-chronicle-timeline { padding: 48px 28px; }
+      .vlt-chronicle-timeline .vlt-chronicle-inner {
+        max-width: 1180px; margin: 0 auto;
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 56px;
+        align-items: start;
+      }
+      .vlt-chronicle-aside { position: sticky; top: 24px; }
+      .vlt-aside-title {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 38px;
+        line-height: 1.05;
+        margin: 14px 0 10px;
+        color: var(--ink, #0E0E0E);
+        letter-spacing: -0.5px;
+      }
+      .vlt-aside-summary {
+        margin-top: 22px;
+        border-top: 1px solid var(--hairline);
+      }
+      .vlt-aside-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: baseline;
+        column-gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--hairline);
+      }
+      .vlt-aside-row-label {
+        grid-column: 1; grid-row: 1;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+      }
+      .vlt-aside-row-val {
+        grid-column: 2; grid-row: 1 / span 2;
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 26px;
+        line-height: 1;
+        color: var(--ink, #0E0E0E);
+        font-feature-settings: 'tnum';
+        align-self: center;
+      }
+      .vlt-aside-row-val-hero {
+        font-size: 36px;
+        color: #0E0E0E;
+        background: linear-gradient(180deg, transparent 60%, rgba(215,255,58,0.55) 60%);
+        padding: 0 4px;
+      }
+      .vlt-aside-row-unit {
+        grid-column: 1; grid-row: 2;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 1px;
+        color: var(--text-3, #5C5C5C);
+        opacity: 0.75;
+      }
+      .vlt-aside-row-pad { padding-top: 18px; }
+      .vlt-aside-last {
+        margin-top: 18px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 1.5px;
+        color: var(--text-3, #5C5C5C);
+        line-height: 1.5;
+      }
+      .vlt-aside-last strong {
+        color: var(--ink, #0E0E0E); font-weight: 700;
+      }
+
       .vlt-timeline {
-        list-style: none; margin: 24px 0 0; padding: 0;
+        list-style: none; margin: 0; padding: 0;
         position: relative;
       }
-      .vlt-timeline::before {
+      .vlt-timeline-group { list-style: none; margin: 0 0 24px; padding: 0; }
+      .vlt-timeline-group:last-child { margin-bottom: 0; }
+      .vlt-timeline-day {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 3px;
+        color: var(--text-3, #5C5C5C);
+        margin: 0 0 6px 0;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--hairline);
+      }
+      .vlt-timeline-list {
+        list-style: none; margin: 0; padding: 0;
+        position: relative;
+      }
+      .vlt-timeline-list::before {
         content: '';
-        position: absolute; left: 17px; top: 8px; bottom: 8px;
+        position: absolute; left: 17px; top: 14px; bottom: 14px;
         width: 1px; background: var(--hairline);
       }
       .vlt-timeline-item {
@@ -2865,13 +3047,25 @@ function Style() {
         color: var(--text-3, #5C5C5C);
       }
 
+      /* ── Tablet collapse: stack the chronicle aside above the timeline ── */
+      @media (max-width: 980px) {
+        .vlt-chronicle-timeline .vlt-chronicle-inner {
+          grid-template-columns: 1fr;
+          gap: 28px;
+        }
+        .vlt-chronicle-aside { position: static; }
+        .vlt-aside-title { font-size: 32px; }
+      }
+
       /* ── Mobile adjustments for the new pieces ── */
       @media (max-width: 720px) {
         .vlt-milestones-peg-thresh { display: none; }
         .vlt-milestones-peg-label { font-size: 8px; }
         .vlt-ledger-live-whole { font-size: 42px; }
         .vlt-ledger-live-frac { font-size: 22px; }
-        .vlt-chronicle-timeline { padding: 22px 16px; }
+        .vlt-chronicle-timeline { padding: 28px 16px; }
+        .vlt-aside-title { font-size: 26px; }
+        .vlt-aside-row-val-hero { font-size: 30px; }
         .vlt-leaderboard { padding: 22px 16px; }
         .vlt-lb-row {
           grid-template-columns: 36px 1fr auto;

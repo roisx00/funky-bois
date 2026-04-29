@@ -76,34 +76,39 @@ export default async function handler(req, res) {
     });
   }
 
+  // The deposit/withdraw/upgrade handlers each write BOTH a typed row
+  // (vault_deposits / vault_upgrades) AND a busts_ledger row reflecting
+  // the balance side. We render the typed row and skip the ledger
+  // duplicate. Yield + portrait bind/unbind are ledger-only — keep them.
   for (const l of ledger) {
     const reason = String(l.reason || '');
     const amt = Number(l.amount || 0);
+
+    // Skip duplicates of typed-table events.
+    if (/^Vault deposit:/i.test(reason))  continue;
+    if (/^Vault withdraw:/i.test(reason)) continue;
+    if (/^Vault upgrade:/i.test(reason))  continue;
+
     let kind = 'yield_claim';
     let label = reason;
     let sub = amt >= 0 ? 'BUSTS in' : 'BUSTS out';
 
-    // Categorise from the reason string we wrote in vault routes.
-    if (/portrait/i.test(reason) && /(deposit|bond|bind)/i.test(reason)) {
+    if (/portrait.*deposit|portrait.*bond|portrait.*bind/i.test(reason)) {
       kind = 'portrait_bind';
       label = 'Bound portrait';
       sub = '+10 / day';
-    } else if (/portrait/i.test(reason) && /(withdraw|unbind|remove)/i.test(reason)) {
+    } else if (/portrait.*withdraw|portrait.*unbind|portrait.*remove/i.test(reason)) {
       kind = 'portrait_unbind';
       label = 'Withdrew portrait';
       sub = 'bond removed';
-    } else if (/yield/i.test(reason) || /claim/i.test(reason)) {
+    } else if (/^Vault yield$|yield/i.test(reason)) {
       kind = 'yield_claim';
       label = 'Yield claimed';
       sub = 'BUSTS in';
-    } else if (/withdraw/i.test(reason)) {
-      kind = 'withdraw';
-      label = 'Withdrew from vault';
-      sub = 'BUSTS out';
-    } else if (/deposit/i.test(reason)) {
-      kind = 'deposit';
-      label = 'Deposited to vault';
-      sub = 'BUSTS in';
+    } else {
+      // Some other vault-tagged ledger row we didn't anticipate.
+      // Keep the raw reason as the label, infer kind by sign.
+      kind = amt >= 0 ? 'deposit' : 'withdraw';
     }
 
     events.push({
