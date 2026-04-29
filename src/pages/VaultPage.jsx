@@ -1658,11 +1658,11 @@ function Style() {
       }
 
       /* ── SECTIONS ── */
-      .vlt-section { max-width: 1180px; margin: 0 auto; padding: 64px 24px; }
+      .vlt-section { max-width: 1180px; margin: 0 auto; padding: 32px 24px; }
       /* The first section right after the hero pulls up tight so the
          vault SVG (with its door-open animation) stays in the viewport
          while the user is interacting with deposit. */
-      .vlt-hero + .vlt-section { padding-top: 28px; }
+      .vlt-hero + .vlt-section { padding-top: 22px; }
       /* Compact chronicle variant — sits between action sections without
          eating vertical real estate. */
       .vlt-chronicle-compact { padding: 18px 24px; }
@@ -1745,15 +1745,15 @@ function Style() {
         letter-spacing: 0.18em; text-transform: uppercase;
         color: rgba(249,246,240,0.4);
       }
-      .vlt-section-head { max-width: 720px; margin-bottom: 32px; }
+      .vlt-section-head { max-width: 720px; margin-bottom: 18px; }
       .vlt-section-num {
-        font-family: var(--font-mono); font-size: 11px;
-        letter-spacing: 0.2em; color: var(--text-4); margin-bottom: 8px;
+        font-family: var(--font-mono); font-size: 10px;
+        letter-spacing: 0.2em; color: var(--text-4); margin-bottom: 4px;
       }
       .vlt-section-title {
         font-family: var(--font-display); font-style: italic; font-weight: 500;
-        font-size: 48px; letter-spacing: -0.02em; line-height: 1;
-        margin: 0 0 14px;
+        font-size: 36px; letter-spacing: -0.02em; line-height: 1;
+        margin: 0 0 8px;
       }
       .vlt-section-sub {
         font-family: Georgia, serif; font-size: 16px;
@@ -1919,50 +1919,53 @@ function Style() {
 
       /* ── §02 DEPOSIT / WITHDRAW ── */
       .vlt-deposit-card {
-        display: grid; grid-template-columns: 280px 1fr;
-        gap: 32px;
+        display: grid; grid-template-columns: 240px 1fr;
+        gap: 24px;
         background: var(--paper-2);
         border: 1px solid var(--ink);
-        padding: 28px 32px;
+        padding: 18px 22px;
+        align-items: center;
       }
       .vlt-deposit-projection {
-        display: flex; flex-direction: column; gap: 6px;
-        padding: 18px; border: 1px solid var(--hairline);
+        display: flex; flex-direction: column; gap: 2px;
+        padding: 12px 14px; border: 1px solid var(--hairline);
         background: var(--paper);
       }
       .vlt-mode-toggle {
-        display: flex; gap: 0; margin-bottom: 12px;
+        display: flex; gap: 0; margin-bottom: 10px;
         border: 1px solid var(--ink);
       }
       .vlt-mode-btn {
         flex: 1;
         background: var(--paper);
         border: none; border-right: 1px solid var(--ink);
-        font-family: var(--font-mono); font-size: 11px;
+        font-family: var(--font-mono); font-size: 10px;
         letter-spacing: 0.12em; text-transform: uppercase;
         color: var(--text-3);
-        padding: 8px 0; cursor: pointer;
+        padding: 6px 0; cursor: pointer;
       }
       .vlt-mode-btn:last-child { border-right: none; }
       .vlt-mode-btn.active { background: var(--ink); color: var(--paper); }
-      .vlt-proj-row { display: flex; flex-direction: column; gap: 2px; }
+      .vlt-proj-row { display: flex; flex-direction: column; gap: 1px; }
       .vlt-proj-label {
-        font-family: var(--font-mono); font-size: 10px;
+        font-family: var(--font-mono); font-size: 9px;
         letter-spacing: 0.18em; text-transform: uppercase;
         color: var(--text-4);
       }
       .vlt-proj-value {
         font-family: var(--font-display); font-style: italic;
-        font-weight: 500; font-size: 26px;
+        font-weight: 500; font-size: 22px;
         letter-spacing: -0.02em; color: var(--ink);
+        line-height: 1.05;
       }
       .vlt-proj-value small {
         font-family: var(--font-mono); font-size: 9px;
         letter-spacing: 0.18em; color: var(--text-4); margin-left: 6px;
       }
       .vlt-proj-arrow {
-        font-family: var(--font-mono); font-size: 18px;
-        color: var(--text-4); text-align: center; padding: 4px 0;
+        font-family: var(--font-mono); font-size: 14px;
+        color: var(--text-4); text-align: center; padding: 0;
+        line-height: 1;
       }
       .vlt-proj-power {
         font-family: var(--font-mono); font-size: 11px;
