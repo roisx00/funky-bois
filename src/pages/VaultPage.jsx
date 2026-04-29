@@ -1145,8 +1145,9 @@ function SectionHead({ n, title, sub }) {
   );
 }
 
-// Live yield ticker — counts up by the second and lets the user claim
-// to their balance.
+// Yield bar — slim editorial paper-themed claim row. The State section
+// already shows the live ticker, sources, and lifetime, so this is just
+// the action point: pending amount on the left, claim button on the right.
 function YieldCard({ vault, dailyRate, busy, onClaim }) {
   const [exact, setExact] = useState(0);
   const lastVaultRef = useRef(null);
@@ -1171,67 +1172,52 @@ function YieldCard({ vault, dailyRate, busy, onClaim }) {
   const whole = Math.floor(exact);
   const frac  = (exact - whole).toFixed(4).slice(1); // ".XXXX"
   const canClaim = whole >= 1;
-
   const isLive = dailyRate > 0;
-  return (
-    <div className={`vlt-yield-card ${isLive ? 'live' : ''}`}>
-      <div className="vlt-yield-main">
-        <div className="vlt-yield-label">
-          PENDING YIELD
-          {isLive ? <span className="vlt-yield-live"><span className="vlt-yield-live-dot" />LIVE</span> : null}
-        </div>
-        <div className="vlt-yield-num">
-          <span className="vlt-yield-whole">{whole.toLocaleString()}</span>
-          <span className="vlt-yield-unit">BUSTS</span>
-        </div>
-        {isLive ? (
-          <div className="vlt-yield-ticker">
-            <span className="vlt-yield-ticker-arrow">↑</span>
-            <span className="vlt-yield-ticker-frac">+0{frac}</span>
-            <span className="vlt-yield-ticker-meta">incoming this second</span>
-          </div>
-        ) : (
-          <div className="vlt-yield-ticker vlt-yield-ticker-empty">
-            Deposit BUSTS or bind a portrait to start earning.
-          </div>
-        )}
-      </div>
+  const bustsPerDay = vault.bustsDeposited * 0.001;
+  const portraitPerDay = vault.portraitId ? 10 : 0;
 
-      <div className="vlt-yield-meta">
-        <div className="vlt-yield-stat">
-          <span className="vlt-yield-stat-label">DAILY RATE</span>
-          <span className="vlt-yield-stat-val">{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}</span>
-          <span className="vlt-yield-stat-unit">BUSTS / DAY</span>
+  return (
+    <div className={`vlt-yield-bar ${isLive ? 'on' : ''}`}>
+      <div className="vlt-yield-bar-left">
+        <div className="vlt-yield-bar-kicker">
+          PENDING YIELD
+          {isLive ? <span className="vlt-yield-bar-live"><span className="vlt-yield-bar-live-dot" />LIVE</span> : null}
         </div>
-        <div className="vlt-yield-stat">
-          <span className="vlt-yield-stat-label">SOURCES</span>
-          <span className="vlt-yield-stat-sources">
-            <span className={vault.bustsDeposited > 0 ? 'on' : ''}>
-              {vault.bustsDeposited > 0 ? `${(vault.bustsDeposited * 0.001).toFixed(2)}/d` : '—'}
-              <small>busts</small>
-            </span>
-            <span className={vault.portraitId ? 'on' : ''}>
-              {vault.portraitId ? '10/d' : '—'}
-              <small>portrait</small>
-            </span>
+        <div className="vlt-yield-bar-num">
+          <span className="vlt-yield-bar-whole">{whole.toLocaleString()}</span>
+          <span className="vlt-yield-bar-frac">{frac}</span>
+          <span className="vlt-yield-bar-unit">BUSTS</span>
+        </div>
+        <div className="vlt-yield-bar-sources">
+          <span className={bustsPerDay > 0 ? 'on' : ''}>
+            <strong>{bustsPerDay > 0 ? bustsPerDay.toFixed(2) : '—'}</strong> / day from BUSTS
+          </span>
+          <span className="vlt-yield-bar-sep">+</span>
+          <span className={portraitPerDay > 0 ? 'on' : ''}>
+            <strong>{portraitPerDay > 0 ? portraitPerDay : '—'}</strong> / day from PORTRAIT
+          </span>
+          <span className="vlt-yield-bar-sep">=</span>
+          <span className="vlt-yield-bar-total">
+            <strong>{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}</strong> / day total
           </span>
         </div>
-        <div className="vlt-yield-stat">
-          <span className="vlt-yield-stat-label">LIFETIME EARNED</span>
-          <span className="vlt-yield-stat-val">{vault.lifetimeYieldPaid.toLocaleString()}</span>
-          <span className="vlt-yield-stat-unit">BUSTS</span>
-        </div>
       </div>
 
-      <button
-        className="vlt-yield-claim"
-        disabled={busy || !canClaim}
-        onClick={onClaim}
-      >
-        {busy ? 'Working…' : canClaim
-          ? <><span>Claim</span><strong>{whole.toLocaleString()}</strong><span>BUSTS →</span></>
-          : 'Nothing to claim yet'}
-      </button>
+      <div className="vlt-yield-bar-right">
+        <div className="vlt-yield-bar-lifetime">
+          <span className="vlt-yield-bar-lifetime-label">LIFETIME EARNED</span>
+          <span className="vlt-yield-bar-lifetime-val">{vault.lifetimeYieldPaid.toLocaleString()}<small>BUSTS</small></span>
+        </div>
+        <button
+          className={`vlt-yield-bar-claim ${canClaim ? 'ready' : ''}`}
+          disabled={busy || !canClaim}
+          onClick={onClaim}
+        >
+          {busy ? 'Working…' : canClaim
+            ? <>Claim <strong>{whole.toLocaleString()}</strong> →</>
+            : 'Nothing to claim yet'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -2872,6 +2858,171 @@ function Style() {
       .vlt-hp-btn:hover:not(:disabled) { background: #F9F6F0; color: #0E0E0E; border-color: #F9F6F0; }
       .vlt-hp-btn.solid:hover:not(:disabled) { background: #F9F6F0; }
       .vlt-hp-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+      /* ── Yield bar (slim, paper-themed, replaces the dark card) ── */
+      .vlt-yield-bar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 32px;
+        align-items: center;
+        background: var(--paper-2, #F4F0E8);
+        border: 1px solid var(--ink, #0E0E0E);
+        padding: 22px 26px;
+        position: relative;
+        overflow: hidden;
+      }
+      .vlt-yield-bar.on::before {
+        content: '';
+        position: absolute; left: 0; top: 0; bottom: 0;
+        width: 4px;
+        background: #D7FF3A;
+        box-shadow: 0 0 16px rgba(215,255,58,0.45);
+        animation: vlt-live-pulse 1.6s ease-in-out infinite;
+      }
+      .vlt-yield-bar-left {
+        display: flex; flex-direction: column; gap: 8px;
+        min-width: 0;
+      }
+      .vlt-yield-bar-kicker {
+        display: flex; align-items: center; gap: 10px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 10px; letter-spacing: 2.5px;
+        color: var(--text-3, #5C5C5C);
+      }
+      .vlt-yield-bar-live {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: #D7FF3A;
+        color: #0E0E0E;
+        font-weight: 700;
+        padding: 2px 8px;
+      }
+      .vlt-yield-bar-live-dot {
+        width: 5px; height: 5px;
+        border-radius: 50%;
+        background: #0E0E0E;
+        animation: vlt-live-pulse 1.2s ease-in-out infinite;
+      }
+      .vlt-yield-bar-num {
+        display: flex; align-items: baseline; gap: 4px;
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-style: italic;
+        line-height: 1;
+        font-feature-settings: 'tnum';
+      }
+      .vlt-yield-bar-whole {
+        font-size: 64px;
+        color: var(--ink, #0E0E0E);
+        letter-spacing: -2px;
+      }
+      .vlt-yield-bar-frac {
+        font-size: 32px;
+        color: var(--text-3, #5C5C5C);
+      }
+      .vlt-yield-bar.on .vlt-yield-bar-frac { color: #0E0E0E; }
+      .vlt-yield-bar-unit {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-style: normal;
+        font-size: 11px; letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+        margin-left: 8px;
+      }
+      .vlt-yield-bar-sources {
+        display: flex; align-items: center;
+        gap: 8px; flex-wrap: wrap;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 11px; letter-spacing: 0.5px;
+        color: var(--text-3, #5C5C5C);
+      }
+      .vlt-yield-bar-sources strong {
+        color: var(--text-2, #3A3A3A);
+        font-weight: 700;
+      }
+      .vlt-yield-bar-sources .on strong { color: var(--ink, #0E0E0E); }
+      .vlt-yield-bar-sep {
+        opacity: 0.4;
+        font-weight: 400;
+      }
+      .vlt-yield-bar-total strong {
+        color: var(--ink, #0E0E0E);
+      }
+
+      .vlt-yield-bar-right {
+        display: flex; flex-direction: column; align-items: flex-end;
+        gap: 14px;
+        min-width: 220px;
+      }
+      .vlt-yield-bar-lifetime {
+        text-align: right;
+        display: flex; flex-direction: column; gap: 2px;
+      }
+      .vlt-yield-bar-lifetime-label {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9px; letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+      }
+      .vlt-yield-bar-lifetime-val {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-style: italic;
+        font-size: 24px;
+        line-height: 1;
+        color: var(--ink, #0E0E0E);
+        font-feature-settings: 'tnum';
+      }
+      .vlt-yield-bar-lifetime-val small {
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-style: normal;
+        font-size: 9px; letter-spacing: 2px;
+        color: var(--text-3, #5C5C5C);
+        margin-left: 6px;
+      }
+
+      .vlt-yield-bar-claim {
+        background: var(--ink, #0E0E0E);
+        color: var(--paper, #F9F6F0);
+        border: 0;
+        padding: 12px 22px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 12px; letter-spacing: 2px;
+        cursor: pointer;
+        transition: all 150ms ease;
+      }
+      .vlt-yield-bar-claim.ready {
+        background: #D7FF3A;
+        color: #0E0E0E;
+        font-weight: 700;
+        box-shadow: 0 0 0 1px #0E0E0E inset, 0 6px 20px rgba(215,255,58,0.45);
+      }
+      .vlt-yield-bar-claim:hover:not(:disabled) {
+        background: #F9F6F0;
+        color: #0E0E0E;
+        box-shadow: 0 0 0 1px #0E0E0E inset;
+      }
+      .vlt-yield-bar-claim.ready:hover:not(:disabled) {
+        background: #c8ee2e;
+      }
+      .vlt-yield-bar-claim:disabled {
+        background: rgba(14,14,14,0.1);
+        color: rgba(14,14,14,0.4);
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .vlt-yield-bar-claim strong {
+        font-weight: 700;
+        margin: 0 4px;
+      }
+
+      @media (max-width: 720px) {
+        .vlt-yield-bar {
+          grid-template-columns: 1fr;
+          gap: 18px;
+          padding: 18px 20px;
+        }
+        .vlt-yield-bar-right { align-items: flex-start; min-width: 0; }
+        .vlt-yield-bar-lifetime { text-align: left; }
+        .vlt-yield-bar-claim { width: 100%; }
+        .vlt-yield-bar-whole { font-size: 48px; }
+        .vlt-yield-bar-frac { font-size: 24px; }
+      }
 
       /* ── STATE V2 — vault on a pedestal, cinematic dark stage ── */
       .vlt-state-v2 {
