@@ -20,6 +20,7 @@ const BASE_PAGES = [
 ];
 const X_PAGES = [
   { id: 'builder',   label: 'Build',     requiresX: true },
+  { id: 'tasks',     label: 'Tasks',     requiresX: true },
   { id: 'dashboard', label: 'Dashboard', requiresX: true },
 ];
 

@@ -97,7 +97,20 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
         onNavigate={onNavigate}
       />
 
-      <DashSectionHead n="01" title="Overview" />
+      {/* ─── §01 GIFT — moved up so it sits right under the 1969 NFT strip ─── */}
+      <DashSectionHead n="01" title="Gift" sub="Send a built portrait to another user, or BUSTS to a friend. Pending claims appear on this page automatically." />
+      <>
+        <GiftSection inventory={inventory} pendingGifts={pendingGifts} xUser={xUser} sendGift={sendGift} claimGift={claimGift} completedNFTs={completedNFTs} />
+        <BustsTransferSection
+          bustsBalance={bustsBalance}
+          pendingBustsTransfers={pendingBustsTransfers}
+          sendBusts={sendBusts}
+          claimBustsTransfer={claimBustsTransfer}
+          xUser={xUser}
+        />
+      </>
+
+      <DashSectionHead n="02" title="Overview" />
       {true && (
         <div className="dash-overview-grid">
           {/* Mint wallet card — only shown to relevant audiences. The
@@ -170,8 +183,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       )}
 
       {/* ─── Tasks ─── */}
-      <DashSectionHead n="02" title="Tasks" />
-      <TasksTab />
+      {/* Tasks moved to its own page (/tasks) — used to occupy this slot. */}
 
 
       {/* ─── Inventory ─── */}
@@ -237,51 +249,45 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
         </div>
       )}
 
-      {/* ─── Gift ─── */}
-      <DashSectionHead n="03" title="Gift" />
-      {true && (
-        <>
-          <GiftSection inventory={inventory} pendingGifts={pendingGifts} xUser={xUser} sendGift={sendGift} claimGift={claimGift} completedNFTs={completedNFTs} />
-          <BustsTransferSection
-            bustsBalance={bustsBalance}
-            pendingBustsTransfers={pendingBustsTransfers}
-            sendBusts={sendBusts}
-            claimBustsTransfer={claimBustsTransfer}
-            xUser={xUser}
-          />
-        </>
-      )}
-
-      {/* ─── History ─── */}
-      <DashSectionHead n="04" title="Activity history" />
-      {true && (
-        <div>
-          <div style={{ marginBottom: 32 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 500, letterSpacing: '-0.03em', marginBottom: 8 }}>
-              BUSTS ledger.
-            </h2>
-            <p style={{ fontSize: 13, color: 'var(--text-3)' }}>Last {bustsHistory.length} entries.</p>
+      {/* ─── §03 ACTIVITY HISTORY — last 10 only ─── */}
+      <DashSectionHead n="03" title="Activity history" sub="Most recent BUSTS ledger entries — credits in, debits out." />
+      {(() => {
+        const HISTORY_LIMIT = 10;
+        const recent = (bustsHistory || []).slice(0, HISTORY_LIMIT);
+        return (
+          <div>
+            {recent.length === 0 ? (
+              <div className="gift-row-empty">No transactions yet.</div>
+            ) : (
+              <div className="history-list">
+                {recent.map((h, i) => (
+                  <div key={i} className="history-row">
+                    <span className="history-row-reason">{h.reason}</span>
+                    <span className={`history-row-amount ${h.amount >= 0 ? 'pos' : 'neg'}`}>
+                      {h.amount >= 0 ? '+' : ''}{h.amount.toLocaleString()} BUSTS
+                    </span>
+                    <span className="history-row-time">{timeAgo(h.ts)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {bustsHistory.length > HISTORY_LIMIT ? (
+              <div style={{
+                marginTop: 14,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10, letterSpacing: '0.22em',
+                color: 'var(--text-4)',
+                textAlign: 'center',
+              }}>
+                LATEST 10 OF {bustsHistory.length}
+              </div>
+            ) : null}
           </div>
-          {bustsHistory.length === 0 ? (
-            <div className="gift-row-empty">No transactions yet.</div>
-          ) : (
-            <div className="history-list">
-              {bustsHistory.map((h, i) => (
-                <div key={i} className="history-row">
-                  <span className="history-row-reason">{h.reason}</span>
-                  <span className={`history-row-amount ${h.amount >= 0 ? 'pos' : 'neg'}`}>
-                    {h.amount >= 0 ? '+' : ''}{h.amount.toLocaleString()} BUSTS
-                  </span>
-                  <span className="history-row-time">{timeAgo(h.ts)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       {/* ─── Top BUSTS holders (last 20) ─── */}
-      <DashSectionHead n="05" title="Top holders" sub="Top 20 by BUSTS in circulation. Updated every 30 seconds." />
+      <DashSectionHead n="04" title="Top holders" sub="Top 20 by BUSTS in circulation. Updated every 30 seconds." />
       <TopBustsHolders />
     </div>
   );
@@ -441,108 +447,80 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress }) {
         />
       </div>
 
-      {/* ─── Your 1969 NFTs — compact horizontal strip ─── */}
+      {/* ─── Your 1969 NFTs — pre-mint placeholder ─── */}
+      {/* Mint isn't live yet, so the on-chain reader has nothing to show.
+          Once mint flips on (2026-05-01 14:00 UTC) the 1969 contract
+          balanceOf will start returning real counts; until then this
+          panel just announces the source of truth. We deliberately do
+          NOT render builder portraits here — those aren't "1969 NFTs"
+          yet, only inputs to one. */}
       <div style={{
         border: '1px solid var(--hairline)',
         background: 'var(--paper-2)',
-        padding: '20px 24px',
+        padding: '24px 24px',
         marginBottom: 28,
+        position: 'relative',
+        overflow: 'hidden',
       }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div>
-            <div style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10, letterSpacing: '0.2em',
-              color: 'var(--text-4)',
-            }}>YOUR 1969 NFTS</div>
-            <div style={{
-              fontFamily: 'var(--font-display)',
-              fontStyle: 'italic',
-              fontSize: 22, fontWeight: 500,
-              color: 'var(--ink)',
-              marginTop: 4,
-            }}>
-              {totalNfts > 0 ? totalNfts : 0} held
-              {chainNftCount != null && chainNftCount > 0
-                ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontStyle: 'normal', color: 'var(--text-3)', marginLeft: 10, letterSpacing: '0.15em' }}>ON CHAIN</span>
-                : null}
-            </div>
-          </div>
-          {portraits.length > 6 ? (
-            <button
-              onClick={() => setShowAll(!showAll)}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--ink)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 10, letterSpacing: '0.18em',
-                padding: '6px 12px',
-                cursor: 'pointer',
-                color: 'var(--ink)',
-              }}
-            >
-              {showAll ? 'COLLAPSE' : `SHOW ALL (${portraits.length})`}
-            </button>
-          ) : null}
-        </div>
-
-        {portraits.length === 0 ? (
-          <div style={{
-            padding: '24px',
-            textAlign: 'center',
-            fontFamily: 'var(--font-display)',
-            fontStyle: 'italic',
-            fontSize: 18,
-            color: 'var(--text-3)',
-            border: '1px dashed var(--hairline)',
-          }}>
-            {chainNftCount && chainNftCount > 0
-              ? `You hold ${chainNftCount} 1969 NFT${chainNftCount === 1 ? '' : 's'} on chain.`
-              : 'Mint opens 2026-05-01 14:00 UTC. Your 1969 NFTs will appear here.'}
-          </div>
-        ) : (
-          <div style={{
-            display: 'flex',
-            gap: 10,
-            overflowX: 'auto',
-            paddingBottom: 4,
-          }}>
-            {visibleNfts.map((nft) => (
-              <div key={nft.id} style={{
-                flex: '0 0 auto',
-                width: 86, height: 86,
-                border: '1px solid var(--hairline)',
-                background: 'var(--paper)',
-                overflow: 'hidden',
-              }} dangerouslySetInnerHTML={{ __html: buildNFTSVG(nft.elements || {}) }} />
-            ))}
-            {!showAll && portraits.length > 6 ? (
-              <div style={{
-                flex: '0 0 auto',
-                width: 86, height: 86,
-                border: '1px solid var(--ink)',
-                background: 'var(--ink)',
-                color: 'var(--paper)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'var(--font-display)',
-                fontStyle: 'italic',
-                fontSize: 22,
-                cursor: 'pointer',
-              }} onClick={() => setShowAll(true)}>
-                +{portraits.length - 6}
-              </div>
-            ) : null}
-          </div>
-        )}
+        <div style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10, letterSpacing: '0.2em',
+          color: 'var(--text-4)',
+        }}>YOUR 1969 NFTS</div>
 
         <div style={{
-          marginTop: 12,
-          fontFamily: 'var(--font-mono)',
-          fontSize: 9, letterSpacing: '0.18em',
-          color: 'var(--text-4)',
-          wordBreak: 'break-all',
+          marginTop: 6,
+          display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap',
         }}>
-          CONTRACT · 0x890d…7efab · ETHEREUM
+          <span style={{
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 28, fontWeight: 500,
+            color: 'var(--ink)',
+            letterSpacing: '-0.5px',
+          }}>
+            Detecting on-chain.
+          </span>
+          <span className="dash-detect-pulse" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10, letterSpacing: '0.22em',
+            color: 'var(--ink)',
+            background: 'var(--accent)',
+            padding: '4px 10px',
+            border: '1px solid var(--ink)',
+            fontWeight: 700,
+          }}>
+            <span style={{
+              display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
+              background: 'var(--ink)',
+            }} />
+            SOON
+          </span>
+        </div>
+
+        <p style={{
+          marginTop: 10,
+          fontFamily: 'var(--font-display)',
+          fontStyle: 'italic',
+          fontSize: 16,
+          color: 'var(--text-3)',
+          lineHeight: 1.5,
+          maxWidth: 560,
+        }}>
+          Mint opens 2026-05-01 14:00 UTC. Once you hold a 1969 NFT, this strip will read your wallet directly from the contract.
+        </p>
+
+        <div style={{
+          marginTop: 14,
+          paddingTop: 12,
+          borderTop: '1px solid var(--hairline)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 9, letterSpacing: '0.22em',
+          color: 'var(--text-4)',
+        }}>
+          CONTRACT · 0x890d...7efab · ETHEREUM MAINNET
+          {walletAddress ? <span style={{ marginLeft: 14 }}>READING · {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</span> : null}
         </div>
       </div>
     </>
@@ -614,10 +592,10 @@ function TopBustsHolders() {
   const renderRow = (row, mine) => (
     <li key={row.rank + row.xUsername} style={{
       display: 'grid',
-      gridTemplateColumns: '40px 36px 1fr auto',
+      gridTemplateColumns: '40px 32px 1fr auto auto',
       alignItems: 'center',
-      gap: 12,
-      padding: '10px 12px',
+      gap: 14,
+      padding: '12px 14px',
       borderBottom: '1px solid var(--hairline)',
       background: mine ? 'rgba(215,255,58,0.18)' : 'transparent',
       borderLeft: mine ? '3px solid var(--ink)' : '3px solid transparent',
@@ -645,18 +623,70 @@ function TopBustsHolders() {
         color: 'var(--ink)',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
       }}>@{row.xUsername}</span>
+
+      {/* BUSTS column */}
       <span style={{
-        fontFamily: 'var(--font-display)',
-        fontStyle: 'italic',
-        fontSize: 18,
-        color: 'var(--ink)',
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
         fontFeatureSettings: '"tnum"',
-      }}>{row.bustsBalance.toLocaleString()}</span>
+        minWidth: 88,
+      }}>
+        <span style={{
+          fontFamily: 'var(--font-display)',
+          fontStyle: 'italic',
+          fontSize: 18,
+          color: 'var(--ink)',
+          lineHeight: 1,
+        }}>{row.bustsBalance.toLocaleString()}</span>
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 9, letterSpacing: '0.2em',
+          color: 'var(--text-4)',
+          marginTop: 3,
+        }}>BUSTS</span>
+      </span>
+
+      {/* NFTs column — placeholder until mint enables on-chain reads */}
+      <span style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+        minWidth: 64,
+      }}>
+        <span style={{
+          fontFamily: 'var(--font-display)',
+          fontStyle: 'italic',
+          fontSize: 18,
+          color: 'var(--text-4)',
+          lineHeight: 1,
+        }}>—</span>
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 9, letterSpacing: '0.2em',
+          color: 'var(--text-4)',
+          marginTop: 3,
+        }}>NFTS · SOON</span>
+      </span>
     </li>
   );
 
   return (
     <div style={{ marginBottom: 28 }}>
+      {/* Column header strip */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '40px 32px 1fr auto auto',
+        gap: 14,
+        padding: '0 14px 8px',
+        borderBottom: '1px solid var(--hairline)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 9, letterSpacing: '0.22em',
+        color: 'var(--text-4)',
+        marginBottom: 0,
+      }}>
+        <span>RANK</span>
+        <span></span>
+        <span>HOLDER</span>
+        <span style={{ minWidth: 88, textAlign: 'right' }}>BUSTS</span>
+        <span style={{ minWidth: 64, textAlign: 'right' }}>1969 NFTS</span>
+      </div>
       <ol style={{
         listStyle: 'none',
         margin: 0,
@@ -1131,7 +1161,7 @@ const ACTION_META = {
 // rejected) lives on the server and comes back through task.myActions.
 const OPENED_KEY = (taskId, action) => `t1969:task-opened:${taskId}:${action}`;
 
-function TasksTab() {
+export function TasksTab() {
   const [tasks, setTasks]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy]       = useState(null); // `${taskId}:${action}` while submitting
