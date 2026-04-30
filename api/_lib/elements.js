@@ -4,12 +4,13 @@ export const ELEMENT_TYPES = [
   'background', 'outfit', 'skin', 'eyes', 'facial_hair', 'hair', 'headwear', 'face_mark',
 ];
 
-// Subset of ELEMENT_TYPES that the public drop engine releases. 'eyes'
-// stays admin-grant only. 'skin' is now in the public pool to release
-// the 5 new rare skin tones (Bone, Mercury, Ash, Coal, Jet) — they
-// roll within the rare bucket on the next drop session and forward.
+// Subset of ELEMENT_TYPES that the public drop engine releases by
+// default. 'eyes' and 'skin' are excluded — admin-grant / auto-assign
+// only. One-off releases (e.g. a special "skin drop" session) opt-in
+// types via the `extraPoolTypes` arg to pickRandomElement(), gated by
+// app_config so the inclusion is scoped to a single session id.
 export const DROP_POOL_TYPES = [
-  'background', 'outfit', 'skin', 'facial_hair', 'hair', 'headwear', 'face_mark',
+  'background', 'outfit', 'facial_hair', 'hair', 'headwear', 'face_mark',
 ];
 
 export const ELEMENT_VARIANTS = {
@@ -87,26 +88,25 @@ export const DAILY_CLAIM_BONUS = 25;
 // distribution balanced WITHIN each rarity tier (e.g. commons roll
 // across every type that has commons) instead of depending on how
 // many variants of each rarity a given type happens to contain.
-export function pickRandomElement() {
+// `includeSkin` opens the skin pool for a single session — used for the
+// one-off rare-skin release. Default false (skin stays admin-grant
+// only). Eyes remain excluded in all cases.
+export function pickRandomElement({ includeSkin = false } = {}) {
   const r = Math.random() * 100;
   let rarity = 'common', acc = 0;
   for (const [k, v] of Object.entries(DROP_ODDS)) {
     acc += v;
     if (r < acc) { rarity = k; break; }
   }
+  const types = includeSkin ? [...DROP_POOL_TYPES, 'skin'] : DROP_POOL_TYPES;
   const pool = [];
-  // Drop pool is restricted to DROP_POOL_TYPES — 'eyes' and 'skin' are
-  // never released through the public drop and are filled by admin
-  // grant or auto-assignment only.
-  for (const t of DROP_POOL_TYPES) {
+  for (const t of types) {
     ELEMENT_VARIANTS[t].forEach((v, idx) => {
       if (v.rarity === rarity) pool.push({ type: t, variant: idx, name: v.name, rarity: v.rarity });
     });
   }
   if (pool.length === 0) {
-    // Shouldn't happen — every rarity has variants — but fall back to
-    // the first common so the handler never returns undefined.
-    for (const t of DROP_POOL_TYPES) {
+    for (const t of types) {
       ELEMENT_VARIANTS[t].forEach((v, idx) => {
         if (v.rarity === 'common' && pool.length === 0) {
           pool.push({ type: t, variant: idx, name: v.name, rarity: v.rarity });

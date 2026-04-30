@@ -22,7 +22,7 @@ import { sql, one } from '../_lib/db.js';
 import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { rateLimit, clientIp } from '../_lib/ratelimit.js';
-import { getConfigInt } from '../_lib/config.js';
+import { getConfig, getConfigInt } from '../_lib/config.js';
 import {
   pickRandomElement, DROP_BUSTS_REWARD, DAILY_CLAIM_BONUS,
   getCurrentSessionId, isSessionActive,
@@ -117,7 +117,13 @@ export default async function handler(req, res) {
   if (!sessRow) return bad(res, 410, 'pool_exhausted');
 
   // ── Pick + write inventory + ledger ──
-  const el = pickRandomElement();
+  // Skin is admin-grant-only by default. For a one-off rare-skin
+  // release we set app_config.skin_drop_session = <session_id>; that
+  // opens the skin pool ONLY for that exact session and reverts to
+  // closed automatically when the session rolls over.
+  const skinSession = await getConfig('skin_drop_session', null);
+  const includeSkin = skinSession != null && String(skinSession) === String(sessId);
+  const el = pickRandomElement({ includeSkin });
   const reward = DROP_BUSTS_REWARD[el.rarity] || 5;
   const dailyBonus = user.daily_claimed_on === todayKey() ? 0 : DAILY_CLAIM_BONUS;
 
