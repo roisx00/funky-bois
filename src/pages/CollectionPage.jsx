@@ -4,7 +4,7 @@ import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import ElementCard from '../components/ElementCard';
-import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
+import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG, buildNFTSVG } from '../data/elements';
 import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
 import { mintBindMessage } from '../utils/wlMessage';
 
