@@ -26,6 +26,20 @@ export default async function handler(req, res) {
   const user = await requireUser(req, res);
   if (!user) return;
 
+  // ── Follow task closed ──
+  // The drop is over and the build is locked. The follow task only
+  // existed as a discovery-loop reward; keeping it open while Nitter
+  // mirrors flap was generating 5xx noise for no real upside. Server
+  // returns ok:false so the client renders a "task closed" state
+  // instead of throwing a Vercel error spike. Already-claimed users
+  // keep their 10 BUSTS — this just stops new claims.
+  return ok(res, {
+    claimed: false,
+    closed: true,
+    reason: 'task_closed',
+    hint: 'The follow task is closed. Drop and build phase are over.',
+  });
+
   // Follower gate removed — Nitter verification + per-IP rate limit
   // are the anti-farm posture for the follow reward.
 

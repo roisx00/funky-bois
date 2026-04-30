@@ -1752,7 +1752,10 @@ export function TasksTab() {
         </p>
       </div>
 
-      <FollowTaskCard />
+      {/* Follow task closed — server returns task_closed and the
+          dashboard no longer renders the CTA so users don't click a
+          button that doesn't do anything. */}
+      {/* <FollowTaskCard /> */}
 
       {loading ? (
         <div className="gift-row-empty">Loading.</div>
