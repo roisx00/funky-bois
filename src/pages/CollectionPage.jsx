@@ -8,15 +8,12 @@ import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
 import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
 import { mintBindMessage } from '../utils/wlMessage';
 
-// Inventory tab removed — drop is closed and there's no more reason to
-// show users their trait stash. Gifting still works (its own tab below)
-// because users can still gift built portraits to other users.
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'tasks',    label: 'Tasks' },
-  { id: 'gift',     label: 'Gift' },
-  { id: 'history',  label: 'History' },
-];
+// Tab system retired — the dashboard is one unified scrollable page now.
+// Every action surface (overview, tasks, gift, history) renders inline
+// in sequence so the user never has to click between tabs to see the
+// state of their account. Variables kept for any deep-linkable section
+// jumps from outside.
+const SECTION_IDS = ['overview', 'tasks', 'gift', 'history'];
 
 export default function CollectionPage({ onNavigate, initialTab = 'overview' }) {
   const {
@@ -92,23 +89,16 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
         </div>
       </div>
 
-      {/* ─── Tabs ─── */}
-      <div className="dash-tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            className={`dash-tab${tab === t.id ? ' active' : ''}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-            {t.id === 'tasks' && taskCount > 0 ? <span className="count">{taskCount}</span> : null}
-            {t.id === 'gift'  && myGifts.length > 0 ? <span className="count">{myGifts.length}</span> : null}
-          </button>
-        ))}
-      </div>
+      {/* ─── Unified dashboard (no tabs) — extras strip + section heads ─── */}
+      <DashboardExtras
+        completedNFTs={completedNFTs}
+        bustsBalance={bustsBalance}
+        walletAddress={serverWalletAddress}
+        onNavigate={onNavigate}
+      />
 
-      {/* ─── Overview ─── */}
-      {tab === 'overview' && (
+      <DashSectionHead n="01" title="Overview" />
+      {true && (
         <div className="dash-overview-grid">
           {/* Mint wallet card — only shown to relevant audiences. The
               "Progress toward portrait" card is hidden once the user has
@@ -159,35 +149,14 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
             </div>
           )}
 
+          {/* Shortcut card retired — all four sections are visible inline below
+              now that the tab system is removed. Keeping referrals stat. */}
           <div className="gift-card">
-            <div className="gift-card-title">Shortcuts</div>
+            <div className="gift-card-title">Activity</div>
             <div className="gift-card-sub" style={{ marginBottom: 18 }}>
-              Jump straight into the actions that push your set forward.
+              All your action surfaces are open below — tasks, gift, history. Scroll to skim.
             </div>
-            <div style={{ border: '1px solid var(--hairline)', background: 'var(--paper-2)' }}>
-              <ShortcutRow
-                kicker="TASKS"
-                title="Complete X tasks"
-                meta={`${taskCount} live`}
-                badge={taskCount > 0 ? taskCount : null}
-                onClick={() => setTab('tasks')}
-              />
-              <ShortcutRow
-                kicker="GIFT"
-                title="Gift traits"
-                meta={`${myGifts.length} inbox`}
-                badge={myGifts.length > 0 ? myGifts.length : null}
-                onClick={() => setTab('gift')}
-              />
-              <ShortcutRow
-                kicker="HISTORY"
-                title="BUSTS history"
-                meta="Every credit and debit"
-                onClick={() => setTab('history')}
-                last
-              />
-            </div>
-            <div style={{ marginTop: 24, padding: '14px 18px', border: '1px solid var(--hairline)', background: 'var(--paper-2)' }}>
+            <div style={{ padding: '14px 18px', border: '1px solid var(--hairline)', background: 'var(--paper-2)' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-4)', marginBottom: 6 }}>Referrals</div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 500, letterSpacing: '-0.025em' }}>
                 {referralCount} joined
@@ -201,7 +170,8 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       )}
 
       {/* ─── Tasks ─── */}
-      {tab === 'tasks' && <TasksTab />}
+      <DashSectionHead n="02" title="Tasks" />
+      <TasksTab />
 
 
       {/* ─── Inventory ─── */}
@@ -268,7 +238,8 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       )}
 
       {/* ─── Gift ─── */}
-      {tab === 'gift' && (
+      <DashSectionHead n="03" title="Gift" />
+      {true && (
         <>
           <GiftSection inventory={inventory} pendingGifts={pendingGifts} xUser={xUser} sendGift={sendGift} claimGift={claimGift} completedNFTs={completedNFTs} />
           <BustsTransferSection
@@ -282,7 +253,8 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       )}
 
       {/* ─── History ─── */}
-      {tab === 'history' && (
+      <DashSectionHead n="04" title="Activity history" />
+      {true && (
         <div>
           <div style={{ marginBottom: 32 }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 500, letterSpacing: '-0.03em', marginBottom: 8 }}>
@@ -307,6 +279,410 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
           )}
         </div>
       )}
+
+      {/* ─── Top BUSTS holders (last 20) ─── */}
+      <DashSectionHead n="05" title="Top holders" sub="Top 20 by BUSTS in circulation. Updated every 30 seconds." />
+      <TopBustsHolders />
+    </div>
+  );
+}
+
+// ─── DashSectionHead — shared header for each unified dashboard section
+function DashSectionHead({ n, title, sub }) {
+  return (
+    <div className="dash-section-head" style={{
+      margin: '40px 0 18px',
+      paddingTop: 24,
+      borderTop: '1px solid var(--hairline)',
+    }}>
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 10, letterSpacing: '0.22em',
+        color: 'var(--text-4)',
+        marginBottom: 4,
+      }}>§{n}</div>
+      <h2 style={{
+        fontFamily: 'var(--font-display)',
+        fontStyle: 'italic',
+        fontSize: 36,
+        fontWeight: 500,
+        letterSpacing: '-0.02em',
+        margin: 0,
+        color: 'var(--ink)',
+      }}>{title}.</h2>
+      {sub ? (
+        <p style={{
+          margin: '6px 0 0',
+          fontFamily: 'var(--font-display)',
+          fontStyle: 'italic',
+          fontSize: 16,
+          color: 'var(--text-3)',
+        }}>{sub}</p>
+      ) : null}
+    </div>
+  );
+}
+
+// ─── DashboardExtras — sits below the hero, above §01 Overview
+//     Contains the new compact strips: 1969 NFTs (contract-aware),
+//     a 4-tile metrics row (ETH · BUSTS · vault · wallet), all set
+//     to be premium and minimal so the dashboard reads as one
+//     unified surface.
+function DashboardExtras({ completedNFTs, bustsBalance, walletAddress }) {
+  // Vault snapshot — pulled live for the "vault" metric tile.
+  const [vault, setVault] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/vault', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d?.vault) setVault(d.vault); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // ETH balance — read via wagmi if a wallet is connected client-side.
+  // Read with useBalance({ address }) but this component shouldn't crash
+  // on machines without wagmi mounted, so we lazy-import.
+  const [ethBalance, setEthBalance] = useState(null);
+  useEffect(() => {
+    if (!walletAddress) { setEthBalance(null); return; }
+    let cancelled = false;
+    // Public Ethereum RPC — eth_getBalance is free and uncapped on most
+    // public endpoints. Cache via SWR-like approach would be nicer but
+    // adding a lib is overkill for one balance read per page load.
+    fetch('https://cloudflare-eth.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0', id: 1, method: 'eth_getBalance',
+        params: [walletAddress, 'latest'],
+      }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d?.result) return;
+        const wei = BigInt(d.result);
+        const eth = Number(wei) / 1e18;
+        setEthBalance(eth);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [walletAddress]);
+
+  // NFT compact strip — pre-mint shows the user's builder portrait(s)
+  // from completedNFTs. Post-mint: query the 1969 contract for owned
+  // tokens. The contract is hardcoded as the canonical source of truth
+  // (see project memory: 1969 NFT contract).
+  const NFT_CONTRACT = '0x890db94d920bbf44862005329d7236cc7067efab';
+  const [chainNftCount, setChainNftCount] = useState(null);
+  useEffect(() => {
+    if (!walletAddress) { setChainNftCount(null); return; }
+    let cancelled = false;
+    // ERC-721 balanceOf(address) — selector 0x70a08231, address padded to 32 bytes
+    const data = '0x70a08231' + walletAddress.replace(/^0x/, '').padStart(64, '0');
+    fetch('https://cloudflare-eth.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0', id: 1, method: 'eth_call',
+        params: [{ to: NFT_CONTRACT, data }, 'latest'],
+      }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d?.result) return;
+        const n = Number(BigInt(d.result));
+        setChainNftCount(n);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [walletAddress]);
+
+  const [showAll, setShowAll] = useState(false);
+  const portraits = completedNFTs || [];
+  const totalNfts = chainNftCount != null ? chainNftCount : portraits.length;
+  const visibleNfts = showAll ? portraits : portraits.slice(0, 6);
+
+  const short = walletAddress
+    ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`
+    : null;
+
+  return (
+    <>
+      {/* ─── Metrics row — 4 tiles ─── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 1,
+        background: 'var(--hairline)',
+        border: '1px solid var(--hairline)',
+        marginBottom: 28,
+      }}>
+        <MetricTile
+          label="ETH BALANCE"
+          value={ethBalance != null ? ethBalance.toFixed(4) : (walletAddress ? '…' : '—')}
+          sub={ethBalance != null ? 'on mainnet' : (walletAddress ? 'reading' : 'no wallet')}
+        />
+        <MetricTile
+          label="BUSTS BALANCE"
+          value={(bustsBalance || 0).toLocaleString()}
+          sub="off-chain ledger"
+        />
+        <MetricTile
+          label="VAULT LOCKED"
+          value={vault ? (vault.bustsDeposited || 0).toLocaleString() : '…'}
+          sub={vault ? `tier ${powerOrTier(vault.power)}` : 'loading'}
+        />
+        <MetricTile
+          label="CONNECTED WALLET"
+          value={short || '—'}
+          sub={short ? 'bound · mint ready' : 'not bound'}
+          mono
+        />
+      </div>
+
+      {/* ─── Your 1969 NFTs — compact horizontal strip ─── */}
+      <div style={{
+        border: '1px solid var(--hairline)',
+        background: 'var(--paper-2)',
+        padding: '20px 24px',
+        marginBottom: 28,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div>
+            <div style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10, letterSpacing: '0.2em',
+              color: 'var(--text-4)',
+            }}>YOUR 1969 NFTS</div>
+            <div style={{
+              fontFamily: 'var(--font-display)',
+              fontStyle: 'italic',
+              fontSize: 22, fontWeight: 500,
+              color: 'var(--ink)',
+              marginTop: 4,
+            }}>
+              {totalNfts > 0 ? totalNfts : 0} held
+              {chainNftCount != null && chainNftCount > 0
+                ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontStyle: 'normal', color: 'var(--text-3)', marginLeft: 10, letterSpacing: '0.15em' }}>ON CHAIN</span>
+                : null}
+            </div>
+          </div>
+          {portraits.length > 6 ? (
+            <button
+              onClick={() => setShowAll(!showAll)}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--ink)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10, letterSpacing: '0.18em',
+                padding: '6px 12px',
+                cursor: 'pointer',
+                color: 'var(--ink)',
+              }}
+            >
+              {showAll ? 'COLLAPSE' : `SHOW ALL (${portraits.length})`}
+            </button>
+          ) : null}
+        </div>
+
+        {portraits.length === 0 ? (
+          <div style={{
+            padding: '24px',
+            textAlign: 'center',
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 18,
+            color: 'var(--text-3)',
+            border: '1px dashed var(--hairline)',
+          }}>
+            {chainNftCount && chainNftCount > 0
+              ? `You hold ${chainNftCount} 1969 NFT${chainNftCount === 1 ? '' : 's'} on chain.`
+              : 'Mint opens 2026-05-01 14:00 UTC. Your 1969 NFTs will appear here.'}
+          </div>
+        ) : (
+          <div style={{
+            display: 'flex',
+            gap: 10,
+            overflowX: 'auto',
+            paddingBottom: 4,
+          }}>
+            {visibleNfts.map((nft) => (
+              <div key={nft.id} style={{
+                flex: '0 0 auto',
+                width: 86, height: 86,
+                border: '1px solid var(--hairline)',
+                background: 'var(--paper)',
+                overflow: 'hidden',
+              }} dangerouslySetInnerHTML={{ __html: buildNFTSVG(nft.elements || {}) }} />
+            ))}
+            {!showAll && portraits.length > 6 ? (
+              <div style={{
+                flex: '0 0 auto',
+                width: 86, height: 86,
+                border: '1px solid var(--ink)',
+                background: 'var(--ink)',
+                color: 'var(--paper)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--font-display)',
+                fontStyle: 'italic',
+                fontSize: 22,
+                cursor: 'pointer',
+              }} onClick={() => setShowAll(true)}>
+                +{portraits.length - 6}
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        <div style={{
+          marginTop: 12,
+          fontFamily: 'var(--font-mono)',
+          fontSize: 9, letterSpacing: '0.18em',
+          color: 'var(--text-4)',
+          wordBreak: 'break-all',
+        }}>
+          CONTRACT · 0x890d…7efab · ETHEREUM
+        </div>
+      </div>
+    </>
+  );
+}
+
+function MetricTile({ label, value, sub, mono }) {
+  return (
+    <div style={{
+      background: 'var(--paper)',
+      padding: '20px 18px',
+      display: 'flex', flexDirection: 'column', gap: 6,
+    }}>
+      <span style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 9, letterSpacing: '0.22em',
+        color: 'var(--text-4)',
+      }}>{label}</span>
+      <span style={{
+        fontFamily: mono ? 'var(--font-mono)' : 'var(--font-display)',
+        fontStyle: mono ? 'normal' : 'italic',
+        fontSize: mono ? 16 : 28,
+        lineHeight: 1,
+        color: 'var(--ink)',
+        fontFeatureSettings: '"tnum"',
+      }}>{value}</span>
+      {sub ? (
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 9, letterSpacing: '0.16em',
+          color: 'var(--text-4)',
+        }}>{sub}</span>
+      ) : null}
+    </div>
+  );
+}
+
+function powerOrTier(power) {
+  if (!power) return '—';
+  if (power >= 100000) return 'eternal';
+  if (power >= 60000)  return 'supreme';
+  if (power >= 35000)  return 'stronghold';
+  if (power >= 20000)  return 'citadel';
+  if (power >= 12000)  return 'bastion';
+  if (power >= 6500)   return 'heavy';
+  if (power >= 3500)   return 'watched';
+  if (power >= 1500)   return 'fortified';
+  if (power >= 500)    return 'hold';
+  return 'base';
+}
+
+// ─── TopBustsHolders — bottom of dashboard, top 20 by BUSTS balance.
+function TopBustsHolders() {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/busts-leaders', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setData(d); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!data) {
+    return <div style={{ padding: 24, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)' }}>Loading top holders…</div>;
+  }
+  const { top, me } = data;
+
+  const renderRow = (row, mine) => (
+    <li key={row.rank + row.xUsername} style={{
+      display: 'grid',
+      gridTemplateColumns: '40px 36px 1fr auto',
+      alignItems: 'center',
+      gap: 12,
+      padding: '10px 12px',
+      borderBottom: '1px solid var(--hairline)',
+      background: mine ? 'rgba(215,255,58,0.18)' : 'transparent',
+      borderLeft: mine ? '3px solid var(--ink)' : '3px solid transparent',
+    }}>
+      <span style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11, letterSpacing: '0.15em',
+        color: 'var(--text-3)',
+      }}>{String(row.rank).padStart(2, '0')}</span>
+      {row.xAvatar ? (
+        <img src={row.xAvatar} alt="" style={{
+          width: 28, height: 28, borderRadius: '50%', objectFit: 'cover',
+        }} />
+      ) : (
+        <span style={{
+          width: 28, height: 28, borderRadius: '50%', background: 'var(--ink)',
+          color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'var(--font-mono)', fontSize: 12,
+        }}>@</span>
+      )}
+      <span style={{
+        fontFamily: 'var(--font-display)',
+        fontStyle: 'italic',
+        fontSize: 18,
+        color: 'var(--ink)',
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>@{row.xUsername}</span>
+      <span style={{
+        fontFamily: 'var(--font-display)',
+        fontStyle: 'italic',
+        fontSize: 18,
+        color: 'var(--ink)',
+        fontFeatureSettings: '"tnum"',
+      }}>{row.bustsBalance.toLocaleString()}</span>
+    </li>
+  );
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <ol style={{
+        listStyle: 'none',
+        margin: 0,
+        padding: 0,
+        border: '1px solid var(--hairline)',
+        background: 'var(--paper)',
+      }}>
+        {top.map((row) => renderRow(row, me && me.xUsername === row.xUsername))}
+      </ol>
+      {me && !me.inTop ? (
+        <div style={{
+          marginTop: 12,
+          paddingTop: 10,
+          borderTop: '2px dashed var(--hairline)',
+        }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.22em',
+            color: 'var(--text-4)',
+            marginBottom: 4,
+          }}>YOU</div>
+          <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {renderRow(me, true)}
+          </ol>
+        </div>
+      ) : null}
     </div>
   );
 }

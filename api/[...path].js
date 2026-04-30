@@ -28,6 +28,7 @@ import vaultPortrait       from './_routes/vault-portrait.js';
 import vaultClaimYield     from './_routes/vault-claim-yield.js';
 import vaultActivity       from './_routes/vault-activity.js';
 import vaultLeaderboard    from './_routes/vault-leaderboard.js';
+import bustsLeaders        from './_routes/busts-leaders.js';
 import suspensionAppeal    from './_routes/suspension-appeal.js';
 import adminSuspensionAppeals from './_routes/admin-suspension-appeals.js';
 import adminWhitelist      from './_routes/admin-whitelist.js';
@@ -108,6 +109,7 @@ const ROUTES = {
   'vault-claim-yield':   vaultClaimYield,
   'vault-activity':      vaultActivity,
   'vault-leaderboard':   vaultLeaderboard,
+  'busts-leaders':       bustsLeaders,
   'suspension-appeal':   suspensionAppeal,
   'admin-suspension-appeals': adminSuspensionAppeals,
   'admin-whitelist':     adminWhitelist,

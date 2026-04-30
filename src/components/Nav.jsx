@@ -9,22 +9,18 @@ import { useAccount, useDisconnect } from 'wagmi';
 
 const BASE_PAGES = [
   { id: 'home',     label: 'Index' },
-  { id: 'drop',     label: 'Drop' },
   { id: 'gallery',  label: 'Gallery' },
   { id: '1969',     label: '1969' },
   { id: 'vault',    label: 'Vault' },
-  // 'litepaper' route is intentionally NOT in the public nav while the
-  // team reviews. Direct URL the1969.io/litepaper still works. Add the
-  // entry back here when ready to go public.
+  // 'drop' and 'leaderboard' removed from the public menu. Drop is
+  // closed and the dashboard now shows a top-20 BUSTS strip inline,
+  // so neither route needs a top-level entry. Direct URLs still work.
+  // 'litepaper' route is intentionally NOT in the public nav while
+  // the team reviews. Direct URL the1969.io/litepaper still works.
 ];
-// Leaderboard is publicly viewable but lives between Build and Dashboard
-// in the nav when the user is signed in, so we keep it out of the base
-// list and splice it into the signed-in layout below.
-const LEADERBOARD_PAGE = { id: 'leaderboard', label: 'Leaderboard' };
 const X_PAGES = [
-  { id: 'builder',         label: 'Build',       requiresX: true },
-  LEADERBOARD_PAGE,
-  { id: 'dashboard',       label: 'Dashboard',   requiresX: true },
+  { id: 'builder',   label: 'Build',     requiresX: true },
+  { id: 'dashboard', label: 'Dashboard', requiresX: true },
 ];
 
 function XIcon({ size = 12 }) {
@@ -98,12 +94,9 @@ export default function Nav({ currentPage, onNavigate }) {
     ? `${window.location.origin}?ref=${encodeURIComponent(referralCode)}`
     : null;
 
-  // Non-signed-in users still get the leaderboard link at the end
-  // (it's public), but the "between Build and Dashboard" position only
-  // makes sense once the X-gated pages appear.
   const pages = xUser
     ? [...BASE_PAGES, ...X_PAGES]
-    : [...BASE_PAGES, LEADERBOARD_PAGE];
+    : BASE_PAGES;
 
   const [copied, setCopied] = useState(null);
   const copyText = (label, text) => {
