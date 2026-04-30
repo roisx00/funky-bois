@@ -1,5 +1,16 @@
-import { createConfig, createStorage, http } from 'wagmi';
+import { createConfig, createStorage, http, fallback } from 'wagmi';
 import { mainnet, sepolia } from 'wagmi/chains';
+
+// Public RPCs that reliably allow CORS from browsers. wagmi's bare
+// http() defaults to cloudflare-eth.com which has been intermittently
+// blocked from the production origin (the dashboard ETH balance was
+// stuck at "reading…"). Falling back across three providers keeps the
+// balance read working even when one is down or rate-limited.
+const MAINNET_RPCS = [
+  'https://ethereum-rpc.publicnode.com',
+  'https://eth.llamarpc.com',
+  'https://cloudflare-eth.com',
+];
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import {
   metaMaskWallet,
@@ -40,7 +51,7 @@ export const wagmiConfig = createConfig({
   chains: [mainnet, sepolia],
   connectors,
   transports: {
-    [mainnet.id]: http(),
+    [mainnet.id]: fallback(MAINNET_RPCS.map((url) => http(url))),
     [sepolia.id]: http(),
   },
   storage: createStorage({

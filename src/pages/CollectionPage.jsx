@@ -347,12 +347,14 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress }) {
     return () => { cancelled = true; };
   }, []);
 
-  // ETH balance — wagmi's useBalance handles the RPC call, retries,
-  // refetch on window-focus, and chain-switching for free. Drop the
-  // hand-rolled cloudflare-eth.com fetch (which was hitting CORS in
-  // production and never resolving past "reading…").
+  // ETH balance — pin to chainId 1 (Ethereum mainnet) so we read the
+  // user's mainnet balance regardless of whichever chain wagmi happens
+  // to be connected to right now. Without this the hook follows the
+  // connected wallet's chain (e.g. Sepolia testnet) and the dashboard
+  // shows an empty Sepolia balance instead of the real mainnet ETH.
   const balanceQuery = useBalance({
     address: walletAddress,
+    chainId: 1,
     query: { enabled: !!walletAddress, refetchInterval: 30_000 },
   });
   const ethBalance = balanceQuery.data
