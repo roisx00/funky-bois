@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useAccount, useSignMessage, useDisconnect } from 'wagmi';
+import { useAccount, useBalance, useSignMessage, useDisconnect } from 'wagmi';
 import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
@@ -97,18 +97,19 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
         onNavigate={onNavigate}
       />
 
-      {/* ─── §01 GIFT — moved up so it sits right under the 1969 NFT strip ─── */}
-      <DashSectionHead n="01" title="Gift" sub="Send a built portrait to another user, or BUSTS to a friend. Pending claims appear on this page automatically." />
-      <>
-        <GiftSection inventory={inventory} pendingGifts={pendingGifts} xUser={xUser} sendGift={sendGift} claimGift={claimGift} completedNFTs={completedNFTs} />
-        <BustsTransferSection
-          bustsBalance={bustsBalance}
-          pendingBustsTransfers={pendingBustsTransfers}
-          sendBusts={sendBusts}
-          claimBustsTransfer={claimBustsTransfer}
-          xUser={xUser}
-        />
-      </>
+      {/* ─── §01 GIFT — BUSTS transfers only ─── */}
+      {/* Element-trait gifting was retired: the drop is closed and the
+          build cap is hit, so spare traits no longer help anyone build
+          a portrait. BUSTS gifting stays — that still has utility for
+          rewarding friends, settling debts, etc. */}
+      <DashSectionHead n="01" title="Gift" sub="Send BUSTS to another holder. Pending claims appear here automatically." />
+      <BustsTransferSection
+        bustsBalance={bustsBalance}
+        pendingBustsTransfers={pendingBustsTransfers}
+        sendBusts={sendBusts}
+        claimBustsTransfer={claimBustsTransfer}
+        xUser={xUser}
+      />
 
       <DashSectionHead n="02" title="Overview" />
       {true && (
@@ -346,34 +347,17 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress }) {
     return () => { cancelled = true; };
   }, []);
 
-  // ETH balance — read via wagmi if a wallet is connected client-side.
-  // Read with useBalance({ address }) but this component shouldn't crash
-  // on machines without wagmi mounted, so we lazy-import.
-  const [ethBalance, setEthBalance] = useState(null);
-  useEffect(() => {
-    if (!walletAddress) { setEthBalance(null); return; }
-    let cancelled = false;
-    // Public Ethereum RPC — eth_getBalance is free and uncapped on most
-    // public endpoints. Cache via SWR-like approach would be nicer but
-    // adding a lib is overkill for one balance read per page load.
-    fetch('https://cloudflare-eth.com', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0', id: 1, method: 'eth_getBalance',
-        params: [walletAddress, 'latest'],
-      }),
-    })
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled || !d?.result) return;
-        const wei = BigInt(d.result);
-        const eth = Number(wei) / 1e18;
-        setEthBalance(eth);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [walletAddress]);
+  // ETH balance — wagmi's useBalance handles the RPC call, retries,
+  // refetch on window-focus, and chain-switching for free. Drop the
+  // hand-rolled cloudflare-eth.com fetch (which was hitting CORS in
+  // production and never resolving past "reading…").
+  const balanceQuery = useBalance({
+    address: walletAddress,
+    query: { enabled: !!walletAddress, refetchInterval: 30_000 },
+  });
+  const ethBalance = balanceQuery.data
+    ? Number(balanceQuery.data.value) / 1e18
+    : null;
 
   // NFT compact strip — pre-mint shows the user's builder portrait(s)
   // from completedNFTs. Post-mint: query the 1969 contract for owned
