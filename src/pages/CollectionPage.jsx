@@ -1041,9 +1041,33 @@ function BurnConfirmModal({ item, onConfirm, onCancel }) {
           from { opacity: 0; transform: translateY(8px) scale(0.98); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
+        /* Mobile: stack the footer vertically, hide the kbd hint
+           (no keyboard on touch), and make Cancel + Burn share the
+           bottom row at full width so the Burn button never overflows. */
+        @media (max-width: 540px) {
+          .burn-modal-card { max-width: none !important; }
+          .burn-modal-footer {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 10px !important;
+          }
+          .burn-modal-kbd { display: none !important; }
+          .burn-modal-actions {
+            display: flex !important;
+            gap: 8px !important;
+            width: 100% !important;
+          }
+          .burn-modal-actions button { flex: 1 !important; padding: 14px 12px !important; }
+          .burn-modal-headline { font-size: 26px !important; }
+          .burn-modal-reward-amount { font-size: 24px !important; }
+          .burn-modal-reward { padding: 12px 14px !important; }
+          .burn-modal-body { padding: 16px 18px !important; }
+          .burn-modal-header { padding: 16px 18px 12px !important; }
+        }
       `}</style>
 
       <div
+        className="burn-modal-card"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 480,
@@ -1061,7 +1085,7 @@ function BurnConfirmModal({ item, onConfirm, onCancel }) {
         }} />
 
         {/* Header */}
-        <div style={{
+        <div className="burn-modal-header" style={{
           padding: '20px 24px 14px',
           borderBottom: '1px solid var(--hairline)',
         }}>
@@ -1072,7 +1096,7 @@ function BurnConfirmModal({ item, onConfirm, onCancel }) {
           }}>
             BURN · IRREVERSIBLE
           </div>
-          <div style={{
+          <div className="burn-modal-headline" style={{
             marginTop: 6,
             fontFamily: 'var(--font-display)',
             fontStyle: 'italic',
@@ -1086,7 +1110,7 @@ function BurnConfirmModal({ item, onConfirm, onCancel }) {
         </div>
 
         {/* Body */}
-        <div style={{ padding: '20px 24px' }}>
+        <div className="burn-modal-body" style={{ padding: '20px 24px' }}>
           <div style={{
             display: 'grid',
             gridTemplateColumns: '64px 1fr',
@@ -1127,7 +1151,7 @@ function BurnConfirmModal({ item, onConfirm, onCancel }) {
           </div>
 
           {/* Reward callout */}
-          <div style={{
+          <div className="burn-modal-reward" style={{
             marginTop: 14,
             display: 'flex',
             alignItems: 'center',
@@ -1142,7 +1166,7 @@ function BurnConfirmModal({ item, onConfirm, onCancel }) {
               fontSize: 10, letterSpacing: '0.24em',
               color: 'var(--accent)',
             }}>YOU RECEIVE</span>
-            <span style={{
+            <span className="burn-modal-reward-amount" style={{
               fontFamily: 'var(--font-display)',
               fontStyle: 'italic',
               fontSize: 28,
@@ -1167,7 +1191,7 @@ function BurnConfirmModal({ item, onConfirm, onCancel }) {
         </div>
 
         {/* Footer / actions */}
-        <div style={{
+        <div className="burn-modal-footer" style={{
           display: 'flex', gap: 8,
           padding: '14px 24px 20px',
           borderTop: '1px solid var(--hairline)',
@@ -1175,14 +1199,14 @@ function BurnConfirmModal({ item, onConfirm, onCancel }) {
           justifyContent: 'space-between',
           flexWrap: 'wrap',
         }}>
-          <span style={{
+          <span className="burn-modal-kbd" style={{
             fontFamily: 'var(--font-mono)',
             fontSize: 9, letterSpacing: '0.2em',
             color: 'var(--text-4)',
           }}>
             ESC TO CANCEL · ENTER TO CONFIRM
           </span>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="burn-modal-actions" style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={onCancel}
               style={{
