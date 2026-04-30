@@ -598,6 +598,9 @@ export default function VaultPage({ onNavigate }) {
         </div>
       </section>
 
+      {/* ─── BUSTS CIRCULATION (live) ────────────────────────── */}
+      <BustsCirculationPanel />
+
       {/* ─── §03 YIELD ───────────────────────────────────────── */}
       <section className="vlt-section">
         <SectionHead n="03" title="Yield" sub="Real-time BUSTS for what you keep inside. 0.1% per day on deposited BUSTS. +10 BUSTS/day flat while a portrait is bound. Settles to your balance whenever you claim or move funds." />
@@ -1145,6 +1148,173 @@ function TvlCell({ num, label, unit, hero }) {
         {unit ? <span className="vlt-tvl-unit">{unit}</span> : null}
       </div>
     </div>
+  );
+}
+
+// Real-time BUSTS circulation panel. Pulls from /api/busts-circulation
+// (30s edge-cached), polls every 30s while the page is open. The total
+// is the source-of-truth for "how much BUSTS exists right now" — sum
+// of every active user balance + every locked vault deposit.
+function BustsCirculationPanel() {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    const fetchOnce = () => {
+      fetch('/api/busts-circulation')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (!cancelled && d) setData(d); })
+        .catch(() => {});
+    };
+    fetchOnce();
+    const id = setInterval(fetchOnce, 30000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
+  return (
+    <section style={{
+      maxWidth: 1180,
+      margin: '0 auto 36px',
+      padding: '28px 24px',
+      background: 'var(--paper)',
+      borderTop: '1px solid var(--hairline)',
+      borderBottom: '1px solid var(--hairline)',
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        gap: 18,
+        flexWrap: 'wrap',
+        marginBottom: 18,
+      }}>
+        <div>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11, letterSpacing: '0.22em',
+            color: 'var(--text-3)',
+          }}>
+            <span style={{
+              display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+              background: 'var(--accent)', border: '1px solid var(--ink)',
+              marginRight: 8, verticalAlign: 'middle',
+              animation: 'vlt-live-pulse 1.6s ease-in-out infinite',
+            }} />
+            BUSTS CIRCULATION · LIVE
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 18,
+            color: 'var(--text-3)',
+            marginTop: 4,
+          }}>
+            Total in motion right now. Sum of every active balance + every locked vault deposit.
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 64,
+            lineHeight: 1,
+            color: 'var(--ink)',
+            letterSpacing: '-1.5px',
+            fontFeatureSettings: '"tnum"',
+            background: 'linear-gradient(180deg, transparent 60%, rgba(215,255,58,0.55) 60%)',
+            padding: '0 8px',
+            display: 'inline-block',
+          }}>
+            {data ? data.circulating.toLocaleString() : '...'}
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10, letterSpacing: '0.22em',
+            color: 'var(--text-4)',
+            marginTop: 6,
+          }}>
+            BUSTS · OFF-CHAIN
+          </div>
+        </div>
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 1,
+        background: 'var(--hairline)',
+        border: '1px solid var(--hairline)',
+      }}>
+        <div style={{ background: 'var(--paper)', padding: '16px 18px' }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.22em',
+            color: 'var(--text-4)',
+          }}>IN BALANCES</div>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 28,
+            color: 'var(--ink)',
+            marginTop: 4,
+            fontFeatureSettings: '"tnum"',
+          }}>
+            {data ? data.inBalances.toLocaleString() : '...'}
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.16em',
+            color: 'var(--text-4)',
+            marginTop: 4,
+          }}>READY TO MOVE</div>
+        </div>
+        <div style={{ background: 'var(--paper)', padding: '16px 18px' }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.22em',
+            color: 'var(--text-4)',
+          }}>IN VAULTS</div>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 28,
+            color: 'var(--ink)',
+            marginTop: 4,
+            fontFeatureSettings: '"tnum"',
+          }}>
+            {data ? data.inVaults.toLocaleString() : '...'}
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.16em',
+            color: 'var(--text-4)',
+            marginTop: 4,
+          }}>LOCKED · EARNING</div>
+        </div>
+        <div style={{ background: 'var(--paper)', padding: '16px 18px' }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.22em',
+            color: 'var(--text-4)',
+          }}>HOLDERS</div>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 28,
+            color: 'var(--ink)',
+            marginTop: 4,
+            fontFeatureSettings: '"tnum"',
+          }}>
+            {data ? data.holders.toLocaleString() : '...'}
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.16em',
+            color: 'var(--text-4)',
+            marginTop: 4,
+          }}>{'WITH BALANCE > 0'}</div>
+        </div>
+      </div>
+    </section>
   );
 }
 
