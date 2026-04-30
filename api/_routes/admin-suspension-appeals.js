@@ -102,11 +102,28 @@ export default async function handler(req, res) {
   `;
 
   if (action === 'approve') {
-    // Unsuspend the user. Note: this does NOT auto-restore drop_eligible
-    // or is_whitelisted — admin can re-grant via pre-WL queue separately.
+    // Unsuspend AND auto-restore drop_eligible / is_whitelisted from
+    // their underlying state. Suspension had flipped both flags to
+    // FALSE; without this, an approved appeal would un-suspend the
+    // user but leave them silently off the Tier 2 / Tier 1 lists.
+    // drop_eligible: restored when the user has an approved pre-WL row
+    //                AND has not built a portrait yet.
+    // is_whitelisted: restored when the user already built a portrait.
     await sql`
-      UPDATE users
+      UPDATE users u
          SET suspended  = FALSE,
+             drop_eligible = (
+               EXISTS (
+                 SELECT 1 FROM pre_whitelist_requests pwl
+                  WHERE pwl.user_id = u.id AND pwl.status = 'approved'
+               )
+               AND NOT EXISTS (
+                 SELECT 1 FROM completed_nfts c WHERE c.user_id = u.id
+               )
+             ),
+             is_whitelisted = EXISTS (
+               SELECT 1 FROM completed_nfts c WHERE c.user_id = u.id
+             ),
              updated_at = now()
        WHERE id = ${appeal.user_id}
     `;

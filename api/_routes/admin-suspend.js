@@ -55,9 +55,28 @@ export default async function handler(req, res) {
       RETURNING id, x_username, suspended, drop_eligible, is_whitelisted
     `);
   } else {
+    // Un-suspend. CRITICAL: also restore drop_eligible if the user has an
+    // approved pre-WL row and never built a portrait — suspension flipped
+    // drop_eligible to FALSE, and without restoring it here the user
+    // silently falls off the Tier 2 mint list even after un-suspension.
+    // (This was the cause of ~56 Tier-2 complaints on 2026-04-30.)
+    // is_whitelisted only restores if they previously built a portrait,
+    // which we can detect via completed_nfts.
     result = one(await sql`
-      UPDATE users
+      UPDATE users u
          SET suspended  = FALSE,
+             drop_eligible = (
+               EXISTS (
+                 SELECT 1 FROM pre_whitelist_requests pwl
+                  WHERE pwl.user_id = u.id AND pwl.status = 'approved'
+               )
+               AND NOT EXISTS (
+                 SELECT 1 FROM completed_nfts c WHERE c.user_id = u.id
+               )
+             ),
+             is_whitelisted = EXISTS (
+               SELECT 1 FROM completed_nfts c WHERE c.user_id = u.id
+             ),
              updated_at = now()
        WHERE id = ${target.id}
       RETURNING id, x_username, suspended, drop_eligible, is_whitelisted
