@@ -97,12 +97,19 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
         onNavigate={onNavigate}
       />
 
-      {/* ─── §01 GIFT — BUSTS transfers only ─── */}
+      {/* ─── §01 BURN — trait inventory + redeem for BUSTS ─── */}
+      <DashSectionHead n="01" title="Trait inventory" sub="Traits you collected during the drop. Burn them for BUSTS — the door is closed, the loot is liquid." />
+      <TraitInventorySection
+        inventory={inventory}
+        completedNFTs={completedNFTs}
+      />
+
+      {/* ─── §02 GIFT — BUSTS transfers only ─── */}
       {/* Element-trait gifting was retired: the drop is closed and the
           build cap is hit, so spare traits no longer help anyone build
           a portrait. BUSTS gifting stays — that still has utility for
           rewarding friends, settling debts, etc. */}
-      <DashSectionHead n="01" title="Gift" sub="Send BUSTS to another holder. Pending claims appear here automatically." />
+      <DashSectionHead n="02" title="Gift" sub="Send BUSTS to another holder. Pending claims appear here automatically." />
       <BustsTransferSection
         bustsBalance={bustsBalance}
         pendingBustsTransfers={pendingBustsTransfers}
@@ -111,7 +118,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
         xUser={xUser}
       />
 
-      <DashSectionHead n="02" title="Overview" />
+      <DashSectionHead n="03" title="Overview" />
       {true && (
         <div className="dash-overview-grid">
           {/* Mint wallet card — only shown to relevant audiences. The
@@ -251,7 +258,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       )}
 
       {/* ─── §03 ACTIVITY HISTORY — last 10 only ─── */}
-      <DashSectionHead n="03" title="Activity history" sub="Most recent BUSTS ledger entries — credits in, debits out." />
+      <DashSectionHead n="04" title="Activity history" sub="Most recent BUSTS ledger entries — credits in, debits out." />
       {(() => {
         const HISTORY_LIMIT = 10;
         const recent = (bustsHistory || []).slice(0, HISTORY_LIMIT);
@@ -288,7 +295,7 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       })()}
 
       {/* ─── Top BUSTS holders (last 20) ─── */}
-      <DashSectionHead n="04" title="Top holders" sub="Top 20 by BUSTS in circulation. Updated every 30 seconds." />
+      <DashSectionHead n="05" title="Top holders" sub="Top 20 by BUSTS in circulation. Updated every 30 seconds." />
       <TopBustsHolders />
     </div>
   );
@@ -699,6 +706,283 @@ function TopBustsHolders() {
           </ol>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// ─── TraitInventorySection — burn-for-BUSTS surface
+// Drop is closed and the build cap is hit, so leftover traits had no
+// utility. This panel lets the holder convert each trait into BUSTS at
+// a published rarity-keyed rate (10 / 30 / 60 / 100). Frozen traits
+// (the variants used in their own built portrait) are still burnable
+// because the inventory row only exists for SPARE copies — the portrait
+// itself is independent of the inventory ledger.
+const BURN_REWARD = { common: 10, rare: 30, legendary: 60, ultra_rare: 100 };
+
+function TraitInventorySection({ inventory, completedNFTs }) {
+  const { burnElement } = useGame();
+  const toast = useToast();
+  const [busy, setBusy] = useState(null); // `${type}:${variant}` while burning
+
+  // (type:variant) keys for traits the user used to build their
+  // portrait. Burning a spare copy is fine; we just label it so the
+  // holder doesn't think they're touching the portrait itself.
+  const frozenKeys = useMemo(() => {
+    const set = new Set();
+    for (const nft of completedNFTs || []) {
+      const els = nft?.elements || {};
+      for (const [type, variant] of Object.entries(els)) {
+        set.add(`${type}:${variant}`);
+      }
+    }
+    return set;
+  }, [completedNFTs]);
+
+  const items = (inventory || []).filter((i) => (i.quantity || 0) > 0);
+
+  // Group by element type for easier scanning. Order follows ELEMENT_TYPES
+  // so the section reads like the build flow.
+  const byType = useMemo(() => {
+    const map = {};
+    for (const t of ELEMENT_TYPES) map[t] = [];
+    for (const i of items) {
+      if (map[i.type]) map[i.type].push(i);
+    }
+    return map;
+  }, [items]);
+
+  const totalItems = items.reduce((s, i) => s + (i.quantity || 0), 0);
+  const totalRedeemable = items.reduce(
+    (s, i) => s + ((BURN_REWARD[i.rarity] || 10) * (i.quantity || 0)),
+    0
+  );
+
+  const handleBurn = async (item) => {
+    const key = `${item.type}:${item.variant}`;
+    if (busy) return;
+    const reward = BURN_REWARD[item.rarity] || 10;
+    if (!window.confirm(`Burn 1 × ${item.name} (${item.rarity}) for ${reward} BUSTS? Irreversible.`)) return;
+    setBusy(key);
+    try {
+      const r = await burnElement(item.type, item.variant);
+      if (r?.ok) {
+        toast.success(`+${r.reward} BUSTS · burned ${r.burned?.name || item.name}`);
+      } else {
+        toast.error(r?.reason || 'Burn failed');
+      }
+    } catch (e) {
+      toast.error(e?.message || 'Network error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (totalItems === 0) {
+    return (
+      <div style={{
+        padding: '32px 28px',
+        border: '1px dashed var(--hairline)',
+        background: 'var(--paper-2)',
+        textAlign: 'center',
+      }}>
+        <div style={{
+          fontFamily: 'var(--font-display)',
+          fontStyle: 'italic',
+          fontSize: 22,
+          color: 'var(--ink)',
+          marginBottom: 6,
+        }}>
+          No spare traits.
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11, letterSpacing: '0.18em',
+          color: 'var(--text-3)',
+        }}>
+          EVERYTHING WENT INTO THE PORTRAIT
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Summary bar */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr auto auto',
+        alignItems: 'center',
+        gap: 18,
+        padding: '14px 18px',
+        marginBottom: 18,
+        border: '1px solid var(--ink)',
+        background: 'var(--paper-2)',
+      }}>
+        <div>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.22em',
+            color: 'var(--text-4)',
+          }}>SPARE TRAITS</div>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 28,
+            color: 'var(--ink)',
+            lineHeight: 1.1,
+            fontFeatureSettings: '"tnum"',
+          }}>{totalItems}</div>
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 9, letterSpacing: '0.22em',
+          color: 'var(--text-3)',
+          textAlign: 'right',
+        }}>
+          IF YOU BURN ALL
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-display)',
+          fontStyle: 'italic',
+          fontSize: 28,
+          color: 'var(--ink)',
+          background: 'linear-gradient(180deg, transparent 60%, rgba(215,255,58,0.55) 60%)',
+          padding: '0 8px',
+          fontFeatureSettings: '"tnum"',
+        }}>
+          +{totalRedeemable.toLocaleString()} BUSTS
+        </div>
+      </div>
+
+      {/* Reward table caption */}
+      <div style={{
+        display: 'flex', gap: 18, flexWrap: 'wrap',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 10, letterSpacing: '0.18em',
+        color: 'var(--text-3)',
+        marginBottom: 22,
+      }}>
+        {Object.entries(BURN_REWARD).map(([r, v]) => (
+          <span key={r}>
+            <strong style={{ color: 'var(--ink)' }}>{r.toUpperCase().replace('_', ' ')}</strong> · +{v}
+          </span>
+        ))}
+      </div>
+
+      {/* Inventory grid grouped by type */}
+      {ELEMENT_TYPES.map((type) => {
+        const list = byType[type];
+        if (!list || list.length === 0) return null;
+        return (
+          <div key={type} style={{ marginBottom: 28 }}>
+            <div style={{
+              display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+              marginBottom: 10, paddingBottom: 6,
+              borderBottom: '1px solid var(--hairline)',
+            }}>
+              <span style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10, letterSpacing: '0.22em',
+                color: 'var(--ink)',
+              }}>
+                {ELEMENT_LABELS[type].toUpperCase()}
+              </span>
+              <span style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 9, letterSpacing: '0.18em',
+                color: 'var(--text-4)',
+              }}>
+                {list.reduce((s, i) => s + (i.quantity || 0), 0)} HELD
+              </span>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 12,
+            }}>
+              {list.map((item) => {
+                const key = `${item.type}:${item.variant}`;
+                const reward = BURN_REWARD[item.rarity] || 10;
+                const isFrozen = frozenKeys.has(key);
+                const isBusy = busy === key;
+                return (
+                  <div key={key} style={{
+                    border: '1px solid var(--hairline)',
+                    background: 'var(--paper-2)',
+                    padding: 12,
+                    display: 'grid',
+                    gridTemplateColumns: '56px 1fr',
+                    gap: 12,
+                    alignItems: 'stretch',
+                  }}>
+                    {/* trait icon tile */}
+                    <div style={{
+                      width: 56, height: 56,
+                      background: 'var(--paper)',
+                      border: '1px solid var(--hairline)',
+                      overflow: 'hidden',
+                    }}>
+                      <svg viewBox="0 0 96 96" width="56" height="56" shapeRendering="crispEdges"
+                        dangerouslySetInnerHTML={{ __html: getElementSVG(type, item.variant) }} />
+                    </div>
+
+                    {/* meta + burn */}
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{
+                          fontFamily: 'var(--font-display)',
+                          fontStyle: 'italic',
+                          fontSize: 17,
+                          color: 'var(--ink)',
+                          lineHeight: 1.1,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {item.name}
+                        </span>
+                        {item.quantity > 1 ? (
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 9, letterSpacing: '0.18em',
+                            background: 'var(--ink)', color: 'var(--paper)',
+                            padding: '1px 6px',
+                          }}>×{item.quantity}</span>
+                        ) : null}
+                      </div>
+                      <div style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 9, letterSpacing: '0.2em',
+                        color: 'var(--text-3)',
+                      }}>
+                        {item.rarity.toUpperCase().replace('_', ' ')}
+                        {isFrozen ? <span style={{ marginLeft: 6, color: 'var(--text-4)' }}>· SPARE OF PORTRAIT</span> : null}
+                      </div>
+                      <button
+                        onClick={() => handleBurn(item)}
+                        disabled={isBusy}
+                        style={{
+                          marginTop: 'auto',
+                          background: isBusy ? 'var(--paper)' : 'var(--ink)',
+                          color: isBusy ? 'var(--text-3)' : 'var(--accent)',
+                          border: '1px solid var(--ink)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 10, letterSpacing: '0.16em', fontWeight: 700,
+                          padding: '8px 12px',
+                          cursor: isBusy ? 'wait' : 'pointer',
+                          textTransform: 'uppercase',
+                          transition: 'background 120ms ease',
+                        }}
+                      >
+                        {isBusy ? 'BURNING…' : `BURN · +${reward} BUSTS`}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

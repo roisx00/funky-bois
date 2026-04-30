@@ -670,6 +670,19 @@ export function GameProvider({ children }) {
     return r;
   }, [refreshMe]);
 
+  // Burn a single trait from inventory in exchange for BUSTS. The
+  // server is the source of truth (atomic decrement + ledger row);
+  // we mirror the local state on success so the UI feels instant.
+  const burnElement = useCallback(async (elementType, variant) => {
+    const r = await jpost('/api/inventory-burn', { elementType, variant });
+    if (!r.ok) return { ok: false, reason: r.reason || r.error || 'burn_failed' };
+    dispatch({ type: 'REMOVE_INVENTORY', elementType, variant });
+    if (typeof r.reward === 'number') {
+      dispatch({ type: 'BUMP_BALANCE', amount: r.reward, reason: `Burn: ${elementType}` });
+    }
+    return r;
+  }, []);
+
   // Wallet bridge: WalletBridge dispatches address into context
   const bridgeWallet = useCallback((address) => {
     dispatch({ type: 'SET_WALLET', address });
@@ -746,6 +759,7 @@ export function GameProvider({ children }) {
     bindMintWallet,
     removeElement,
     addGiftedElement,
+    burnElement,
     sendGift,
     claimGift,
     sendBusts,
