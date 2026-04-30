@@ -19,7 +19,9 @@ const BASE_PAGES = [
   // the team reviews. Direct URL the1969.io/litepaper still works.
 ];
 const X_PAGES = [
-  { id: 'builder',   label: 'Build',     requiresX: true },
+  // 'builder' removed from menu — portrait building is permanently
+  // closed. Direct URL still resolves but renders the closed-state
+  // takeover (see App.jsx).
   { id: 'tasks',     label: 'Tasks',     requiresX: true },
   { id: 'dashboard', label: 'Dashboard', requiresX: true },
 ];

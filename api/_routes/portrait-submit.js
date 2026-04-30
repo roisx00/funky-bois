@@ -38,14 +38,23 @@ export default async function handler(req, res) {
   const { elements } = await readBody(req) || {};
   if (!elements || typeof elements !== 'object') return bad(res, 400, 'missing_elements');
 
-  // ── BUILD CAP ──
-  // Stop accepting new portraits once the cap is hit. Counts active
-  // users only so deleted/suspended sybils don't leave dead inventory.
+  // ── BUILD HARD CLOSED ──
+  // The build flow is permanently shut as of 2026-04-30. Tier 1 is
+  // locked; no further portraits accepted regardless of cap math. The
+  // earlier suspended-filter cap check let active users keep building
+  // as long as the *active* count was below the cap, even though the
+  // raw DB count was already over. Hard-close from the server so the
+  // gate can't leak again.
+  return bad(res, 410, 'build_closed', {
+    hint: 'Portrait building is closed. Tier 1 list is locked.',
+  });
+
+  // (Below this line is unreachable. Kept for archive — flip the early
+  // return above to re-enable the cap-based gate.)
+  // eslint-disable-next-line no-unreachable
   const buildCap = await getConfigInt('portrait_build_cap', DEFAULT_BUILD_CAP);
   const builtRow = one(await sql`
     SELECT COUNT(*)::int AS c FROM completed_nfts c
-    JOIN users u ON u.id = c.user_id
-    WHERE u.suspended = FALSE
   `);
   const builtCount = builtRow?.c || 0;
   if (builtCount >= buildCap) {

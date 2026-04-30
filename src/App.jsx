@@ -45,12 +45,88 @@ function DashboardGate({ navigate }) {
 }
 
 function BuilderGate({ navigate }) {
-  const { xUser } = useGame();
-  if (xUser) return <BuilderPage onNavigate={navigate} />;
+  // Portrait building is permanently closed. The /build URL still
+  // resolves (some users may have it bookmarked / linked from old
+  // tweets) but renders a closed-state takeover instead of letting
+  // anyone reach the build flow. Server-side portrait-submit also
+  // returns 410 build_closed unconditionally, so even direct API
+  // calls can't sneak a build through.
+  void navigate;
   return (
-    <SignInGate title="Build locked">
-      Sign in with your X account to assemble your portrait and earn your whitelist spot.
-    </SignInGate>
+    <div className="page" style={{
+      minHeight: '70vh',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '64px 24px',
+      background: 'var(--paper, #F9F6F0)',
+      color: 'var(--ink, #0E0E0E)',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      <div aria-hidden="true" style={{
+        position: 'absolute', inset: 0,
+        background: 'radial-gradient(ellipse at center, rgba(215,255,58,0.18) 0%, rgba(215,255,58,0.04) 40%, transparent 75%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{ position: 'relative', maxWidth: 640, textAlign: 'center', zIndex: 1 }}>
+        <div style={{
+          fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+          fontSize: 11, letterSpacing: '0.32em',
+          color: 'var(--ink, #0E0E0E)',
+          marginBottom: 18,
+        }}>
+          <span style={{
+            display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+            background: '#D7FF3A', border: '1px solid #0E0E0E',
+            marginRight: 10, verticalAlign: 'middle',
+          }} />
+          THE 1969 · BUILD CLOSED
+        </div>
+        <h1 style={{
+          fontFamily: "'Instrument Serif', Georgia, serif",
+          fontStyle: 'italic',
+          fontWeight: 500,
+          fontSize: 'clamp(48px, 8vw, 96px)',
+          lineHeight: 0.95,
+          letterSpacing: '-2px',
+          margin: '0 0 18px',
+        }}>
+          The build is closed.
+        </h1>
+        <p style={{
+          fontFamily: "'Instrument Serif', Georgia, serif",
+          fontStyle: 'italic',
+          fontSize: 22,
+          color: 'var(--text-2, #3A3A3A)',
+          margin: '0 0 32px',
+          maxWidth: 520, marginLeft: 'auto', marginRight: 'auto',
+          lineHeight: 1.4,
+        }}>
+          Tier 1 is locked at 1,361 portraits. No more builds will be accepted. Spare traits in your inventory can now be burned for BUSTS on the dashboard.
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <a href="/dashboard" style={{
+            display: 'inline-block',
+            padding: '14px 28px',
+            background: '#D7FF3A',
+            color: '#0E0E0E',
+            border: '1px solid #0E0E0E',
+            fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+            fontSize: 12, letterSpacing: '0.2em', fontWeight: 700,
+            textDecoration: 'none',
+          }}>BURN SPARE TRAITS →</a>
+          <a href="/" style={{
+            display: 'inline-block',
+            padding: '14px 28px',
+            background: 'transparent',
+            color: 'var(--ink, #0E0E0E)',
+            border: '1px solid var(--ink, #0E0E0E)',
+            fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+            fontSize: 12, letterSpacing: '0.2em', fontWeight: 700,
+            textDecoration: 'none',
+          }}>HOME</a>
+        </div>
+      </div>
+    </div>
   );
 }
 
