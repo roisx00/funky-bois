@@ -63,14 +63,14 @@ export default async function handler(req, res) {
   const dropCutoffSecs = await getConfigInt('drop_cutoff', 0);
   const dropCutoffMs = dropCutoffSecs ? dropCutoffSecs * 1000 : null;
 
-  // Portrait-build cap state: how many active users have built so far,
-  // and the cap. Used by the build page to render a live progress bar
-  // and a "build closes when cap is reached" warning.
-  const buildCap = await getConfigInt('portrait_build_cap', 1350);
+  // Portrait-build cap state: count every portrait row (not just active
+  // users') so the public banner reads "N/N" once the cap is hit. The
+  // gallery hides suspended portraits separately, so this discrepancy
+  // is purely cosmetic — the build cap's job is to halt new submissions,
+  // and that uses the same total-row count.
+  const buildCap = await getConfigInt('portrait_build_cap', 1361);
   const buildCountRow = one(await sql`
-    SELECT COUNT(*)::int AS c FROM completed_nfts c
-    JOIN users u ON u.id = c.user_id
-    WHERE u.suspended = FALSE
+    SELECT COUNT(*)::int AS c FROM completed_nfts
   `);
   const buildCount = buildCountRow?.c || 0;
 

@@ -127,6 +127,173 @@ export default function DropPage() {
   );
   const recent = (recentClaims || []).slice(0, 10);
 
+  // ────────── DROP-ENDED FULL-PAGE TAKEOVER ──────────
+  // Once dropCutoffMs is in the past, the entire DropPage is replaced
+  // with a single message + a live countdown to mint. Tier 1 + Tier 2
+  // are both locked at this point; nothing on the rest of the drop UI
+  // (claim button, sessions, leaderboard, application form) is
+  // actionable, so showing it would only be confusing.
+  // Mint moment hardcoded — change here if it ever shifts.
+  const mintMs = Date.UTC(2026, 4, 1, 14, 0, 0); // 2026-05-01 14:00 UTC
+  if (dropClosed) {
+    const rem = Math.max(0, mintMs - now);
+    const days  = Math.floor(rem / 86400000);
+    const hours = Math.floor((rem / 3600000) % 24);
+    const mins  = Math.floor((rem / 60000) % 60);
+    const secs  = Math.floor((rem / 1000) % 60);
+    const minted = rem === 0;
+    return (
+      <div className="page drop-ended-page" style={{
+        minHeight: '100vh',
+        background: '#0A0A0A',
+        color: '#F9F6F0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '64px 24px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Atmospheric backdrop */}
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(ellipse at center, rgba(215,255,58,0.08) 0%, rgba(215,255,58,0.02) 35%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0,
+          backgroundImage:
+            'linear-gradient(rgba(215,255,58,0.04) 1px, transparent 1px),'
+            + 'linear-gradient(90deg, rgba(215,255,58,0.04) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+          maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)',
+          opacity: 0.55,
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ position: 'relative', maxWidth: 760, textAlign: 'center', zIndex: 1 }}>
+          <div style={{
+            fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+            fontSize: 12, letterSpacing: '0.32em', color: 'rgba(215,255,58,0.85)',
+            marginBottom: 18,
+          }}>
+            <span style={{
+              display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+              background: '#D7FF3A', boxShadow: '0 0 12px #D7FF3A',
+              marginRight: 10, verticalAlign: 'middle',
+            }} />
+            THE 1969 · DROP CLOSED
+          </div>
+
+          <h1 style={{
+            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontStyle: 'italic',
+            fontWeight: 500,
+            fontSize: 'clamp(56px, 9vw, 110px)',
+            lineHeight: 0.95,
+            letterSpacing: '-2px',
+            margin: '0 0 18px',
+            color: '#F9F6F0',
+          }}>
+            The drop has ended.
+          </h1>
+
+          <p style={{
+            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontStyle: 'italic',
+            fontSize: 24,
+            lineHeight: 1.45,
+            color: 'rgba(249,246,240,0.7)',
+            margin: '0 0 56px',
+            maxWidth: 620,
+            marginLeft: 'auto', marginRight: 'auto',
+          }}>
+            All 1,969 traits have left the pool. Tier 1 and Tier 2 are locked. Nothing more to claim, nothing more to build. Now we wait for the doors.
+          </p>
+
+          {/* Countdown */}
+          <div style={{
+            fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+            fontSize: 11, letterSpacing: '0.3em',
+            color: 'rgba(249,246,240,0.55)',
+            marginBottom: 14,
+          }}>
+            {minted ? 'MINT IS LIVE' : 'MINT OPENS IN'}
+          </div>
+
+          {minted ? (
+            <a href="/mint" style={{
+              display: 'inline-block',
+              padding: '18px 36px',
+              background: '#D7FF3A',
+              color: '#0E0E0E',
+              fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+              fontSize: 14, fontWeight: 700, letterSpacing: '0.18em',
+              textDecoration: 'none',
+              boxShadow: '0 0 0 1px #0E0E0E inset, 0 8px 28px rgba(215,255,58,0.45)',
+            }}>
+              ENTER THE MINT →
+            </a>
+          ) : (
+            <div style={{
+              display: 'flex', justifyContent: 'center',
+              gap: 'clamp(16px, 3vw, 36px)',
+              fontFamily: "'Instrument Serif', Georgia, serif",
+              fontStyle: 'italic',
+              fontFeatureSettings: '"tnum"',
+              flexWrap: 'wrap',
+            }}>
+              {[
+                { v: days,  l: days === 1 ? 'DAY' : 'DAYS' },
+                { v: hours, l: 'HOURS' },
+                { v: mins,  l: 'MINUTES' },
+                { v: secs,  l: 'SECONDS' },
+              ].map(({ v, l }) => (
+                <div key={l} style={{ minWidth: 92 }}>
+                  <div style={{
+                    fontSize: 'clamp(56px, 8vw, 88px)',
+                    lineHeight: 1,
+                    color: '#F9F6F0',
+                    letterSpacing: '-2px',
+                  }}>
+                    {String(v).padStart(2, '0')}
+                  </div>
+                  <div style={{
+                    marginTop: 8,
+                    fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+                    fontStyle: 'normal',
+                    fontSize: 10, letterSpacing: '0.3em',
+                    color: 'rgba(249,246,240,0.5)',
+                  }}>
+                    {l}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{
+            marginTop: 56,
+            paddingTop: 28,
+            borderTop: '1px solid rgba(249,246,240,0.12)',
+            fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+            fontSize: 11, letterSpacing: '0.22em',
+            color: 'rgba(249,246,240,0.45)',
+          }}>
+            BOUND YOUR WALLET? YOU'RE IN. <span style={{ color: 'rgba(249,246,240,0.7)' }}>SHOW UP AT MINT.</span>
+          </div>
+          <div style={{
+            marginTop: 10,
+            fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+            fontSize: 11, letterSpacing: '0.22em',
+            color: 'rgba(249,246,240,0.35)',
+          }}>
+            the1969.io
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page drop-v2-page">
       {/* ────────── DROP CUTOFF COUNTDOWN ──────────
