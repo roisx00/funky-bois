@@ -8,12 +8,14 @@ import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG } from '../data/elements';
 import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
 import { mintBindMessage } from '../utils/wlMessage';
 
+// Inventory tab removed — drop is closed and there's no more reason to
+// show users their trait stash. Gifting still works (its own tab below)
+// because users can still gift built portraits to other users.
 const TABS = [
-  { id: 'overview',  label: 'Overview' },
-  { id: 'tasks',     label: 'Tasks' },
-  { id: 'inventory', label: 'Inventory' },
-  { id: 'gift',      label: 'Gift' },
-  { id: 'history',   label: 'History' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'tasks',    label: 'Tasks' },
+  { id: 'gift',     label: 'Gift' },
+  { id: 'history',  label: 'History' },
 ];
 
 export default function CollectionPage({ onNavigate, initialTab = 'overview' }) {
@@ -27,7 +29,11 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
     dropEligible, walletBound, walletAddress: serverWalletAddress,
     bindMintWallet, mintWalletCutoffMs,
   } = useGame();
-  const normalized = initialTab === 'elements' ? 'inventory' : initialTab;
+  // Inventory tab is gone — old deep-links (?tab=elements / ?tab=inventory)
+  // fall back to overview so they don't land on an inert tab id.
+  const normalized = (initialTab === 'elements' || initialTab === 'inventory')
+    ? 'overview'
+    : initialTab;
   const [tab, setTab] = useState(normalized);
   const TOTAL_TYPES = ELEMENT_TYPES.length;
 
