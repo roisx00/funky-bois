@@ -26,6 +26,17 @@ export default async function handler(req, res) {
 
   if (!(await rateLimit(res, user.id, { name: 'task_submit', max: 30, windowSecs: 60 }))) return;
 
+  // Real-PFP gate. Accounts using X's default profile picture are
+  // overwhelmingly bots / throwaways farming task BUSTS. Users with a
+  // real avatar are still rate-limited and admin-reviewed below; this
+  // just stops the egg-pfp wave at the door.
+  const av = String(user.x_avatar || '');
+  if (!av || /default_profile/i.test(av)) {
+    return bad(res, 403, 'needs_profile_picture', {
+      hint: 'Add a profile picture on X before completing tasks. Refresh your X profile, then sign in again.',
+    });
+  }
+
   const { taskId, action } = await readBody(req) || {};
   if (!taskId || !VALID.has(action)) return bad(res, 400, 'missing_or_invalid');
 

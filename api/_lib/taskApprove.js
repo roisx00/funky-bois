@@ -13,6 +13,22 @@ export async function approveVerification(verifId, reviewedBy) {
   `);
   if (!v) return { id: verifId, skipped: true };
 
+  // Defence-in-depth real-PFP gate. tasks-submit blocks egg-avatar
+  // accounts at the door, but if a row predates this check (or sneaks
+  // through some path), do not credit BUSTS. Auto-reject and bail.
+  const owner = one(await sql`
+    SELECT x_avatar FROM users WHERE id = ${v.user_id} LIMIT 1
+  `);
+  const av = String(owner?.x_avatar || '');
+  if (!av || /default_profile/i.test(av)) {
+    await sql`
+      UPDATE pending_verifications
+         SET status = 'rejected', reviewed_at = now(), reviewed_by = ${reviewedBy}
+       WHERE id = ${verifId}
+    `;
+    return { id: verifId, rejected: true, reason: 'no_pfp' };
+  }
+
   await sql`UPDATE users SET busts_balance = busts_balance + ${v.points} WHERE id = ${v.user_id}`;
   await sql`
     INSERT INTO busts_ledger (user_id, amount, reason)
