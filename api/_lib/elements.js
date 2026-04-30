@@ -5,11 +5,11 @@ export const ELEMENT_TYPES = [
 ];
 
 // Subset of ELEMENT_TYPES that the public drop engine releases. 'eyes'
-// and 'skin' are intentionally excluded — they are admin-grant /
-// auto-assigned only. Keep this list private; never expose it on the
-// public drop page.
+// stays admin-grant only. 'skin' is now in the public pool to release
+// the 5 new rare skin tones (Bone, Mercury, Ash, Coal, Jet) — they
+// roll within the rare bucket on the next drop session and forward.
 export const DROP_POOL_TYPES = [
-  'background', 'outfit', 'facial_hair', 'hair', 'headwear', 'face_mark',
+  'background', 'outfit', 'skin', 'facial_hair', 'hair', 'headwear', 'face_mark',
 ];
 
 export const ELEMENT_VARIANTS = {
@@ -28,6 +28,10 @@ export const ELEMENT_VARIANTS = {
   skin: [
     { name: 'Pale', rarity: 'common' },      { name: 'Light', rarity: 'common' },
     { name: 'Mid', rarity: 'common' },       { name: 'Dark', rarity: 'rare' },
+    // 5 new rare skin drops — kept in lockstep with src/data/elements.js
+    { name: 'Bone', rarity: 'rare' },        { name: 'Mercury', rarity: 'rare' },
+    { name: 'Ash', rarity: 'rare' },         { name: 'Coal', rarity: 'rare' },
+    { name: 'Jet', rarity: 'rare' },
   ],
   eyes: [
     { name: 'Default', rarity: 'common' },   { name: 'Wide', rarity: 'common' },

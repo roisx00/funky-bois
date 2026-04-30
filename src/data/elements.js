@@ -53,6 +53,12 @@ export const ELEMENT_VARIANTS = {
     { name: 'Light',      rarity: 'common'     },
     { name: 'Mid',        rarity: 'common'     },
     { name: 'Dark',       rarity: 'rare'       },
+    // ── 5 rare drops added for the next session ──
+    { name: 'Bone',       rarity: 'rare'       },  // warm off-white
+    { name: 'Mercury',    rarity: 'rare'       },  // cool polished
+    { name: 'Ash',        rarity: 'rare'       },  // mid-mid
+    { name: 'Coal',       rarity: 'rare'       },  // deep charcoal
+    { name: 'Jet',        rarity: 'rare'       },  // near-black
   ],
   eyes: [
     { name: 'Default',    rarity: 'common'     },
@@ -143,8 +149,18 @@ export function pickRandomElement() {
 }
 
 // ─── Skin color lookup ──────────────────────────────────────────────────────
-const SKIN_TONES = ['#eaeaea', '#bbbbbb', '#999999', '#777777'];
-function skinFor(variant) { return SKIN_TONES[variant ?? 1]; }
+const SKIN_TONES = [
+  '#eaeaea', // 0 Pale
+  '#bbbbbb', // 1 Light
+  '#999999', // 2 Mid
+  '#777777', // 3 Dark
+  '#e0d8c8', // 4 Bone — warm off-white
+  '#a8a8a8', // 5 Mercury — cool polished
+  '#888888', // 6 Ash
+  '#444444', // 7 Coal
+  '#1a1a1a', // 8 Jet — near-black
+];
+function skinFor(variant) { return SKIN_TONES[variant ?? 1] || SKIN_TONES[1]; }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SVG renderers for individual elements (96×96 viewBox, tile preview)
