@@ -723,6 +723,19 @@ function TraitInventorySection({ inventory, completedNFTs }) {
   const { burnElement } = useGame();
   const toast = useToast();
   const [busy, setBusy] = useState(null); // `${type}:${variant}` while burning
+  const [confirmItem, setConfirmItem] = useState(null); // item being confirmed for burn
+
+  // Esc cancels the modal, Enter confirms — keyboard parity with native dialog.
+  useEffect(() => {
+    if (!confirmItem) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setConfirmItem(null);
+      if (e.key === 'Enter')  doBurn(confirmItem);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmItem]);
 
   // (type:variant) keys for traits the user used to build their
   // portrait. Burning a spare copy is fine; we just label it so the
@@ -757,11 +770,15 @@ function TraitInventorySection({ inventory, completedNFTs }) {
     0
   );
 
-  const handleBurn = async (item) => {
-    const key = `${item.type}:${item.variant}`;
+  const askBurn = (item) => {
     if (busy) return;
-    const reward = BURN_REWARD[item.rarity] || 10;
-    if (!window.confirm(`Burn 1 × ${item.name} (${item.rarity}) for ${reward} BUSTS? Irreversible.`)) return;
+    setConfirmItem(item);
+  };
+
+  const doBurn = async (item) => {
+    if (!item) return;
+    const key = `${item.type}:${item.variant}`;
+    setConfirmItem(null);
     setBusy(key);
     try {
       const r = await burnElement(item.type, item.variant);
@@ -958,7 +975,7 @@ function TraitInventorySection({ inventory, completedNFTs }) {
                         {isFrozen ? <span style={{ marginLeft: 6, color: 'var(--text-4)' }}>· SPARE OF PORTRAIT</span> : null}
                       </div>
                       <button
-                        onClick={() => handleBurn(item)}
+                        onClick={() => askBurn(item)}
                         disabled={isBusy}
                         style={{
                           marginTop: 'auto',
@@ -983,6 +1000,220 @@ function TraitInventorySection({ inventory, completedNFTs }) {
           </div>
         );
       })}
+
+      {/* Branded burn-confirm modal — replaces window.confirm() */}
+      {confirmItem ? (
+        <BurnConfirmModal
+          item={confirmItem}
+          onConfirm={() => doBurn(confirmItem)}
+          onCancel={() => setConfirmItem(null)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+// Branded confirm modal for burn actions. Editorial paper card on a
+// dimmed dark backdrop, lime accent, irreversibility warning, kbd
+// hints. Esc/Enter wired in TraitInventorySection's effect.
+function BurnConfirmModal({ item, onConfirm, onCancel }) {
+  const reward = BURN_REWARD[item.rarity] || 10;
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(10,10,10,0.72)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 20,
+        zIndex: 9999,
+        animation: 'burn-modal-fade 160ms ease-out',
+      }}
+    >
+      <style>{`
+        @keyframes burn-modal-fade {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes burn-modal-pop {
+          from { opacity: 0; transform: translateY(8px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 480,
+          background: 'var(--paper)',
+          border: '1px solid var(--ink)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px var(--ink)',
+          animation: 'burn-modal-pop 200ms cubic-bezier(.2,.8,.2,1)',
+          position: 'relative',
+        }}
+      >
+        {/* Lime accent rail */}
+        <span style={{
+          position: 'absolute', left: 0, top: 0, bottom: 0,
+          width: 4, background: 'var(--accent)',
+        }} />
+
+        {/* Header */}
+        <div style={{
+          padding: '20px 24px 14px',
+          borderBottom: '1px solid var(--hairline)',
+        }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10, letterSpacing: '0.3em',
+            color: 'var(--text-3)',
+          }}>
+            BURN · IRREVERSIBLE
+          </div>
+          <div style={{
+            marginTop: 6,
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 30,
+            letterSpacing: '-0.5px',
+            color: 'var(--ink)',
+            lineHeight: 1.05,
+          }}>
+            Burn this trait?
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '20px 24px' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '64px 1fr',
+            gap: 14,
+            alignItems: 'center',
+            padding: 14,
+            border: '1px solid var(--hairline)',
+            background: 'var(--paper-2)',
+          }}>
+            <div style={{
+              width: 64, height: 64,
+              background: 'var(--paper)',
+              border: '1px solid var(--hairline)',
+              overflow: 'hidden',
+            }}>
+              <svg viewBox="0 0 96 96" width="64" height="64" shapeRendering="crispEdges"
+                dangerouslySetInnerHTML={{ __html: getElementSVG(item.type, item.variant) }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{
+                fontFamily: 'var(--font-display)',
+                fontStyle: 'italic',
+                fontSize: 22,
+                color: 'var(--ink)',
+                lineHeight: 1.1,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{item.name}</div>
+              <div style={{
+                marginTop: 4,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 9, letterSpacing: '0.22em',
+                color: 'var(--text-3)',
+              }}>
+                {item.rarity.toUpperCase().replace('_', ' ')} · {ELEMENT_LABELS[item.type].toUpperCase()}
+                {item.quantity > 1 ? <> · YOU HOLD {item.quantity}</> : null}
+              </div>
+            </div>
+          </div>
+
+          {/* Reward callout */}
+          <div style={{
+            marginTop: 14,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            padding: '14px 16px',
+            background: 'var(--ink)',
+            color: 'var(--paper)',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10, letterSpacing: '0.24em',
+              color: 'var(--accent)',
+            }}>YOU RECEIVE</span>
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontStyle: 'italic',
+              fontSize: 28,
+              color: 'var(--accent)',
+              lineHeight: 1,
+              fontFeatureSettings: '"tnum"',
+            }}>
+              +{reward} <span style={{ fontFamily: 'var(--font-mono)', fontStyle: 'normal', fontSize: 11, letterSpacing: '0.2em', color: 'var(--paper)', marginLeft: 6 }}>BUSTS</span>
+            </span>
+          </div>
+
+          <p style={{
+            marginTop: 14,
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 14,
+            color: 'var(--text-3)',
+            lineHeight: 1.45,
+          }}>
+            The trait is destroyed and removed from your inventory. The drop is closed, so this BUSTS payout is the trait's last utility. Cannot be undone.
+          </p>
+        </div>
+
+        {/* Footer / actions */}
+        <div style={{
+          display: 'flex', gap: 8,
+          padding: '14px 24px 20px',
+          borderTop: '1px solid var(--hairline)',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+        }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.2em',
+            color: 'var(--text-4)',
+          }}>
+            ESC TO CANCEL · ENTER TO CONFIRM
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={onCancel}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--ink)',
+                color: 'var(--ink)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11, letterSpacing: '0.18em', fontWeight: 700,
+                padding: '10px 16px',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+              }}
+            >Cancel</button>
+            <button
+              onClick={onConfirm}
+              autoFocus
+              style={{
+                background: 'var(--accent)',
+                border: '1px solid var(--ink)',
+                color: 'var(--ink)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11, letterSpacing: '0.18em', fontWeight: 700,
+                padding: '10px 18px',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                boxShadow: '0 4px 16px rgba(215,255,58,0.35)',
+              }}
+            >Burn · +{reward} BUSTS</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
