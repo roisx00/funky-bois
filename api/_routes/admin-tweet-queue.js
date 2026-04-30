@@ -70,6 +70,15 @@ function draftRarePull(row) {
 
 the1969.io/drop`;
   }
+  // Special-case the rare-skin release: the only way 'rare' lands here
+  // is during the one-shot skin-drop session, so call that out.
+  if (row.rarity === 'rare' && row.element_type === 'skin') {
+    return `Rare skin pull from the one-shot release.
+
+@${row.x_username} pulled ${row.element_name} on the skin layer. Five new rare skin tones unlocked for this single drop only — Bone, Mercury, Ash, Coal, Jet. Then the door closes.
+
+the1969.io/drop`;
+  }
   return `Legendary pull on the hourly drop.
 
 @${row.x_username} pulled ${row.element_name} (${label}). 12 percent odds. One trait closer to the 1,969.
@@ -203,6 +212,10 @@ async function scan() {
   }
 
   // ── 3. Rare pulls (last 24h, skip sub-second bot-looking claims) ──
+  // Includes all legendary + ultra_rare drops, PLUS any rare-rarity
+  // SKIN pulls — those only land during the one-shot skin-drop session
+  // so each one is newsworthy. Other rare pulls (rare bgs, rare hats,
+  // etc.) stay quiet so the feed doesn't get spammed.
   const rareRows = await sql`
     SELECT dc.id, dc.element_type, dc.variant, dc.rarity, dc.position,
            u.x_username,
@@ -210,7 +223,10 @@ async function scan() {
              AS ms_from_open
       FROM drop_claims dc
       JOIN users u ON u.id = dc.user_id
-     WHERE dc.rarity IN ('legendary', 'ultra_rare')
+     WHERE (
+             dc.rarity IN ('legendary', 'ultra_rare')
+             OR (dc.rarity = 'rare' AND dc.element_type = 'skin')
+           )
        AND dc.claimed_at > now() - interval '24 hours'
        AND EXTRACT(EPOCH FROM (dc.claimed_at - to_timestamp(dc.session_id::bigint / 1000))) > 1
   `;
