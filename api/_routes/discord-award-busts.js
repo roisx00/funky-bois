@@ -42,29 +42,52 @@ export default async function handler(req, res) {
   if (!user)            return bad(res, 404, 'discord_not_linked');
   if (user.suspended)   return bad(res, 403, 'suspended');
 
-  // Server-side daily cap. We sum chat credits in the last 24h.
-  const today = one(await sql`
-    SELECT COALESCE(SUM(amount), 0)::int AS total
-      FROM busts_ledger
-     WHERE user_id = ${user.id}
-       AND amount > 0
-       AND reason ILIKE 'Discord chat%'
-       AND created_at >= now() - interval '24 hours'
+  // Atomic cap check — the INSERT only fires if the daily cap won't
+  // be exceeded. Two concurrent requests can't both squeeze through:
+  // each runs the same SUM in its own snapshot, the loser inserts
+  // zero rows, the loser returns cap_reached. Replaces the
+  // SELECT-then-INSERT pattern that had a small TOCTOU race window.
+  const inserted = one(await sql`
+    INSERT INTO busts_ledger (user_id, amount, reason)
+    SELECT ${user.id}, ${amount}, ${reason}
+     WHERE (
+       SELECT COALESCE(SUM(amount), 0)::int FROM busts_ledger
+        WHERE user_id = ${user.id}
+          AND amount > 0
+          AND reason ILIKE 'Discord chat%'
+          AND created_at >= now() - interval '24 hours'
+     ) + ${amount} <= ${DAILY_CAP}
+    RETURNING id, (
+      SELECT COALESCE(SUM(amount), 0)::int FROM busts_ledger
+       WHERE user_id = ${user.id}
+         AND amount > 0
+         AND reason ILIKE 'Discord chat%'
+         AND created_at >= now() - interval '24 hours'
+    ) AS earned_today
   `);
-  const earnedToday = today?.total || 0;
-  if (earnedToday + amount > DAILY_CAP) {
+  if (!inserted) {
+    // Cap would be exceeded. Look up the current sum for the
+    // response only — it never gets written.
+    const today = one(await sql`
+      SELECT COALESCE(SUM(amount), 0)::int AS total
+        FROM busts_ledger
+       WHERE user_id = ${user.id}
+         AND amount > 0
+         AND reason ILIKE 'Discord chat%'
+         AND created_at >= now() - interval '24 hours'
+    `);
     return bad(res, 429, 'daily_cap_reached', {
-      earnedToday, dailyCap: DAILY_CAP, amount,
+      earnedToday: today?.total || 0, dailyCap: DAILY_CAP, amount,
     });
   }
 
   await sql`
     UPDATE users SET busts_balance = busts_balance + ${amount} WHERE id = ${user.id}
   `;
-  await sql`
-    INSERT INTO busts_ledger (user_id, amount, reason)
-    VALUES (${user.id}, ${amount}, ${reason})
-  `;
 
-  ok(res, { credited: amount, earnedToday: earnedToday + amount, dailyCap: DAILY_CAP });
+  ok(res, {
+    credited: amount,
+    earnedToday: (inserted.earned_today || 0) + amount,
+    dailyCap: DAILY_CAP,
+  });
 }

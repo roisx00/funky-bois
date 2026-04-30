@@ -75,16 +75,16 @@ export default async function handler(req, res) {
     return ok(res, { credited: false, alreadyShared: true });
   }
 
+  // BUSTS credit retired. Drop is over and the build is locked, so
+  // the +200 share reward no longer drives any behaviour we need to
+  // incentivise. Already-credited shares keep their BUSTS — only
+  // new shares are no-ops on the BUSTS side. The shared_to_x flag is
+  // still flipped above so the user-facing UI shows "shared".
   await sql`
     UPDATE users
-       SET busts_balance = busts_balance + ${SHARE_NFT_BUSTS},
-           is_whitelisted = true
+       SET is_whitelisted = true
      WHERE id = ${user.id}
   `;
-  await sql`
-    INSERT INTO busts_ledger (user_id, amount, reason)
-    VALUES (${user.id}, ${SHARE_NFT_BUSTS}, ${verified ? 'Shared portrait on X (verified)' : 'Shared portrait on X (pending verify)'})
-  `;
 
-  ok(res, { credited: true, verified });
+  ok(res, { credited: false, verified, sharedReward: 'closed' });
 }
