@@ -238,10 +238,14 @@ function reducer(state, action) {
     case 'ADD_COMPLETED': {
       // Auto-whitelist the moment a portrait is built — server does the
       // same on its side. Dashboard badge flips to WL without a refetch.
+      // Also flip dropEligible=false so MintWalletCard's tier readout
+      // reflects the full Tier-2 → Tier-1 promotion (server clears
+      // drop_eligible in the same UPDATE that flips is_whitelisted).
       return {
         ...state,
         completedNFTs: [action.nft, ...state.completedNFTs],
         isWhitelisted: true,
+        dropEligible:  false,
       };
     }
 
@@ -624,8 +628,13 @@ export function GameProvider({ children }) {
         dispatch({ type: 'REMOVE_INVENTORY', elementType: c.type, variant: c.variant });
       }
     }
+    // Resync from server so isWhitelisted / dropEligible / tier
+    // readouts everywhere reflect the post-build truth, not just the
+    // optimistic ADD_COMPLETED dispatch. Fire-and-forget — the local
+    // optimistic state is already correct, this is belt-and-braces.
+    refreshMe().catch(() => {});
     return { ok: true, id: r.id, shareHash: r.shareHash };
-  }, []);
+  }, [refreshMe]);
 
   const sharePortrait = useCallback(async (portraitId, tweetUrl) => {
     const r = await jpost('/api/portrait-share', { portraitId, tweetUrl });
