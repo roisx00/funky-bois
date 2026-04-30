@@ -145,41 +145,44 @@ export default function DropPage() {
     return (
       <div className="page drop-ended-page" style={{
         minHeight: '100vh',
-        background: '#0A0A0A',
-        color: '#F9F6F0',
+        background: 'var(--paper, #F9F6F0)',
+        color: 'var(--ink, #0E0E0E)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '64px 24px',
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Atmospheric backdrop */}
+        {/* Soft paper-tone atmospheric backdrop — keeps the look on
+            brand without going dark. */}
         <div aria-hidden="true" style={{
           position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse at center, rgba(215,255,58,0.08) 0%, rgba(215,255,58,0.02) 35%, transparent 70%)',
+          background: 'radial-gradient(ellipse at center, rgba(215,255,58,0.20) 0%, rgba(215,255,58,0.06) 35%, transparent 70%)',
           pointerEvents: 'none',
         }} />
         <div aria-hidden="true" style={{
           position: 'absolute', inset: 0,
           backgroundImage:
-            'linear-gradient(rgba(215,255,58,0.04) 1px, transparent 1px),'
-            + 'linear-gradient(90deg, rgba(215,255,58,0.04) 1px, transparent 1px)',
+            'linear-gradient(rgba(14,14,14,0.05) 1px, transparent 1px),'
+            + 'linear-gradient(90deg, rgba(14,14,14,0.05) 1px, transparent 1px)',
           backgroundSize: '64px 64px',
           maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)',
           WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)',
-          opacity: 0.55,
+          opacity: 0.6,
           pointerEvents: 'none',
         }} />
 
         <div style={{ position: 'relative', maxWidth: 760, textAlign: 'center', zIndex: 1 }}>
           <div style={{
             fontFamily: 'var(--font-mono, ui-monospace, monospace)',
-            fontSize: 12, letterSpacing: '0.32em', color: 'rgba(215,255,58,0.85)',
+            fontSize: 12, letterSpacing: '0.32em',
+            color: 'var(--ink, #0E0E0E)',
             marginBottom: 18,
           }}>
             <span style={{
               display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
-              background: '#D7FF3A', boxShadow: '0 0 12px #D7FF3A',
+              background: '#D7FF3A', boxShadow: '0 0 10px rgba(215,255,58,0.6)',
               marginRight: 10, verticalAlign: 'middle',
+              border: '1px solid #0E0E0E',
             }} />
             THE 1969 · DROP CLOSED
           </div>
@@ -192,7 +195,7 @@ export default function DropPage() {
             lineHeight: 0.95,
             letterSpacing: '-2px',
             margin: '0 0 18px',
-            color: '#F9F6F0',
+            color: 'var(--ink, #0E0E0E)',
           }}>
             The drop has ended.
           </h1>
@@ -202,7 +205,7 @@ export default function DropPage() {
             fontStyle: 'italic',
             fontSize: 24,
             lineHeight: 1.45,
-            color: 'rgba(249,246,240,0.7)',
+            color: 'var(--text-2, #3A3A3A)',
             margin: '0 0 56px',
             maxWidth: 620,
             marginLeft: 'auto', marginRight: 'auto',
@@ -214,7 +217,7 @@ export default function DropPage() {
           <div style={{
             fontFamily: 'var(--font-mono, ui-monospace, monospace)',
             fontSize: 11, letterSpacing: '0.3em',
-            color: 'rgba(249,246,240,0.55)',
+            color: 'var(--text-3, #5C5C5C)',
             marginBottom: 14,
           }}>
             {minted ? 'MINT IS LIVE' : 'MINT OPENS IN'}
@@ -229,7 +232,8 @@ export default function DropPage() {
               fontFamily: 'var(--font-mono, ui-monospace, monospace)',
               fontSize: 14, fontWeight: 700, letterSpacing: '0.18em',
               textDecoration: 'none',
-              boxShadow: '0 0 0 1px #0E0E0E inset, 0 8px 28px rgba(215,255,58,0.45)',
+              border: '1px solid #0E0E0E',
+              boxShadow: '0 8px 28px rgba(215,255,58,0.45)',
             }}>
               ENTER THE MINT →
             </a>
@@ -252,7 +256,7 @@ export default function DropPage() {
                   <div style={{
                     fontSize: 'clamp(56px, 8vw, 88px)',
                     lineHeight: 1,
-                    color: '#F9F6F0',
+                    color: 'var(--ink, #0E0E0E)',
                     letterSpacing: '-2px',
                   }}>
                     {String(v).padStart(2, '0')}
@@ -262,7 +266,7 @@ export default function DropPage() {
                     fontFamily: 'var(--font-mono, ui-monospace, monospace)',
                     fontStyle: 'normal',
                     fontSize: 10, letterSpacing: '0.3em',
-                    color: 'rgba(249,246,240,0.5)',
+                    color: 'var(--text-3, #5C5C5C)',
                   }}>
                     {l}
                   </div>
@@ -274,18 +278,18 @@ export default function DropPage() {
           <div style={{
             marginTop: 56,
             paddingTop: 28,
-            borderTop: '1px solid rgba(249,246,240,0.12)',
+            borderTop: '1px solid var(--hairline, #C5C2BA)',
             fontFamily: 'var(--font-mono, ui-monospace, monospace)',
             fontSize: 11, letterSpacing: '0.22em',
-            color: 'rgba(249,246,240,0.45)',
+            color: 'var(--text-3, #5C5C5C)',
           }}>
-            BOUND YOUR WALLET? YOU'RE IN. <span style={{ color: 'rgba(249,246,240,0.7)' }}>SHOW UP AT MINT.</span>
+            BOUND YOUR WALLET? YOU'RE IN. <span style={{ color: 'var(--ink, #0E0E0E)', fontWeight: 700 }}>SHOW UP AT MINT.</span>
           </div>
           <div style={{
             marginTop: 10,
             fontFamily: 'var(--font-mono, ui-monospace, monospace)',
             fontSize: 11, letterSpacing: '0.22em',
-            color: 'rgba(249,246,240,0.35)',
+            color: 'var(--text-4, #8E8E8E)',
           }}>
             the1969.io
           </div>
