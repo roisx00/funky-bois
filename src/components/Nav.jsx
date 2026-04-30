@@ -179,10 +179,9 @@ export default function Nav({ currentPage, onNavigate }) {
             </div>
           ) : null}
 
-          <div className="nav-stat-chip">
-            <span className="nav-stat-label">Traits</span>
-            <span className="nav-stat-value">{progressCount}/{ELEMENT_TYPES.length}</span>
-          </div>
+          {/* Traits chip retired — drop is closed and the build is
+              locked, so progress toward "8/8 types collected" is no
+              longer a meaningful nav-bar signal. */}
 
           {isAdmin && (
             <button className="btn btn-ghost btn-sm" onClick={() => go('admin')}>
@@ -294,10 +293,6 @@ export default function Nav({ currentPage, onNavigate }) {
             <div className="nav-mobile-stat">
               <div className="nav-mobile-stat-label">BUSTS</div>
               <div className="nav-mobile-stat-value">{bustsBalance?.toLocaleString() ?? 0}</div>
-            </div>
-            <div className="nav-mobile-stat">
-              <div className="nav-mobile-stat-label">Traits</div>
-              <div className="nav-mobile-stat-value">{progressCount}/{ELEMENT_TYPES.length}</div>
             </div>
           </div>
         ) : null}
