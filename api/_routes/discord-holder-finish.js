@@ -113,9 +113,11 @@ async function resolveDiscordId(req, body) {
         FROM discord_verify_state WHERE state = ${state} LIMIT 1
     `);
     if (!row) return { error: 'state_unknown' };
-    if (row.used_at) return { error: 'state_used' };
     if (new Date(row.expires_at).getTime() < Date.now()) return { error: 'state_expired' };
-    return { discordId: row.discord_id, discordUsername: row.discord_username, state };
+    // Already used: re-running verify with the same wallet should be
+    // idempotent — recompute and re-assign roles. (Useful when a user
+    // refreshes the page and the auto-fire useEffect runs again.)
+    return { discordId: row.discord_id, discordUsername: row.discord_username, state, alreadyUsed: !!row.used_at };
   }
   const user = await getSessionUser(req);
   if (!user) return { error: 'unauthenticated' };

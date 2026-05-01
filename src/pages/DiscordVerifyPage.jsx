@@ -281,7 +281,7 @@ function SuccessView({ result }) {
 
 function TierLadder() {
   return (
-    <section className="dv-ladder">
+    <div className="dv-ladder">
       <div className="dv-ladder-head">
         <span>TIER LADDER</span>
         <span>HIGHEST TIER YOU QUALIFY FOR IS YOURS</span>
@@ -295,7 +295,7 @@ function TierLadder() {
           </div>
         ))}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -304,13 +304,23 @@ function ErrorBox({ text }) {
 }
 
 const LOCAL_CSS = `
+  /* Defensive: force every container in the verify flow to be either
+     dark or transparent, regardless of any inherited cream rules from
+     App.css or wagmi/RainbowKit overlays. */
+  .dv-root, .dv-root * {
+    box-sizing: border-box;
+  }
   .dv-root {
     position: relative;
     min-height: 100vh;
-    background: #0E0E0E;
+    background: #0E0E0E !important;
     color: #F9F6F0;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     overflow-x: hidden;
+  }
+  .dv-shell, .dv-main, .dv-ladder, .dv-ladder-rows, .dv-ladder-row,
+  .dv-ladder-head, .dv-receipt, .dv-rcpt-row, .dv-strip, .dv-footer {
+    background: transparent !important;
   }
 
   /* Faded portrait montage in the background */
