@@ -37,6 +37,22 @@ export default async function handler(req, res) {
     return bad(res, 400, 'cannot_send_self');
   }
 
+  // Defence in depth: refuse wires to Mr Prophet / self-reference
+  // handles. The frontend chatbot already roasts these requests, but a
+  // determined user could hit /api/busts-send directly. Prophet has no
+  // wallet, no balance, and no business receiving BUSTS — anything
+  // landing on these reserved handles would be an unrecoverable loss
+  // for the sender. Reject at the door.
+  const RESERVED_HANDLES = new Set([
+    'prophet', 'theprophet', 'mrprophet', 'mr_prophet', 'the_prophet',
+    'mrprophet1969', 'the1969prophet',
+  ]);
+  if (RESERVED_HANDLES.has(recipient)) {
+    return bad(res, 400, 'reserved_handle', {
+      hint: 'Mr Prophet is the wire concierge, not a wallet. Send to a real holder.',
+    });
+  }
+
   // ── Atomic sender debit ──
   const debit = one(await sql`
     UPDATE users
