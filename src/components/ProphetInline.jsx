@@ -8,6 +8,12 @@ import { useToast } from './Toast';
 import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
 
 // ─── Grammar ────────────────────────────────────────────────────────
+// Beg patterns. Caught BEFORE send_busts so "send me 100 busts" routes
+// to the roast handler instead of the regular wire flow. Two shapes:
+// with an amount and without.
+const RE_BEG_AMT   = /(?:^|\b)(?:send|give|wire|gimme|drop|throw)\s+(me|myself|prophet|theprophet|mrprophet|mr_prophet|the_prophet)\s+(\d{1,9})\s*(?:busts?|\$busts?)?/i;
+const RE_BEG_NOAMT = /(?:(?:^|\b)(?:send|give|wire|gimme|drop|throw)\s+(?:me|myself|prophet|theprophet|mrprophet|mr_prophet|the_prophet)\s+(?:some\s+|a\s+few\s+|a\s+couple\s+|any\s+)?(?:busts?|\$busts?)|i\s+need\s+(?:some\s+)?(?:busts?|\$busts?)|(?:can|could|will|would)\s+(?:you|u)\s+(?:please\s+)?(?:send|give|drop|throw)\s+(?:me|myself)\s+(?:some\s+)?(?:busts?|\$busts?))/i;
+
 const RE_BUSTS_SEND = /(?:^|\b)(?:send|wire|transfer|give|gift|pay)\s+(\d{1,9})\s*(?:busts?|\$busts?)?\s+(?:to\s+)?@?([a-z0-9_]+)/i;
 const RE_NFT_SEND = /(?:^|\b)(?:send|wire|transfer|give)\s+(?:#?(\d{1,5})\s*(?:nft|1969)|(?:nft|1969)\s*#?(\d{1,5}))\s+(?:to\s+)?@?([a-z0-9_]+)/i;
 const RE_BALANCE = /\b(?:balance|how\s+(?:much|many)\s+(?:busts?|\$busts?))\b/i;
@@ -140,6 +146,39 @@ function genericQuip() {
   return GENERIC_QUIPS[Math.floor(Math.random() * GENERIC_QUIPS.length)];
 }
 
+// Roasts when a user asks Prophet to send BUSTS to Prophet himself or
+// to "me / myself". Polite but cheeky — never mean. Picked at random
+// so repeated begs read different.
+const ROASTS_NO_AMT = [
+  "Negative, ser. I make wires, I don't take them.",
+  "Kind offer. I don't have hands.",
+  "Concierges don't tip themselves.",
+  "I'd love to. I literally cannot.",
+  "I run on prophecy, not BUSTS.",
+  "Asking the concierge for tips. Bold strategy.",
+  "Try the tasks tab. That's how the rest of us eat.",
+  "I'm not a wallet, ser. Try someone with thumbs.",
+  "I appreciate the thought. Still no.",
+  "Beg me again and I'll roast you again.",
+];
+const ROASTS_AMT = [
+  "{amt} BUSTS to me? I literally cannot accept. Save it for someone with a wallet.",
+  "{amt}? Generous. Also impossible. I have no balance.",
+  "You want to wire {amt} to the wire concierge. Read that back to yourself.",
+  "{amt} BUSTS, declined. I'm not on the ledger, ser.",
+  "Flattered by the {amt}. Still not built to receive.",
+  "If you've got {amt} to spare, send them to a holder. I'm fine.",
+  "{amt}? I'd take it, but my wallet is conceptual.",
+  "Try this energy on @vitalik instead — he's got {amt} room.",
+];
+function pickRoast(amount) {
+  if (amount == null) {
+    return ROASTS_NO_AMT[Math.floor(Math.random() * ROASTS_NO_AMT.length)];
+  }
+  const tmpl = ROASTS_AMT[Math.floor(Math.random() * ROASTS_AMT.length)];
+  return tmpl.replace('{amt}', amount.toLocaleString());
+}
+
 function formatPrice(usd) {
   if (usd >= 1)      return `$${usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   if (usd >= 0.01)   return `$${usd.toFixed(4)}`;
@@ -147,10 +186,24 @@ function formatPrice(usd) {
   return `$${usd.toExponential(2)}`;
 }
 
+// Handles the user might use to mean "send to Prophet" or "send to me"
+// — anything in here triggers the roast path instead of a real wire.
+const SELF_REFS = new Set([
+  'me', 'myself', 'i',
+  'prophet', 'theprophet', 'mrprophet', 'mr_prophet', 'the_prophet',
+]);
+
 function parseIntent(text) {
   const t = String(text || '').trim();
   if (!t) return { kind: 'noop' };
   let m;
+  // Beg patterns first so "send me 100 busts" routes to the roast.
+  if ((m = t.match(RE_BEG_AMT))) {
+    return { kind: 'beg', target: String(m[1] || '').toLowerCase(), amount: Number(m[2]) };
+  }
+  if ((m = t.match(RE_BEG_NOAMT))) {
+    return { kind: 'beg', target: 'me', amount: null };
+  }
   if ((m = t.match(RE_BUSTS_SEND))) {
     return { kind: 'send_busts', amount: Number(m[1]), handle: normalizeXHandle(m[2]) };
   }
@@ -340,8 +393,17 @@ export default function ProphetInline() {
       ]);
       return;
     }
+    if (intent.kind === 'beg') {
+      pushBotText(pickRoast(intent.amount));
+      return;
+    }
     if (intent.kind === 'send_busts') {
       const { amount, handle } = intent;
+      // "send 100 to me" / "send 50 to prophet" → roast
+      if (handle && SELF_REFS.has(handle)) {
+        pushBotText(pickRoast(amount));
+        return;
+      }
       if (!handle || !isValidXHandle(handle)) {
         pushBotText(`Bad handle. Try a real one — e.g. 'send ${amount} busts to @vitalik'.`);
         return;
