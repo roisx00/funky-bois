@@ -16,11 +16,15 @@ import { rateLimit } from '../_lib/ratelimit.js';
 import { settleUser, vaultV2Active } from '../_lib/vaultYield.js';
 import { getTokenRarity } from '../_lib/rarityWeight.js';
 
+// Prefer the private RPC from Vercel env so we don't rate-limit under
+// mint-day load. Falls back to public RPCs.
 const RPCS = [
+  process.env.MAINNET_RPC_URL,
+  process.env.MAINNET_RPC_BACKUP,
   'https://ethereum-rpc.publicnode.com',
   'https://eth.llamarpc.com',
   'https://cloudflare-eth.com',
-];
+].filter(Boolean);
 
 // keccak256("Deposit(address,uint256,uint64)")
 const TOPIC_DEPOSIT  = '0xb6c0eaa1...';   // FILLED at deploy time once ABI hash is known

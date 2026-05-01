@@ -9,11 +9,17 @@
 import { sql, one } from './db.js';
 
 const NFT_CONTRACT = '0x890db94d920bbf44862005329d7236cc7067efab';
+// Prefer the private RPC from Vercel env (Alchemy / Infura / Ankr) so we
+// don't rate-limit under mint-day load. Falls back to public RPCs if
+// the env var is missing or that RPC fails. Set MAINNET_RPC_URL in
+// Vercel project settings (Production + Preview + Development).
 const RPCS = [
+  process.env.MAINNET_RPC_URL,
+  process.env.MAINNET_RPC_BACKUP,
   'https://ethereum-rpc.publicnode.com',
   'https://eth.llamarpc.com',
   'https://cloudflare-eth.com',
-];
+].filter(Boolean);
 
 const RARITY_WEIGHT = { common: 1, rare: 3, legendary: 8, ultra_rare: 25 };
 const RARITY_RANK   = { common: 0, rare: 1, legendary: 2, ultra_rare: 3 };
