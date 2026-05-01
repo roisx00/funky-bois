@@ -36,6 +36,7 @@ import vaultOnchain        from './_routes/vault-onchain.js';
 import vaultOnchainClaim   from './_routes/vault-onchain-claim.js';
 import vaultOnchainIndex   from './_routes/vault-onchain-index.js';
 import vaultOnchainRarities from './_routes/vault-onchain-rarities.js';
+import nftsOfOwner          from './_routes/nfts-of-owner.js';
 import adminVaultV2Activate from './_routes/admin-vault-v2-activate.js';
 import inventoryBurn       from './_routes/inventory-burn.js';
 import suspensionAppeal    from './_routes/suspension-appeal.js';
@@ -126,6 +127,7 @@ const ROUTES = {
   'vault-onchain-claim': vaultOnchainClaim,
   'vault-onchain-index':    vaultOnchainIndex,
   'vault-onchain-rarities':   vaultOnchainRarities,
+  'nfts-of-owner':            nftsOfOwner,
   'admin-vault-v2-activate':  adminVaultV2Activate,
   'inventory-burn':      inventoryBurn,
   'suspension-appeal':   suspensionAppeal,

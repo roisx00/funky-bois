@@ -415,78 +415,27 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress, children 
   const [chainTokenIds, setChainTokenIds] = useState([]); // BigInt-safe strings
   const [showAll, setShowAll] = useState(false);
 
+  // Discover the user's owned 1969 NFTs via /api/nfts-of-owner
+  // (Alchemy NFT API proxy). The 1969 contract is NOT ERC-721
+  // Enumerable, so tokenOfOwnerByIndex reverts; the Alchemy API
+  // works on any ERC-721 by indexing Transfer events.
   useEffect(() => {
     if (!walletAddress) {
       setChainNftCount(null); setChainTokenIds([]);
       return;
     }
     let cancelled = false;
-    const RPCS = [
-      'https://ethereum-rpc.publicnode.com',
-      'https://eth.llamarpc.com',
-      'https://cloudflare-eth.com',
-    ];
-    const padAddr = walletAddress.replace(/^0x/, '').padStart(64, '0').toLowerCase();
-    const padHex  = (n) => n.toString(16).padStart(64, '0');
-    const balOfData = '0x70a08231' + padAddr;
-
-    async function rpc(reqs) {
-      // Try each RPC until one returns. reqs is the JSON-RPC array.
-      for (const url of RPCS) {
-        try {
-          const r = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(reqs),
-          });
-          if (!r.ok) continue;
-          const d = await r.json();
-          if (!Array.isArray(d) || d.some((x) => x.error)) continue;
-          return d;
-        } catch { /* try next */ }
-      }
-      return null;
-    }
-
-    (async () => {
-      // Step 1: balanceOf
-      const bal = await rpc([{
-        jsonrpc: '2.0', id: 0, method: 'eth_call',
-        params: [{ to: NFT_CONTRACT, data: balOfData }, 'latest'],
-      }]);
-      if (cancelled || !bal || !bal[0]?.result) {
-        setChainNftCount(0); return;
-      }
-      const count = Number(BigInt(bal[0].result));
-      if (count === 0) {
-        setChainNftCount(0); setChainTokenIds([]); return;
-      }
-      // Step 2: batch fetch token ids — ENUMERABLE_TOKEN_OF_OWNER_BY_INDEX
-      // selector 0x2f745c59, args (address, uint256 index).
-      // Cap at 50 in one go for safety; "show all" can re-fetch the rest.
-      const max = Math.min(count, showAll ? count : NFT_STRIP_DEFAULT + 1);
-      const reqs = Array.from({ length: max }, (_, i) => ({
-        jsonrpc: '2.0', id: i + 1, method: 'eth_call',
-        params: [{
-          to: NFT_CONTRACT,
-          data: '0x2f745c59' + padAddr + padHex(BigInt(i)),
-        }, 'latest'],
-      }));
-      const tokenRes = await rpc(reqs);
-      if (cancelled) return;
-      setChainNftCount(count);
-      if (!tokenRes) { setChainTokenIds([]); return; }
-      const ids = tokenRes
-        .sort((a, b) => a.id - b.id)
-        .map((r) => {
-          if (!r?.result) return null;
-          try { return BigInt(r.result).toString(); } catch { return null; }
-        })
-        .filter(Boolean);
-      setChainTokenIds(ids);
-    })();
+    fetch(`/api/nfts-of-owner?wallet=${walletAddress}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return;
+        const ids = Array.isArray(d?.tokenIds) ? d.tokenIds : [];
+        setChainNftCount(ids.length);
+        setChainTokenIds(ids);
+      })
+      .catch(() => { if (!cancelled) setChainNftCount(0); });
     return () => { cancelled = true; };
-  }, [walletAddress, showAll]);
+  }, [walletAddress]);
 
   // Refresh every 60s so newly minted / transferred NFTs auto-appear.
   useEffect(() => {

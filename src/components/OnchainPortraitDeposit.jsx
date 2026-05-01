@@ -100,48 +100,25 @@ export default function OnchainPortraitDeposit() {
   });
   const ownedCount = balanceRaw != null ? Number(balanceRaw) : 0;
 
+  // Discover the user's owned 1969 token IDs via /api/nfts-of-owner
+  // (server-side Alchemy NFT API proxy). The 1969 contract is NOT
+  // ERC-721 Enumerable so tokenOfOwnerByIndex reverts; the Alchemy
+  // NFT API works on any ERC-721 by indexing Transfer events.
   const [ownedIds, setOwnedIds] = useState([]);
+  const [ownedLoading, setOwnedLoading] = useState(false);
   useEffect(() => {
-    if (!walletAddress || ownedCount === 0) { setOwnedIds([]); return; }
+    if (!walletAddress) { setOwnedIds([]); return; }
     let cancelled = false;
-    const RPCS = [
-      'https://ethereum-rpc.publicnode.com',
-      'https://eth.llamarpc.com',
-      'https://cloudflare-eth.com',
-    ];
-    async function rpc(reqs) {
-      for (const url of RPCS) {
-        try {
-          const r = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(reqs),
-          });
-          if (!r.ok) continue;
-          const d = await r.json();
-          if (!Array.isArray(d) || d.some((x) => x.error)) continue;
-          return d;
-        } catch { /* next */ }
-      }
-      return null;
-    }
-    (async () => {
-      const padAddr = walletAddress.replace(/^0x/, '').padStart(64, '0').toLowerCase();
-      const padHex  = (n) => n.toString(16).padStart(64, '0');
-      const reqs = Array.from({ length: ownedCount }, (_, i) => ({
-        jsonrpc: '2.0', id: i + 1, method: 'eth_call',
-        params: [{
-          to: NFT_CONTRACT_ADDRESS,
-          data: '0x2f745c59' + padAddr + padHex(BigInt(i)),
-        }, 'latest'],
-      }));
-      const r = await rpc(reqs);
-      if (cancelled || !r) return;
-      const ids = r.sort((a, b) => a.id - b.id)
-        .map((x) => { try { return BigInt(x.result).toString(); } catch { return null; }})
-        .filter(Boolean);
-      setOwnedIds(ids);
-    })();
+    setOwnedLoading(true);
+    fetch(`/api/nfts-of-owner?wallet=${walletAddress}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return;
+        const ids = Array.isArray(d?.tokenIds) ? d.tokenIds : [];
+        setOwnedIds(ids);
+        setOwnedLoading(false);
+      })
+      .catch(() => { if (!cancelled) setOwnedLoading(false); });
     return () => { cancelled = true; };
   }, [walletAddress, ownedCount]);
 
@@ -606,9 +583,11 @@ export default function OnchainPortraitDeposit() {
         </div>
         {availableIds.length === 0 ? (
           <div className="ocp-empty">
-            {ownedCount === 0
-              ? 'NO ON-CHAIN PORTRAITS IN YOUR WALLET'
-              : 'EVERY PORTRAIT IS DEPOSITED'}
+            {ownedLoading
+              ? 'LOADING YOUR PORTRAITS…'
+              : ownedIds.length === 0
+                ? 'NO ON-CHAIN PORTRAITS IN YOUR WALLET'
+                : 'EVERY PORTRAIT IS DEPOSITED'}
           </div>
         ) : (
           <div className="ocp-strip">
