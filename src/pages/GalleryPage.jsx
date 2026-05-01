@@ -451,7 +451,13 @@ function OnChainGallery({ totalSupply }) {
   const fetchQueueRef = useRef(new Set());
   const fetchTimerRef = useRef(null);
   const requestMeta = useCallback((tokenId) => {
-    if (meta.has(tokenId) || inFlightRef.current.has(tokenId)) return;
+    // Skip only if the FULL metadata (image/attrs) is already loaded.
+    // The bulk-rarity prefetch populates partial entries (rarity/score/
+    // rank only, ready=false), so meta.has(tokenId) on its own is wrong
+    // — it would suppress the per-tile image fetch.
+    const existing = meta.get(tokenId);
+    if (existing?.ready === true) return;
+    if (inFlightRef.current.has(tokenId)) return;
     fetchQueueRef.current.add(tokenId);
     if (fetchTimerRef.current) return;
     fetchTimerRef.current = setTimeout(async () => {
@@ -490,7 +496,12 @@ function OnChainGallery({ totalSupply }) {
       if (updates.length > 0) {
         setMeta((prev) => {
           const next = new Map(prev);
-          for (const [id, val] of updates) next.set(id, val);
+          for (const [id, val] of updates) {
+            // Merge the freshly-fetched image/attrs with the existing
+            // bulk-prefetched rarity/score/rank so we don't drop them.
+            const existing = next.get(id) || {};
+            next.set(id, { ...existing, ...val });
+          }
           return next;
         });
       }
