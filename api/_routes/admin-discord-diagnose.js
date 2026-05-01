@@ -21,6 +21,17 @@ export default async function handler(req, res) {
   try { roles = await listGuildRoles(DISCORD_GUILD_ID); }
   catch (e) { return bad(res, 502, 'discord_roles_failed', { msg: e?.message }); }
 
+  // Fetch guild meta — we need owner_id. Server owners are immune to
+  // bot role mutations regardless of bot permissions/hierarchy. Common
+  // false-failure when the project lead tests verify on themselves.
+  let guild = null;
+  try {
+    const r = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}`, {
+      headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` },
+    });
+    if (r.ok) guild = await r.json();
+  } catch { /* ignore */ }
+
   // Bot's own role: managed=true, tags.bot_id present.
   // Discord auto-creates one role per bot; that's the role our bot writes from.
   const botRole = roles
@@ -49,6 +60,8 @@ export default async function handler(req, res) {
 
   ok(res, {
     diagnosis,
+    guildOwnerId: guild?.owner_id || null,
+    guildName:    guild?.name || null,
     botRole: botRole
       ? { id: botRole.id, name: botRole.name, position: botRole.position }
       : null,
@@ -59,6 +72,8 @@ export default async function handler(req, res) {
     blockers: blockers.map((b) => b.name),
     fix: blockers.length > 0
       ? `In Discord: Server Settings → Roles → drag "${botRole?.name}" ABOVE: ${blockers.map((b) => '"' + b.name + '"').join(', ')}`
-      : null,
+      : (diagnosis === 'hierarchy_ok'
+        ? 'Hierarchy looks fine. If add_role still 403s: (a) you may be the server owner — bots cannot modify the owner. Test with a non-owner Discord account. (b) re-invite the bot with the MANAGE_ROLES OAuth scope. (c) check if the role is locked behind 2FA in server settings.'
+        : null),
   });
 }
