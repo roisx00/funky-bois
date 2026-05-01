@@ -114,6 +114,44 @@ async function saveLastBlock(block) {
   `;
 }
 
+// Pull image + name for a list of tokenIds via Alchemy's batch
+// metadata endpoint. Cheap (one HTTP call for up to 100 tokens) and the
+// images come back as already-resized CDN URLs that Discord renders
+// inline.
+async function fetchTokenImages(tokenIds) {
+  const out = new Map();
+  if (tokenIds.length === 0) return out;
+  const u = process.env.MAINNET_RPC_URL || '';
+  const m = u.match(/\/v2\/([^/?#]+)/);
+  const key = m?.[1];
+  if (!key) return out;
+  try {
+    const r = await fetch(
+      `https://eth-mainnet.g.alchemy.com/nft/v3/${key}/getNFTMetadataBatch`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tokens: tokenIds.map((id) => ({ contractAddress: NFT_CONTRACT, tokenId: id })),
+          refreshCache: false,
+        }),
+      }
+    );
+    if (!r.ok) return out;
+    const d = await r.json();
+    for (const nft of (d?.nfts || [])) {
+      const id = String(nft.tokenId);
+      const image = nft.image?.cachedUrl
+                 || nft.image?.pngUrl
+                 || nft.image?.thumbnailUrl
+                 || nft.image?.originalUrl
+                 || null;
+      out.set(id, { name: nft.name || `THE 1969 #${id}`, image });
+    }
+  } catch { /* ignore */ }
+  return out;
+}
+
 async function fetchSalesInWindow(fromBlock, toBlock) {
   // 1. All Transfer logs on the 1969 contract in window.
   const logs = await rpc('eth_getLogs', [{
@@ -258,6 +296,19 @@ export default async function handler(req, res) {
     sales = await fetchSalesInWindow(fromBlock + 1, toBlock);
   } catch (e) {
     return bad(res, 502, 'rpc_failed', { msg: e?.message });
+  }
+
+  // Enrich with image + name so the Discord embed renders the artwork.
+  if (sales.length > 0) {
+    const uniqueIds = [...new Set(sales.map((s) => s.token.tokenId))];
+    const imgMap = await fetchTokenImages(uniqueIds);
+    for (const s of sales) {
+      const meta = imgMap.get(s.token.tokenId);
+      if (meta) {
+        s.token.name  = meta.name  || s.token.name;
+        s.token.image = meta.image || null;
+      }
+    }
   }
 
   if (debug) {
