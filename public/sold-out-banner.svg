@@ -79,8 +79,8 @@
     <rect x="0" y="0" width="1456" height="84" fill="#D7FF3A"/>
     <text x="40" y="54"
           font-family="ui-monospace, 'JetBrains Mono', monospace"
-          font-size="22" font-weight="700" letter-spacing="6" fill="#0E0E0E">NOW THE REAL WORK BEGINS</text>
-    <text x="730" y="56" text-anchor="middle"
+          font-size="22" font-weight="700" letter-spacing="6" fill="#0E0E0E">VAULT IS OPEN</text>
+    <text x="900" y="56" text-anchor="middle"
           font-family="'Instrument Serif', Georgia, serif"
           font-style="italic" font-weight="500"
           font-size="38" fill="#0E0E0E"
