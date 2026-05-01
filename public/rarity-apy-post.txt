@@ -1,0 +1,64 @@
+─────────────────────────────────────────────
+THE 1969 / RARITY APY · LIVE
+─────────────────────────────────────────────
+
+CAPTION (the tight one, recommended):
+─────────────────────────────────────────────
+Stake rarity = stake reward.
+
+Common      1x
+Rare        3x
+Legendary   8x
+Ultra rare 25x
+
+Live multiplier on the on-chain pool. Every stake drops the APY.
+First in eats hardest.
+
+→ the1969.io/vault
+
+
+CAPTION (snapshot variant — refreshed live):
+─────────────────────────────────────────────
+Rarity APY · live snapshot.
+
+  Common      1x   ~390%
+  Rare        3x   ~1,180%
+  Legendary   8x   ~3,140%
+  Ultra rare 25x   ~9,800%
+
+Drops every time someone else deposits.
+
+→ the1969.io/vault
+
+
+SHORTEST VARIANT:
+─────────────────────────────────────────────
+Rare 3x. Legendary 8x. Ultra rare 25x. Vault rewards rarity, live.
+the1969.io/vault
+
+
+REPLY (drop under the post for context):
+─────────────────────────────────────────────
+The pool emits a fixed daily amount of $BUSTS, split pro-rata across
+every staked portrait by its rarity weight. Higher tier = bigger
+share. APY drops as more deposit; a single ultra rare staked alone
+captures 96% of the daily emission. As the pool fills, the share
+shrinks.
+
+Withdraw anytime. No lockup, no penalty. Vault never burns.
+
+
+ASSETS:
+─────────────────────────────────────────────
+• rarity-apy-banner.svg     1600x900   (primary X post, 16:9)
+
+
+POSTING NOTES:
+─────────────────────────────────────────────
+• Numbers in the graphic are pinned to a SNAPSHOT moment. They will
+  drop live as the pool fills — that's the point. Re-share later
+  with updated numbers if you want a "look how fast it dropped" post.
+• No hashtags.
+• Reply chain:
+   T+5 min:  pool math breakdown (in this file)
+   T+30 min: re-share with updated APY screenshot
