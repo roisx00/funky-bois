@@ -139,6 +139,40 @@ export default function Nav({ currentPage, onNavigate }) {
     }
   };
 
+  // Manage-wallet handler. RainbowKit's openAccountModal returns undefined
+  // whenever wagmi's connection state is transient (after reloads, network
+  // switches, or while the modal is initialising). Calling
+  // openAccountModal?.() in that state is a silent no-op — that's the
+  // "Manage wallet does nothing" bug. Fall through to a forced disconnect
+  // so the user can re-connect with a clean state.
+  const handleManageWallet = () => {
+    setUserMenuOpen(false);
+    if (openAccountModal) {
+      openAccountModal();
+    } else if (wagmiConnected) {
+      // Account modal unavailable but wagmi thinks it's connected.
+      // Force-disconnect so RainbowKit re-initialises and the connect
+      // modal becomes available again on the next click.
+      try { disconnect(); } catch (e) { console.warn('[Nav] forced disconnect failed:', e); }
+      toast.info?.('Wallet state reset. Connect again to continue.');
+    } else {
+      toast.error('Wallet not connected. Use Connect Wallet first.');
+    }
+  };
+
+  // Manual disconnect — gives stuck users a one-click escape hatch when
+  // wagmi/RainbowKit are out of sync. Called from the user menu.
+  const handleDisconnect = () => {
+    setUserMenuOpen(false);
+    try {
+      disconnect();
+      toast.success?.('Wallet disconnected.');
+    } catch (e) {
+      console.warn('[Nav] disconnect failed:', e);
+      toast.error('Disconnect failed. Refresh the page.');
+    }
+  };
+
   return (
     <>
       <nav className="nav">
@@ -230,13 +264,24 @@ export default function Nav({ currentPage, onNavigate }) {
                       </div>
                       <button
                         className="nav-user-menu-item"
-                        onClick={() => { openAccountModal?.(); setUserMenuOpen(false); }}
+                        onClick={handleManageWallet}
                       >
                         <div>
                           <div className="nav-user-menu-kicker">Wallet</div>
                           <div className="nav-user-menu-text">Manage wallet</div>
                         </div>
                         <span className="nav-user-menu-arrow">↗</span>
+                      </button>
+                      <button
+                        className="nav-user-menu-item"
+                        onClick={handleDisconnect}
+                        title="Disconnect to reset wallet state"
+                      >
+                        <div>
+                          <div className="nav-user-menu-kicker">Wallet</div>
+                          <div className="nav-user-menu-text">Disconnect wallet</div>
+                        </div>
+                        <span className="nav-user-menu-arrow">×</span>
                       </button>
                     </>
                   ) : (
