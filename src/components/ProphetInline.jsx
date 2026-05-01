@@ -360,7 +360,7 @@ export default function ProphetInline() {
         .proph-inline {
           display: flex;
           flex-direction: column;
-          background: var(--paper);
+          background: var(--paper-1);
           border: 1px solid var(--ink);
           margin-top: 28px;
           margin-bottom: 36px;
@@ -378,7 +378,7 @@ export default function ProphetInline() {
         /* ── Studio hero band — ink background + lime accents */
         .proph-hero {
           background: var(--ink);
-          color: var(--paper);
+          color: var(--paper-1);
           padding: 28px 32px 24px;
           display: grid;
           grid-template-columns: auto 1fr auto;
@@ -459,7 +459,7 @@ export default function ProphetInline() {
           font-size: 52px;
           line-height: 1;
           letter-spacing: -0.03em;
-          color: var(--paper);
+          color: var(--paper-1);
         }
         .proph-subname {
           font-family: var(--font-display);
@@ -505,7 +505,7 @@ export default function ProphetInline() {
           font-style: italic;
           font-size: 32px;
           line-height: 1;
-          color: var(--paper);
+          color: var(--paper-1);
           letter-spacing: -0.02em;
         }
         .proph-bal-label {
@@ -597,13 +597,13 @@ export default function ProphetInline() {
           border: 1px solid var(--ink);
         }
         .proph-bubble.user {
-          background: var(--paper);
+          background: var(--paper-1);
           font-family: var(--font-mono);
           font-size: 12px;
           letter-spacing: 0.04em;
         }
         .proph-bubble.bot {
-          background: var(--paper);
+          background: var(--paper-1);
           position: relative;
           padding-left: 18px;
         }
@@ -643,7 +643,7 @@ export default function ProphetInline() {
           display: inline-flex;
           gap: 4px;
           padding: 12px 14px 12px 18px;
-          background: var(--paper);
+          background: var(--paper-1);
           border: 1px solid var(--ink);
           position: relative;
         }
@@ -718,7 +718,7 @@ export default function ProphetInline() {
           cursor: pointer;
           transition: background 120ms, color 120ms;
         }
-        .proph-btn.cancel  { background: var(--paper); color: var(--ink); }
+        .proph-btn.cancel  { background: var(--paper-1); color: var(--ink); }
         .proph-btn.cancel:hover:not(:disabled)  { background: var(--paper-3); }
         .proph-btn.confirm { background: var(--ink); color: var(--accent); }
         .proph-btn.confirm:hover:not(:disabled) { background: var(--accent); color: var(--ink); }
@@ -749,7 +749,7 @@ export default function ProphetInline() {
           font-size: 10px;
           letter-spacing: 0.08em;
           padding: 7px 10px;
-          background: var(--paper);
+          background: var(--paper-1);
           border: 1px solid var(--hairline);
           color: var(--ink);
           cursor: pointer;
@@ -765,7 +765,7 @@ export default function ProphetInline() {
         }
         .proph-input {
           width: 100%;
-          background: var(--paper);
+          background: var(--paper-1);
           border: 1px solid var(--ink);
           padding: 14px 16px;
           font-family: var(--font-mono);
