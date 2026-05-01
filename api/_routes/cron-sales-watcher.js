@@ -156,6 +156,10 @@ export default async function handler(req, res) {
   try { raw = await fetchSalesFromAlchemy(); }
   catch (e) { return bad(res, 502, 'alchemy_failed', { msg: e?.message }); }
 
+  if (String(req.query?.debug || '') === '1') {
+    return ok(res, { rawCount: raw.length, sample: raw.slice(0, 3) });
+  }
+
   const tokenIds = [...new Set(raw.map((s) => String(s?.tokenId || '')).filter(Boolean))];
   const metaMap  = await fetchTokenMeta(tokenIds);
 
