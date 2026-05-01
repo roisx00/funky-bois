@@ -20,7 +20,7 @@
 // the deposit/withdraw buttons fire wagmi useWriteContract calls and
 // auto-index via /api/vault-onchain-index.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useToast } from './Toast';
 import {
