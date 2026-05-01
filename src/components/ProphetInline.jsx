@@ -827,7 +827,6 @@ export default function ProphetInline() {
         <div className="proph-hero-text">
           <div className="proph-kicker">§02 · CONCIERGE</div>
           <div className="proph-name">Mr Prophet.</div>
-          <div className="proph-subname">Wire concierge — talks, sends, knows prices.</div>
           <div className="proph-status">
             <span className="dot" />
             ONLINE · NATURAL LANGUAGE WIRE
