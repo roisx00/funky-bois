@@ -399,19 +399,18 @@ export default function ProphetInline() {
           height: 72px;
           border-radius: 50%;
           background: var(--accent);
-          color: var(--ink);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: var(--font-display);
-          font-style: italic;
-          font-weight: 500;
-          font-size: 38px;
-          letter-spacing: -0.04em;
-          line-height: 1;
           flex-shrink: 0;
           position: relative;
           box-shadow: 0 0 0 4px rgba(215,255,58,0.12);
+          overflow: hidden;
+        }
+        .proph-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          image-rendering: pixelated;
+          image-rendering: crisp-edges;
         }
         .proph-avatar::after {
           content: '';
@@ -422,6 +421,7 @@ export default function ProphetInline() {
           background: var(--accent);
           border: 2px solid var(--ink);
           animation: proph-pulse 1.8s ease-in-out infinite;
+          z-index: 2;
         }
         .proph-hero-text { min-width: 0; }
         .proph-kicker {
@@ -540,17 +540,17 @@ export default function ProphetInline() {
           height: 28px;
           border-radius: 50%;
           background: var(--ink);
-          color: var(--accent);
           border: 1px solid var(--ink);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: var(--font-display);
-          font-style: italic;
-          font-size: 16px;
-          line-height: 1;
-          letter-spacing: -0.04em;
           flex-shrink: 0;
+          overflow: hidden;
+        }
+        .proph-mini-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          image-rendering: pixelated;
+          image-rendering: crisp-edges;
         }
 
         .proph-bubble {
@@ -782,7 +782,9 @@ export default function ProphetInline() {
 
       {/* ── Studio hero band ── */}
       <div className="proph-hero">
-        <div className="proph-avatar">P</div>
+        <div className="proph-avatar">
+          <img src="/mr-prophet-pfp.png" alt="Mr Prophet" />
+        </div>
         <div className="proph-hero-text">
           <div className="proph-kicker">§02 · CONCIERGE</div>
           <div className="proph-name">Mr Prophet.</div>
@@ -812,7 +814,7 @@ export default function ProphetInline() {
       <div className="proph-thread" ref={scrollRef}>
         {msgs.map((m) => (
           <div key={m.id} className={`proph-row ${m.role}`}>
-            {m.role === 'bot' ? <div className="proph-mini-avatar">P</div> : null}
+            {m.role === 'bot' ? <div className="proph-mini-avatar"><img src="/mr-prophet-pfp.png" alt="" /></div> : null}
             {m.kind === 'text' ? (
               <div className={`proph-bubble ${m.role}`}>{m.text}</div>
             ) : m.kind === 'rich' ? (
@@ -848,7 +850,7 @@ export default function ProphetInline() {
         ))}
         {typing ? (
           <div className="proph-row bot">
-            <div className="proph-mini-avatar">P</div>
+            <div className="proph-mini-avatar"><img src="/mr-prophet-pfp.png" alt="" /></div>
             <div className="proph-typing"><span /><span /><span /></div>
           </div>
         ) : null}
