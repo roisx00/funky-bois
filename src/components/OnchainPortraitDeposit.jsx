@@ -562,10 +562,20 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
           padding: 1px 5px;
           color: #D7FF3A;
         }
+        /* When the tile shows artwork, force a dark strip with lime text
+           so the rarity label stays readable regardless of the tier tint
+           (inline background style is overridden via !important). */
         .ocp-tile.with-img .ocp-tile-rarity {
-          background: rgba(0,0,0,0.7);
+          background: rgba(0,0,0,0.78) !important;
           color: #D7FF3A !important;
+          border-top: 1px solid rgba(215,255,58,0.35);
         }
+        /* Tier-colored left border indicates rarity without competing
+           with the artwork — small, premium, always readable. */
+        .ocp-tile.with-img.tier-common      .ocp-tile-rarity { border-left: 3px solid #8a8a8a; }
+        .ocp-tile.with-img.tier-rare        .ocp-tile-rarity { border-left: 3px solid #F9F6F0; }
+        .ocp-tile.with-img.tier-legendary   .ocp-tile-rarity { border-left: 3px solid #FFD43A; }
+        .ocp-tile.with-img.tier-ultra_rare  .ocp-tile-rarity { border-left: 3px solid #D7FF3A; }
         .ocp-tile-rarity {
           position: absolute; left: 0; right: 0; bottom: 0;
           padding: 3px 4px;
@@ -1023,7 +1033,7 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
               return (
                 <button
                   key={id}
-                  className={`ocp-tile ${sel ? 'selected' : ''} ${img ? 'with-img' : ''}`}
+                  className={`ocp-tile tier-${tier} ${sel ? 'selected' : ''} ${img ? 'with-img' : ''}`}
                   onClick={() => toggle(stakedSel, setStakedSel, id)}
                   type="button"
                   title={meta?.name || `#${id}`}
@@ -1032,7 +1042,10 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
                     <img className="ocp-tile-img" src={img} alt={meta?.name || `#${id}`} loading="lazy" />
                   ) : null}
                   <span className="ocp-tile-id">#{id}</span>
-                  <span className="ocp-tile-rarity" style={{ background: RARITY_TINT[tier] }}>
+                  <span
+                    className="ocp-tile-rarity"
+                    style={img ? undefined : { background: RARITY_TINT[tier] }}
+                  >
                     {RARITY_LABELS[tier]} · {stake?.weight || 1}×
                   </span>
                 </button>
@@ -1095,7 +1108,7 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
               return (
                 <button
                   key={id}
-                  className={`ocp-tile ${sel ? 'selected' : ''} ${img ? 'with-img' : ''}`}
+                  className={`ocp-tile tier-${tier} ${sel ? 'selected' : ''} ${img ? 'with-img' : ''}`}
                   onClick={() => toggle(availSel, setAvailSel, id)}
                   type="button"
                   title={meta?.name || `#${id}`}
@@ -1104,7 +1117,10 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
                     <img className="ocp-tile-img" src={img} alt={meta?.name || `#${id}`} loading="lazy" />
                   ) : null}
                   <span className="ocp-tile-id">#{id}</span>
-                  <span className="ocp-tile-rarity" style={{ background: RARITY_TINT[tier] }}>
+                  <span
+                    className="ocp-tile-rarity"
+                    style={img ? undefined : { background: RARITY_TINT[tier] }}
+                  >
                     {r ? RARITY_LABELS[tier] : 'LOADING'}
                   </span>
                 </button>
