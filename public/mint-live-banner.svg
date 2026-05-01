@@ -53,18 +53,9 @@
   <!-- ── OPENSEA CALLOUT (lime ribbon) ── -->
   <g transform="translate(72, 580)">
     <rect x="0" y="0" width="1456" height="92" fill="#D7FF3A"/>
-    <text x="40" y="58"
+    <text x="728" y="60" text-anchor="middle"
           font-family="ui-monospace, 'JetBrains Mono', monospace"
-          font-size="22" font-weight="700" letter-spacing="6" fill="#0E0E0E">MINT ON OPENSEA</text>
-    <text x="730" y="60" text-anchor="middle"
-          font-family="'Instrument Serif', Georgia, serif"
-          font-style="italic" font-weight="500"
-          font-size="38" fill="#0E0E0E"
-          letter-spacing="-0.5">link in first reply.</text>
-    <text x="1416" y="58" text-anchor="end"
-          font-family="'Instrument Serif', Georgia, serif"
-          font-style="italic" font-weight="500"
-          font-size="44" fill="#0E0E0E" letter-spacing="-1">→</text>
+          font-size="28" font-weight="700" letter-spacing="8" fill="#0E0E0E">MINT ON OPENSEA</text>
   </g>
 
   <!-- ── VAULT REASSURANCE STRIP ── -->
