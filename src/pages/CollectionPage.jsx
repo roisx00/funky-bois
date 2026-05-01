@@ -1732,7 +1732,13 @@ function BustsTransferSection({
 
   const inbox = (pendingBustsTransfers || []);
 
-  const handleSend = async () => {
+  // Confirm-modal state. Wire is a two-step action now: clicking the
+  // CTA validates inputs and opens the modal; the user must explicitly
+  // confirm there before the API call fires. Prevents fat-finger sends
+  // (esp. with the MAX chip + a typo'd handle).
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleAttemptSend = () => {
     if (sending) return;
     const clean = normalizeXHandle(toUsername);
     if (!clean || !isValidXHandle(clean)) {
@@ -1747,6 +1753,12 @@ function BustsTransferSection({
       toast.error(amount < 1 ? 'Minimum is 1 BUSTS.' : 'Amount exceeds your balance.');
       return;
     }
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSend = async () => {
+    if (sending) return;
+    const clean = normalizeXHandle(toUsername);
     setSending(true);
     const r = await sendBusts(clean, amount);
     setSending(false);
@@ -1754,10 +1766,32 @@ function BustsTransferSection({
       toast.success(`Sent ${r.amount.toLocaleString()} BUSTS to @${clean} · they claim from their inbox`);
       setToUsername('');
       setAmountStr('');
+      setConfirmOpen(false);
     } else {
       toast.error(`Send failed (${r?.reason || 'unknown'})`);
+      setConfirmOpen(false);
     }
   };
+
+  const handleCancelSend = () => {
+    if (sending) return;
+    setConfirmOpen(false);
+  };
+
+  // ESC-to-dismiss while the modal is open
+  useEffect(() => {
+    if (!confirmOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') handleCancelSend(); };
+    window.addEventListener('keydown', onKey);
+    // Lock background scroll while open so a long inbox underneath
+    // doesn't jiggle when the user taps confirm.
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [confirmOpen, sending]);
 
   const handleClaim = async (t) => {
     setBusyId(t.id);
@@ -2047,6 +2081,205 @@ function BustsTransferSection({
           .wire-flow { grid-template-columns: 1fr; }
           .wire-flow-arrow { display: none; }
         }
+
+        /* ── Confirm modal ── */
+        @keyframes wire-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes wire-pop-in {
+          from { opacity: 0; transform: translateY(12px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .wire-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(14, 14, 14, 0.62);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          z-index: 1000;
+          animation: wire-fade-in 180ms ease;
+        }
+        .wire-modal {
+          position: relative;
+          background: var(--paper);
+          border: 1px solid var(--ink);
+          width: 100%;
+          max-width: 520px;
+          padding: 36px 36px 30px;
+          box-shadow: 0 30px 80px rgba(0, 0, 0, 0.18);
+          animation: wire-pop-in 220ms cubic-bezier(.2,.8,.2,1);
+        }
+        .wire-modal::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 0; right: 0;
+          height: 5px;
+          background: var(--accent);
+        }
+        .wire-modal-close {
+          position: absolute;
+          top: 14px; right: 14px;
+          width: 30px; height: 30px;
+          background: transparent;
+          border: 1px solid var(--hairline);
+          color: var(--text-3);
+          cursor: pointer;
+          font-family: var(--font-mono);
+          font-size: 14px;
+          line-height: 1;
+          transition: background 120ms, color 120ms, border-color 120ms;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .wire-modal-close:hover { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+        .wire-modal-kicker {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.22em;
+          color: var(--text-4);
+          margin-bottom: 8px;
+        }
+        .wire-modal-headline {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 34px;
+          letter-spacing: -0.02em;
+          color: var(--ink);
+          line-height: 1.0;
+          margin-bottom: 18px;
+        }
+        .wire-modal-recap {
+          background: var(--paper-2);
+          border: 1px solid var(--ink);
+          padding: 20px 22px;
+          margin: 6px 0 22px;
+        }
+        .wire-modal-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 14px;
+          padding: 12px 0;
+          border-bottom: 1px dashed var(--hairline);
+        }
+        .wire-modal-row:last-child { border-bottom: none; }
+        .wire-modal-row.first { padding-top: 0; }
+        .wire-modal-row .wmr-label {
+          font-family: var(--font-mono);
+          font-size: 9px;
+          letter-spacing: 0.22em;
+          color: var(--text-4);
+          flex: 0 0 auto;
+        }
+        .wire-modal-row .wmr-value {
+          font-family: var(--font-mono);
+          font-size: 12px;
+          letter-spacing: 0.05em;
+          color: var(--ink);
+          text-align: right;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          min-width: 0;
+        }
+        .wire-modal-row .wmr-value.italic {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 26px;
+          letter-spacing: -0.01em;
+          line-height: 1;
+        }
+        .wire-modal-flow {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          gap: 14px;
+          align-items: center;
+          margin-bottom: 18px;
+        }
+        .wire-modal-flow .wmf-cell {
+          background: var(--paper-2);
+          border: 1px solid var(--hairline);
+          padding: 12px 14px;
+          min-width: 0;
+        }
+        .wire-modal-flow .wmf-label {
+          font-family: var(--font-mono);
+          font-size: 9px;
+          letter-spacing: 0.22em;
+          color: var(--text-4);
+          display: block;
+          margin-bottom: 4px;
+        }
+        .wire-modal-flow .wmf-handle {
+          font-family: var(--font-mono);
+          font-size: 12px;
+          letter-spacing: 0.05em;
+          color: var(--ink);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .wire-modal-flow .wmf-arrow {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 24px;
+          color: var(--ink);
+          text-align: center;
+        }
+        .wire-modal-warn {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.16em;
+          color: var(--text-3);
+          text-align: center;
+          margin-bottom: 18px;
+          padding: 10px 12px;
+          background: var(--paper-2);
+          border-left: 3px solid var(--accent);
+          line-height: 1.5;
+        }
+        .wire-modal-actions {
+          display: grid;
+          grid-template-columns: 1fr 1.4fr;
+          gap: 10px;
+        }
+        .wire-modal-btn {
+          padding: 16px 18px;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 0.22em;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 120ms, color 120ms;
+          border: 1px solid var(--ink);
+          display: flex; align-items: center; justify-content: center;
+          gap: 10px;
+        }
+        .wire-modal-btn.cancel {
+          background: var(--paper);
+          color: var(--ink);
+        }
+        .wire-modal-btn.cancel:hover:not(:disabled) { background: var(--paper-3); }
+        .wire-modal-btn.confirm {
+          background: var(--ink);
+          color: var(--accent);
+        }
+        .wire-modal-btn.confirm:hover:not(:disabled) { background: var(--accent); color: var(--ink); }
+        .wire-modal-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+        .wire-modal-btn .arrow {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 18px;
+          letter-spacing: -0.02em;
+        }
+        @media (max-width: 480px) {
+          .wire-modal { padding: 28px 22px 22px; }
+          .wire-modal-headline { font-size: 28px; }
+          .wire-modal-flow { grid-template-columns: 1fr; }
+          .wire-modal-flow .wmf-arrow { display: none; }
+          .wire-modal-actions { grid-template-columns: 1fr; }
+        }
       `}</style>
 
       <div className="wire-frame">
@@ -2124,7 +2357,7 @@ function BustsTransferSection({
           <button
             className="wire-cta"
             disabled={!toUsername.trim() || !isAmountValid || sending}
-            onClick={handleSend}
+            onClick={handleAttemptSend}
           >
             <span>
               {sending
@@ -2192,6 +2425,86 @@ function BustsTransferSection({
           )}
         </div>
       </div>
+
+      {/* ── Confirm modal — only mounted while open ── */}
+      {confirmOpen ? (
+        <div
+          className="wire-modal-backdrop"
+          onClick={(e) => { if (e.target === e.currentTarget) handleCancelSend(); }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="wire-modal-title"
+        >
+          <div className="wire-modal">
+            <button
+              className="wire-modal-close"
+              onClick={handleCancelSend}
+              disabled={sending}
+              aria-label="Cancel"
+              type="button"
+            >×</button>
+
+            <div className="wire-modal-kicker">CONFIRM WIRE</div>
+            <div className="wire-modal-headline" id="wire-modal-title">
+              Send {amount.toLocaleString()} BUSTS?
+            </div>
+
+            <div className="wire-modal-flow">
+              <div className="wmf-cell">
+                <span className="wmf-label">FROM</span>
+                <div className="wmf-handle">{senderHandle}</div>
+              </div>
+              <div className="wmf-arrow">→</div>
+              <div className="wmf-cell">
+                <span className="wmf-label">TO</span>
+                <div className="wmf-handle">{recipientPreview || '—'}</div>
+              </div>
+            </div>
+
+            <div className="wire-modal-recap">
+              <div className="wire-modal-row first">
+                <span className="wmr-label">AMOUNT</span>
+                <span className="wmr-value italic">{amount.toLocaleString()}</span>
+              </div>
+              <div className="wire-modal-row">
+                <span className="wmr-label">CURRENT BALANCE</span>
+                <span className="wmr-value">{(bustsBalance || 0).toLocaleString()} BUSTS</span>
+              </div>
+              <div className="wire-modal-row">
+                <span className="wmr-label">YOU'LL KEEP</span>
+                <span className="wmr-value">{remainingAfter.toLocaleString()} BUSTS</span>
+              </div>
+            </div>
+
+            <div className="wire-modal-warn">
+              IF {recipientPreview || '@RECIPIENT'} ISN'T SIGNED UP, IT WAITS IN THEIR INBOX.<br />
+              UNCLAIMED SENDS RETURN TO YOU AFTER 30 DAYS.
+            </div>
+
+            <div className="wire-modal-actions">
+              <button
+                className="wire-modal-btn cancel"
+                onClick={handleCancelSend}
+                disabled={sending}
+                type="button"
+              >CANCEL</button>
+              <button
+                className="wire-modal-btn confirm"
+                onClick={handleConfirmSend}
+                disabled={sending}
+                type="button"
+              >
+                {sending ? 'WIRING…' : (
+                  <>
+                    <span>CONFIRM · WIRE {amount.toLocaleString()}</span>
+                    <span className="arrow">→</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
