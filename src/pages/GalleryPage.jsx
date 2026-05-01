@@ -372,6 +372,60 @@ function OnChainGallery({ totalSupply }) {
     setLoading(false);
   }, [totalSupply]);
 
+  // ── Step 1.5: bulk-fetch rarities for ALL tokens up front ──
+  // Without this, the rarity filter shows "0 / N" until each tile
+  // scrolls into view (lazy metadata load only knows rarity per visible
+  // tile). Bulk loading via /api/vault-onchain-rarities populates the
+  // rarity field for every token so filter + sort work immediately.
+  // 100 IDs per request, concurrency 4 — finishes ~5-15s on cold cache.
+  const [bulkRarityProgress, setBulkRarityProgress] = useState(0);
+  useEffect(() => {
+    if (tokenIds.length === 0) { setBulkRarityProgress(0); return; }
+    let cancelled = false;
+    (async () => {
+      const CHUNK = 100;
+      const CONCURRENCY = 4;
+      const chunks = [];
+      for (let i = 0; i < tokenIds.length; i += CHUNK) {
+        chunks.push(tokenIds.slice(i, i + CHUNK));
+      }
+      let done = 0;
+      for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+        const batch = chunks.slice(i, i + CONCURRENCY);
+        await Promise.all(batch.map(async (chunk) => {
+          if (cancelled) return;
+          try {
+            const r = await fetch('/api/vault-onchain-rarities', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tokenIds: chunk }),
+            });
+            if (!r.ok) return;
+            const d = await r.json();
+            if (cancelled) return;
+            const rarities = d?.rarities || {};
+            setMeta((prev) => {
+              const next = new Map(prev);
+              for (const [id, info] of Object.entries(rarities)) {
+                const existing = next.get(id) || {};
+                next.set(id, {
+                  ...existing,
+                  ready: existing.ready ?? false,
+                  rarity: info.rarity,
+                  weight: info.weight,
+                });
+              }
+              return next;
+            });
+          } catch { /* ignore */ }
+        }));
+        done += batch.length;
+        if (!cancelled) setBulkRarityProgress(Math.min(1, done / chunks.length));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [tokenIds]);
+
   // ── Step 2: lazy-load metadata for tokens currently visible ──
   // Called by tiles via the IntersectionObserver below; we batch incoming
   // requests within a tight 80ms window so a viewport full of tiles
@@ -438,9 +492,13 @@ function OnChainGallery({ totalSupply }) {
       });
     }
     if (rarity !== 'all') {
+      // Gate on m.rarity (populated by the up-front bulk fetch),
+      // NOT m.ready — `ready` only flips once a tile's image/attrs
+      // load via IntersectionObserver. Bulk fetch fills rarity for
+      // every token, so the filter works before tiles scroll in.
       list = list.filter((id) => {
         const m = meta.get(id);
-        if (!m?.ready) return false;       // un-loaded meta hidden when filtering
+        if (!m?.rarity) return false;
         return m.rarity === rarity;
       });
     }
@@ -658,6 +716,11 @@ function OnChainGallery({ totalSupply }) {
         </select>
         <div className="chain-results">
           {filtered.length.toLocaleString()} / {tokenIds.length.toLocaleString()}
+          {bulkRarityProgress > 0 && bulkRarityProgress < 1 && (
+            <span style={{ marginLeft: 10, color: 'var(--text-4)' }}>
+              · INDEXING {Math.round(bulkRarityProgress * 100)}%
+            </span>
+          )}
         </div>
       </div>
 
