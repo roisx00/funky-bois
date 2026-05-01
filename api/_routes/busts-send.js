@@ -57,8 +57,54 @@ export default async function handler(req, res) {
     }
   }
 
-  // Always pending — the recipient claims from their inbox regardless
-  // of whether they're already a registered user.
+  // ── Try direct credit when the recipient is a registered, active
+  //    account. Skips the pending-inbox round-trip entirely so wires
+  //    feel instant. Suspended accounts fall through to the pending
+  //    flow (we don't credit a suspended user).
+  const target = one(await sql`
+    SELECT id, x_username, COALESCE(suspended, FALSE) AS suspended
+      FROM users
+     WHERE LOWER(x_username) = ${recipient}
+     LIMIT 1
+  `);
+  if (target && !target.suspended) {
+    try {
+      await sql`
+        UPDATE users SET busts_balance = busts_balance + ${amount}
+         WHERE id = ${target.id}
+      `;
+      await sql`
+        INSERT INTO busts_ledger (user_id, amount, reason)
+        VALUES (${user.id},   ${-amount}, ${'Wired ' + amount + ' BUSTS to @' + recipient})
+      `;
+      await sql`
+        INSERT INTO busts_ledger (user_id, amount, reason)
+        VALUES (${target.id}, ${amount},  ${'Received ' + amount + ' BUSTS from @' + (user.x_username || 'anon')})
+      `;
+      return ok(res, {
+        amount,
+        recipient,
+        delivered:  true,
+        transferId: null,
+        newBalance: debit.busts_balance,
+      });
+    } catch (e) {
+      // Direct credit failed — refund the sender and fall through to
+      // pending so the wire still has a path to land.
+      await refund('direct_credit_failed');
+      console.error('[busts-send] direct credit failed, falling through:', e?.message);
+      // Re-debit so the pending branch below can proceed cleanly.
+      const redebit = one(await sql`
+        UPDATE users SET busts_balance = busts_balance - ${amount}
+         WHERE id = ${user.id} AND busts_balance >= ${amount}
+        RETURNING busts_balance
+      `);
+      if (!redebit) return bad(res, 409, 'insufficient_balance');
+    }
+  }
+
+  // ── Pending flow: recipient is unregistered (or direct credit failed).
+  //    They claim from their inbox once they sign in.
   try {
     const pending = one(await sql`
       INSERT INTO pending_busts_transfers
@@ -75,7 +121,7 @@ export default async function handler(req, res) {
     return ok(res, {
       amount,
       recipient,
-      delivered:  false,        // kept for backward-compat with old clients
+      delivered:  false,
       transferId: pending.id,
       expiresAt:  pending.expires_at,
       newBalance: debit.busts_balance,

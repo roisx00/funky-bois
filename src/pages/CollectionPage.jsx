@@ -2283,72 +2283,13 @@ function BustsTransferSection({
         }
       `}</style>
 
-      <div className="wire-frame">
-        {/* ── LEFT pane — MR PROPHET INLINE CHATBOT ──
-            Replaces the manual Send form. Users wire BUSTS by talking
-            to Prophet in plain English; the bot proposes a confirm card
-            for every transfer and reuses the same sendBusts() pipeline
-            as before. The manual form is still reachable as a fallback
-            via the floating FAB on other pages. */}
-        <div className="wire-pane">
-          <ProphetInline />
-        </div>
-
-        <div className="wire-divider" />
-
-        {/* ── RIGHT pane — INBOX ── */}
-        <div className="wire-pane">
-          <div className="wire-kicker">INBOX</div>
-          <div className="wire-headline">
-            Pending claims.
-            {inbox.length > 0 ? (
-              <span className="wire-count-badge">
-                <span style={{
-                  display: 'inline-block', width: 5, height: 5,
-                  borderRadius: '50%', background: 'var(--ink)',
-                }} />
-                {inbox.length}
-              </span>
-            ) : null}
-          </div>
-          <div className="wire-sub">
-            BUSTS sent to your @X handle land here. Claim to credit your balance — anything unclaimed returns to the sender after 30 days.
-          </div>
-
-          {inbox.length === 0 ? (
-            <div className="wire-empty" style={{ marginTop: 22 }}>
-              <div className="wire-empty-line">Nothing pending.</div>
-              <div className="wire-empty-sub">YOUR INBOX IS QUIET</div>
-            </div>
-          ) : (
-            <div className="wire-inbox-list">
-              {inbox.map((t) => (
-                <div key={t.id} className="wire-inbox-row">
-                  <div style={{ minWidth: 0 }}>
-                    <div className="wire-inbox-amount">
-                      +{Number(t.amount).toLocaleString()} <span style={{
-                        fontFamily: 'var(--font-mono)', fontStyle: 'normal',
-                        fontSize: 11, letterSpacing: '0.18em', color: 'var(--text-3)',
-                        marginLeft: 4,
-                      }}>BUSTS</span>
-                    </div>
-                    <div className="wire-inbox-from">
-                      FROM @{t.fromXUsername || 'ANON'} · EXPIRES {timeAgo(t.expiresAt).toUpperCase()}
-                    </div>
-                  </div>
-                  <button
-                    className="wire-inbox-claim"
-                    onClick={() => handleClaim(t)}
-                    disabled={busyId === t.id}
-                  >
-                    {busyId === t.id ? 'CLAIMING…' : 'CLAIM →'}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      {/* ── Mr Prophet — full-width premium chatbot owns §02 ──
+          Right-pane "Pending claims" was retired: registered recipients
+          now auto-credit at send time (see api/_routes/busts-send.js)
+          so the inbox/claim step is no longer the primary surface. The
+          claim flow still works under the hood for unregistered handles
+          on first sign-in. */}
+      <ProphetInline />
 
       {/* ── Confirm modal — only mounted while open ── */}
       {confirmOpen ? (

@@ -360,109 +360,173 @@ export default function ProphetInline() {
         .proph-inline {
           display: flex;
           flex-direction: column;
-          height: 100%;
-          min-height: 560px;
-          font-family: var(--font-display);
+          background: var(--paper);
+          border: 1px solid var(--ink);
+          margin-top: 28px;
+          margin-bottom: 36px;
+          position: relative;
+          overflow: hidden;
         }
-        .proph-inline-head {
-          display: flex;
+        .proph-inline::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 0; right: 0;
+          height: 5px;
+          background: var(--accent);
+          z-index: 2;
+        }
+        /* ── Studio hero band — ink background + lime accents */
+        .proph-hero {
+          background: var(--ink);
+          color: var(--paper);
+          padding: 28px 32px 24px;
+          display: grid;
+          grid-template-columns: auto 1fr auto;
+          gap: 22px;
           align-items: center;
-          gap: 14px;
-          padding-bottom: 14px;
-          border-bottom: 1px solid var(--hairline);
-          margin-bottom: 18px;
+          border-bottom: 1px solid var(--ink);
+          position: relative;
+        }
+        .proph-hero::after {
+          content: '';
+          position: absolute;
+          left: 0; right: 0; bottom: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(215,255,58,0.4), transparent);
         }
         .proph-avatar {
-          width: 48px;
-          height: 48px;
+          width: 72px;
+          height: 72px;
           border-radius: 50%;
-          background: var(--ink);
-          color: var(--accent);
-          border: 1px solid var(--ink);
+          background: var(--accent);
+          color: var(--ink);
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: var(--font-display);
           font-style: italic;
-          font-size: 26px;
+          font-weight: 500;
+          font-size: 38px;
           letter-spacing: -0.04em;
           line-height: 1;
           flex-shrink: 0;
+          position: relative;
+          box-shadow: 0 0 0 4px rgba(215,255,58,0.12);
         }
-        .proph-inline-head-text { flex: 1; min-width: 0; }
+        .proph-avatar::after {
+          content: '';
+          position: absolute;
+          right: 2px; bottom: 2px;
+          width: 14px; height: 14px;
+          border-radius: 50%;
+          background: var(--accent);
+          border: 2px solid var(--ink);
+          animation: proph-pulse 1.8s ease-in-out infinite;
+        }
+        .proph-hero-text { min-width: 0; }
         .proph-kicker {
           font-family: var(--font-mono);
-          font-size: 9px;
-          letter-spacing: 0.22em;
-          color: var(--text-4);
-          margin-bottom: 4px;
+          font-size: 10px;
+          letter-spacing: 0.28em;
+          color: var(--accent);
+          margin-bottom: 6px;
+          font-weight: 700;
         }
         .proph-name {
           font-family: var(--font-display);
           font-style: italic;
           font-weight: 500;
-          font-size: 44px;
+          font-size: 52px;
           line-height: 1;
           letter-spacing: -0.03em;
-          color: var(--ink);
+          color: var(--paper);
         }
         .proph-subname {
           font-family: var(--font-display);
           font-style: italic;
-          font-size: 16px;
+          font-size: 18px;
           line-height: 1.1;
           letter-spacing: -0.01em;
-          color: var(--text-3);
-          margin-top: 4px;
+          color: rgba(249,246,240,0.55);
+          margin-top: 6px;
         }
         .proph-status {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
           font-family: var(--font-mono);
           font-size: 10px;
-          letter-spacing: 0.18em;
-          color: var(--text-3);
-          margin-top: 6px;
+          letter-spacing: 0.22em;
+          color: var(--accent);
+          margin-top: 12px;
           text-transform: uppercase;
+          font-weight: 700;
         }
         .proph-status .dot {
-          width: 6px;
-          height: 6px;
+          width: 7px;
+          height: 7px;
           border-radius: 50%;
           background: var(--accent);
-          border: 1px solid var(--ink);
           animation: proph-pulse 1.6s ease-in-out infinite;
         }
         @keyframes proph-pulse {
           0%, 100% { opacity: 1; }
           50%      { opacity: 0.35; }
         }
+        .proph-hero-meta {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 10px;
+          flex-shrink: 0;
+        }
+        .proph-bal {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 32px;
+          line-height: 1;
+          color: var(--paper);
+          letter-spacing: -0.02em;
+        }
+        .proph-bal-label {
+          font-family: var(--font-mono);
+          font-size: 9px;
+          letter-spacing: 0.24em;
+          color: rgba(215,255,58,0.7);
+          font-weight: 700;
+          margin-top: 4px;
+          text-align: right;
+        }
         .proph-clear {
-          width: 32px; height: 32px;
+          width: 34px; height: 34px;
           background: transparent;
-          border: 1px solid var(--hairline);
-          color: var(--text-3);
+          border: 1px solid rgba(249,246,240,0.18);
+          color: rgba(249,246,240,0.55);
           cursor: pointer;
           font-family: var(--font-mono);
-          font-size: 14px;
+          font-size: 15px;
           display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
           transition: background 120ms, color 120ms, border-color 120ms;
         }
-        .proph-clear:hover { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+        .proph-clear:hover { background: var(--accent); color: var(--ink); border-color: var(--accent); }
+        /* ── Body padding for the thread + form area ── */
+        .proph-body {
+          padding: 24px 28px 22px;
+          display: flex;
+          flex-direction: column;
+        }
 
         .proph-thread {
           flex: 1;
           overflow-y: auto;
           display: flex;
           flex-direction: column;
-          gap: 14px;
+          gap: 16px;
           padding-right: 4px;
-          margin-bottom: 14px;
+          margin-bottom: 16px;
           scrollbar-width: thin;
-          min-height: 280px;
-          max-height: 460px;
+          min-height: 360px;
+          max-height: 540px;
         }
         .proph-thread::-webkit-scrollbar { width: 4px; }
         .proph-thread::-webkit-scrollbar-thumb { background: var(--hairline); }
@@ -699,36 +763,52 @@ export default function ProphetInline() {
           font-size: 18px;
           letter-spacing: -0.02em;
         }
+        @media (max-width: 760px) {
+          .proph-hero { padding: 24px 22px 22px; gap: 16px; }
+          .proph-hero-meta { display: none; }
+          .proph-name    { font-size: 40px; }
+          .proph-subname { font-size: 16px; }
+          .proph-avatar  { width: 60px; height: 60px; font-size: 30px; }
+          .proph-body    { padding: 20px 22px 20px; }
+        }
         @media (max-width: 540px) {
-          .proph-thread  { max-height: 380px; }
+          .proph-thread  { max-height: 420px; min-height: 320px; }
           .proph-name    { font-size: 34px; }
-          .proph-subname { font-size: 14px; }
           .proph-bubble  { max-width: 88%; }
+          .proph-hero    { grid-template-columns: auto 1fr; }
+          .proph-clear   { display: none; }
         }
       `}</style>
 
-      {/* ── Header ── */}
-      <div className="proph-inline-head">
+      {/* ── Studio hero band ── */}
+      <div className="proph-hero">
         <div className="proph-avatar">P</div>
-        <div className="proph-inline-head-text">
-          <div className="proph-kicker">§02</div>
+        <div className="proph-hero-text">
+          <div className="proph-kicker">§02 · CONCIERGE</div>
           <div className="proph-name">Mr Prophet.</div>
-          <div className="proph-subname">Wire concierge.</div>
+          <div className="proph-subname">Wire concierge — talks, sends, knows prices.</div>
           <div className="proph-status">
             <span className="dot" />
             ONLINE · NATURAL LANGUAGE WIRE
           </div>
         </div>
-        <button
-          className="proph-clear"
-          onClick={clearHistory}
-          title="Clear conversation"
-          aria-label="Clear conversation"
-          type="button"
-        >↺</button>
+        <div className="proph-hero-meta">
+          <button
+            className="proph-clear"
+            onClick={clearHistory}
+            title="Clear conversation"
+            aria-label="Clear conversation"
+            type="button"
+          >↺</button>
+          <div style={{ textAlign: 'right' }}>
+            <div className="proph-bal">{(bustsBalance || 0).toLocaleString()}</div>
+            <div className="proph-bal-label">YOUR BUSTS</div>
+          </div>
+        </div>
       </div>
 
-      {/* ── Thread ── */}
+      {/* ── Thread + input body ── */}
+      <div className="proph-body">
       <div className="proph-thread" ref={scrollRef}>
         {msgs.map((m) => (
           <div key={m.id} className={`proph-row ${m.role}`}>
@@ -808,6 +888,7 @@ export default function ProphetInline() {
           <span className="proph-send-arrow">→</span>
         </button>
       </form>
+      </div>
     </div>
   );
 }
