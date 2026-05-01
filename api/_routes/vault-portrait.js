@@ -23,6 +23,18 @@ export default async function handler(req, res) {
   const action = String(body.action || '').toLowerCase();
 
   if (action === 'deposit') {
+    // Once mint goes live, pre-built (off-chain) portrait deposits are
+    // closed. Existing deposits stay in the vault until the owner pulls
+    // them, but no new ones land here — staking goes through the
+    // on-chain Vault1969 contract instead. See docs/vault-v2-spec.md.
+    const mintActiveRow = one(await sql`
+      SELECT value FROM app_config WHERE key = 'mint_active' LIMIT 1
+    `);
+    if (mintActiveRow?.value === '1') {
+      return bad(res, 410, 'pre_built_deposits_closed', {
+        hint: 'Mint is live. Stake your on-chain 1969 portrait via §03 instead.',
+      });
+    }
     const portraitId = String(body.portraitId || '');
     if (!portraitId) return bad(res, 400, 'missing_portraitId');
 

@@ -18,6 +18,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import { buildNFTSVG } from '../data/elements';
+import OnchainPortraitVault from '../components/OnchainPortraitVault';
 import {
   buildVaultSVG, vaultTraits,
   powerTierOf, POWER_TIER_LABELS, POWER_TIER_THRESHOLDS,
@@ -600,6 +601,12 @@ export default function VaultPage({ onNavigate }) {
 
       {/* ─── BUSTS CIRCULATION (live) ────────────────────────── */}
       <BustsCirculationPanel />
+
+      {/* ── ON-CHAIN PORTRAIT VAULT (v2) ──
+          Pre-launch shows the program parameters + "opening soon" pill.
+          Once vault_v2_active flips to '1' in app_config, the same panel
+          renders the live staking UI without a code change. */}
+      <OnchainPortraitVault />
 
       {/* ─── §03 YIELD ───────────────────────────────────────── */}
       <section className="vlt-section">
@@ -1469,14 +1476,40 @@ function YieldCard({ vault, dailyRate, busy, onClaim }) {
 }
 
 // Compact portrait bind/withdraw row for the hero action panel.
+//
+// Once mint is live (signalled by /api/vault-pool's `pool` block being
+// non-null and `active === false`-but-program-data-present, OR more
+// directly by app_config.mint_active = '1'), the +10/day bonus stops
+// accruing. UI changes:
+//   • A bound portrait shows "no longer earning · withdraw to use elsewhere"
+//   • An available portrait can NOT be re-deposited; the Bind button
+//     hides and the user is pointed at §03 (on-chain staking)
+//   • An empty slot points to the on-chain program instead of the builder
 function HeroPortrait({ ownedPortrait, isInVault, busy, onAction, onNavigate }) {
+  // Lightweight mint-active poll. Reads /api/vault-pool which already
+  // exposes the program state; the pre-built UI is a side-effect of
+  // whether the on-chain v2 program is active.
+  const [mintActive, setMintActive] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/vault-pool')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d?.active === true) setMintActive(true); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   if (isInVault && ownedPortrait) {
     return (
       <div className="vlt-hp vlt-hp-active">
         <div className="vlt-hp-art" dangerouslySetInnerHTML={{ __html: buildNFTSVG(ownedPortrait.elements || {}) }} />
         <div className="vlt-hp-body">
-          <div className="vlt-hp-tag">BOUND</div>
-          <div className="vlt-hp-line">earning <strong>+10 BUSTS / day</strong></div>
+          <div className="vlt-hp-tag">{mintActive ? 'LOCKED · LEGACY' : 'BOUND'}</div>
+          <div className="vlt-hp-line">
+            {mintActive
+              ? 'no longer earning · withdraw to use elsewhere'
+              : <>earning <strong>+10 BUSTS / day</strong></>}
+          </div>
         </div>
         <button className="vlt-hp-btn ghost" disabled={busy} onClick={() => onAction('withdraw')}>
           {busy ? '…' : 'Withdraw'}
@@ -1485,6 +1518,18 @@ function HeroPortrait({ ownedPortrait, isInVault, busy, onAction, onNavigate }) 
     );
   }
   if (ownedPortrait) {
+    if (mintActive) {
+      // No new pre-built deposits post-mint. Point to §03 on-chain staking.
+      return (
+        <div className="vlt-hp">
+          <div className="vlt-hp-art" dangerouslySetInnerHTML={{ __html: buildNFTSVG(ownedPortrait.elements || {}) }} />
+          <div className="vlt-hp-body">
+            <div className="vlt-hp-tag">PRE-BUILT · LEGACY</div>
+            <div className="vlt-hp-line">deposits closed · stake your on-chain 1969 in §03 instead</div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="vlt-hp">
         <div className="vlt-hp-art" dangerouslySetInnerHTML={{ __html: buildNFTSVG(ownedPortrait.elements || {}) }} />
@@ -1495,6 +1540,17 @@ function HeroPortrait({ ownedPortrait, isInVault, busy, onAction, onNavigate }) 
         <button className="vlt-hp-btn solid" disabled={busy} onClick={() => onAction('deposit')}>
           {busy ? '…' : 'Bind →'}
         </button>
+      </div>
+    );
+  }
+  if (mintActive) {
+    return (
+      <div className="vlt-hp vlt-hp-empty">
+        <div className="vlt-hp-art-empty">∎</div>
+        <div className="vlt-hp-body">
+          <div className="vlt-hp-tag">PRE-BUILT · LEGACY</div>
+          <div className="vlt-hp-line">deposits closed · the on-chain pool runs in §03</div>
+        </div>
       </div>
     );
   }

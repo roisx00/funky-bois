@@ -31,6 +31,9 @@ import vaultLeaderboard    from './_routes/vault-leaderboard.js';
 import bustsLeaders        from './_routes/busts-leaders.js';
 import bustsCirculation    from './_routes/busts-circulation.js';
 import bustsBurned         from './_routes/busts-burned.js';
+import vaultPool           from './_routes/vault-pool.js';
+import vaultOnchain        from './_routes/vault-onchain.js';
+import vaultOnchainClaim   from './_routes/vault-onchain-claim.js';
 import inventoryBurn       from './_routes/inventory-burn.js';
 import suspensionAppeal    from './_routes/suspension-appeal.js';
 import adminSuspensionAppeals from './_routes/admin-suspension-appeals.js';
@@ -115,6 +118,9 @@ const ROUTES = {
   'busts-leaders':       bustsLeaders,
   'busts-circulation':   bustsCirculation,
   'busts-burned':        bustsBurned,
+  'vault-pool':          vaultPool,
+  'vault-onchain':       vaultOnchain,
+  'vault-onchain-claim': vaultOnchainClaim,
   'inventory-burn':      inventoryBurn,
   'suspension-appeal':   suspensionAppeal,
   'admin-suspension-appeals': adminSuspensionAppeals,

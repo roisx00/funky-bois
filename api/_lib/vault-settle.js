@@ -21,9 +21,19 @@ export async function settleVaultYield(userId) {
   `);
   if (!v) return { credited: 0 };
 
+  // Once mint is live, the legacy +10/day pre-built portrait bonus stops
+  // accruing. Existing portrait deposits stay locked in the off-chain
+  // vault until the user withdraws them, but they don't earn anymore —
+  // the on-chain Vault1969 program (with its 20M / 365d pool) takes over.
+  // The BUSTS deposit yield (0.1% per day) is unaffected.
+  const mintActiveRow = one(await sql`
+    SELECT value FROM app_config WHERE key = 'mint_active' LIMIT 1
+  `);
+  const mintActive = mintActiveRow?.value === '1';
+
   const result = settleYield({
     bustsDeposited: v.busts_deposited,
-    hasPortrait:    !!v.portrait_id,
+    hasPortrait:    !mintActive && !!v.portrait_id,
     lastYieldAt:    v.last_yield_at,
   });
 
