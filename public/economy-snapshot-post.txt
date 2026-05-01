@@ -1,0 +1,63 @@
+─────────────────────────────────────────────
+THE 1969 / ECONOMY SNAPSHOT
+─────────────────────────────────────────────
+
+CAPTION (the tight one, recommended):
+─────────────────────────────────────────────
+The economy is alive.
+
+4,885,560 $BUSTS circulating.
+50% locked in vaults.
+18,828 holders.
+344,700 burned (+131K in 24h).
+
+P2P all-time: 49,401 wires, 6.97M $BUSTS routed between holders.
+Last 24h: 2,158 wires, 570K $BUSTS.
+
+Mint at 14:00 UTC.
+
+
+CAPTION (longer, more spec-heavy):
+─────────────────────────────────────────────
+$BUSTS in motion right now.
+
+→ Circulating  4,885,560
+→ In vaults    2,437,060   (50% locked)
+→ In balances  2,448,500
+→ Holders      18,828
+→ Burned       344,700     (+131,000 · 24h)
+
+Peer-to-peer activity:
+→ 49,401 total wires sent between holders all-time
+→ 6,970,067 $BUSTS routed peer-to-peer
+→ Last 24h: 2,158 wires, 570,129 $BUSTS
+
+Mint at 14:00 UTC.
+
+
+SHORTEST VARIANT:
+─────────────────────────────────────────────
+4.88M $BUSTS in motion. 50% vaulted. 49,401 P2P wires (6.97M $BUSTS) all-time, 2,158 in last 24h. Mint at 14:00 UTC.
+
+
+REPLY (drop under the post for context):
+─────────────────────────────────────────────
+P2P routes through Mr Prophet on the dashboard. Just type
+"send 100 busts to @handle". 6.97M $BUSTS have moved between
+holders that way already.
+
+Deflation side: 344,700 $BUSTS burned via vault reinforce buys.
+131,000 of those went up in smoke in the last 24h alone.
+
+
+ASSETS:
+─────────────────────────────────────────────
+• economy-snapshot-banner.svg  1080x1080  (primary X post)
+• economy-snapshot-wide.svg    1600x900   (header / quote card)
+
+
+POSTING NOTES:
+─────────────────────────────────────────────
+• No hashtags.
+• Don't put a link in the body. First reply only.
+• Stats are a snapshot — pin for an hour, then archive.
