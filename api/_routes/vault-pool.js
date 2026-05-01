@@ -7,6 +7,7 @@
 // this returns a 'pre_launch' shape with the locked program params so
 // the UI can render the "opening soon" placeholder with the same
 // numbers users will see at launch.
+import { sql, one } from '../_lib/db.js';
 import { ok } from '../_lib/json.js';
 import {
   getPoolState,
@@ -27,6 +28,12 @@ export default async function handler(req, res) {
   const totalWeight = Number(pool?.total_weight || 0);
   const headlineApy = computeHeadlineApy(totalWeight);
 
+  // Vault1969 staking contract address. Empty until admin sets it post-deploy.
+  const contractRow = one(await sql`
+    SELECT value FROM app_config WHERE key = 'vault_v2_contract' LIMIT 1
+  `);
+  const contractAddress = String(contractRow?.value || '').toLowerCase();
+
   res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=30, stale-while-revalidate=120');
 
   ok(res, {
@@ -43,6 +50,7 @@ export default async function handler(req, res) {
       dailyEmission:  DAILY_EMISSION,
       apyReference:   APY_REFERENCE,
       rarityWeights:  RARITY_WEIGHTS,
+      contractAddress: /^0x[0-9a-f]{40}$/.test(contractAddress) ? contractAddress : null,
     },
     apy: {
       headline: headlineApy,                 // common (1×) APY at current pool size
