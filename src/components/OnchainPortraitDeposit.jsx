@@ -130,12 +130,33 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
     return () => { cancelled = true; };
   }, [walletAddress, ownedCount]);
 
-  // Quick lookup: tokenId → metadata
+  // Fetch metadata for the user's STAKED tokens too. They're owned by
+  // the vault contract on-chain, so /api/nfts-of-owner?wallet won't
+  // include them. Use the new ?tokenIds= mode.
+  const [stakedTokens, setStakedTokens] = useState([]);
+  const stakedIdKey = (me?.stakes || []).map((s) => String(s.tokenId)).sort().join(',');
+  useEffect(() => {
+    if (!stakedIdKey) { setStakedTokens([]); return; }
+    let cancelled = false;
+    fetch(`/api/nfts-of-owner?tokenIds=${encodeURIComponent(stakedIdKey)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return;
+        const tokens = Array.isArray(d?.tokens) ? d.tokens : [];
+        setStakedTokens(tokens);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [stakedIdKey]);
+
+  // Combined lookup: owned (wallet) + staked (vault). Either path
+  // populates the tile's <img>.
   const tokenMeta = useMemo(() => {
     const m = new Map();
-    for (const t of ownedTokens) m.set(String(t.tokenId), t);
+    for (const t of ownedTokens)  m.set(String(t.tokenId), t);
+    for (const t of stakedTokens) m.set(String(t.tokenId), t);
     return m;
-  }, [ownedTokens]);
+  }, [ownedTokens, stakedTokens]);
 
   // ── Rarity batch resolver ──
   const [rarities, setRarities] = useState({});
