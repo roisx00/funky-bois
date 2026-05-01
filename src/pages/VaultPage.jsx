@@ -18,7 +18,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 import { buildNFTSVG } from '../data/elements';
-import OnchainPortraitVault from '../components/OnchainPortraitVault';
+import OnchainPortraitDeposit from '../components/OnchainPortraitDeposit';
 import {
   buildVaultSVG, vaultTraits,
   powerTierOf, POWER_TIER_LABELS, POWER_TIER_THRESHOLDS,
@@ -501,14 +501,13 @@ export default function VaultPage({ onNavigate }) {
               </div>
             </div>
 
-            <div className="vlt-act-divider"><span>PORTRAIT</span></div>
-            <HeroPortrait
-              ownedPortrait={ownedPortrait}
-              isInVault={isPortraitInVault}
-              busy={busy}
-              onAction={handlePortraitAction}
-              onNavigate={onNavigate}
-            />
+            <div className="vlt-act-divider"><span>ON-CHAIN PORTRAITS</span></div>
+            {/* Multi-select tile strip · deposit/withdraw via wagmi.
+                Replaces the legacy single-portrait bind row. Pre-launch
+                the panel shows AVAILABLE / DEPOSITED states with a
+                disabled banner; the moment vault_v2_active flips to '1',
+                the deposit/withdraw buttons go live without a code change. */}
+            <OnchainPortraitDeposit />
           </div>
         </div>
 
@@ -601,12 +600,6 @@ export default function VaultPage({ onNavigate }) {
 
       {/* ─── BUSTS CIRCULATION (live) ────────────────────────── */}
       <BustsCirculationPanel />
-
-      {/* ── ON-CHAIN PORTRAIT VAULT (v2) ──
-          Pre-launch shows the program parameters + "opening soon" pill.
-          Once vault_v2_active flips to '1' in app_config, the same panel
-          renders the live staking UI without a code change. */}
-      <OnchainPortraitVault />
 
       {/* ─── §03 YIELD ───────────────────────────────────────── */}
       <section className="vlt-section">

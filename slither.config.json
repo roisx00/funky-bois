@@ -1,0 +1,12 @@
+{
+  "solc_remaps": [],
+  "filter_paths": "test|script|node_modules|out",
+  "compile_force_framework": "foundry",
+  "exclude_dependencies": true,
+  "exclude_low": false,
+  "exclude_medium": false,
+  "exclude_high": false,
+  "exclude_optimization": true,
+  "exclude_informational": true,
+  "fail_on": "high"
+}
