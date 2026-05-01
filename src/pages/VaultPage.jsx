@@ -50,6 +50,25 @@ export default function VaultPage({ onNavigate }) {
   const [bustsMode, setBustsMode]     = useState('deposit'); // 'deposit' | 'withdraw'
   const [bustsAmount, setBustsAmount] = useState('');
 
+  // Mint-active flag drives whether the legacy +10/day portrait bonus
+  // applies. Once mint went live the on-chain vault took over rewards
+  // for portraits — pre-built portrait deposits stay locked but stop
+  // earning the flat bonus. Polled from /api/vault-pool every 30s so
+  // the UI flips automatically when admin flips the flag.
+  const [mintActive, setMintActive] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      fetch('/api/vault-pool')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (!cancelled && d) setMintActive(d.mintActive === true); })
+        .catch(() => {});
+    };
+    load();
+    const id = setInterval(load, 30_000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
   // Deposit animation: doors-open → coin-flies-in → doors-shut → flash
   // Used for both BUSTS deposit (kind='busts', shows '+N') and portrait
   // deposit (kind='portrait', shows the OpenSea-style chip with the
@@ -119,7 +138,11 @@ export default function VaultPage({ onNavigate }) {
   const dailyRate = useMemo(() => {
     if (!vault) return 0;
     const bustsRate = vault.bustsDeposited * 0.001;
-    const portraitRate = vault.portraitId ? 10 : 0;
+    // Once mint is live, the legacy +10/day bonus stops accruing —
+    // server matches this in vault-settle.js. Without gating here, the
+    // client-side projection drifts higher than what the server actually
+    // credits, which causes "nothing to claim" toasts on small windows.
+    const portraitRate = (!mintActive && vault.portraitId) ? 10 : 0;
     return bustsRate + portraitRate;
   }, [vault]);
 
@@ -146,7 +169,7 @@ export default function VaultPage({ onNavigate }) {
   // Per-second rate (sum of busts deposit yield + portrait flat).
   const ratePerSec = useMemo(() => {
     if (!vault) return 0;
-    return vault.bustsDeposited * 0.001 / 86400 + (vault.portraitId ? 10 / 86400 : 0);
+    return vault.bustsDeposited * 0.001 / 86400 + (!mintActive && vault.portraitId ? 10 / 86400 : 0);
   }, [vault]);
 
   const amountInput = useMemo(() => Math.trunc(Number(bustsAmount)) || 0, [bustsAmount]);
@@ -230,7 +253,7 @@ export default function VaultPage({ onNavigate }) {
       items: [
         { label: 'Amount', value: `${amountInput.toLocaleString()} BUSTS` },
         { label: 'Vault after', value: `${(vault.bustsDeposited + amountInput).toLocaleString()} BUSTS` },
-        { label: 'New rate', value: `${Math.floor((vault.bustsDeposited + amountInput) * 0.001 + (vault.portraitId ? 10 : 0))} / day` },
+        { label: 'New rate', value: `${Math.floor((vault.bustsDeposited + amountInput) * 0.001 + (!mintActive && vault.portraitId ? 10 : 0))} / day` },
       ],
       confirmLabel: 'Deposit',
       tone: 'accent',
@@ -241,7 +264,7 @@ export default function VaultPage({ onNavigate }) {
       items: [
         { label: 'Amount', value: `${amountInput.toLocaleString()} BUSTS` },
         { label: 'Vault after', value: `${Math.max(0, vault.bustsDeposited - amountInput).toLocaleString()} BUSTS` },
-        { label: 'New rate', value: `${Math.floor(Math.max(0, vault.bustsDeposited - amountInput) * 0.001 + (vault.portraitId ? 10 : 0))} / day` },
+        { label: 'New rate', value: `${Math.floor(Math.max(0, vault.bustsDeposited - amountInput) * 0.001 + (!mintActive && vault.portraitId ? 10 : 0))} / day` },
       ],
       confirmLabel: 'Withdraw',
       tone: 'danger',
@@ -287,7 +310,9 @@ export default function VaultPage({ onNavigate }) {
     } : {
       title: 'Unbind portrait',
       kicker: '§02 · PORTRAIT',
-      body: 'Pending yield settles first. Your portrait returns to you. The +10 / day bonus stops immediately.',
+      body: mintActive
+        ? 'Pending yield settles first. Your portrait returns to you. (Legacy +10 / day bonus already retired post-mint.)'
+        : 'Pending yield settles first. Your portrait returns to you. The +10 / day bonus stops immediately.',
       items: [
         { label: 'Rate change', value: '−10 BUSTS / day' },
       ],
@@ -550,7 +575,11 @@ export default function VaultPage({ onNavigate }) {
             <div className={`vlt-state-tile ${vault.portraitId ? 'is-bound' : ''}`}>
               <div className="vlt-state-tile-label">PORTRAIT</div>
               <div className="vlt-state-tile-num"><span className="vlt-state-live-whole">{vault.portraitId ? '1' : '0'}</span></div>
-              <div className="vlt-state-tile-meta">{vault.portraitId ? 'BOUND · +10 / day' : 'NONE BOUND'}</div>
+              <div className="vlt-state-tile-meta">
+                {vault.portraitId
+                  ? (mintActive ? 'BOUND · LEGACY · NO YIELD' : 'BOUND · +10 / day')
+                  : 'NONE BOUND'}
+              </div>
             </div>
 
             <div className="vlt-state-tile">
@@ -603,8 +632,14 @@ export default function VaultPage({ onNavigate }) {
 
       {/* ─── §03 YIELD ───────────────────────────────────────── */}
       <section className="vlt-section">
-        <SectionHead n="03" title="Yield" sub="Real-time BUSTS for what you keep inside. 0.1% per day on deposited BUSTS. +10 BUSTS/day flat while a portrait is bound. Settles to your balance whenever you claim or move funds." />
-        <YieldCard vault={vault} dailyRate={dailyRate} busy={busy} onClaim={handleClaim} />
+        <SectionHead
+          n="03"
+          title="Yield"
+          sub={mintActive
+            ? 'Real-time BUSTS for what you keep inside. 0.1% per day on deposited BUSTS. Settles to your balance whenever you claim or move funds. The legacy +10 / day portrait bonus retired at mint — on-chain portrait yield is now in §02.'
+            : 'Real-time BUSTS for what you keep inside. 0.1% per day on deposited BUSTS. +10 BUSTS/day flat while a portrait is bound. Settles to your balance whenever you claim or move funds.'}
+        />
+        <YieldCard vault={vault} dailyRate={dailyRate} busy={busy} onClaim={handleClaim} mintActive={mintActive} />
       </section>
 
       {/* ─── §04 REINFORCE ───────────────────────────────────── */}
@@ -1394,7 +1429,7 @@ function SectionHead({ n, title, sub }) {
 // Yield bar — slim editorial paper-themed claim row. The State section
 // already shows the live ticker, sources, and lifetime, so this is just
 // the action point: pending amount on the left, claim button on the right.
-function YieldCard({ vault, dailyRate, busy, onClaim }) {
+function YieldCard({ vault, dailyRate, busy, onClaim, mintActive }) {
   const [exact, setExact] = useState(0);
   const lastVaultRef = useRef(null);
 
@@ -1405,7 +1440,11 @@ function YieldCard({ vault, dailyRate, busy, onClaim }) {
       if (!v) return;
       const e = projectYieldExact({
         bustsDeposited: v.bustsDeposited,
-        hasPortrait: !!v.portraitId,
+        // Once mint is live, the legacy +10/day bonus stops accruing
+        // (server matches this in vault-settle.js). Without zeroing it
+        // here, the client-side ticker drifts higher than the server's
+        // actual pending value → "nothing to claim" toasts.
+        hasPortrait: !mintActive && !!v.portraitId,
         lastYieldAt: v.lastYieldAt,
       });
       setExact(e);
@@ -1420,7 +1459,7 @@ function YieldCard({ vault, dailyRate, busy, onClaim }) {
   const canClaim = whole >= 1;
   const isLive = dailyRate > 0;
   const bustsPerDay = vault.bustsDeposited * 0.001;
-  const portraitPerDay = vault.portraitId ? 10 : 0;
+  const portraitPerDay = (!mintActive && vault.portraitId) ? 10 : 0;
 
   return (
     <div className={`vlt-yield-bar ${isLive ? 'on' : ''}`}>
@@ -1438,10 +1477,14 @@ function YieldCard({ vault, dailyRate, busy, onClaim }) {
           <span className={bustsPerDay > 0 ? 'on' : ''}>
             <strong>{bustsPerDay > 0 ? bustsPerDay.toFixed(2) : '—'}</strong> / day from BUSTS
           </span>
-          <span className="vlt-yield-bar-sep">+</span>
-          <span className={portraitPerDay > 0 ? 'on' : ''}>
-            <strong>{portraitPerDay > 0 ? portraitPerDay : '—'}</strong> / day from PORTRAIT
-          </span>
+          {mintActive ? null : (
+            <>
+              <span className="vlt-yield-bar-sep">+</span>
+              <span className={portraitPerDay > 0 ? 'on' : ''}>
+                <strong>{portraitPerDay > 0 ? portraitPerDay : '—'}</strong> / day from PORTRAIT
+              </span>
+            </>
+          )}
           <span className="vlt-yield-bar-sep">=</span>
           <span className="vlt-yield-bar-total">
             <strong>{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}</strong> / day total

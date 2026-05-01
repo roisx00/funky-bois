@@ -95,16 +95,18 @@ export function computeApy({ userWeight, userTokens, poolWeight }) {
 }
 
 /**
- * Compute the global "headline" APY shown on the dashboard. This is the
- * APY a Common (1×) NFT earns if it deposited right now. As more
+ * Compute the global "headline" APY shown on the dashboard — the APY a
+ * Common (1×) NFT earns at the current pool composition. As more
  * portraits stake, this number drops; as they unstake, it rises.
+ *
+ * When the pool is empty (zero portraits staked) we treat it as if a
+ * single common is the whole pool — that gives the maximum possible
+ * APY, which is what an early staker would actually earn before others
+ * pile in. More honest than showing ∞.
  */
 export function computeHeadlineApy(poolWeight) {
-  if (!poolWeight || poolWeight <= 0) {
-    // No one staked. Show ∞-ish (cap for display).
-    return 99_999;
-  }
-  const annualBustsPerWeightUnit = DAILY_EMISSION * 365 / poolWeight;
+  const effectiveWeight = poolWeight > 0 ? poolWeight : 1;
+  const annualBustsPerWeightUnit = DAILY_EMISSION * 365 / effectiveWeight;
   return (annualBustsPerWeightUnit / APY_REFERENCE) * 100;
 }
 

@@ -543,12 +543,14 @@ export default function OnchainPortraitDeposit() {
           <div className="ocp-public-label">HEADLINE APY</div>
           <div className="ocp-public-val">
             {pool?.apy?.headline != null
-              ? (pool.pool?.totalWeight > 0
-                  ? `${pool.apy.headline.toFixed(1)}%`
-                  : '∞')
+              ? `${Math.round(pool.apy.headline).toLocaleString()}%`
               : '...'}
           </div>
-          <div className="ocp-public-meta">COMMON · DROPS AS POOL FILLS</div>
+          <div className="ocp-public-meta">
+            {pool?.pool?.totalWeight > 0
+              ? 'COMMON · DROPS AS POOL FILLS'
+              : 'EARLY STAKER · DROPS AS OTHERS JOIN'}
+          </div>
         </div>
       </div>
 
