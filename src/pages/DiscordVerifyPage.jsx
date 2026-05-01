@@ -142,7 +142,7 @@ function SuccessView({ result }) {
           That wallet holds zero 1969 portraits (and zero in the vault). No tier
           role assigned. Buy one and re-verify.
         </p>
-        <a href="https://opensea.io/collection/the1969-collection" target="_blank" rel="noreferrer" style={btnStyle}>
+        <a href="https://opensea.io/collection/the1969" target="_blank" rel="noreferrer" style={btnStyle}>
           OPENSEA →
         </a>
       </>

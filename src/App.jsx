@@ -222,6 +222,18 @@ function AppInner() {
     );
   }
 
+  // Discord-verify is a kiosk-style page — no nav, no banner. Renders
+  // standalone so users arriving from the bot's #verify embed see only
+  // the verification flow.
+  if (page === 'discord-verify') {
+    return (
+      <>
+        <WalletBridge />
+        <DiscordVerifyPage />
+      </>
+    );
+  }
+
   return (
     <>
       <WalletBridge />
@@ -243,7 +255,6 @@ function AppInner() {
       {page === '1969' && <LorePage1969 onNavigate={navigate} />}
       {page === 'litepaper' && <LitepaperPage onNavigate={navigate} />}
       {page === 'vault' && <VaultPage onNavigate={navigate} />}
-      {page === 'discord-verify' && <DiscordVerifyPage />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}
     </>
   );

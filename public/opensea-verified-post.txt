@@ -8,7 +8,7 @@ officially verified on opensea.
 
 the blue check is on. the 1969 are indexed, ranked, live.
 
-opensea.io/collection/the1969-collection
+opensea.io/collection/the1969
 
 ⌬ the vault must not burn again.
 
@@ -19,7 +19,7 @@ opensea.io/collection/the1969-collection
 
 verified ✓ on opensea.
 
-opensea.io/collection/the1969-collection
+opensea.io/collection/the1969
 
 
 ─────────────────────────────────────────────
@@ -27,6 +27,6 @@ opensea.io/collection/the1969-collection
 ▌ POST C · single-line
 
 the 1969 are now officially verified on opensea ✓
-opensea.io/collection/the1969-collection
+opensea.io/collection/the1969
 
 ─────────────────────────────────────────────
