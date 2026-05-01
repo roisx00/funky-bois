@@ -94,8 +94,13 @@ export default function DiscordVerifyPage() {
           body: JSON.stringify({ state, wallet }),
         });
         const d = await r.json().catch(() => ({}));
-        if (!r.ok) setError(d?.error || `Server returned ${r.status}`);
-        else setResult(d);
+        if (!r.ok) {
+          // Surface the friendliest message available: hint > discordMsg > msg > error code.
+          const msg = d?.hint || d?.discordMsg || d?.msg || d?.error || `Server returned ${r.status}`;
+          setError(msg);
+        } else {
+          setResult(d);
+        }
       } catch (e) {
         setError(e?.message || 'Network error');
       }

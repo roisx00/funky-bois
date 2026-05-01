@@ -167,7 +167,21 @@ export default async function handler(req, res) {
     try { await addRole(DISCORD_GUILD_ID, id.discordId, tier.roleId); }
     catch (e) {
       if (e?.status === 404) return bad(res, 404, 'not_in_guild', { hint: 'Join the Discord server first.' });
-      return bad(res, 502, 'add_role_failed', { msg: e?.message });
+      if (e?.status === 403) {
+        return bad(res, 403, 'bot_missing_permission', {
+          hint: 'Bot needs MANAGE_ROLES AND its own role must sit ABOVE all 6 tier roles in the server’s role list. Server Settings → Roles → drag the bot role above The Soldier.',
+          tier: tier.name,
+          roleId: tier.roleId,
+          discordCode: e?.payload?.code,
+          discordMsg: e?.payload?.message,
+        });
+      }
+      return bad(res, 502, 'add_role_failed', {
+        msg: e?.message,
+        status: e?.status,
+        discordCode: e?.payload?.code,
+        discordMsg: e?.payload?.message,
+      });
     }
   }
 
