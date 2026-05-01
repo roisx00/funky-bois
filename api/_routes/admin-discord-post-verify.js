@@ -9,9 +9,11 @@ import { ok, bad } from '../_lib/json.js';
 
 const VERIFY_CHANNEL_ID = '1499859007257444693';
 
-const MESSAGE = [
-  '@everyone',
-  '',
+// @everyone ping requires the bot to have MENTION_EVERYONE permission
+// in the channel. Set ?ping=1 to include it; default omits and just
+// posts the body so the message lands cleanly even on a bot without
+// that perm.
+const MESSAGE_BODY = [
   '🟢 **HOLDER VERIFICATION**',
   '',
   'Verify your 1969 holdings to receive your tier role. Roles assign',
@@ -49,6 +51,9 @@ export default async function handler(req, res) {
   const botToken = process.env.DISCORD_BOT_TOKEN;
   if (!botToken) return bad(res, 503, 'bot_token_missing');
 
+  const ping = String(req.query?.ping || '') === '1';
+  const content = ping ? `@everyone\n\n${MESSAGE_BODY}` : MESSAGE_BODY;
+
   const r = await fetch(
     `https://discord.com/api/v10/channels/${VERIFY_CHANNEL_ID}/messages`,
     {
@@ -58,8 +63,8 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        content: MESSAGE,
-        allowed_mentions: { parse: ['everyone'] },
+        content,
+        allowed_mentions: ping ? { parse: ['everyone'] } : { parse: [] },
       }),
     }
   );
