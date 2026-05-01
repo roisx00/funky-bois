@@ -15,7 +15,6 @@ import CollabPage from './pages/CollabPage';
 import LorePage1969 from './pages/LorePage1969';
 import LitepaperPage from './pages/LitepaperPage';
 import VaultPage from './pages/VaultPage';
-import ProphetChat from './components/ProphetChat';
 import { handleXCallback, startXLogin } from './utils/xAuth';
 import { useToast } from './components/Toast';
 import './App.css';
@@ -242,12 +241,6 @@ function AppInner() {
       {page === 'litepaper' && <LitepaperPage onNavigate={navigate} />}
       {page === 'vault' && <VaultPage onNavigate={navigate} />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}
-
-      {/* ─── Mr Prophet — global floating wire concierge ───
-          Mounted at the app root so the FAB is reachable from any
-          page once a user is signed in. ProphetChat self-hides for
-          unauthenticated and suspended accounts (auth gate inside). */}
-      <ProphetChat />
     </>
   );
 }
