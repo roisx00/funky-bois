@@ -21,7 +21,7 @@
 // auto-index via /api/vault-onchain-index.
 
 import { useEffect, useMemo, useState } from 'react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, usePublicClient, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useToast } from './Toast';
 import {
   NFT_CONTRACT_ADDRESS, VAULT_ABI, ERC721_ABI,
@@ -201,6 +201,7 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
 
   // ── Wagmi writes ──
   const { writeContractAsync, isPending: isWriting } = useWriteContract();
+  const publicClient = usePublicClient({ chainId: 1 });
   const [pendingTxHash, setPendingTxHash] = useState(null);
   const { isLoading: isMining } = useWaitForTransactionReceipt({
     hash: pendingTxHash,
@@ -285,7 +286,57 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
   async function handleWithdraw() {
     if (!vaultAddress) return;
     if (stakedSel.size === 0) return;
+    if (!walletAddress) {
+      toast.error('Connect a wallet to withdraw.');
+      return;
+    }
     const ids = [...stakedSel].map((s) => BigInt(s));
+
+    // Pre-flight: the contract's withdraw() requires msg.sender == depositor[id].
+    // If the user staked from wallet A and is now connected as wallet B,
+    // the tx reverts with NotDepositor. Read depositor(id) for each selected
+    // token first so we can tell the user *which* wallet to connect rather
+    // than letting MetaMask surface a generic "execution reverted".
+    if (publicClient) {
+      try {
+        const owners = await Promise.all(
+          ids.map((id) => publicClient.readContract({
+            address: vaultAddress,
+            abi: VAULT_ABI,
+            functionName: 'depositor',
+            args: [id],
+          }))
+        );
+        const me = walletAddress.toLowerCase();
+        const mismatches = [];
+        for (let i = 0; i < ids.length; i++) {
+          const onChain = String(owners[i] || '').toLowerCase();
+          if (!onChain || onChain === '0x0000000000000000000000000000000000000000') {
+            mismatches.push({ tokenId: ids[i].toString(), reason: 'not_staked' });
+          } else if (onChain !== me) {
+            mismatches.push({ tokenId: ids[i].toString(), reason: 'wrong_wallet', staker: onChain });
+          }
+        }
+        if (mismatches.length > 0) {
+          const wrongWallet = mismatches.find((m) => m.reason === 'wrong_wallet');
+          if (wrongWallet) {
+            const short = `${wrongWallet.staker.slice(0, 6)}…${wrongWallet.staker.slice(-4)}`;
+            toast.error(
+              `Portrait #${wrongWallet.tokenId} was deposited by ${short}. ` +
+              `Switch to that wallet to withdraw.`,
+              { duration: 9000 }
+            );
+          } else {
+            const ns = mismatches.find((m) => m.reason === 'not_staked');
+            toast.error(`Portrait #${ns.tokenId} is not currently in the vault.`);
+          }
+          return;
+        }
+      } catch (e) {
+        console.warn('[ocp] depositor pre-flight failed, sending tx anyway:', e);
+      }
+    }
+
     try {
       const tx = await writeContractAsync({
         address: vaultAddress,
@@ -301,7 +352,15 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
         await postIndex(tx); setPendingTxHash(null); refreshUser();
       }, 18_000);
     } catch (e) {
-      toast.error(e?.shortMessage || e?.message || 'Withdraw rejected');
+      // If the chain still rejected (e.g. tx raced with another withdraw),
+      // map the standard NotDepositor revert to a useful message rather
+      // than the raw selector.
+      const msg = e?.shortMessage || e?.message || 'Withdraw rejected';
+      if (/NotDepositor|0x[a-f0-9]{0,8}.*depositor/i.test(msg)) {
+        toast.error('This wallet did not deposit one of the selected portraits. Connect the wallet that staked them.');
+      } else {
+        toast.error(msg);
+      }
     }
   }
   // Celebration modal — shown after a successful claim. null while the
