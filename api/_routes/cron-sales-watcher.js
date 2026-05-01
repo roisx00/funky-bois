@@ -1,23 +1,22 @@
 // GET/POST /api/cron-sales-watcher
 //
-// Polls Alchemy's NFT Sales API for THE 1969 sales, dedupes via the
-// sales_seen table, and posts each genuinely-new sale to Discord.
-// Run on a 60s external cron (cron-job.org) or Vercel Pro scheduled fn.
+// Polls Reservoir for THE 1969 sales, dedupes via the sales_seen table,
+// posts each genuinely-new sale to Discord. Run on a 60s external cron
+// (cron-job.org) or Vercel Pro scheduled fn.
 //
-// Coverage: OpenSea (Seaport) + Blur + LooksRare + X2Y2 + Sudoswap.
-// Free with the Alchemy key already in MAINNET_RPC_URL.
+// Coverage: OpenSea + Blur + LooksRare + X2Y2 + Sudoswap + others.
 //
 // Env required:
 //   DISCORD_SALES_WEBHOOK  – Discord webhook URL
-//   MAINNET_RPC_URL        – Alchemy mainnet endpoint (already set)
+//   RESERVOIR_API_KEY      – free key from reservoir.tools/sign-up
 //
 // Query params:
-//   ?dryRun=1              – fetch + format, return result, don't post
-//   ?bootstrap=1           – stamp existing sales as seen without
-//                            posting them (run ONCE on activation so
-//                            the first real cron run doesn't flood
-//                            the channel with historical sales)
-//   ?force=1               – ignore dedupe and post (for testing)
+//   ?dryRun=1     – fetch + format, don't post or persist
+//   ?bootstrap=1  – stamp existing sales as seen WITHOUT posting them.
+//                   Run ONCE on activation so the first cron tick
+//                   doesn't flood Discord with historical sales.
+//   ?force=1      – bypass dedupe (for testing one-off posts).
+//   ?debug=1      – return raw upstream response for diagnostics.
 //
 // Idempotent. Safe to run more often than 60s.
 import { sql } from '../_lib/db.js';
@@ -26,107 +25,50 @@ import { buildSaleEmbed } from '../_lib/discordEmbed.js';
 
 const NFT_CONTRACT = '0x890db94d920bbf44862005329d7236cc7067efab';
 
-function alchemyKey() {
-  const u = process.env.MAINNET_RPC_URL || '';
-  const m = u.match(/\/v2\/([^/?#]+)/);
-  return m?.[1] || null;
-}
-
-// BigInt → ETH float (8 decimals of precision via integer math).
-function weiToEth(amountStr, decimals = 18) {
-  if (!amountStr) return 0;
-  let bi;
-  try { bi = BigInt(amountStr); } catch { return 0; }
-  const div = BigInt(10) ** BigInt(decimals);
-  const whole = bi / div;
-  const frac  = bi % div;
-  const fracStr = frac.toString().padStart(decimals, '0').slice(0, 8);
-  return Number(`${whole}.${fracStr}`);
-}
-
-async function fetchSalesFromAlchemy() {
-  const key = alchemyKey();
-  if (!key) throw new Error('alchemy_key_missing');
-
-  // Most recent first; we dedupe by (txHash, logIndex). 50 covers
-  // worst-case cron lag.
-  const url = new URL(`https://eth-mainnet.g.alchemy.com/nft/v3/${key}/getNFTSales`);
-  url.searchParams.set('contractAddress', NFT_CONTRACT);
+async function fetchSalesFromReservoir() {
+  const url = new URL('https://api.reservoir.tools/sales/v6');
+  url.searchParams.set('contract', NFT_CONTRACT);
   url.searchParams.set('limit', '50');
-  url.searchParams.set('order', 'desc');
+  url.searchParams.set('sortBy', 'time');
+  // Reservoir's free tier requires an API key on /sales. Sign up at
+  // reservoir.tools to get one.
+  const headers = { accept: 'application/json' };
+  if (process.env.RESERVOIR_API_KEY) headers['x-api-key'] = process.env.RESERVOIR_API_KEY;
 
-  const r = await fetch(url.toString(), { headers: { accept: 'application/json' } });
+  const r = await fetch(url.toString(), { headers });
   if (!r.ok) {
     const text = await r.text().catch(() => '');
-    throw new Error(`alchemy ${r.status}: ${text.slice(0, 200)}`);
+    throw new Error(`reservoir ${r.status}: ${text.slice(0, 200)}`);
   }
   const d = await r.json();
-  return Array.isArray(d?.nftSales) ? d.nftSales : [];
+  return Array.isArray(d?.sales) ? d.sales : [];
 }
 
-// Enrich tokenIds with name + image via Alchemy's batch metadata endpoint
-// so the Discord embed can show the artwork.
-async function fetchTokenMeta(tokenIds) {
-  if (tokenIds.length === 0) return new Map();
-  const key = alchemyKey();
-  if (!key) return new Map();
-  const r = await fetch(
-    `https://eth-mainnet.g.alchemy.com/nft/v3/${key}/getNFTMetadataBatch`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tokens: tokenIds.map((id) => ({ contractAddress: NFT_CONTRACT, tokenId: id })),
-        refreshCache: false,
-      }),
-    }
-  );
-  if (!r.ok) return new Map();
-  const d = await r.json();
-  const map = new Map();
-  for (const nft of (d?.nfts || [])) {
-    const id = String(nft.tokenId);
-    const image = nft.image?.cachedUrl || nft.image?.pngUrl || nft.image?.thumbnailUrl || nft.image?.originalUrl || null;
-    map.set(id, { name: nft.name || `THE 1969 #${id}`, image });
-  }
-  return map;
-}
-
-// Convert Alchemy sale → the shape buildSaleEmbed expects.
-function normalizeSale(s, metaMap) {
-  const tokenId  = String(s?.tokenId || '');
-  const txHash   = String(s?.transactionHash || '').toLowerCase();
+// Reservoir already returns the shape we want (including image + name
+// in token, and orderSource for the marketplace), so normalization is
+// minimal — just lowercase the addresses and unify field names.
+function normalizeSale(s) {
+  const tokenId  = String(s?.token?.tokenId || '');
+  const txHash   = String(s?.txHash || '').toLowerCase();
   const logIndex = Number(s?.logIndex ?? 0);
-  const buyer    = String(s?.buyerAddress || '').toLowerCase();
-  const seller   = String(s?.sellerAddress || '').toLowerCase();
-
-  // Total sale price = sellerFee + protocolFee + royaltyFee
-  const fees = [s?.sellerFee, s?.protocolFee, s?.royaltyFee].filter(Boolean);
-  const decimals = fees[0]?.decimals ?? 18;
-  let totalRaw = 0n;
-  for (const f of fees) {
-    try { totalRaw += BigInt(f?.amount || '0'); } catch { /* ignore */ }
-  }
-  const priceEth = weiToEth(totalRaw.toString(), decimals);
-
-  const mpRaw = String(s?.marketplace || '').toLowerCase();
-  const sourceMap = {
-    'seaport': 'opensea.io', 'opensea': 'opensea.io',
-    'blur': 'blur.io',
-    'looks-rare': 'looksrare.org', 'looksrare': 'looksrare.org',
-    'x2y2': 'x2y2.io',
-    'sudoswap': 'sudoswap.xyz',
-  };
-  const orderSource = sourceMap[mpRaw] || mpRaw || null;
-
-  const meta = metaMap.get(tokenId) || {};
   return {
     txHash, logIndex,
-    timestamp: Math.floor(Date.now() / 1000),
-    to: buyer, from: seller,
-    orderSource, fillSource: orderSource,
-    token: { tokenId, name: meta.name || `THE 1969 #${tokenId}`, image: meta.image || null },
-    price: { amount: { native: priceEth, usd: 0 } },
+    timestamp: Number(s?.timestamp || Math.floor(Date.now() / 1000)),
+    to:   String(s?.to   || '').toLowerCase(),
+    from: String(s?.from || '').toLowerCase(),
+    orderSource: s?.orderSource || s?.fillSource || null,
+    fillSource:  s?.fillSource  || s?.orderSource || null,
+    token: {
+      tokenId,
+      name:  s?.token?.name  || `THE 1969 #${tokenId}`,
+      image: s?.token?.image || null,
+    },
+    price: {
+      amount: {
+        native: Number(s?.price?.amount?.native || 0),
+        usd:    Number(s?.price?.amount?.usd    || 0),
+      },
+    },
   };
 }
 
@@ -148,25 +90,27 @@ export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return bad(res, 405, 'method_not_allowed');
   }
-  const dryRun    = String(req.query?.dryRun   || '') === '1';
+  const dryRun    = String(req.query?.dryRun    || '') === '1';
   const bootstrap = String(req.query?.bootstrap || '') === '1';
-  const force     = String(req.query?.force    || '') === '1';
+  const force     = String(req.query?.force     || '') === '1';
+  const debug     = String(req.query?.debug     || '') === '1';
 
-  let raw;
-  try { raw = await fetchSalesFromAlchemy(); }
-  catch (e) { return bad(res, 502, 'alchemy_failed', { msg: e?.message }); }
-
-  if (String(req.query?.debug || '') === '1') {
-    return ok(res, { rawCount: raw.length, sample: raw.slice(0, 3) });
+  if (!process.env.RESERVOIR_API_KEY) {
+    return bad(res, 503, 'reservoir_key_missing', {
+      hint: 'Set RESERVOIR_API_KEY in Vercel env. Get a free key at https://reservoir.tools/sign-up',
+    });
   }
 
-  const tokenIds = [...new Set(raw.map((s) => String(s?.tokenId || '')).filter(Boolean))];
-  const metaMap  = await fetchTokenMeta(tokenIds);
+  let raw;
+  try { raw = await fetchSalesFromReservoir(); }
+  catch (e) { return bad(res, 502, 'reservoir_failed', { msg: e?.message }); }
+
+  if (debug) return ok(res, { rawCount: raw.length, sample: raw.slice(0, 3) });
 
   const sales = raw
-    .map((s) => normalizeSale(s, metaMap))
+    .map(normalizeSale)
     .filter((s) => s.txHash && Number.isFinite(s.logIndex) && s.token.tokenId)
-    .filter((s) => Number(s.price.amount.native) >= 0.0001);  // wash-sale guard
+    .filter((s) => Number(s.price.amount.native) >= 0.0001);
 
   if (sales.length === 0) {
     return ok(res, { polled: raw.length, posted: 0, note: 'no_eligible_sales' });
@@ -192,7 +136,6 @@ export default async function handler(req, res) {
     if (!claimed) { skipped.push('dup'); continue; }
 
     if (bootstrap) {
-      // Bootstrap mode: row was inserted (claimed=true) but we don't post.
       posted.push({ txHash: s.txHash, tokenId: s.token.tokenId, price: s.price.amount.native, bootstrap: true });
       continue;
     }
