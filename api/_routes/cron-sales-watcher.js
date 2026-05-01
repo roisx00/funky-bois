@@ -210,6 +210,37 @@ export default async function handler(req, res) {
   const bootstrap = String(req.query?.bootstrap || '') === '1';
   const force     = String(req.query?.force     || '') === '1';
   const debug     = String(req.query?.debug     || '') === '1';
+  const testPost  = String(req.query?.testPost  || '') === '1';
+
+  // Quick sanity check that DISCORD_SALES_WEBHOOK is wired up in Vercel
+  // env. Posts a fixed test embed to Discord and returns the result.
+  // Doesn't touch the chain or sales_seen.
+  if (testPost) {
+    if (!process.env.DISCORD_SALES_WEBHOOK) {
+      return bad(res, 503, 'webhook_not_set', {
+        hint: 'Add DISCORD_SALES_WEBHOOK to Vercel env (Production + Preview + Development), then redeploy.',
+      });
+    }
+    const fake = {
+      txHash: '0x'.padEnd(66, 'd'),
+      logIndex: 0,
+      timestamp: Math.floor(Date.now() / 1000),
+      to: '0x32b6b4ce4e1776dbd7db0adc6f6a942c87c0650a',
+      from: '0x23af4aef88dd1e2a64ba1c1c9c01c9bff86421f3',
+      orderSource: 'opensea.io',
+      fillSource: 'opensea.io',
+      token: { tokenId: '1', name: 'THE 1969 #1 (test)', image: null },
+      price: { amount: { native: 0.0420, usd: 137.42 } },
+    };
+    try {
+      const embed = await buildSaleEmbed(fake);
+      embed.title = '🟢 TEST · sales bot online';
+      await postToDiscord(embed);
+      return ok(res, { posted: true, message: 'Discord webhook is live. Bot is fully wired.' });
+    } catch (e) {
+      return bad(res, 502, 'discord_post_failed', { msg: e?.message });
+    }
+  }
 
   // Determine block window.
   const headHex = await rpc('eth_blockNumber', []);
