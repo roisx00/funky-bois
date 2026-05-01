@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080" font-family="Inter, system-ui, sans-serif">
+  <!-- BACKGROUND -->
+  <rect width="1080" height="1080" fill="#F9F6F0"/>
+
+  <!-- TOP LIME RIBBON -->
+  <rect x="0" y="0" width="1080" height="6" fill="#D7FF3A"/>
+
+  <!-- TOP RULE -->
+  <line x1="64" y1="84" x2="1016" y2="84" stroke="#0E0E0E" stroke-width="1"/>
+
+  <!-- KICKER -->
+  <g transform="translate(64, 60)">
+    <circle cx="6" cy="-4" r="7" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1.4"/>
+    <text x="26" y="0" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="14" font-weight="700" letter-spacing="3.6" fill="#0E0E0E">THE 1969 · ALLOWLIST · LOCKED</text>
+  </g>
+
+  <text x="1016" y="60" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3.4" fill="#0E0E0E">MAY 1 · 14:00 UTC</text>
+
+  <!-- ── HERO COUNTDOWN ── -->
+  <g transform="translate(540, 280)">
+    <text x="0" y="0" text-anchor="middle"
+          font-family="ui-monospace, 'JetBrains Mono', monospace"
+          font-size="16" font-weight="700" letter-spacing="6" fill="#5C5C5C">MINT STARTS IN</text>
+
+    <text x="0" y="200" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="240" fill="#0E0E0E"
+          letter-spacing="-5">4 hours.</text>
+
+    <line x1="-130" y1="240" x2="130" y2="240" stroke="#D7FF3A" stroke-width="10"/>
+  </g>
+
+  <!-- DIVIDER -->
+  <line x1="220" y1="600" x2="860" y2="600" stroke="#0E0E0E" stroke-width="1"/>
+
+  <!-- ── ALLOWLIST STATS — two cells ── -->
+  <g transform="translate(0, 660)">
+    <text x="540" y="0" text-anchor="middle"
+          font-family="ui-monospace, 'JetBrains Mono', monospace"
+          font-size="14" font-weight="700" letter-spacing="5" fill="#5C5C5C">ALLOWLISTS UPLOADED</text>
+
+    <!-- Tier 1 -->
+    <g transform="translate(310, 80)">
+      <text x="0" y="0" text-anchor="middle"
+            font-family="ui-monospace, 'JetBrains Mono', monospace"
+            font-size="14" font-weight="700" letter-spacing="4" fill="#0E0E0E">TIER 1</text>
+      <text x="0" y="100" text-anchor="middle"
+            font-family="'Instrument Serif', Georgia, serif"
+            font-style="italic" font-weight="500"
+            font-size="120" fill="#0E0E0E" letter-spacing="-3">1,428</text>
+      <text x="0" y="135" text-anchor="middle"
+            font-family="ui-monospace, 'JetBrains Mono', monospace"
+            font-size="12" letter-spacing="3" fill="#5C5C5C">WALLETS LOCKED</text>
+    </g>
+
+    <!-- Vertical divider -->
+    <line x1="540" y1="40" x2="540" y2="190" stroke="#0E0E0E" stroke-width="1"/>
+
+    <!-- Tier 2 -->
+    <g transform="translate(770, 80)">
+      <text x="0" y="0" text-anchor="middle"
+            font-family="ui-monospace, 'JetBrains Mono', monospace"
+            font-size="14" font-weight="700" letter-spacing="4" fill="#0E0E0E">TIER 2</text>
+      <text x="0" y="100" text-anchor="middle"
+            font-family="'Instrument Serif', Georgia, serif"
+            font-style="italic" font-weight="500"
+            font-size="120" fill="#0E0E0E" letter-spacing="-3">1,354</text>
+      <text x="0" y="135" text-anchor="middle"
+            font-family="ui-monospace, 'JetBrains Mono', monospace"
+            font-size="12" letter-spacing="3" fill="#5C5C5C">WALLETS LOCKED</text>
+    </g>
+  </g>
+
+  <!-- LIME RIBBON CTA -->
+  <g transform="translate(64, 920)">
+    <rect x="0" y="0" width="952" height="58" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1.4"/>
+    <text x="476" y="40" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="32" fill="#0E0E0E" letter-spacing="-0.5">no new wallets. one shot.</text>
+  </g>
+
+  <!-- BOTTOM RULE -->
+  <line x1="64" y1="1006" x2="1016" y2="1006" stroke="#0E0E0E" stroke-width="1"/>
+
+  <!-- FOOTER -->
+  <text x="64" y="1042" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3.4" fill="#0E0E0E">@THE1969ETH</text>
+  <text x="1016" y="1042" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3.4" fill="#0E0E0E">THE1969.IO</text>
+</svg>
