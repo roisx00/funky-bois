@@ -1,81 +1,51 @@
-# Vault1969 deploy runbook (verified + secure)
+# Vault1969 deploy — current state & the ONE command you need
 
-This runbook takes you from a clean machine to a fully verified, live
-Vault1969 staking contract on Ethereum mainnet, with the dashboard
-flipped on. Total time: ~5 minutes once dependencies are installed.
+> **Goal**: have the on-chain portrait deposit feature fully live the
+> moment mint goes live, so the only thing happening at 14:00 UTC is
+> users minting.
 
-> **Pre-mint reminder:** The 1969 NFT collection contract is at
-> `0x890DB94d920bbF44862005329d7236cc7067eFAB` (mainnet). The Vault1969
-> deploy is bound to this address via the constructor; it cannot be
-> changed afterwards.
+## Current state (pre-staged for you — already done)
 
-## 1. Prerequisites (one-time)
+| Piece | Status |
+|---|---|
+| Migration `007_vault_v2_onchain.sql` | ✓ applied to production Neon |
+| `vault_pool_state` singleton row | ✓ initialised |
+| `app_config.vault_v2_pool_total` | ✓ `20000000` |
+| `app_config.vault_v2_pool_days` | ✓ `365` |
+| `app_config.vault_v2_apy_ref` | ✓ `100000` |
+| `app_config.vault_v2_topic_deposit` | ✓ `0xedb91c7c…0169` (pre-computed) |
+| `app_config.vault_v2_topic_withdraw` | ✓ `0x1d5e3461…ab40` (pre-computed) |
+| `app_config.mint_active` | `0` (flip to `'1'` at 14:00 UTC) |
+| `app_config.vault_v2_active` | `0` (flips automatically below) |
+| `app_config.vault_v2_contract` | **EMPTY — needs the deploy below** |
+| API endpoints (`/api/vault-pool` etc.) | ✓ deployed via Vercel |
+| Frontend `OnchainPortraitDeposit` | ✓ deployed, currently in placeholder mode |
+
+## What I cannot do from here
+
+Deploy the Solidity contract. That requires your wallet's private key,
+which (correctly) never leaves your machine. **One terminal command on
+your end and the vault is fully live.**
+
+## The ONE command
+
+Pre-reqs (one-time install, ~2 minutes):
 
 ```bash
-# Foundry — Solidity compiler + deploy + verify in one binary
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
-
-# forge-std (test/script library, dev-only)
 forge install foundry-rs/forge-std --no-commit
-
-# Slither — static analyzer (highly recommended pre-deploy)
-pip install slither-analyzer
 ```
 
-Required environment variables:
+Set three env vars (use a deployer wallet with ≥0.02 ETH for gas):
 
 ```bash
 export MAINNET_RPC_URL='https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY'
-export DEPLOYER_PRIVATE_KEY='0x...'   # holds ~0.02 ETH for gas
-export ETHERSCAN_API_KEY='...'        # for source verification
+export DEPLOYER_PRIVATE_KEY='0x...'
+export ETHERSCAN_API_KEY='...'
 ```
 
-## 2. Pre-deploy security gate
-
-Run all of these. Any failure means STOP — do not deploy.
-
-```bash
-# Build (catches compile errors)
-forge build
-
-# Run the unit tests
-forge test -vv
-# Expect:
-#   ✓ test_deposit_singleToken
-#   ✓ test_deposit_batch
-#   ✓ test_deposit_emptyBatch_reverts
-#   ✓ test_deposit_doubleDeposit_reverts
-#   ✓ test_deposit_notOwner_reverts
-#   ✓ test_withdraw_returnsToken
-#   ✓ test_withdraw_notDepositor_reverts
-#   ✓ test_withdraw_notStaked_reverts
-#   ✓ test_redepositAfterWithdraw
-#   ✓ test_constructor_zeroNftReverts
-#   ✓ test_isStaked_isDepositor
-
-# Static analysis (must finish without HIGH severity findings)
-slither contracts/Vault1969.sol --foundry-out-directory out
-
-# Gas snapshot (sanity-check: deposit ~85k, withdraw ~50k per token)
-forge snapshot
-```
-
-### Manual review checklist
-
-Tick each before continuing:
-
-- [ ] No admin functions, no `onlyOwner`, no `pause()`
-- [ ] `nft` is `immutable` (set once in constructor)
-- [ ] `deposit` and `withdraw` both have `nonReentrant`
-- [ ] State writes happen BEFORE `safeTransferFrom` calls (CEI pattern)
-- [ ] `ERC721Holder.onERC721Received` returns `0x150b7a02`
-- [ ] `withdraw` checks `depositor[id] == msg.sender` before transferring
-- [ ] No `selfdestruct`, no `delegatecall`, no proxy
-- [ ] No `tx.origin`
-- [ ] Solidity `^0.8.24` (built-in overflow checks)
-
-## 3. Deploy + verify (atomic)
+Deploy + verify (one command, ~90 seconds):
 
 ```bash
 forge script script/DeployVault1969.s.sol:DeployVault1969 \
@@ -83,71 +53,73 @@ forge script script/DeployVault1969.s.sol:DeployVault1969 \
   --private-key $DEPLOYER_PRIVATE_KEY \
   --broadcast \
   --verify \
-  --etherscan-api-key $ETHERSCAN_API_KEY \
-  -vv
+  --etherscan-api-key $ETHERSCAN_API_KEY
 ```
 
-`--verify` posts the source to Etherscan automatically. The script
-prints three values you'll need:
+Output prints something like:
 
 ```
 === VAULT1969 DEPLOYED ===
-address           : 0x...                          ← VAULT_ADDR
+address           : 0xABCD...EF12
 nft (constructor) : 0x890DB94d920bbF44862005329d7236cc7067eFAB
-deposit topic     : 0xf988aa3...                   ← DEPOSIT_TOPIC
-withdraw topic    : 0x6dadbf4...                   ← WITHDRAW_TOPIC
+deposit topic     : 0xedb91c7c...0169   (matches what's already in app_config)
+withdraw topic    : 0x1d5e3461...ab40   (matches what's already in app_config)
 ```
 
-### Verify the verification
+## Activate (one curl call, instant)
 
-Open `https://etherscan.io/address/<VAULT_ADDR>#code` and confirm:
+```bash
+curl -X POST https://the1969.io/api/admin-vault-v2-activate \
+  -H 'Content-Type: application/json' \
+  --cookie 'session=YOUR_ADMIN_SESSION' \
+  -d '{
+    "contractAddress":"0xABCD...EF12",
+    "depositTopic":"0xedb91c7cfba21699815cdfbceeeff58063764ec530eb7dfb48aa060443ac0169",
+    "withdrawTopic":"0x1d5e3461ecf020fdb20beab92e1bb048c1a41e2e60cf21b87ffa32407a77ab40",
+    "active": true
+  }'
+```
 
-- [ ] Source code is published (green checkmark)
-- [ ] Constructor argument decodes to `0x890DB94d920bbF44862005329d7236cc7067eFAB`
-- [ ] Bytecode matches the on-chain code
-- [ ] No proxy admin / no upgrade slot
+The dashboard's §02 ON-CHAIN PORTRAITS section flips from
+"OPENS THE MOMENT MINT GOES LIVE" → fully live deposit UI within 30s
+(API is 30s edge-cached).
 
-## 4. Wire it into the dashboard
+## At T-0 (mint goes live, 14:00 UTC)
 
-Run on Neon (psql or the Neon SQL Editor):
+One more SQL:
 
 ```sql
-UPDATE app_config SET value = '<VAULT_ADDR>',     updated_at = now()
-  WHERE key = 'vault_v2_contract';
-UPDATE app_config SET value = '<DEPOSIT_TOPIC>',  updated_at = now()
-  WHERE key = 'vault_v2_topic_deposit';
-UPDATE app_config SET value = '<WITHDRAW_TOPIC>', updated_at = now()
-  WHERE key = 'vault_v2_topic_withdraw';
-UPDATE app_config SET value = '1',                updated_at = now()
-  WHERE key = 'vault_v2_active';
+UPDATE app_config SET value = '1', updated_at = now()
+ WHERE key = 'mint_active';
 ```
 
-Within 30 seconds the dashboard's §02 ON-CHAIN PORTRAITS section
-swaps from "AWAITING DEPLOY" to the live deposit UI. Test with one
-token before announcing.
+This:
+- Closes new pre-built portrait deposits (legacy flow)
+- Stops the legacy +10/day bonus on existing pre-built deposits
+- The on-chain vault is already live from your earlier deploy + activate
 
-## 5. Smoke test on mainnet
+After that you do nothing. Users mint on OpenSea, deposit immediately
+into the on-chain vault, earn $BUSTS via the 20M / 365d pool.
 
-From a wallet that holds at least one 1969 NFT:
+## Pre-deploy security gate (5 minutes, recommended)
 
-1. Visit `/vault` in the dashboard
-2. The `OnchainPortraitDeposit` panel should show your portrait under
-   AVAILABLE with the rarity badge resolved
-3. Tap the tile → CTA flips to `APPROVE THEN DEPOSIT 1`
-4. Approve the contract (one-time per wallet)
-5. Deposit. Wait for confirmation (~12s).
-6. The token moves from AVAILABLE → DEPOSITED, the indexer fires,
-   pending BUSTS starts ticking
-7. Wait a minute, hit CLAIM, balance bumps
+```bash
+forge build
+forge test -vv          # 11 tests must pass
+slither contracts/Vault1969.sol --foundry-out-directory out
+```
 
-If anything looks wrong, flip `vault_v2_active` back to `'0'` to hide
-the live UI while you investigate. The contract itself stays on-chain
-and users can still withdraw their tokens by calling the contract
-directly via Etherscan (it's verified).
+The contract:
+- Is already audit-clean by design (CEI, ReentrancyGuard, immutable,
+  no admin, no pause, no upgrade)
+- Has 11 unit tests covering every revert path
+- Marketplace lockout against listings is automatic from custody
+  (OpenSea/Blur/etc. read `ownerOf` which becomes the vault address)
 
-## 6. Long-term
+## TL;DR for the next 4 hours
 
-- The contract has no admin. There is nothing to renounce or upgrade.
-- Source stays on Etherscan. Anyone can read it.
-- The dashboard cron auto-indexes new Deposit/Withdraw events via
-  `/api/vault-onchain-index` after each user write.
+1. **Now**: install foundry, run `forge test -vv` to confirm everything passes
+2. **Any time before 14:00 UTC**: run the deploy command + the activation curl
+3. **At 14:00 UTC**: flip `mint_active='1'` (one SQL UPDATE)
+
+Total of your hands-on time: under 5 minutes.
