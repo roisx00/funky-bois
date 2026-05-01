@@ -33,10 +33,15 @@ async function loadVariantTable() {
   try {
     const mod = await import('../../src/data/elements.js');
     const map = {};
+    // ELEMENT_VARIANTS shape: { background: [{ name, rarity }, ...], ... }
+    // Key the map by `<type>:<name-snake-cased>` matching the on-chain
+    // metadata trait shape (e.g. "Background" / "Storm" → "background:storm").
     for (const [type, variants] of Object.entries(mod.ELEMENT_VARIANTS || {})) {
-      for (const [variant, info] of Object.entries(variants)) {
-        if (!info) continue;
-        map[`${String(type).toLowerCase()}:${String(variant).toLowerCase()}`] = String(info.rarity || 'common');
+      const items = Array.isArray(variants) ? variants : Object.values(variants || {});
+      for (const info of items) {
+        if (!info?.name) continue;
+        const variantKey = String(info.name).toLowerCase().replace(/\s+/g, '_');
+        map[`${String(type).toLowerCase()}:${variantKey}`] = String(info.rarity || 'common');
       }
     }
     RARITY_BY_VARIANT = map;
