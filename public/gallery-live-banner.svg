@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <defs>
+    <style><![CDATA[
+      .paper { fill: #F9F6F0; }
+      .ink { fill: #0E0E0E; }
+      .lime { fill: #D7FF3A; }
+      .rule { stroke: #0E0E0E; stroke-width: 1; fill: none; }
+      .hair { stroke: #0E0E0E; stroke-width: 0.5; fill: none; opacity: 0.35; }
+      .serif-it { font-family: 'Instrument Serif', 'EB Garamond', Georgia, serif; font-style: italic; fill: #0E0E0E; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; fill: #0E0E0E; letter-spacing: 0.16em; text-transform: uppercase; }
+      .mono-light { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; fill: #0E0E0E; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.55; }
+      .num { font-family: 'Instrument Serif', 'EB Garamond', Georgia, serif; font-style: italic; fill: #0E0E0E; }
+      .tile { fill: #0E0E0E; }
+      .tile-stroke { stroke: #0E0E0E; stroke-width: 1; }
+      .tile-id { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; fill: #D7FF3A; }
+      .badge-text { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 9px; letter-spacing: 0.18em; font-weight: 700; fill: #0E0E0E; }
+      .badge-text-dark { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 9px; letter-spacing: 0.18em; font-weight: 700; fill: #D7FF3A; }
+      .meta-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.14em; fill: #0E0E0E; opacity: 0.6; text-transform: uppercase; }
+      .meta-mono-strong { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.14em; fill: #0E0E0E; font-weight: 700; text-transform: uppercase; }
+    ]]></style>
+  </defs>
+
+  <!-- Paper -->
+  <rect class="paper" width="1600" height="900"/>
+
+  <!-- Newsprint margins -->
+  <line class="rule" x1="80" y1="80" x2="1520" y2="80"/>
+  <line class="rule" x1="80" y1="820" x2="1520" y2="820"/>
+  <line class="hair" x1="80" y1="84" x2="1520" y2="84"/>
+  <line class="hair" x1="80" y1="816" x2="1520" y2="816"/>
+
+  <!-- Masthead -->
+  <text class="mono" x="80" y="64" font-size="11">THE 1969 · DISPATCH</text>
+  <text class="mono-light" x="800" y="64" font-size="11" text-anchor="middle">№ XIII · GALLERY</text>
+  <text class="mono-light" x="1520" y="64" font-size="11" text-anchor="end">LIVE · ON-CHAIN</text>
+
+  <!-- Live dot -->
+  <g transform="translate(80, 130)">
+    <circle cx="8" cy="8" r="6" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
+    <text class="mono" x="28" y="13" font-size="11">LIVE · READING FROM CONTRACT</text>
+  </g>
+
+  <!-- Headline -->
+  <text class="serif-it" x="80" y="270" font-size="116" letter-spacing="-0.035em">The live gallery</text>
+  <text class="serif-it" x="80" y="385" font-size="116" letter-spacing="-0.035em">is <tspan fill="#0E0E0E" style="text-decoration: underline; text-decoration-color: #D7FF3A; text-decoration-thickness: 8px;">live.</tspan></text>
+
+  <!-- Subhead -->
+  <text class="mono" x="80" y="430" font-size="13">EVERY PORTRAIT · EVERY OWNER · EVERY RANK</text>
+
+  <!-- Divider -->
+  <line class="rule" x1="80" y1="475" x2="1520" y2="475"/>
+
+  <!-- Left column: feature list -->
+  <g transform="translate(80, 525)">
+    <text class="mono-light" x="0" y="0" font-size="11">WHAT YOU CAN DO</text>
+
+    <g transform="translate(0, 36)">
+      <text class="mono" x="0" y="14" font-size="13">→ SEARCH BY ID OR HOLDER</text>
+      <text class="meta-mono" x="0" y="34" font-size="11" style="text-transform: none; letter-spacing: 0.04em;">Find any of the 1,969. Or look up a wallet's stack.</text>
+    </g>
+
+    <g transform="translate(0, 96)">
+      <text class="mono" x="0" y="14" font-size="13">→ FILTER BY RARITY TIER</text>
+      <text class="meta-mono" x="0" y="34" font-size="11" style="text-transform: none; letter-spacing: 0.04em;">Common · Rare · Legendary · Ultra Rare</text>
+    </g>
+
+    <g transform="translate(0, 156)">
+      <text class="mono" x="0" y="14" font-size="13">→ SORT BY RANK · 1 TO 1,969</text>
+      <text class="meta-mono" x="0" y="34" font-size="11" style="text-transform: none; letter-spacing: 0.04em;">Rarest first, or hunt the all-common rolls.</text>
+    </g>
+
+    <g transform="translate(0, 216)">
+      <text class="mono" x="0" y="14" font-size="13">→ SEE WHO HOLDS WHAT · WHAT'S STAKED</text>
+      <text class="meta-mono" x="0" y="34" font-size="11" style="text-transform: none; letter-spacing: 0.04em;">Click any wallet → opens etherscan.</text>
+    </g>
+  </g>
+
+  <!-- Right column: tile preview grid -->
+  <g transform="translate(880, 510)">
+    <!-- 3 sample tiles -->
+    <!-- Tile 1: Ultra Rare -->
+    <g transform="translate(0, 0)">
+      <rect class="tile tile-stroke" x="0" y="0" width="190" height="220"/>
+      <rect x="6" y="6" width="56" height="18" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
+      <text class="badge-text" x="10" y="19">ULTRA RARE</text>
+      <text class="tile-id" x="95" y="125" font-size="42" text-anchor="middle">#67</text>
+      <rect x="0" y="190" width="190" height="30" fill="#F9F6F0" stroke="#0E0E0E" stroke-width="1"/>
+      <text class="meta-mono-strong" x="8" y="208" font-size="10">#67</text>
+      <text class="meta-mono" x="182" y="208" font-size="9" text-anchor="end">RANK 5 / 1,969</text>
+    </g>
+
+    <!-- Tile 2: Legendary + IN VAULT -->
+    <g transform="translate(210, 0)">
+      <rect class="tile tile-stroke" x="0" y="0" width="190" height="220"/>
+      <rect x="6" y="6" width="56" height="18" fill="#FFD43A" stroke="#0E0E0E" stroke-width="1"/>
+      <text class="badge-text" x="10" y="19">LEGENDARY</text>
+      <rect x="124" y="6" width="60" height="18" fill="#0E0E0E" stroke="#D7FF3A" stroke-width="1"/>
+      <text class="badge-text-dark" x="130" y="19">IN VAULT</text>
+      <text class="tile-id" x="95" y="125" font-size="42" text-anchor="middle">#114</text>
+      <rect x="0" y="190" width="190" height="30" fill="#F9F6F0" stroke="#0E0E0E" stroke-width="1"/>
+      <text class="meta-mono-strong" x="8" y="208" font-size="10">#114</text>
+      <text class="meta-mono" x="182" y="208" font-size="9" text-anchor="end">RANK 70 / 1,969</text>
+    </g>
+
+    <!-- Tile 3: Rare + holder -->
+    <g transform="translate(420, 0)">
+      <rect class="tile tile-stroke" x="0" y="0" width="190" height="220"/>
+      <rect x="6" y="6" width="40" height="18" fill="#F9F6F0" stroke="#0E0E0E" stroke-width="1"/>
+      <text class="badge-text" x="10" y="19">RARE</text>
+      <text class="tile-id" x="95" y="125" font-size="42" text-anchor="middle">#1729</text>
+      <rect x="0" y="190" width="190" height="30" fill="#F9F6F0" stroke="#0E0E0E" stroke-width="1"/>
+      <text class="meta-mono-strong" x="8" y="208" font-size="10">#1729</text>
+      <text class="meta-mono" x="182" y="208" font-size="9" text-anchor="end">0xB051…2E7E</text>
+    </g>
+
+    <!-- Caption under tiles -->
+    <text class="mono-light" x="305" y="260" font-size="10" text-anchor="middle">EACH TILE · TIER · RANK · HOLDER · VAULT STATE</text>
+  </g>
+
+  <!-- Footer -->
+  <text class="mono" x="80" y="848" font-size="11">THE1969.IO/GALLERY</text>
+  <text class="mono-light" x="800" y="848" font-size="11" text-anchor="middle">⌬ THE VAULT MUST NOT BURN AGAIN</text>
+  <text class="mono-light" x="1520" y="848" font-size="11" text-anchor="end">1,969 · INDEXED · LIVE</text>
+</svg>

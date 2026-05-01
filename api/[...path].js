@@ -39,6 +39,7 @@ import vaultOnchainRarities from './_routes/vault-onchain-rarities.js';
 import nftsOfOwner          from './_routes/nfts-of-owner.js';
 import vaultOnchainReconcile from './_routes/vault-onchain-reconcile.js';
 import galleryOwners        from './_routes/gallery-owners.js';
+import cronSalesWatcher     from './_routes/cron-sales-watcher.js';
 import adminVaultV2Activate from './_routes/admin-vault-v2-activate.js';
 import adminRarityRebuild   from './_routes/admin-rarity-rebuild.js';
 import inventoryBurn       from './_routes/inventory-burn.js';
@@ -133,6 +134,7 @@ const ROUTES = {
   'nfts-of-owner':              nftsOfOwner,
   'vault-onchain-reconcile':    vaultOnchainReconcile,
   'gallery-owners':             galleryOwners,
+  'cron-sales-watcher':         cronSalesWatcher,
   'admin-vault-v2-activate':  adminVaultV2Activate,
   'admin-rarity-rebuild':     adminRarityRebuild,
   'inventory-burn':      inventoryBurn,

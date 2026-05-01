@@ -1,0 +1,77 @@
+─────────────────────────────────────────────
+  THE 1969 · LIVE GALLERY · X POST OPTIONS
+─────────────────────────────────────────────
+
+▌ POST A · primary (with banner attached)
+
+the live gallery is open. the1969.io/gallery
+
+every portrait. every owner. every rank.
+
+   · search by id or holder
+   · filter by rarity tier — common, rare, legendary, ultra rare
+   · sort by rank · 1 (rarest) → 1,969
+   · see who holds what · who's in the vault
+   · click any wallet to open it on etherscan
+
+reading directly from the contract. no caching tricks. live.
+
+⌬ the vault must not burn again.
+
+
+─────────────────────────────────────────────
+
+▌ POST B · shorter alt
+
+live gallery → the1969.io/gallery
+
+search by id · filter by rarity · sort by rank · see every owner.
+1,969 portraits, fully indexed, reading from chain.
+
+
+─────────────────────────────────────────────
+
+▌ POST C · single-line
+
+the live gallery is live. every portrait. every owner. every rank.
+the1969.io/gallery
+
+
+─────────────────────────────────────────────
+
+▌ THREAD VERSION (4 tweets, optional)
+
+1/ the live gallery is live · the1969.io/gallery
+
+   1,969 portraits, indexed by rank, filterable by rarity, every owner
+   visible. reading straight from the contract.
+
+2/ filter by tier:
+   · 124 ultra rare
+   · 544 legendary
+   · 1,106 rare
+   · 195 common (the all-common ones — second-rarest tier)
+
+3/ rank · 1 to 1,969 by combined trait score. tie-broken by id.
+   sort rarest-first to find the apex. sort commonest-first to find
+   the all-common rolls. both have collectors hunting them.
+
+4/ click any holder to open their wallet on etherscan. tokens in the
+   vault show "STAKED" — earning $busts on the rarity-weighted curve.
+
+   the1969.io/gallery
+
+   ⌬ the vault must not burn again.
+
+
+─────────────────────────────────────────────
+
+▌ NOTES
+
+- Headline owns the moment: "live gallery is live."
+- Bullet list reads like a feature spec without sounding salesy.
+- Rank explanation is ready in the thread for skeptics who ask
+  "why is common second-rarest?"
+- No floor / volume calls.
+
+─────────────────────────────────────────────
