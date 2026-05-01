@@ -18,9 +18,9 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 
 const TIER_LADDER = [
   { roleId: '1499854208705495070', name: 'The Soldier', min: 100, accent: '#D7FF3A' },
-  { roleId: '1498007234095874140', name: 'The Monk',    min: 50,  accent: '#FFD43A' },
+  { roleId: '1499875115096215673', name: 'The Monk',    min: 50,  accent: '#FFD43A' },
   { roleId: '1499854974723690497', name: 'The Poet',    min: 20,  accent: '#F9F6F0' },
-  { roleId: '1498007308133994546', name: 'The Rebel',   min: 10,  accent: '#F9F6F0' },
+  { roleId: '1499874903489384452', name: 'The Rebel',   min: 10,  accent: '#F9F6F0' },
   { roleId: '1499855398797054158', name: 'The Nurse',   min: 5,   accent: '#F9F6F0' },
   { roleId: '1499855602082513040', name: 'The Queen',   min: 1,   accent: '#F9F6F0' },
 ];

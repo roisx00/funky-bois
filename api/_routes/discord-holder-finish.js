@@ -16,7 +16,7 @@ import { readBody, ok, bad } from '../_lib/json.js';
 import { getSessionUser } from '../_lib/auth.js';
 import { addRole, removeRole } from '../_lib/discordApi.js';
 import {
-  DISCORD_GUILD_ID, TIER_LADDER, pickTier,
+  DISCORD_GUILD_ID, TIER_LADDER, DEPRECATED_TIER_ROLE_IDS, pickTier,
 } from '../_lib/discordConfig.js';
 
 const NFT_CONTRACT = '0x890db94d920bbf44862005329d7236cc7067efab';
@@ -94,13 +94,17 @@ export default async function handler(req, res) {
   const holdings = walletCount + vaultCount;
   const tier = pickTier(holdings);
 
-  // Sync roles. Remove every other tier role, add the new one.
+  // Sync roles. Remove every OTHER current-tier role, plus any
+  // deprecated tier role IDs from previous config. Add the new tier.
   const removeFailures = [];
-  for (const t of TIER_LADDER) {
-    if (tier && t.roleId === tier.roleId) continue;
-    try { await removeRole(DISCORD_GUILD_ID, id.discordId, t.roleId); }
+  const toRemove = [
+    ...TIER_LADDER.filter((t) => !tier || t.roleId !== tier.roleId).map((t) => t.roleId),
+    ...DEPRECATED_TIER_ROLE_IDS,
+  ];
+  for (const roleId of toRemove) {
+    try { await removeRole(DISCORD_GUILD_ID, id.discordId, roleId); }
     catch (e) {
-      if (e?.status !== 404) removeFailures.push({ roleId: t.roleId, msg: e?.message });
+      if (e?.status !== 404) removeFailures.push({ roleId, msg: e?.message });
     }
   }
   if (tier) {

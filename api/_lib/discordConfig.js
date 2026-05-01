@@ -11,11 +11,19 @@ export const STRANGER_ROLE_ID  = '1497917902244937908';
 
 export const TIER_LADDER = [
   { roleId: '1499854208705495070', minHoldings: 100, name: 'The Soldier' },
-  { roleId: '1498007234095874140', minHoldings: 50,  name: 'The Monk' },
+  { roleId: '1499875115096215673', minHoldings: 50,  name: 'The Monk' },
   { roleId: '1499854974723690497', minHoldings: 20,  name: 'The Poet' },
-  { roleId: '1498007308133994546', minHoldings: 10,  name: 'The Rebel' },
+  { roleId: '1499874903489384452', minHoldings: 10,  name: 'The Rebel' },
   { roleId: '1499855398797054158', minHoldings: 5,   name: 'The Nurse' },
   { roleId: '1499855602082513040', minHoldings: 1,   name: 'The Queen' },
+];
+
+// Old role IDs that we used to assign before being re-issued. Cron
+// sync also tries to remove these from any verified holder so anyone
+// who got the old role under the previous config doesn't keep it.
+export const DEPRECATED_TIER_ROLE_IDS = [
+  '1498007234095874140',  // old The Monk
+  '1498007308133994546',  // old The Rebel
 ];
 
 export const ALL_TIER_ROLE_IDS = new Set(TIER_LADDER.map((t) => t.roleId));
