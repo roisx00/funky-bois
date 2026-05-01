@@ -52,33 +52,26 @@
           letter-spacing="-0.5">first staker eats. drops as others join.</text>
   </g>
 
-  <!-- ── 4-cell program detail strip ── -->
+  <!-- ── 3-cell program detail strip ── -->
   <g transform="translate(72, 600)">
     <rect x="0" y="0" width="1456" height="72" fill="rgba(249,246,240,0.04)" stroke="rgba(249,246,240,0.18)"/>
-    <line x1="364" y1="0"  x2="364"  y2="72" stroke="rgba(249,246,240,0.12)"/>
-    <line x1="728" y1="0"  x2="728"  y2="72" stroke="rgba(249,246,240,0.12)"/>
-    <line x1="1092" y1="0" x2="1092" y2="72" stroke="rgba(249,246,240,0.12)"/>
+    <line x1="485.3"  y1="0" x2="485.3"  y2="72" stroke="rgba(249,246,240,0.12)"/>
+    <line x1="970.7"  y1="0" x2="970.7"  y2="72" stroke="rgba(249,246,240,0.12)"/>
 
-    <!-- Cell 1: POOL -->
-    <g transform="translate(182, 22)">
-      <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.5)">POOL</text>
-      <text x="0" y="34" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="32" fill="#F9F6F0" letter-spacing="-1">20M $BUSTS</text>
+    <!-- Cell 1: REWARD -->
+    <g transform="translate(242.7, 22)">
+      <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.5)">REWARD</text>
+      <text x="0" y="34" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="32" fill="#F9F6F0" letter-spacing="-1">$BUSTS · real-time</text>
     </g>
 
-    <!-- Cell 2: DURATION -->
-    <g transform="translate(546, 22)">
-      <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.5)">DURATION</text>
-      <text x="0" y="34" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="32" fill="#F9F6F0" letter-spacing="-1">12 months</text>
-    </g>
-
-    <!-- Cell 3: RARITY MULTIPLIER -->
-    <g transform="translate(910, 22)">
+    <!-- Cell 2: RARITY MULTIPLIER -->
+    <g transform="translate(728, 22)">
       <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.5)">RARITY MULTIPLIER</text>
       <text x="0" y="34" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="32" fill="#F9F6F0" letter-spacing="-1">1x · 3x · 8x · 25x</text>
     </g>
 
-    <!-- Cell 4: WITHDRAW -->
-    <g transform="translate(1274, 22)">
+    <!-- Cell 3: WITHDRAW -->
+    <g transform="translate(1213.3, 22)">
       <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.5)">WITHDRAW</text>
       <text x="0" y="34" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="32" fill="#F9F6F0" letter-spacing="-1">anytime · no penalty</text>
     </g>
