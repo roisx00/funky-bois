@@ -7,6 +7,7 @@ import ElementCard from '../components/ElementCard';
 import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG, buildNFTSVG } from '../data/elements';
 import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
 import { mintBindMessage } from '../utils/wlMessage';
+import ProphetInline from '../components/ProphetInline';
 
 // Tab system retired — the dashboard is one unified scrollable page now.
 // Every action surface (overview, tasks, gift, history) renders inline
@@ -2283,91 +2284,14 @@ function BustsTransferSection({
       `}</style>
 
       <div className="wire-frame">
-        {/* ── LEFT pane — SEND ── */}
+        {/* ── LEFT pane — MR PROPHET INLINE CHATBOT ──
+            Replaces the manual Send form. Users wire BUSTS by talking
+            to Prophet in plain English; the bot proposes a confirm card
+            for every transfer and reuses the same sendBusts() pipeline
+            as before. The manual form is still reachable as a fallback
+            via the floating FAB on other pages. */}
         <div className="wire-pane">
-          <div className="wire-kicker">§02 · WIRE BUSTS</div>
-          <div className="wire-headline">Send to any handle.</div>
-          <div className="wire-sub">
-            Lands instantly if they're in our ledger. Otherwise it waits in their inbox until they sign in. Returns to you after 30 days unclaimed.
-          </div>
-
-          {/* FROM → TO diagram */}
-          <div className="wire-flow">
-            <div className="wire-flow-cell">
-              <span className="wfc-label">FROM</span>
-              {senderHandle}
-            </div>
-            <div className="wire-flow-arrow">→</div>
-            <div className="wire-flow-cell" style={{
-              color: recipientPreview && !recipientValid ? '#c4352b' : 'var(--ink)',
-            }}>
-              <span className="wfc-label">TO</span>
-              {recipientPreview || '—'}
-            </div>
-          </div>
-
-          <div className="wire-label">
-            <span>RECIPIENT @USERNAME</span>
-          </div>
-          <input
-            type="text"
-            value={toUsername}
-            onChange={(e) => setToUsername(e.target.value)}
-            placeholder="@vitalik"
-            className={`wire-input ${recipientPreview && !recipientValid ? 'invalid' : ''}`}
-          />
-
-          <div className="wire-label">
-            <span>AMOUNT</span>
-            <span className="wl-hint">
-              BAL · {(bustsBalance || 0).toLocaleString()} BUSTS
-            </span>
-          </div>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={amountStr}
-            onChange={(e) => setAmountStr(e.target.value.replace(/[^0-9]/g, ''))}
-            placeholder="0"
-            className={`wire-input amount ${amountStr && !isAmountValid ? 'invalid' : ''}`}
-          />
-
-          {chips.length > 0 ? (
-            <div className="wire-chips">
-              {chips.map((c) => (
-                <button
-                  key={c.label}
-                  type="button"
-                  className="wire-chip"
-                  onClick={() => setAmountStr(String(c.val))}
-                  disabled={c.val <= 0}
-                >{c.label}</button>
-              ))}
-            </div>
-          ) : null}
-
-          {amountStr ? (
-            <div className={`wire-meta ${isAmountValid ? '' : 'bad'}`}>
-              {isAmountValid
-                ? `KEEP ${remainingAfter.toLocaleString()} · WIRE ${amount.toLocaleString()}`
-                : (amount < 1 ? 'MINIMUM IS 1 BUSTS' : 'EXCEEDS BALANCE')}
-            </div>
-          ) : null}
-
-          <button
-            className="wire-cta"
-            disabled={!toUsername.trim() || !isAmountValid || sending}
-            onClick={handleAttemptSend}
-          >
-            <span>
-              {sending
-                ? 'WIRING…'
-                : amount >= 1 && recipientValid
-                  ? `WIRE ${amount.toLocaleString()} → ${recipientPreview}`
-                  : 'WIRE BUSTS'}
-            </span>
-            <span className="wire-cta-arrow">→</span>
-          </button>
+          <ProphetInline />
         </div>
 
         <div className="wire-divider" />
