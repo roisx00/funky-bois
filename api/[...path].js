@@ -46,6 +46,7 @@ import discordHolderFinish  from './_routes/discord-holder-finish.js';
 import cronDiscordSync      from './_routes/cron-discord-sync.js';
 import adminDiscordPurgeRoles from './_routes/admin-discord-purge-roles.js';
 import adminDiscordPostVerify from './_routes/admin-discord-post-verify.js';
+import adminDiscordDiagnose  from './_routes/admin-discord-diagnose.js';
 import adminVaultV2Activate from './_routes/admin-vault-v2-activate.js';
 import adminRarityRebuild   from './_routes/admin-rarity-rebuild.js';
 import inventoryBurn       from './_routes/inventory-burn.js';
@@ -147,6 +148,7 @@ const ROUTES = {
   'cron-discord-sync':          cronDiscordSync,
   'admin-discord-purge-roles':  adminDiscordPurgeRoles,
   'admin-discord-post-verify':  adminDiscordPostVerify,
+  'admin-discord-diagnose':     adminDiscordDiagnose,
   'admin-vault-v2-activate':  adminVaultV2Activate,
   'admin-rarity-rebuild':     adminRarityRebuild,
   'inventory-burn':      inventoryBurn,
