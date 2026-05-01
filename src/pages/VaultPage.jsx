@@ -532,7 +532,13 @@ export default function VaultPage({ onNavigate }) {
                 the panel shows AVAILABLE / DEPOSITED states with a
                 disabled banner; the moment vault_v2_active flips to '1',
                 the deposit/withdraw buttons go live without a code change. */}
-            <OnchainPortraitDeposit />
+            {/* Pass the existing vault-door animation trigger so the
+                hero SVG opens, accepts the portrait, and closes when
+                a deposit lands. Same playbook as the legacy BUSTS
+                deposit animation. */}
+            <OnchainPortraitDeposit
+              onDepositSuccess={(count) => playDepositAnim({ kind: 'portrait', amount: count || 1 })}
+            />
           </div>
         </div>
 

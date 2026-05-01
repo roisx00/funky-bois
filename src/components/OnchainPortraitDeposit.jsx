@@ -30,7 +30,7 @@ import {
 
 const VISIBLE_LIMIT = 10;
 
-export default function OnchainPortraitDeposit() {
+export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
   const toast = useToast();
   const { address: walletAddress, isConnected } = useAccount();
 
@@ -235,7 +235,16 @@ export default function OnchainPortraitDeposit() {
       });
       toast.success('Deposit submitted.');
       setPendingTxHash(tx);
+      const depositCount = ids.length;
       setAvailSel(new Set());
+      // Fire the parent's vault-door animation immediately so the user
+      // sees the door open / portrait fly in / door close while the tx
+      // is mining. Doesn't wait for confirmation — the visual is the
+      // reward for the click.
+      if (typeof onDepositSuccess === 'function') {
+        try { onDepositSuccess(depositCount); }
+        catch (e) { console.warn('[ocp] deposit anim hook failed:', e); }
+      }
       setTimeout(async () => {
         await postIndex(tx); setPendingTxHash(null); refreshUser();
       }, 18_000);
