@@ -57,10 +57,10 @@
     <text x="0" y="160" text-anchor="middle"
           font-family="'Instrument Serif', Georgia, serif"
           font-style="italic" font-weight="500"
-          font-size="100" fill="#0E0E0E" letter-spacing="-2">49,401</text>
+          font-size="100" fill="#0E0E0E" letter-spacing="-2">6.97M</text>
     <text x="0" y="200" text-anchor="middle"
           font-family="ui-monospace, 'JetBrains Mono', monospace"
-          font-size="13" font-weight="700" letter-spacing="3" fill="#0E0E0E">6.97M $BUSTS ROUTED</text>
+          font-size="13" font-weight="700" letter-spacing="3" fill="#0E0E0E">$BUSTS · 49,401 WIRES</text>
 
     <line x1="-200" y1="240" x2="200" y2="240" stroke="#D7FF3A" stroke-width="6"/>
 
@@ -71,10 +71,10 @@
     <text x="0" y="370" text-anchor="middle"
           font-family="'Instrument Serif', Georgia, serif"
           font-style="italic" font-weight="500"
-          font-size="100" fill="#0E0E0E" letter-spacing="-2">2,158</text>
+          font-size="100" fill="#0E0E0E" letter-spacing="-2">570K</text>
     <text x="0" y="410" text-anchor="middle"
           font-family="ui-monospace, 'JetBrains Mono', monospace"
-          font-size="13" font-weight="700" letter-spacing="3" fill="#0E0E0E">570K $BUSTS · 24H</text>
+          font-size="13" font-weight="700" letter-spacing="3" fill="#0E0E0E">$BUSTS · 2,158 WIRES</text>
   </g>
 
   <!-- LIME RIBBON -->
