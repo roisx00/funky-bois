@@ -25,10 +25,11 @@ function alchemyKey() {
   return m?.[1] || null;
 }
 
-async function countWalletHoldings(wallet) {
+// Returns the on-chain token IDs a single wallet holds for our contract.
+async function listWalletTokenIds(wallet) {
   const key = alchemyKey();
-  if (!key) return 0;
-  let total = 0;
+  if (!key) return [];
+  const ids = [];
   let pageKey = null;
   for (let i = 0; i < 5; i++) {
     const url = new URL(`https://eth-mainnet.g.alchemy.com/nft/v3/${key}/getNFTsForOwner`);
@@ -40,24 +41,55 @@ async function countWalletHoldings(wallet) {
     const r = await fetch(url.toString());
     if (!r.ok) break;
     const d = await r.json();
-    total += (d?.ownedNfts || []).length;
+    for (const nft of (d?.ownedNfts || [])) {
+      try { ids.push(BigInt(nft.tokenId).toString()); } catch { /* ignore */ }
+    }
     if (!d?.pageKey) break;
     pageKey = d.pageKey;
   }
-  return total;
+  return ids;
+}
+
+// Distinct count of NFTs across multiple wallets (a holder can have
+// the verified wagmi wallet AND a separate bound wallet).
+async function countWalletHoldingsAcross(wallets) {
+  const seen = new Set();
+  for (const w of wallets) {
+    const ids = await listWalletTokenIds(w);
+    for (const id of ids) seen.add(id);
+  }
+  return seen.size;
 }
 
 async function syncOne(row) {
   const wallet = String(row.wallet || '').toLowerCase();
   if (!wallet) return { skipped: 'no_wallet' };
 
-  const [walletCount, vaultRow] = await Promise.all([
-    countWalletHoldings(wallet),
-    sql`
-      SELECT COUNT(*)::int AS n FROM vault_deposits_onchain
-       WHERE withdrawn_at IS NULL AND LOWER(wallet) = ${wallet}
-    `.then(one),
-  ]);
+  // Resolve the linked user (if any) so we can count vault stakes by
+  // user_id — covers users who staked from a different wallet than
+  // the one they verified with. Lookup is by users.discord_id since
+  // discord_verifications doesn't carry user_id directly.
+  const userRow = one(await sql`
+    SELECT id, wallet_address FROM users WHERE discord_id = ${row.discord_id} LIMIT 1
+  `);
+
+  // Wallets to scan for currently-held NFTs: the verified wagmi wallet
+  // plus the user's bound wallet if linked.
+  const wallets = new Set([wallet]);
+  if (userRow?.wallet_address) wallets.add(String(userRow.wallet_address).toLowerCase());
+
+  const walletCount = await countWalletHoldingsAcross([...wallets]);
+  const vaultRow = userRow?.id
+    ? one(await sql`
+        SELECT COUNT(*)::int AS n FROM vault_deposits_onchain
+         WHERE withdrawn_at IS NULL
+           AND (user_id = ${userRow.id}::uuid OR LOWER(wallet) = ANY(${[...wallets]}::text[]))
+      `)
+    : one(await sql`
+        SELECT COUNT(*)::int AS n FROM vault_deposits_onchain
+         WHERE withdrawn_at IS NULL AND LOWER(wallet) = ANY(${[...wallets]}::text[])
+      `);
+
   const holdings = walletCount + Number(vaultRow?.n || 0);
   const tier = pickTier(holdings);
 

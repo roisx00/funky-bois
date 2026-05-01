@@ -87,14 +87,21 @@ export default async function handler(req, res) {
     }
   }
 
-  // List of currently-staked tokens (post-link, by user_id only).
+  // List of currently-staked tokens. Match by user_id OR by any of the
+  // user's known wallets (bound + connected wagmi). Without the wallet
+  // OR, holders who staked from a wallet whose user_id link diverged
+  // (mint binding stored in a different user row, etc.) saw "DEPOSITED
+  // 0" even though their NFT was provably in the vault contract.
   const stakes = await sql`
     SELECT d.token_id, d.rarity_weight, d.deposited_at, d.tx_hash,
            t.rarity
       FROM vault_deposits_onchain d
  LEFT JOIN token_rarity_cache t ON t.token_id = d.token_id
      WHERE d.withdrawn_at IS NULL
-       AND d.user_id = ${user.id}::uuid
+       AND (
+         d.user_id = ${user.id}::uuid
+         OR (${wallets.length > 0} AND LOWER(d.wallet) = ANY(${wallets}::text[]))
+       )
      ORDER BY d.deposited_at DESC
   `;
 

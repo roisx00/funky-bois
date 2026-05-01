@@ -27,10 +27,59 @@ function alchemyKey() {
   return m?.[1] || null;
 }
 
-async function countWalletHoldings(wallet) {
-  const key = alchemyKey();
-  if (!key) return 0;
+// Count this user's vault stakes. When we have a user_id (JWT path),
+// trust it as the source of truth — covers users who staked from a
+// different wallet than they're currently connected with. Otherwise
+// fall back to wallet match.
+async function countVaultHoldings({ wallet, userId }) {
+  if (userId) {
+    const row = one(await sql`
+      SELECT COUNT(*)::int AS n FROM vault_deposits_onchain
+       WHERE withdrawn_at IS NULL
+         AND (user_id = ${userId}::uuid OR LOWER(wallet) = LOWER(${wallet}))
+    `);
+    return Number(row?.n || 0);
+  }
+  const row = one(await sql`
+    SELECT COUNT(*)::int AS n FROM vault_deposits_onchain
+     WHERE withdrawn_at IS NULL AND LOWER(wallet) = LOWER(${wallet})
+  `);
+  return Number(row?.n || 0);
+}
+
+// Resolve which wallets to scan for currently-held NFTs (i.e. NOT
+// staked). For JWT users, includes their bound wallet AND the wagmi
+// wallet passed in. For state users, just the wagmi wallet.
+async function gatherWallets({ wallet, user }) {
+  const set = new Set();
+  if (/^0x[0-9a-f]{40}$/.test(wallet)) set.add(wallet.toLowerCase());
+  if (user?.wallet_address && /^0x[0-9a-fA-F]{40}$/.test(user.wallet_address)) {
+    set.add(user.wallet_address.toLowerCase());
+  }
+  return [...set];
+}
+
+async function countWalletHoldingsAcross(wallets) {
   let total = 0;
+  const seen = new Set();
+  for (const w of wallets) {
+    const ids = await listWalletTokenIds(w);
+    for (const id of ids) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      total += 1;
+    }
+  }
+  return total;
+}
+
+// Returns the on-chain token IDs owned by a wallet. We dedupe across
+// wallets so a user with the same NFT counted in two queries doesn't
+// inflate the count (shouldn't happen, but defensive).
+async function listWalletTokenIds(wallet) {
+  const key = alchemyKey();
+  if (!key) return [];
+  const ids = [];
   let pageKey = null;
   for (let i = 0; i < 5; i++) {
     const url = new URL(`https://eth-mainnet.g.alchemy.com/nft/v3/${key}/getNFTsForOwner`);
@@ -42,24 +91,21 @@ async function countWalletHoldings(wallet) {
     const r = await fetch(url.toString());
     if (!r.ok) break;
     const d = await r.json();
-    total += (d?.ownedNfts || []).length;
+    for (const nft of (d?.ownedNfts || [])) {
+      try { ids.push(BigInt(nft.tokenId).toString()); } catch { /* ignore */ }
+    }
     if (!d?.pageKey) break;
     pageKey = d.pageKey;
   }
-  return total;
+  return ids;
 }
 
-async function countVaultHoldings(wallet) {
-  const row = one(await sql`
-    SELECT COUNT(*)::int AS n FROM vault_deposits_onchain
-     WHERE withdrawn_at IS NULL AND LOWER(wallet) = LOWER(${wallet})
-  `);
-  return Number(row?.n || 0);
-}
-
-// Resolve which Discord ID to assign roles to. Tries `state` first (the
-// OAuth flow), falls back to the JWT-authed user.discord_id.
-async function resolveDiscordId(req, res, body) {
+// Resolve which Discord ID to assign roles to. Tries `state` first
+// (Discord OAuth path); falls back to JWT-authed user. JWT path also
+// returns the full user row so we can use user.id + user.wallet_address
+// when counting holdings — covers users who staked or hold from a
+// different wallet than they're currently wagmi-connected with.
+async function resolveDiscordId(req, body) {
   const state = String(body.state || '');
   if (state) {
     const row = one(await sql`
@@ -74,7 +120,11 @@ async function resolveDiscordId(req, res, body) {
   const user = await getSessionUser(req);
   if (!user) return { error: 'unauthenticated' };
   if (!user.discord_id) return { error: 'discord_not_linked' };
-  return { discordId: String(user.discord_id), discordUsername: user.discord_username || null };
+  return {
+    discordId: String(user.discord_id),
+    discordUsername: user.discord_username || null,
+    user,
+  };
 }
 
 export default async function handler(req, res) {
@@ -84,12 +134,16 @@ export default async function handler(req, res) {
   const wallet = String(body.wallet || '').toLowerCase();
   if (!/^0x[0-9a-f]{40}$/.test(wallet)) return bad(res, 400, 'invalid_wallet');
 
-  const id = await resolveDiscordId(req, res, body);
+  const id = await resolveDiscordId(req, body);
   if (id.error) return bad(res, 401, id.error);
 
+  // Wallets to scan for currently-held NFTs: the wagmi wallet they
+  // just connected + their bound user.wallet_address (if signed in).
+  // Deduped by token id so an NFT in both lists isn't double-counted.
+  const wallets = await gatherWallets({ wallet, user: id.user });
   const [walletCount, vaultCount] = await Promise.all([
-    countWalletHoldings(wallet),
-    countVaultHoldings(wallet),
+    countWalletHoldingsAcross(wallets),
+    countVaultHoldings({ wallet, userId: id.user?.id || null }),
   ]);
   const holdings = walletCount + vaultCount;
   const tier = pickTier(holdings);
