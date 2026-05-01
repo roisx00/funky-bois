@@ -6,19 +6,13 @@ CAPTION (the tight one, recommended):
 ─────────────────────────────────────────────
 All eligible wallets are in.
 
-Tier 1 / 1,428 holders
-Tier 2 / 1,354 holders
-
 Mint starts in 4 hours.
 May 1 / 14:00 UTC.
 
 
-CAPTION (the slightly longer alt):
+CAPTION (slightly longer alt):
 ─────────────────────────────────────────────
 Allowlists are locked.
-
-→ Tier 1 / 1,428 wallets uploaded
-→ Tier 2 / 1,354 wallets uploaded
 
 If your wallet is bound, you're in.
 If it isn't, the door is shut.
@@ -33,8 +27,8 @@ Allowlists in. Mint in 4. May 1 / 14:00 UTC.
 
 REPLY (drop under the post):
 ─────────────────────────────────────────────
-2,782 wallets total across both tiers. No new entries get added after this.
-If you bound your wallet before 08:00 UTC, you're on the list.
+No new entries get added after this. If you bound your wallet before
+08:00 UTC, you're on the list.
 
 
 ASSETS:
@@ -47,4 +41,4 @@ POSTING NOTES:
 ─────────────────────────────────────────────
 • No hashtags.
 • Don't put a link in the body. First reply only.
-• Pin it for the next 4 hours, replace at T-1h with a "1 hour" graphic.
+• Pin for the next 4 hours, replace at T-1h with a "1 hour" graphic.
