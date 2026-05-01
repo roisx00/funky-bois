@@ -7,7 +7,7 @@
 // this returns a 'pre_launch' shape with the locked program params so
 // the UI can render the "opening soon" placeholder with the same
 // numbers users will see at launch.
-import { sql } from '../_lib/db.js';
+import { sql, one } from '../_lib/db.js';
 import { ok } from '../_lib/json.js';
 import {
   getPoolState,
@@ -24,6 +24,29 @@ export default async function handler(req, res) {
   }
 
   const active = await vaultV2Active();
+
+  // Auto-reconcile: every ~60s of polling, kick a chain rescan in the
+  // background so missed Deposit/Withdraw events (e.g. user closed the
+  // tab before the post-tx index call) heal automatically. Fire-and-
+  // forget — the response is served from the current DB snapshot, the
+  // reconcile updates it for the next poll.
+  if (active) {
+    const lastRecon = one(await sql`
+      SELECT EXTRACT(EPOCH FROM (now() - updated_at))::int AS age_sec, value
+        FROM app_config WHERE key = 'vault_v2_last_block' LIMIT 1
+    `);
+    if (!lastRecon || lastRecon.age_sec > 60) {
+      // Bump the timestamp now to debounce concurrent pollers.
+      await sql`
+        UPDATE app_config SET updated_at = now() WHERE key = 'vault_v2_last_block'
+      `;
+      // Trigger reconcile in background. We don't await — the function
+      // continues to serve the current pool state.
+      const url = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers['host']}/api/vault-onchain-reconcile`;
+      fetch(url, { method: 'POST' }).catch(() => {});
+    }
+  }
+
   const pool   = await getPoolState();
   const totalWeight = Number(pool?.total_weight || 0);
   const headlineApy = computeHeadlineApy(totalWeight);
