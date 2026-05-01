@@ -7,6 +7,7 @@ import ElementCard from '../components/ElementCard';
 import { ELEMENT_TYPES, ELEMENT_LABELS, getElementSVG, buildNFTSVG } from '../data/elements';
 import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
 import { mintBindMessage } from '../utils/wlMessage';
+import ProphetChat from '../components/ProphetChat';
 
 // Tab system retired — the dashboard is one unified scrollable page now.
 // Every action surface (overview, tasks, gift, history) renders inline
@@ -331,6 +332,13 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       {/* ─── Top BUSTS holders (last 20) ─── */}
       <DashSectionHead n="05" title="Top holders" sub="Top 20 by BUSTS in circulation. Updated every 30 seconds." />
       <TopBustsHolders />
+
+      {/* ─── Mr Prophet — floating natural-language wire concierge ───
+          Free, regex-only intent parser. Parses messages like
+          "send 100 busts to @vitalik" and routes them through the
+          same sendBusts() pipeline the manual flow uses, with an
+          inline confirm card before any transfer fires. */}
+      <ProphetChat />
     </div>
   );
 }

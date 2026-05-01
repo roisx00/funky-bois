@@ -64,9 +64,13 @@ export default async function handler(req, res) {
       VALUES (${user.id}::uuid, ${track}, ${nextTier}, ${cost})
     `;
     await sql`UPDATE vaults SET updated_at = now() WHERE user_id = ${user.id}::uuid`;
+    // Reason is prefixed with "Vault reinforce burn ·" so the burn-stats
+    // endpoint can pattern-match it cleanly. These BUSTS are permanently
+    // retired — no refund path, no recovery — i.e. burned in the supply
+    // sense even though it's an off-chain ledger.
     await sql`
       INSERT INTO busts_ledger (user_id, amount, reason)
-      VALUES (${user.id}, ${-cost}, ${`Vault upgrade: ${cat.label} · tier ${nextTier}`})
+      VALUES (${user.id}, ${-cost}, ${`Vault reinforce burn · ${cat.label} tier ${nextTier}`})
     `;
   } catch (e) {
     // UNIQUE conflict means a parallel request already bought this tier.
