@@ -50,6 +50,27 @@ export default function DiscordVerifyPage() {
     return code;
   }
 
+  // Force the body / html / #root backgrounds dark while this page
+  // is mounted. The default is cream (var(--bg) = --paper-1), which
+  // bleeds through below dv-root when content scrolls past 100vh.
+  // Restore on unmount so other pages stay editorial-cream.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const root = document.getElementById('root');
+    const prevHtml = html.style.background;
+    const prevBody = body.style.background;
+    const prevRoot = root ? root.style.background : '';
+    html.style.background = '#0E0E0E';
+    body.style.background = '#0E0E0E';
+    if (root) root.style.background = '#0E0E0E';
+    return () => {
+      html.style.background = prevHtml;
+      body.style.background = prevBody;
+      if (root) root.style.background = prevRoot;
+    };
+  }, []);
+
   // Pull featured portraits for the decorative strip.
   useEffect(() => {
     let cancelled = false;
