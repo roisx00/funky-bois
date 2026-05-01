@@ -460,11 +460,86 @@ export default function OnchainPortraitDeposit() {
           font-size: 10px; letter-spacing: 0.2em;
           color: rgba(215,255,58,0.65); text-align: center; font-weight: 700;
         }
+
+        /* ── Public global stats strip — always visible ── */
+        .ocp-public {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1px;
+          background: rgba(249,246,240,0.12);
+          border: 1px solid rgba(249,246,240,0.18);
+        }
+        @media (max-width: 540px) {
+          .ocp-public { grid-template-columns: 1fr; }
+        }
+        .ocp-public-cell {
+          background: rgba(0,0,0,0.55);
+          padding: 14px 16px;
+          position: relative;
+        }
+        .ocp-public-cell.hero::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 0; bottom: 0;
+          width: 3px;
+          background: #D7FF3A;
+        }
+        .ocp-public-label {
+          font-family: var(--font-mono, ui-monospace, monospace);
+          font-size: 9px; letter-spacing: 3px;
+          color: rgba(249,246,240,0.55); font-weight: 700;
+        }
+        .ocp-public-val {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-style: italic; font-size: 30px;
+          line-height: 1; color: #F9F6F0; letter-spacing: -0.02em;
+          margin-top: 6px; font-feature-settings: '"tnum"';
+        }
+        .ocp-public-cell.hero .ocp-public-val { color: #D7FF3A; }
+        .ocp-public-meta {
+          font-family: var(--font-mono, ui-monospace, monospace);
+          font-size: 9px; letter-spacing: 2.5px;
+          color: rgba(249,246,240,0.45); margin-top: 6px;
+          text-transform: uppercase;
+        }
       `}</style>
 
       {disabledNote ? (
         <div className="ocp-disabled-banner">{disabledNote}</div>
       ) : null}
+
+      {/* ── Public global stats — visible to everyone (no auth needed) ──
+          Hero cell: total deposited portraits. Then depositor count and
+          live APY. Sourced from /api/vault-pool which polls every 30s. */}
+      <div className="ocp-public">
+        <div className="ocp-public-cell hero">
+          <div className="ocp-public-label">DEPOSITED</div>
+          <div className="ocp-public-val">
+            {pool?.pool ? Number(pool.pool.totalTokens || 0).toLocaleString() : '0'}
+          </div>
+          <div className="ocp-public-meta">
+            ON-CHAIN PORTRAITS · LIVE
+          </div>
+        </div>
+        <div className="ocp-public-cell">
+          <div className="ocp-public-label">DEPOSITORS</div>
+          <div className="ocp-public-val">
+            {pool?.pool ? Number(pool.pool.activeDepositors || 0).toLocaleString() : '0'}
+          </div>
+          <div className="ocp-public-meta">UNIQUE WALLETS</div>
+        </div>
+        <div className="ocp-public-cell">
+          <div className="ocp-public-label">HEADLINE APY</div>
+          <div className="ocp-public-val">
+            {pool?.apy?.headline != null
+              ? (pool.pool?.totalWeight > 0
+                  ? `${pool.apy.headline.toFixed(1)}%`
+                  : '∞')
+              : '...'}
+          </div>
+          <div className="ocp-public-meta">COMMON · DROPS AS POOL FILLS</div>
+        </div>
+      </div>
 
       {/* Pending BUSTS / claim */}
       <div className="ocp-pending">
