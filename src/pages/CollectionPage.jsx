@@ -114,13 +114,25 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
         </div>
       </div>
 
-      {/* ─── Live metrics + NFT strip ─── */}
+      {/* ─── Live metrics + Gift + NFT strip ─── */}
+      {/* §02 Gift renders between metrics and the NFT strip — that's
+          the priority surface (move BUSTS around) and it deserves the
+          high-traffic real estate above the (currently empty) chain
+          panel. Once mint flips, NFTs sit immediately below. */}
       <DashboardExtras
         completedNFTs={completedNFTs}
         bustsBalance={bustsBalance}
         walletAddress={serverWalletAddress}
         onNavigate={onNavigate}
-      />
+      >
+        <BustsTransferSection
+          bustsBalance={bustsBalance}
+          pendingBustsTransfers={pendingBustsTransfers}
+          sendBusts={sendBusts}
+          claimBustsTransfer={claimBustsTransfer}
+          xUser={xUser}
+        />
+      </DashboardExtras>
 
       {/* ─── §01 BURN — trait inventory + redeem for BUSTS ─── */}
       {/* Hide the entire section (header + body) once the user has no
@@ -137,19 +149,8 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
         </>
       )}
 
-      {/* ─── §02 GIFT — BUSTS transfers only ─── */}
-      {/* Element-trait gifting was retired: the drop is closed and the
-          build cap is hit, so spare traits no longer help anyone build
-          a portrait. BUSTS gifting stays — that still has utility for
-          rewarding friends, settling debts, etc. */}
-      <DashSectionHead n="02" title="Gift" sub="Send BUSTS to another holder. Pending claims appear here automatically." />
-      <BustsTransferSection
-        bustsBalance={bustsBalance}
-        pendingBustsTransfers={pendingBustsTransfers}
-        sendBusts={sendBusts}
-        claimBustsTransfer={claimBustsTransfer}
-        xUser={xUser}
-      />
+      {/* §02 Gift moved up — now renders inside DashboardExtras between
+          the metrics row and the YOUR 1969 NFTS panel. */}
 
       <DashSectionHead n="03" title="Overview" />
       {true && (
@@ -375,7 +376,7 @@ function DashSectionHead({ n, title, sub }) {
 //     a 4-tile metrics row (ETH · BUSTS · vault · wallet), all set
 //     to be premium and minimal so the dashboard reads as one
 //     unified surface.
-function DashboardExtras({ completedNFTs, bustsBalance, walletAddress }) {
+function DashboardExtras({ completedNFTs, bustsBalance, walletAddress, children }) {
   // Vault snapshot — pulled live for the "vault" metric tile.
   const [vault, setVault] = useState(null);
   useEffect(() => {
@@ -554,6 +555,10 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress }) {
           mono
         />
       </div>
+
+      {/* ─── Slot: §02 Gift gets injected here so it sits between the
+            metrics row and the on-chain NFT strip, instead of after both. */}
+      {children}
 
       {/* ─── Your 1969 NFTs — auto-detects via contract once mint live ─── */}
       <div style={{
@@ -1762,111 +1767,428 @@ function BustsTransferSection({
     else toast.error(r?.reason || 'Claim failed');
   };
 
+  // Quick-pick chips — % of current balance. Empty when balance is 0.
+  const chips = bustsBalance > 0
+    ? [{ label: '25%', val: Math.floor(bustsBalance * 0.25) },
+       { label: '50%', val: Math.floor(bustsBalance * 0.5) },
+       { label: '75%', val: Math.floor(bustsBalance * 0.75) },
+       { label: 'MAX', val: bustsBalance }]
+    : [];
+
+  const senderHandle = xUser?.username ? `@${normalizeXHandle(xUser.username)}` : 'YOU';
+  const recipientPreview = toUsername.trim() ? `@${normalizeXHandle(toUsername)}` : null;
+  const recipientValid   = !!(recipientPreview && isValidXHandle(normalizeXHandle(toUsername)));
+
   return (
-    <div className="gift-section" style={{ marginTop: 24 }}>
-      <div className="gift-card">
-        <div className="gift-card-title">Send BUSTS</div>
-        <div className="gift-card-sub">
-          Send BUSTS points to another @X handle. If they&apos;re already signed up, it lands instantly.
-          Otherwise it waits in their inbox until they sign in. Minimum 1 · maximum is your current balance.
-        </div>
+    <div style={{ marginTop: 28, marginBottom: 36 }}>
+      {/* Local CSS — responsive split, mono input restyle, chip hover */}
+      <style>{`
+        .wire-frame {
+          border: 1px solid var(--ink);
+          background: var(--paper-2);
+          display: grid;
+          grid-template-columns: 1.1fr 1px 0.9fr;
+          position: relative;
+          overflow: hidden;
+        }
+        .wire-frame::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 0;
+          width: 100%; height: 4px;
+          background: var(--accent);
+        }
+        .wire-divider { background: var(--hairline); }
+        .wire-pane { padding: 30px 30px 28px; min-width: 0; }
+        .wire-kicker {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.22em;
+          color: var(--text-4);
+          margin-bottom: 8px;
+        }
+        .wire-headline {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 36px;
+          letter-spacing: -0.02em;
+          color: var(--ink);
+          line-height: 1.0;
+          margin-bottom: 6px;
+        }
+        .wire-sub {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 14px;
+          color: var(--text-3);
+          line-height: 1.45;
+          max-width: 460px;
+        }
+        .wire-flow {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          gap: 12px;
+          align-items: center;
+          margin: 22px 0 16px;
+          padding: 12px 14px;
+          background: var(--paper);
+          border: 1px solid var(--hairline);
+        }
+        .wire-flow-cell {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          color: var(--ink);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .wire-flow-cell .wfc-label {
+          font-size: 9px;
+          letter-spacing: 0.22em;
+          color: var(--text-4);
+          display: block;
+          margin-bottom: 4px;
+        }
+        .wire-flow-arrow {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 22px;
+          color: var(--ink);
+          padding: 0 6px;
+        }
+        .wire-input {
+          width: 100%;
+          background: var(--paper);
+          border: 1px solid var(--ink);
+          padding: 14px 14px;
+          font-family: var(--font-mono);
+          font-size: 13px;
+          letter-spacing: 0.04em;
+          color: var(--ink);
+          outline: none;
+          box-sizing: border-box;
+        }
+        .wire-input::placeholder { color: var(--text-4); }
+        .wire-input.amount {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 26px;
+          letter-spacing: -0.01em;
+          padding: 14px 16px;
+        }
+        .wire-input.invalid { border-color: #c4352b; }
+        .wire-label {
+          font-family: var(--font-mono);
+          font-size: 9px;
+          letter-spacing: 0.22em;
+          color: var(--text-4);
+          margin: 18px 0 8px;
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+        }
+        .wire-label .wl-hint {
+          color: var(--text-3);
+          letter-spacing: 0.1em;
+        }
+        .wire-chips {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 6px;
+          margin-top: 8px;
+        }
+        .wire-chip {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.18em;
+          font-weight: 700;
+          padding: 9px 0;
+          border: 1px solid var(--ink);
+          background: var(--paper);
+          color: var(--ink);
+          cursor: pointer;
+          transition: background 120ms ease;
+          text-align: center;
+        }
+        .wire-chip:hover:not(:disabled) { background: var(--accent); }
+        .wire-chip:disabled { opacity: 0.4; cursor: not-allowed; }
+        .wire-cta {
+          width: 100%;
+          margin-top: 22px;
+          padding: 16px 18px;
+          background: var(--ink);
+          color: var(--accent);
+          border: 1px solid var(--ink);
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 0.22em;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 120ms ease, color 120ms ease;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+        }
+        .wire-cta:hover:not(:disabled) { background: var(--accent); color: var(--ink); }
+        .wire-cta:disabled { opacity: 0.45; cursor: not-allowed; }
+        .wire-cta-arrow {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 18px;
+          letter-spacing: -0.02em;
+        }
+        .wire-meta {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.16em;
+          color: var(--text-3);
+          margin-top: 10px;
+        }
+        .wire-meta.bad { color: #c4352b; }
+        .wire-inbox-list {
+          margin-top: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          max-height: 360px;
+          overflow-y: auto;
+        }
+        .wire-inbox-row {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 14px;
+          align-items: center;
+          padding: 14px 14px 14px 16px;
+          background: var(--paper);
+          border: 1px solid var(--ink);
+          position: relative;
+        }
+        .wire-inbox-row::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 0; bottom: 0;
+          width: 4px;
+          background: var(--accent);
+        }
+        .wire-inbox-amount {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 22px;
+          color: var(--ink);
+          letter-spacing: -0.01em;
+          line-height: 1.05;
+        }
+        .wire-inbox-from {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.16em;
+          color: var(--text-3);
+          margin-top: 4px;
+          text-transform: uppercase;
+        }
+        .wire-inbox-claim {
+          background: var(--ink);
+          color: var(--accent);
+          border: 1px solid var(--ink);
+          padding: 10px 14px;
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.18em;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 120ms ease, color 120ms ease;
+        }
+        .wire-inbox-claim:hover:not(:disabled) { background: var(--accent); color: var(--ink); }
+        .wire-inbox-claim:disabled { opacity: 0.5; cursor: not-allowed; }
+        .wire-empty {
+          padding: 28px 18px;
+          text-align: center;
+          background: var(--paper);
+          border: 1px dashed var(--hairline);
+        }
+        .wire-empty-line {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 20px;
+          color: var(--ink);
+          margin-bottom: 6px;
+        }
+        .wire-empty-sub {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.2em;
+          color: var(--text-3);
+        }
+        .wire-count-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: var(--accent);
+          border: 1px solid var(--ink);
+          color: var(--ink);
+          padding: 3px 8px;
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.18em;
+          font-weight: 700;
+          margin-left: 10px;
+        }
+        @media (max-width: 880px) {
+          .wire-frame { grid-template-columns: 1fr; }
+          .wire-divider { width: 100%; height: 1px; }
+          .wire-pane { padding: 24px 22px; }
+          .wire-headline { font-size: 30px; }
+        }
+        @media (max-width: 460px) {
+          .wire-pane { padding: 22px 18px; }
+          .wire-headline { font-size: 26px; }
+          .wire-flow { grid-template-columns: 1fr; }
+          .wire-flow-arrow { display: none; }
+        }
+      `}</style>
 
-        <div className="gift-form">
-          <div>
-            <label>Recipient @username</label>
-            <input
-              type="text"
-              value={toUsername}
-              onChange={(e) => setToUsername(e.target.value)}
-              placeholder="@vitalik"
-              style={{ marginTop: 6, width: '100%' }}
-            />
-            {toUsername.trim() && (() => {
-              const preview = normalizeXHandle(toUsername);
-              if (!preview) return null;
-              const valid = isValidXHandle(preview);
-              return (
-                <div style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6,
-                  color: valid ? 'var(--text-3)' : 'var(--red, #c4352b)',
-                }}>
-                  {valid ? `Will send to @${preview}` : 'Not a valid handle'}
-                </div>
-              );
-            })()}
+      <div className="wire-frame">
+        {/* ── LEFT pane — SEND ── */}
+        <div className="wire-pane">
+          <div className="wire-kicker">§02 · WIRE BUSTS</div>
+          <div className="wire-headline">Send to any handle.</div>
+          <div className="wire-sub">
+            Lands instantly if they're in our ledger. Otherwise it waits in their inbox until they sign in. Returns to you after 30 days unclaimed.
           </div>
 
-          <div>
-            <label>Amount (BUSTS)</label>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                max={bustsBalance}
-                value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="100"
-                style={{ flex: 1 }}
-              />
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => setAmountStr(String(bustsBalance))}
-                disabled={bustsBalance <= 0}
-              >Max</button>
+          {/* FROM → TO diagram */}
+          <div className="wire-flow">
+            <div className="wire-flow-cell">
+              <span className="wfc-label">FROM</span>
+              {senderHandle}
             </div>
-            <div style={{
-              fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6,
-              color: isAmountValid || !amountStr ? 'var(--text-3)' : 'var(--red, #c4352b)',
+            <div className="wire-flow-arrow">→</div>
+            <div className="wire-flow-cell" style={{
+              color: recipientPreview && !recipientValid ? '#c4352b' : 'var(--ink)',
             }}>
-              Balance: {bustsBalance.toLocaleString()} BUSTS
-              {amountStr && isAmountValid
-                ? ` · you will have ${remainingAfter.toLocaleString()} left`
-                : amountStr
-                  ? (amount < 1 ? ' · minimum is 1' : ' · exceeds balance')
-                  : ''}
+              <span className="wfc-label">TO</span>
+              {recipientPreview || '—'}
             </div>
           </div>
+
+          <div className="wire-label">
+            <span>RECIPIENT @USERNAME</span>
+          </div>
+          <input
+            type="text"
+            value={toUsername}
+            onChange={(e) => setToUsername(e.target.value)}
+            placeholder="@vitalik"
+            className={`wire-input ${recipientPreview && !recipientValid ? 'invalid' : ''}`}
+          />
+
+          <div className="wire-label">
+            <span>AMOUNT</span>
+            <span className="wl-hint">
+              BAL · {(bustsBalance || 0).toLocaleString()} BUSTS
+            </span>
+          </div>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={amountStr}
+            onChange={(e) => setAmountStr(e.target.value.replace(/[^0-9]/g, ''))}
+            placeholder="0"
+            className={`wire-input amount ${amountStr && !isAmountValid ? 'invalid' : ''}`}
+          />
+
+          {chips.length > 0 ? (
+            <div className="wire-chips">
+              {chips.map((c) => (
+                <button
+                  key={c.label}
+                  type="button"
+                  className="wire-chip"
+                  onClick={() => setAmountStr(String(c.val))}
+                  disabled={c.val <= 0}
+                >{c.label}</button>
+              ))}
+            </div>
+          ) : null}
+
+          {amountStr ? (
+            <div className={`wire-meta ${isAmountValid ? '' : 'bad'}`}>
+              {isAmountValid
+                ? `KEEP ${remainingAfter.toLocaleString()} · WIRE ${amount.toLocaleString()}`
+                : (amount < 1 ? 'MINIMUM IS 1 BUSTS' : 'EXCEEDS BALANCE')}
+            </div>
+          ) : null}
 
           <button
-            className="btn btn-solid btn-arrow"
+            className="wire-cta"
             disabled={!toUsername.trim() || !isAmountValid || sending}
             onClick={handleSend}
           >
-            {sending ? 'Sending.' : amount >= 1 ? `Send ${amount.toLocaleString()} BUSTS` : 'Send BUSTS'}
+            <span>
+              {sending
+                ? 'WIRING…'
+                : amount >= 1 && recipientValid
+                  ? `WIRE ${amount.toLocaleString()} → ${recipientPreview}`
+                  : 'WIRE BUSTS'}
+            </span>
+            <span className="wire-cta-arrow">→</span>
           </button>
         </div>
-      </div>
 
-      <div className="gift-card">
-        <div className="gift-card-title">BUSTS inbox</div>
-        <div className="gift-card-sub">
-          BUSTS sent to your @X handle show up here. Claim to credit your balance.
-          Unclaimed sends return to the sender after 30 days.
-        </div>
+        <div className="wire-divider" />
 
-        <div className="gift-inbox">
+        {/* ── RIGHT pane — INBOX ── */}
+        <div className="wire-pane">
+          <div className="wire-kicker">INBOX</div>
+          <div className="wire-headline">
+            Pending claims.
+            {inbox.length > 0 ? (
+              <span className="wire-count-badge">
+                <span style={{
+                  display: 'inline-block', width: 5, height: 5,
+                  borderRadius: '50%', background: 'var(--ink)',
+                }} />
+                {inbox.length}
+              </span>
+            ) : null}
+          </div>
+          <div className="wire-sub">
+            BUSTS sent to your @X handle land here. Claim to credit your balance — anything unclaimed returns to the sender after 30 days.
+          </div>
+
           {inbox.length === 0 ? (
-            <div className="gift-row-empty">Nothing pending.</div>
+            <div className="wire-empty" style={{ marginTop: 22 }}>
+              <div className="wire-empty-line">Nothing pending.</div>
+              <div className="wire-empty-sub">YOUR INBOX IS QUIET</div>
+            </div>
           ) : (
-            inbox.map((t) => (
-              <div key={t.id} className="gift-row">
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="gift-row-name">+{Number(t.amount).toLocaleString()} BUSTS</div>
-                  <div className="gift-row-from">
-                    From @{t.fromXUsername || 'anon'} · expires {timeAgo(t.expiresAt)}
+            <div className="wire-inbox-list">
+              {inbox.map((t) => (
+                <div key={t.id} className="wire-inbox-row">
+                  <div style={{ minWidth: 0 }}>
+                    <div className="wire-inbox-amount">
+                      +{Number(t.amount).toLocaleString()} <span style={{
+                        fontFamily: 'var(--font-mono)', fontStyle: 'normal',
+                        fontSize: 11, letterSpacing: '0.18em', color: 'var(--text-3)',
+                        marginLeft: 4,
+                      }}>BUSTS</span>
+                    </div>
+                    <div className="wire-inbox-from">
+                      FROM @{t.fromXUsername || 'ANON'} · EXPIRES {timeAgo(t.expiresAt).toUpperCase()}
+                    </div>
                   </div>
+                  <button
+                    className="wire-inbox-claim"
+                    onClick={() => handleClaim(t)}
+                    disabled={busyId === t.id}
+                  >
+                    {busyId === t.id ? 'CLAIMING…' : 'CLAIM →'}
+                  </button>
                 </div>
-                <button
-                  className="btn btn-solid btn-sm"
-                  onClick={() => handleClaim(t)}
-                  disabled={busyId === t.id}
-                >
-                  {busyId === t.id ? 'Claiming.' : 'Claim'}
-                </button>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </div>
