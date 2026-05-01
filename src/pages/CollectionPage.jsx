@@ -54,42 +54,67 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
 
   return (
     <div className="page dash-page">
-      {/* ─── Header ─── */}
-      <div className="dash-head">
-        <div>
-          <div className="dash-head-kicker">
-            <span style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--accent)', border: '1px solid var(--ink)', borderRadius: '50%', marginRight: 10, verticalAlign: 'middle' }} />
-            {xUser ? `Signed in as @${xUser.username}` : 'Dashboard'}
-          </div>
-          <h1 className="dash-head-title">
-            Your <em>command deck.</em>
-          </h1>
+      {/* ─── Unified header ───
+          The old triple-stat panel (Balance / Traits / Status) was redundant
+          with the live metrics row below. The Traits 0/8 chip in particular
+          had no meaning post-build-close. Now the header is just the kicker
+          + headline + a slim WL/tier badge; all numeric data lives in the
+          live metrics row directly underneath. */}
+      <div style={{
+        padding: '20px 24px 14px',
+        borderBottom: '1px solid var(--hairline)',
+        marginBottom: 24,
+      }}>
+        <div style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10, letterSpacing: '0.18em',
+          color: 'var(--text-4)',
+          textTransform: 'uppercase',
+        }}>
+          <span style={{
+            display: 'inline-block', width: 8, height: 8,
+            background: 'var(--accent)',
+            border: '1px solid var(--ink)',
+            borderRadius: '50%',
+            marginRight: 10, verticalAlign: 'middle',
+          }} />
+          {xUser ? `Signed in as @${xUser.username}` : 'Dashboard'}
         </div>
-
-        <div className="dash-head-stats">
-          <div className="dash-head-stat">
-            <div className="dash-head-stat-label">Balance</div>
-            <div className="dash-head-stat-value">{bustsBalance.toLocaleString()}</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--text-4)', marginTop: 6, textTransform: 'uppercase' }}>BUSTS</div>
-          </div>
-          <div className="dash-head-stat">
-            <div className="dash-head-stat-label">Traits</div>
-            <div className="dash-head-stat-value">{progressCount}<span style={{ color: 'var(--text-4)' }}>/{TOTAL_TYPES}</span></div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--text-4)', marginTop: 6, textTransform: 'uppercase' }}>Types owned</div>
-          </div>
-          <div className="dash-head-stat">
-            <div className="dash-head-stat-label">Status</div>
-            <div className="dash-head-stat-value" style={{ fontSize: 20 }}>
-              {isWhitelisted ? <span className="wl-secured-badge" style={{ padding: '6px 12px', fontSize: 10 }}>WL secured</span> : 'Not yet WL'}
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--text-4)', marginTop: 6, textTransform: 'uppercase' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+          marginTop: 8,
+        }}>
+          <h1 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(36px, 6vw, 56px)',
+            fontWeight: 500,
+            letterSpacing: '-0.02em',
+            margin: 0,
+            color: 'var(--ink)',
+          }}>
+            Your <em style={{ fontStyle: 'italic' }}>command deck.</em>
+          </h1>
+          {/* Slim status badge — keeps WL/tier signal without a whole stat panel */}
+          {isWhitelisted ? (
+            <span className="wl-secured-badge" style={{ padding: '6px 12px', fontSize: 10 }}>
+              WL secured · {completedNFTs.length} portrait{completedNFTs.length === 1 ? '' : 's'}
+            </span>
+          ) : completedNFTs.length > 0 ? (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em',
+              color: 'var(--text-3)', textTransform: 'uppercase',
+            }}>
               {completedNFTs.length} portrait{completedNFTs.length === 1 ? '' : 's'} built
-            </div>
-          </div>
+            </span>
+          ) : null}
         </div>
       </div>
 
-      {/* ─── Unified dashboard (no tabs) — extras strip + section heads ─── */}
+      {/* ─── Live metrics + NFT strip ─── */}
       <DashboardExtras
         completedNFTs={completedNFTs}
         bustsBalance={bustsBalance}
