@@ -123,11 +123,19 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       />
 
       {/* ─── §01 BURN — trait inventory + redeem for BUSTS ─── */}
-      <DashSectionHead n="01" title="Trait inventory" sub="Traits you collected during the drop. Burn them for BUSTS — the door is closed, the loot is liquid." />
-      <TraitInventorySection
-        inventory={inventory}
-        completedNFTs={completedNFTs}
-      />
+      {/* Hide the entire section (header + body) once the user has no
+          spare traits left to burn. The "No spare traits / everything
+          went into the portrait" empty state was just dead space for
+          burners who already cashed out. */}
+      {((inventory || []).some((i) => (i.quantity || 0) > 0)) && (
+        <>
+          <DashSectionHead n="01" title="Trait inventory" sub="Traits you collected during the drop. Burn them for BUSTS — the door is closed, the loot is liquid." />
+          <TraitInventorySection
+            inventory={inventory}
+            completedNFTs={completedNFTs}
+          />
+        </>
+      )}
 
       {/* ─── §02 GIFT — BUSTS transfers only ─── */}
       {/* Element-trait gifting was retired: the drop is closed and the
