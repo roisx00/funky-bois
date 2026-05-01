@@ -14,7 +14,7 @@
 import { sql, one } from '../_lib/db.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import { getSessionUser } from '../_lib/auth.js';
-import { addRole, removeRole } from '../_lib/discordApi.js';
+import { setRoles, getMember } from '../_lib/discordApi.js';
 import {
   DISCORD_GUILD_ID, TIER_LADDER, DEPRECATED_TIER_ROLE_IDS, pickTier,
 } from '../_lib/discordConfig.js';
@@ -150,33 +150,51 @@ export default async function handler(req, res) {
   const holdings = walletCount + vaultCount;
   const tier = pickTier(holdings);
 
-  // Sync roles. Remove every OTHER current-tier role, plus any
-  // deprecated tier role IDs from previous config. Add the new tier.
-  const removeFailures = [];
-  const toRemove = [
-    ...TIER_LADDER.filter((t) => !tier || t.roleId !== tier.roleId).map((t) => t.roleId),
+  // Sync roles via a single PATCH that replaces the member's full role
+  // array. ONE API call instead of 7+ (was triggering Discord rate
+  // limits when verifies came in bursts). Idempotent: if the member
+  // already has exactly the right tier role and no obsolete ones, the
+  // PATCH is a no-op for them.
+  const allTierIds = new Set([
+    ...TIER_LADDER.map((t) => t.roleId),
     ...DEPRECATED_TIER_ROLE_IDS,
-  ];
-  for (const roleId of toRemove) {
-    try { await removeRole(DISCORD_GUILD_ID, id.discordId, roleId); }
-    catch (e) {
-      if (e?.status !== 404) removeFailures.push({ roleId, msg: e?.message });
-    }
+  ]);
+
+  let member;
+  try { member = await getMember(DISCORD_GUILD_ID, id.discordId); }
+  catch (e) {
+    if (e?.status === 404) return bad(res, 404, 'not_in_guild', { hint: 'Join the Discord server first.' });
+    return bad(res, 502, 'fetch_member_failed', { msg: e?.message });
   }
-  if (tier) {
-    try { await addRole(DISCORD_GUILD_ID, id.discordId, tier.roleId); }
+  const currentRoles = Array.isArray(member?.roles) ? member.roles : [];
+  // Keep everything that isn't a tier role we manage; add the new
+  // tier role (if any). Order doesn't matter; Discord deduplicates.
+  const nextRoles = currentRoles.filter((rid) => !allTierIds.has(rid));
+  if (tier) nextRoles.push(tier.roleId);
+
+  // Skip the API call entirely if nothing changed.
+  const sameSet = currentRoles.length === nextRoles.length
+    && currentRoles.every((r) => nextRoles.includes(r));
+  const removeFailures = [];
+  if (!sameSet) {
+    try { await setRoles(DISCORD_GUILD_ID, id.discordId, nextRoles); }
     catch (e) {
-      if (e?.status === 404) return bad(res, 404, 'not_in_guild', { hint: 'Join the Discord server first.' });
+      if (e?.status === 429) {
+        return bad(res, 429, 'discord_rate_limited', {
+          hint: 'Discord is throttling us. Try again in a few seconds.',
+          discordMsg: e?.payload?.message,
+        });
+      }
       if (e?.status === 403) {
         return bad(res, 403, 'bot_missing_permission', {
-          hint: 'Bot needs MANAGE_ROLES AND its own role must sit ABOVE all 6 tier roles in the server’s role list. Server Settings → Roles → drag the bot role above The Soldier.',
-          tier: tier.name,
-          roleId: tier.roleId,
+          hint: 'Bot needs MANAGE_ROLES AND its own role must sit ABOVE all 6 tier roles. Server Settings → Roles → drag the bot role above The Soldier.',
+          tier: tier?.name,
+          roleId: tier?.roleId,
           discordCode: e?.payload?.code,
           discordMsg: e?.payload?.message,
         });
       }
-      return bad(res, 502, 'add_role_failed', {
+      return bad(res, 502, 'set_roles_failed', {
         msg: e?.message,
         status: e?.status,
         discordCode: e?.payload?.code,

@@ -11,7 +11,7 @@
 // by oldest last_synced_at. Each pass refreshes the staleness ranking.
 import { sql, one } from '../_lib/db.js';
 import { ok, bad } from '../_lib/json.js';
-import { addRole, removeRole } from '../_lib/discordApi.js';
+import { setRoles, getMember } from '../_lib/discordApi.js';
 import {
   DISCORD_GUILD_ID, TIER_LADDER, DEPRECATED_TIER_ROLE_IDS, pickTier,
 } from '../_lib/discordConfig.js';
@@ -99,34 +99,38 @@ async function syncOne(row) {
     return { unchanged: true };
   }
 
-  // Remove all OTHER current-tier roles plus any deprecated tier role
-  // IDs from previous config. Add the new tier (or none).
-  const toRemove = [
-    ...TIER_LADDER.filter((t) => !tier || t.roleId !== tier.roleId).map((t) => t.roleId),
+  // Sync via single PATCH that replaces the member's full role array.
+  // ONE call instead of 7+ — keeps Discord rate limits happy when the
+  // 6h cron sweeps hundreds of holders.
+  const allTierIds = new Set([
+    ...TIER_LADDER.map((t) => t.roleId),
     ...DEPRECATED_TIER_ROLE_IDS,
-  ];
-  for (const roleId of toRemove) {
-    try { await removeRole(DISCORD_GUILD_ID, row.discord_id, roleId); }
-    catch (e) {
-      if (e?.status !== 404 && e?.status !== 403) {
-        return { failed: 'remove', roleId, msg: e?.message };
-      }
+  ]);
+  let member;
+  try { member = await getMember(DISCORD_GUILD_ID, row.discord_id); }
+  catch (e) {
+    if (e?.status === 404) {
+      // User left the guild. Blank their record so cron stops trying.
+      await sql`
+        UPDATE discord_verifications
+           SET current_tier_role = NULL, current_holdings = 0, last_synced_at = now()
+         WHERE discord_id = ${row.discord_id}
+      `;
+      return { left_guild: true };
     }
+    return { failed: 'fetch_member', msg: e?.message };
   }
-  if (tier) {
-    try { await addRole(DISCORD_GUILD_ID, row.discord_id, tier.roleId); }
+  const currentRoles = Array.isArray(member?.roles) ? member.roles : [];
+  const nextRoles = currentRoles.filter((rid) => !allTierIds.has(rid));
+  if (tier) nextRoles.push(tier.roleId);
+  const sameSet = currentRoles.length === nextRoles.length
+    && currentRoles.every((r) => nextRoles.includes(r));
+  if (!sameSet) {
+    try { await setRoles(DISCORD_GUILD_ID, row.discord_id, nextRoles); }
     catch (e) {
-      // 404 here means the user left the guild; just blank their record
-      // so cron stops trying.
-      if (e?.status === 404) {
-        await sql`
-          UPDATE discord_verifications
-             SET current_tier_role = NULL, current_holdings = 0, last_synced_at = now()
-           WHERE discord_id = ${row.discord_id}
-        `;
-        return { left_guild: true };
-      }
-      return { failed: 'add', tier: tier.name, msg: e?.message };
+      if (e?.status === 429) return { failed: 'rate_limited', msg: e?.message };
+      if (e?.status === 403) return { failed: 'permission', msg: e?.message };
+      return { failed: 'set_roles', msg: e?.message };
     }
   }
 
