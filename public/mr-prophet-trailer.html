@@ -196,6 +196,19 @@
     position: relative;
     box-shadow: 0 0 0 8px rgba(215,255,58,0.10);
     overflow: hidden;
+    display: grid; place-items: center;
+  }
+  .avatar-fallback {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 64px;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--ink);
+    z-index: 0;
   }
   .avatar img {
     width: 100%; height: 100%;
@@ -203,6 +216,8 @@
     display: block;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    position: relative;
+    z-index: 1;
   }
   .avatar::after {
     content: '';
@@ -292,9 +307,21 @@
   .mini-avatar {
     width: 44px; height: 44px;
     border-radius: 50%;
-    background: var(--ink);
+    background: var(--lime);
     flex-shrink: 0;
     overflow: hidden;
+    position: relative;
+  }
+  .mini-avatar-fallback {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 26px;
+    line-height: 1;
+    color: var(--ink);
+    z-index: 0;
   }
   .mini-avatar img {
     width: 100%; height: 100%;
@@ -302,6 +329,8 @@
     display: block;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    position: relative;
+    z-index: 1;
   }
   .bubble {
     max-width: 78%;
@@ -718,7 +747,10 @@
     <div class="chat">
       <!-- Hero band -->
       <div class="hero">
-        <div class="avatar"><img src="mr-prophet-pfp.png" alt="Mr Prophet" /></div>
+        <div class="avatar">
+          <span class="avatar-fallback" aria-hidden="true">P</span>
+          <img src="mr-prophet-pfp.png" alt="" onerror="this.style.display='none'" />
+        </div>
         <div>
           <div class="hero-name">Mr Prophet.</div>
           <div class="hero-sub">Wire concierge. Talks, sends, knows prices.</div>
@@ -738,7 +770,10 @@
         <div class="thread">
           <!-- Intro bot bubble -->
           <div class="row bot bot-intro">
-            <div class="mini-avatar"><img src="mr-prophet-pfp.png" alt="" /></div>
+            <div class="mini-avatar">
+              <span class="mini-avatar-fallback" aria-hidden="true">P</span>
+              <img src="mr-prophet-pfp.png" alt="" onerror="this.style.display='none'" />
+            </div>
             <div class="bubble bot">
               Plain English. Real wires. Confirm before anything moves.
             </div>
@@ -751,7 +786,10 @@
 
           <!-- Typing dots -->
           <div class="row bot">
-            <div class="mini-avatar"><img src="mr-prophet-pfp.png" alt="" /></div>
+            <div class="mini-avatar">
+              <span class="mini-avatar-fallback" aria-hidden="true">P</span>
+              <img src="mr-prophet-pfp.png" alt="" onerror="this.style.display='none'" />
+            </div>
             <div class="typing"><span></span><span></span><span></span></div>
           </div>
 
@@ -773,7 +811,10 @@
 
           <!-- Bot follow-up bubble -->
           <div class="row bot bot-followup">
-            <div class="mini-avatar"><img src="mr-prophet-pfp.png" alt="" /></div>
+            <div class="mini-avatar">
+              <span class="mini-avatar-fallback" aria-hidden="true">P</span>
+              <img src="mr-prophet-pfp.png" alt="" onerror="this.style.display='none'" />
+            </div>
             <div class="bubble bot">
               ✓ Wired 100 BUSTS to @vitalik. They claim it from their inbox.
             </div>

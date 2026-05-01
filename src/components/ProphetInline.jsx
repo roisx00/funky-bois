@@ -403,6 +403,24 @@ export default function ProphetInline() {
           position: relative;
           box-shadow: 0 0 0 4px rgba(215,255,58,0.12);
           overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        /* Fallback letter — sits behind the image. If the image loads
+           it covers the letter; if it fails (or isn't on disk yet) the
+           "P" shows through cleanly. */
+        .proph-avatar-fallback {
+          position: absolute; inset: 0;
+          display: flex; align-items: center; justify-content: center;
+          font-family: var(--font-display);
+          font-style: italic;
+          font-weight: 500;
+          font-size: 38px;
+          letter-spacing: -0.04em;
+          line-height: 1;
+          color: var(--ink);
+          z-index: 0;
         }
         .proph-avatar img {
           width: 100%;
@@ -411,6 +429,8 @@ export default function ProphetInline() {
           display: block;
           image-rendering: pixelated;
           image-rendering: crisp-edges;
+          position: relative;
+          z-index: 1;
         }
         .proph-avatar::after {
           content: '';
@@ -539,10 +559,22 @@ export default function ProphetInline() {
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          background: var(--ink);
+          background: var(--accent);
           border: 1px solid var(--ink);
           flex-shrink: 0;
           overflow: hidden;
+          position: relative;
+        }
+        .proph-mini-avatar-fallback {
+          position: absolute; inset: 0;
+          display: flex; align-items: center; justify-content: center;
+          font-family: var(--font-display);
+          font-style: italic;
+          font-weight: 500;
+          font-size: 16px;
+          line-height: 1;
+          color: var(--ink);
+          z-index: 0;
         }
         .proph-mini-avatar img {
           width: 100%;
@@ -551,6 +583,8 @@ export default function ProphetInline() {
           display: block;
           image-rendering: pixelated;
           image-rendering: crisp-edges;
+          position: relative;
+          z-index: 1;
         }
 
         .proph-bubble {
@@ -783,7 +817,12 @@ export default function ProphetInline() {
       {/* ── Studio hero band ── */}
       <div className="proph-hero">
         <div className="proph-avatar">
-          <img src="/mr-prophet-pfp.png" alt="Mr Prophet" />
+          <span className="proph-avatar-fallback" aria-hidden="true">P</span>
+          <img
+            src="/mr-prophet-pfp.png"
+            alt=""
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
         </div>
         <div className="proph-hero-text">
           <div className="proph-kicker">§02 · CONCIERGE</div>
@@ -814,7 +853,14 @@ export default function ProphetInline() {
       <div className="proph-thread" ref={scrollRef}>
         {msgs.map((m) => (
           <div key={m.id} className={`proph-row ${m.role}`}>
-            {m.role === 'bot' ? <div className="proph-mini-avatar"><img src="/mr-prophet-pfp.png" alt="" /></div> : null}
+            {m.role === 'bot' ? <div className="proph-mini-avatar">
+                <span className="proph-mini-avatar-fallback" aria-hidden="true">P</span>
+                <img
+                  src="/mr-prophet-pfp.png"
+                  alt=""
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              </div> : null}
             {m.kind === 'text' ? (
               <div className={`proph-bubble ${m.role}`}>{m.text}</div>
             ) : m.kind === 'rich' ? (
@@ -850,7 +896,14 @@ export default function ProphetInline() {
         ))}
         {typing ? (
           <div className="proph-row bot">
-            <div className="proph-mini-avatar"><img src="/mr-prophet-pfp.png" alt="" /></div>
+            <div className="proph-mini-avatar">
+                <span className="proph-mini-avatar-fallback" aria-hidden="true">P</span>
+                <img
+                  src="/mr-prophet-pfp.png"
+                  alt=""
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              </div>
             <div className="proph-typing"><span /><span /><span /></div>
           </div>
         ) : null}
