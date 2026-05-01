@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="Inter, system-ui, sans-serif">
+  <!-- BACKGROUND — black with subtle lime aurora -->
+  <rect width="1600" height="900" fill="#0A0A0A"/>
+
+  <defs>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M 80 0 L 0 0 0 80" fill="none" stroke="rgba(215,255,58,0.05)" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="auroraTop" cx="50%" cy="0%" r="80%">
+      <stop offset="0%"   stop-color="rgba(215,255,58,0.18)"/>
+      <stop offset="40%"  stop-color="rgba(215,255,58,0.04)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+    <radialGradient id="centerHalo" cx="50%" cy="48%" r="55%">
+      <stop offset="0%"   stop-color="rgba(215,255,58,0.22)"/>
+      <stop offset="55%"  stop-color="rgba(215,255,58,0.04)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <rect width="1600" height="900" fill="url(#auroraTop)"/>
+  <rect width="1600" height="900" fill="url(#centerHalo)"/>
+
+  <!-- TOP LIME RIBBON -->
+  <rect x="0" y="0" width="1600" height="6" fill="#D7FF3A"/>
+
+  <line x1="72" y1="78" x2="1528" y2="78" stroke="rgba(249,246,240,0.18)" stroke-width="1"/>
+
+  <!-- KICKER -->
+  <g transform="translate(72, 56)">
+    <circle cx="6" cy="-4" r="8" fill="#D7FF3A">
+      <animate attributeName="opacity" values="1;0.35;1" dur="1.4s" repeatCount="indefinite"/>
+    </circle>
+    <text x="26" y="0" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3.4" fill="#D7FF3A">FINAL · NO SECOND DROP</text>
+  </g>
+
+  <text x="1528" y="56" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="12" letter-spacing="3.2" fill="rgba(249,246,240,0.7)">MAY 1 · ETH MAINNET</text>
+
+  <!-- ── HERO: 1969 / 1969 ── -->
+  <g transform="translate(800, 240)">
+    <text x="0" y="0" text-anchor="middle"
+          font-family="ui-monospace, 'JetBrains Mono', monospace"
+          font-size="14" font-weight="700" letter-spacing="6" fill="rgba(249,246,240,0.55)">PORTRAITS MINTED</text>
+
+    <text x="0" y="200" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="240" fill="#F9F6F0"
+          letter-spacing="-6"><tspan fill="#D7FF3A">1969</tspan> / 1969</text>
+
+    <line x1="-220" y1="240" x2="220" y2="240" stroke="#D7FF3A" stroke-width="10"/>
+
+    <text x="0" y="310" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="58" fill="#F9F6F0"
+          letter-spacing="-1.5">sold out.</text>
+  </g>
+
+  <!-- ── 3-cell next-step strip ── -->
+  <g transform="translate(72, 660)">
+    <rect x="0" y="0" width="1456" height="50" fill="rgba(249,246,240,0.04)" stroke="rgba(249,246,240,0.18)"/>
+    <line x1="485.3" y1="0" x2="485.3" y2="50" stroke="rgba(249,246,240,0.12)"/>
+    <line x1="970.7" y1="0" x2="970.7" y2="50" stroke="rgba(249,246,240,0.12)"/>
+
+    <g transform="translate(242.7, 32)">
+      <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3" fill="#F9F6F0">FLOOR ON OPENSEA</text>
+    </g>
+    <g transform="translate(728, 32)">
+      <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3" fill="#F9F6F0">DEPOSIT IN VAULT</text>
+    </g>
+    <g transform="translate(1213.3, 32)">
+      <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3" fill="#F9F6F0">EARN $BUSTS · LIVE</text>
+    </g>
+  </g>
+
+  <!-- ── LIME CTA RIBBON ── -->
+  <g transform="translate(72, 730)">
+    <rect x="0" y="0" width="1456" height="84" fill="#D7FF3A"/>
+    <text x="40" y="54"
+          font-family="ui-monospace, 'JetBrains Mono', monospace"
+          font-size="22" font-weight="700" letter-spacing="6" fill="#0E0E0E">NOW THE REAL WORK BEGINS</text>
+    <text x="730" y="56" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="38" fill="#0E0E0E"
+          letter-spacing="-0.5">the economy is the next chapter.</text>
+    <text x="1416" y="54" text-anchor="end"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="44" fill="#0E0E0E" letter-spacing="-1">→</text>
+  </g>
+
+  <line x1="72" y1="852" x2="1528" y2="852" stroke="rgba(249,246,240,0.18)" stroke-width="1"/>
+  <text x="72"   y="884" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="12" font-weight="700" letter-spacing="3.4" fill="#F9F6F0">@THE1969ETH</text>
+  <text x="800"  y="884" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="rgba(249,246,240,0.45)">THE 1969 · 0x890d…7efab · ERC-721</text>
+  <text x="1528" y="884" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="12" font-weight="700" letter-spacing="3.4" fill="#F9F6F0">THE1969.IO</text>
+
+  <rect x="0" y="894" width="1600" height="6" fill="#D7FF3A"/>
+</svg>
