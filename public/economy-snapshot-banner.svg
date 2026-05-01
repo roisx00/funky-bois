@@ -17,120 +17,119 @@
   <text x="1016" y="60" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" letter-spacing="3.4" fill="#0E0E0E">MAY 1 · SNAPSHOT</text>
 
   <!-- ── HERO: TOTAL CIRCULATION ── -->
-  <g transform="translate(540, 230)">
+  <g transform="translate(540, 180)">
     <text x="0" y="0" text-anchor="middle"
           font-family="ui-monospace, 'JetBrains Mono', monospace"
           font-size="14" font-weight="700" letter-spacing="6" fill="#5C5C5C">$BUSTS IN MOTION</text>
 
-    <text x="0" y="160" text-anchor="middle"
+    <text x="0" y="120" text-anchor="middle"
           font-family="'Instrument Serif', Georgia, serif"
           font-style="italic" font-weight="500"
-          font-size="190" fill="#0E0E0E"
-          letter-spacing="-4">4,885,560</text>
+          font-size="150" fill="#0E0E0E"
+          letter-spacing="-3">4,885,560</text>
 
-    <line x1="-200" y1="200" x2="200" y2="200" stroke="#D7FF3A" stroke-width="10"/>
+    <line x1="-180" y1="148" x2="180" y2="148" stroke="#D7FF3A" stroke-width="9"/>
 
-    <text x="0" y="248" text-anchor="middle"
+    <text x="0" y="190" text-anchor="middle"
           font-family="'Instrument Serif', Georgia, serif"
           font-style="italic" font-weight="500"
-          font-size="32" fill="#5C5C5C" letter-spacing="-0.5">circulating · off-chain</text>
+          font-size="28" fill="#5C5C5C" letter-spacing="-0.5">circulating · off-chain</text>
   </g>
 
-  <!-- ── 6 STAT CELLS — 3x2 grid ── -->
-  <!-- Row 1 -->
-  <g transform="translate(64, 580)">
-    <rect x="0" y="0" width="952" height="180" fill="#F2EEE6" stroke="#0E0E0E" stroke-width="1"/>
-    <line x1="317.3" y1="0" x2="317.3" y2="180" stroke="#0E0E0E" stroke-width="1"/>
-    <line x1="634.7" y1="0" x2="634.7" y2="180" stroke="#0E0E0E" stroke-width="1"/>
+  <!-- ── 3 stat cells ── -->
+  <g transform="translate(64, 440)">
+    <rect x="0" y="0" width="952" height="220" fill="#F2EEE6" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="317.3" y1="0" x2="317.3" y2="220" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="634.7" y1="0" x2="634.7" y2="220" stroke="#0E0E0E" stroke-width="1"/>
 
     <!-- Cell 1: VAULTED -->
-    <g transform="translate(158.7, 56)">
+    <g transform="translate(158.7, 60)">
       <text x="0" y="0" text-anchor="middle"
             font-family="ui-monospace, 'JetBrains Mono', monospace"
-            font-size="11" font-weight="700" letter-spacing="3.4" fill="#5C5C5C">VAULTED</text>
-      <text x="0" y="64" text-anchor="middle"
+            font-size="12" font-weight="700" letter-spacing="3.6" fill="#5C5C5C">VAULTED</text>
+      <text x="0" y="80" text-anchor="middle"
             font-family="'Instrument Serif', Georgia, serif"
             font-style="italic" font-weight="500"
-            font-size="64" fill="#0E0E0E" letter-spacing="-2">2,437,060</text>
-      <text x="0" y="100" text-anchor="middle"
+            font-size="78" fill="#0E0E0E" letter-spacing="-2.5">2,437,060</text>
+      <text x="0" y="124" text-anchor="middle"
             font-family="ui-monospace, 'JetBrains Mono', monospace"
-            font-size="11" letter-spacing="2.6" fill="#0E0E0E" font-weight="700">50% LOCKED</text>
+            font-size="12" letter-spacing="3" fill="#0E0E0E" font-weight="700">50% LOCKED</text>
     </g>
 
     <!-- Cell 2: HOLDERS -->
-    <g transform="translate(476, 56)">
+    <g transform="translate(476, 60)">
       <text x="0" y="0" text-anchor="middle"
             font-family="ui-monospace, 'JetBrains Mono', monospace"
-            font-size="11" font-weight="700" letter-spacing="3.4" fill="#5C5C5C">HOLDERS</text>
-      <text x="0" y="64" text-anchor="middle"
+            font-size="12" font-weight="700" letter-spacing="3.6" fill="#5C5C5C">HOLDERS</text>
+      <text x="0" y="80" text-anchor="middle"
             font-family="'Instrument Serif', Georgia, serif"
             font-style="italic" font-weight="500"
-            font-size="64" fill="#0E0E0E" letter-spacing="-2">18,828</text>
-      <text x="0" y="100" text-anchor="middle"
+            font-size="78" fill="#0E0E0E" letter-spacing="-2.5">18,828</text>
+      <text x="0" y="124" text-anchor="middle"
             font-family="ui-monospace, 'JetBrains Mono', monospace"
-            font-size="11" letter-spacing="2.6" fill="#5C5C5C">WITH BALANCE > 0</text>
+            font-size="12" letter-spacing="3" fill="#5C5C5C">WITH BALANCE > 0</text>
     </g>
 
     <!-- Cell 3: BURNED -->
-    <g transform="translate(793.3, 56)">
+    <g transform="translate(793.3, 60)">
       <text x="0" y="0" text-anchor="middle"
             font-family="ui-monospace, 'JetBrains Mono', monospace"
-            font-size="11" font-weight="700" letter-spacing="3.4" fill="#5C5C5C">BURNED</text>
-      <text x="0" y="64" text-anchor="middle"
+            font-size="12" font-weight="700" letter-spacing="3.6" fill="#5C5C5C">BURNED</text>
+      <text x="0" y="80" text-anchor="middle"
             font-family="'Instrument Serif', Georgia, serif"
             font-style="italic" font-weight="500"
-            font-size="64" fill="#0E0E0E" letter-spacing="-2">344,700</text>
-      <text x="0" y="100" text-anchor="middle"
+            font-size="78" fill="#0E0E0E" letter-spacing="-2.5">344,700</text>
+      <text x="0" y="124" text-anchor="middle"
             font-family="ui-monospace, 'JetBrains Mono', monospace"
-            font-size="11" letter-spacing="2.6" fill="#0E0E0E" font-weight="700">+131K · 24H</text>
+            font-size="12" letter-spacing="3" fill="#0E0E0E" font-weight="700">+131K · 24H</text>
     </g>
   </g>
 
-  <!-- Row 2: P2P -->
-  <g transform="translate(64, 780)">
-    <rect x="0" y="0" width="952" height="120" fill="#0E0E0E"/>
-    <rect x="0" y="0" width="6" height="120" fill="#D7FF3A"/>
+  <!-- ── P2P panel (dark, prominent) ── -->
+  <g transform="translate(64, 700)">
+    <rect x="0" y="0" width="952" height="220" fill="#0E0E0E"/>
+    <rect x="0" y="0" width="6" height="220" fill="#D7FF3A"/>
 
-    <text x="40" y="38"
+    <text x="40" y="46"
           font-family="ui-monospace, 'JetBrains Mono', monospace"
-          font-size="11" font-weight="700" letter-spacing="3.4" fill="#D7FF3A">P2P · WIRES BETWEEN HOLDERS</text>
+          font-size="13" font-weight="700" letter-spacing="3.8" fill="#D7FF3A">P2P · WIRES BETWEEN HOLDERS</text>
 
-    <!-- All-time -->
-    <text x="40" y="92"
+    <!-- Vertical divider between all-time and 24h -->
+    <line x1="476" y1="76" x2="476" y2="200" stroke="rgba(215,255,58,0.3)" stroke-width="1"/>
+
+    <!-- ALL-TIME (left half) -->
+    <text x="40" y="100"
+          font-family="ui-monospace, 'JetBrains Mono', monospace"
+          font-size="12" font-weight="700" letter-spacing="3.4" fill="rgba(249,246,240,0.55)">ALL-TIME</text>
+    <text x="40" y="180"
           font-family="'Instrument Serif', Georgia, serif"
           font-style="italic" font-weight="500"
-          font-size="60" fill="#F9F6F0" letter-spacing="-1.5">6.97M</text>
-    <text x="220" y="92"
+          font-size="92" fill="#F9F6F0" letter-spacing="-2.5">6.97M</text>
+    <text x="40" y="208"
           font-family="ui-monospace, 'JetBrains Mono', monospace"
-          font-size="11" letter-spacing="2.6" fill="rgba(249,246,240,0.6)">ALL-TIME</text>
-    <text x="220" y="74"
+          font-size="12" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.7)">$BUSTS · 49,401 WIRES</text>
+
+    <!-- LAST 24H (right half) -->
+    <text x="510" y="100"
           font-family="ui-monospace, 'JetBrains Mono', monospace"
-          font-size="13" font-weight="700" letter-spacing="2.4" fill="#F9F6F0">$BUSTS · 49,401 WIRES</text>
-
-    <!-- Divider -->
-    <line x1="500" y1="20" x2="500" y2="100" stroke="rgba(215,255,58,0.35)" stroke-width="1"/>
-
-    <!-- 24h -->
-    <text x="540" y="92"
+          font-size="12" font-weight="700" letter-spacing="3.4" fill="rgba(249,246,240,0.55)">LAST 24H</text>
+    <text x="510" y="180"
           font-family="'Instrument Serif', Georgia, serif"
           font-style="italic" font-weight="500"
-          font-size="60" fill="#D7FF3A" letter-spacing="-1.5">570K</text>
-    <text x="700" y="92"
+          font-size="92" fill="#D7FF3A" letter-spacing="-2.5">570K</text>
+    <text x="510" y="208"
           font-family="ui-monospace, 'JetBrains Mono', monospace"
-          font-size="11" letter-spacing="2.6" fill="rgba(249,246,240,0.6)">LAST 24H</text>
-    <text x="700" y="74"
-          font-family="ui-monospace, 'JetBrains Mono', monospace"
-          font-size="13" font-weight="700" letter-spacing="2.4" fill="#F9F6F0">$BUSTS · 2,158 WIRES</text>
+          font-size="12" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.7)">$BUSTS · 2,158 WIRES</text>
   </g>
 
   <!-- BOTTOM RULE -->
-  <line x1="64" y1="950" x2="1016" y2="950" stroke="#0E0E0E" stroke-width="1"/>
+  <line x1="64" y1="965" x2="1016" y2="965" stroke="#0E0E0E" stroke-width="1"/>
 
   <!-- FOOTER -->
-  <text x="64" y="990" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3.4" fill="#0E0E0E">@THE1969ETH</text>
-  <text x="540" y="990" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="12" letter-spacing="3" fill="#5C5C5C">THE1969.IO</text>
-  <text x="1016" y="990" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3.4" fill="#0E0E0E">MINT · 14:00 UTC</text>
+  <text x="64" y="1000" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3.4" fill="#0E0E0E">@THE1969ETH</text>
+  <text x="540" y="1000" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="20" fill="#5C5C5C" letter-spacing="-0.5">the economy is alive.</text>
+  <text x="1016" y="1000" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3.4" fill="#0E0E0E">MINT · 14:00 UTC</text>
 
-  <!-- Sub-footer attribution -->
-  <text x="540" y="1042" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="22" fill="#5C5C5C" letter-spacing="-0.5">the economy is alive.</text>
+  <!-- Bottom lime ribbon -->
+  <rect x="0" y="1074" width="1080" height="6" fill="#D7FF3A"/>
 </svg>
