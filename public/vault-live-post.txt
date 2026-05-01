@@ -1,0 +1,60 @@
+─────────────────────────────────────────────
+THE 1969 / ON-CHAIN VAULT IS LIVE
+─────────────────────────────────────────────
+
+CAPTION (the tight one, recommended):
+─────────────────────────────────────────────
+On-chain deposits are live.
+
+20,000% APY for the early stakers.
+Drops as others join the pool.
+
+→ the1969.io/vault
+
+
+CAPTION (slightly longer alt):
+─────────────────────────────────────────────
+The on-chain vault is live.
+
+Deposit your 1969 portrait, earn from a 20M $BUSTS pool over 12 months.
+Rarity-weighted (1x to 25x). Anytime withdraw. The vault never burns.
+
+Headline APY right now: 20,000%.
+First staker eats the whole pool until others join. Drops fast.
+
+the1969.io/vault
+
+
+SHORTEST VARIANT:
+─────────────────────────────────────────────
+On-chain vault live. 20,000% APY for early stakers. the1969.io/vault
+
+
+REPLY (drop under the post for context):
+─────────────────────────────────────────────
+The math: 20M $BUSTS over 365 days = 54,795 BUSTS/day distributed
+pro-rata to staked weight. Rarity multipliers stack:
+
+  Common      1x
+  Rare        3x
+  Legendary   8x
+  Ultra rare  25x
+
+If only 1 common is staked, that wallet earns the full 54,795/day.
+As more deposit, the share splits. Withdraw anytime, no lockup,
+no penalty. Vault is custodial only while you stake.
+
+
+ASSETS:
+─────────────────────────────────────────────
+• vault-live-banner.svg     1600x900   (primary X post, 16:9)
+
+
+POSTING NOTES:
+─────────────────────────────────────────────
+• Pin it. The 20,000% number is the hook — it's the highest the APY
+  will ever be. Every deposit drops it.
+• Drop the link in the body this once.
+• No hashtags.
+• Reply 1: drop the math breakdown for replies + DMs that ask.
+• Reply 2: 30 minutes later, screenshot of "current APY" if it's dropped.

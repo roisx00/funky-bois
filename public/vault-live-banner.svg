@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="Inter, system-ui, sans-serif">
+  <!-- BACKGROUND (dark rupture, matches mint-live banner) -->
+  <rect width="1600" height="900" fill="#0A0A0A"/>
+
+  <defs>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M 80 0 L 0 0 0 80" fill="none" stroke="rgba(215,255,58,0.05)" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="glow" cx="50%" cy="44%" r="60%">
+      <stop offset="0%"   stop-color="rgba(215,255,58,0.18)"/>
+      <stop offset="55%"  stop-color="rgba(215,255,58,0.04)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <rect width="1600" height="900" fill="url(#glow)"/>
+
+  <!-- TOP LIME RIBBON -->
+  <rect x="0" y="0" width="1600" height="6" fill="#D7FF3A"/>
+
+  <!-- TOP RULE -->
+  <line x1="72" y1="78" x2="1528" y2="78" stroke="rgba(249,246,240,0.18)" stroke-width="1"/>
+
+  <!-- KICKER · LIVE pulse -->
+  <g transform="translate(72, 56)">
+    <circle cx="6" cy="-4" r="8" fill="#D7FF3A">
+      <animate attributeName="opacity" values="1;0.35;1" dur="1.4s" repeatCount="indefinite"/>
+    </circle>
+    <text x="26" y="0" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="3.4" fill="#D7FF3A">LIVE · ON-CHAIN VAULT</text>
+  </g>
+
+  <text x="1528" y="56" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="12" letter-spacing="3.2" fill="rgba(249,246,240,0.7)">DEPOSIT YOUR 1969 PORTRAIT</text>
+
+  <!-- ── HERO APY ── -->
+  <g transform="translate(800, 200)">
+    <text x="0" y="0" text-anchor="middle"
+          font-family="ui-monospace, 'JetBrains Mono', monospace"
+          font-size="14" font-weight="700" letter-spacing="6" fill="rgba(249,246,240,0.55)">HEADLINE APY · RIGHT NOW</text>
+
+    <text x="0" y="220" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="280" fill="#D7FF3A"
+          letter-spacing="-8">20,000%</text>
+
+    <line x1="-220" y1="260" x2="220" y2="260" stroke="#D7FF3A" stroke-width="10"/>
+
+    <text x="0" y="312" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="34" fill="rgba(249,246,240,0.85)"
+          letter-spacing="-0.5">first staker eats. drops as others join.</text>
+  </g>
+
+  <!-- ── 4-cell program detail strip ── -->
+  <g transform="translate(72, 600)">
+    <rect x="0" y="0" width="1456" height="72" fill="rgba(249,246,240,0.04)" stroke="rgba(249,246,240,0.18)"/>
+    <line x1="364" y1="0"  x2="364"  y2="72" stroke="rgba(249,246,240,0.12)"/>
+    <line x1="728" y1="0"  x2="728"  y2="72" stroke="rgba(249,246,240,0.12)"/>
+    <line x1="1092" y1="0" x2="1092" y2="72" stroke="rgba(249,246,240,0.12)"/>
+
+    <!-- Cell 1: POOL -->
+    <g transform="translate(182, 22)">
+      <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.5)">POOL</text>
+      <text x="0" y="34" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="32" fill="#F9F6F0" letter-spacing="-1">20M $BUSTS</text>
+    </g>
+
+    <!-- Cell 2: DURATION -->
+    <g transform="translate(546, 22)">
+      <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.5)">DURATION</text>
+      <text x="0" y="34" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="32" fill="#F9F6F0" letter-spacing="-1">12 months</text>
+    </g>
+
+    <!-- Cell 3: RARITY MULTIPLIER -->
+    <g transform="translate(910, 22)">
+      <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.5)">RARITY MULTIPLIER</text>
+      <text x="0" y="34" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="32" fill="#F9F6F0" letter-spacing="-1">1x · 3x · 8x · 25x</text>
+    </g>
+
+    <!-- Cell 4: WITHDRAW -->
+    <g transform="translate(1274, 22)">
+      <text x="0" y="0" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="3" fill="rgba(249,246,240,0.5)">WITHDRAW</text>
+      <text x="0" y="34" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="32" fill="#F9F6F0" letter-spacing="-1">anytime · no penalty</text>
+    </g>
+  </g>
+
+  <!-- ── LIME CTA RIBBON ── -->
+  <g transform="translate(72, 720)">
+    <rect x="0" y="0" width="1456" height="92" fill="#D7FF3A"/>
+    <text x="40" y="58"
+          font-family="ui-monospace, 'JetBrains Mono', monospace"
+          font-size="22" font-weight="700" letter-spacing="6" fill="#0E0E0E">DEPOSIT NOW</text>
+    <text x="730" y="60" text-anchor="middle"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="38" fill="#0E0E0E"
+          letter-spacing="-0.5">the vault never burns.</text>
+    <text x="1416" y="58" text-anchor="end"
+          font-family="'Instrument Serif', Georgia, serif"
+          font-style="italic" font-weight="500"
+          font-size="44" fill="#0E0E0E" letter-spacing="-1">→</text>
+  </g>
+
+  <!-- BOTTOM RULE + FOOTER -->
+  <line x1="72" y1="852" x2="1528" y2="852" stroke="rgba(249,246,240,0.18)" stroke-width="1"/>
+  <text x="72"   y="884" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="12" font-weight="700" letter-spacing="3.4" fill="#F9F6F0">@THE1969ETH</text>
+  <text x="800"  y="884" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="rgba(249,246,240,0.45)">VAULT1969 · 0x5aa4…6203 · ETH MAINNET</text>
+  <text x="1528" y="884" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="12" font-weight="700" letter-spacing="3.4" fill="#F9F6F0">THE1969.IO/VAULT</text>
+
+  <rect x="0" y="894" width="1600" height="6" fill="#D7FF3A"/>
+</svg>
