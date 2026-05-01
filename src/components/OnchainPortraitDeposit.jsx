@@ -680,6 +680,52 @@ export default function OnchainPortraitDeposit() {
           color: rgba(249,246,240,0.45); margin-top: 6px;
           text-transform: uppercase;
         }
+
+        /* ── Rarity APY strip — per-tier breakdown ── */
+        .ocp-rarity-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1px;
+          background: rgba(249,246,240,0.12);
+          border: 1px solid rgba(249,246,240,0.18);
+          border-top: none;
+        }
+        @media (max-width: 720px) {
+          .ocp-rarity-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .ocp-rarity-cell {
+          background: rgba(0,0,0,0.45);
+          padding: 12px 14px;
+          text-align: center;
+        }
+        .ocp-rarity-cell.ultra { background: rgba(215,255,58,0.07); }
+        .ocp-rarity-cell.legend { background: rgba(255,212,58,0.06); }
+        .ocp-rarity-name {
+          font-family: var(--font-mono, ui-monospace, monospace);
+          font-size: 9px; letter-spacing: 0.22em;
+          color: rgba(249,246,240,0.5); font-weight: 700;
+        }
+        .ocp-rarity-mult {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-style: italic;
+          font-size: 22px; line-height: 1;
+          color: rgba(249,246,240,0.85); letter-spacing: -0.02em;
+          margin-top: 4px;
+        }
+        .ocp-rarity-apy {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-style: italic;
+          font-size: 26px; line-height: 1;
+          color: #D7FF3A; letter-spacing: -0.02em;
+          margin-top: 4px;
+          font-feature-settings: '"tnum"';
+        }
+        .ocp-rarity-label {
+          font-family: var(--font-mono, ui-monospace, monospace);
+          font-size: 8px; letter-spacing: 0.18em;
+          color: rgba(249,246,240,0.35); font-weight: 700;
+          margin-top: 4px;
+        }
       `}</style>
 
       {disabledNote ? (
@@ -719,6 +765,29 @@ export default function OnchainPortraitDeposit() {
               : 'EARLY STAKER · DROPS AS OTHERS JOIN'}
           </div>
         </div>
+      </div>
+
+      {/* ── Per-rarity APY breakdown — shows what each tier earns at
+            current pool composition. Multiplier × headline. ── */}
+      <div className="ocp-rarity-grid">
+        {[
+          { key: 'common',     label: 'COMMON',     mult: '1×',  cls: '' },
+          { key: 'rare',       label: 'RARE',       mult: '3×',  cls: '' },
+          { key: 'legendary',  label: 'LEGENDARY',  mult: '8×',  cls: 'legend' },
+          { key: 'ultra_rare', label: 'ULTRA RARE', mult: '25×', cls: 'ultra' },
+        ].map((tier) => {
+          const apy = pool?.apy?.perTier?.[tier.key];
+          return (
+            <div key={tier.key} className={`ocp-rarity-cell ${tier.cls}`}>
+              <div className="ocp-rarity-name">{tier.label}</div>
+              <div className="ocp-rarity-mult">{tier.mult}</div>
+              <div className="ocp-rarity-apy">
+                {apy != null ? `${Math.round(apy).toLocaleString()}%` : '...'}
+              </div>
+              <div className="ocp-rarity-label">APY · LIVE</div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Pending BUSTS / claim */}
