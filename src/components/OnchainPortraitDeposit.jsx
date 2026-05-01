@@ -269,6 +269,36 @@ export default function OnchainPortraitDeposit() {
   // user hasn't claimed yet; { claimed, lifetimeBusts } after.
   const [claimResult, setClaimResult] = useState(null);
   const [claimBusy, setClaimBusy] = useState(false);
+  const [confetti, setConfetti] = useState(false);
+
+  // Generate the confetti pieces once per burst — random colors,
+  // x-positions, delays, rotations, sizes. CSS animation handles the
+  // motion. 60 pieces feels celebratory without being overwhelming.
+  const confettiPieces = useMemo(() => {
+    if (!confetti) return [];
+    const COLORS = ['#D7FF3A', '#F9F6F0', '#FFD43A', '#D7FF3A', '#0E0E0E'];
+    return Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,            // %
+      delay: Math.random() * 0.4,           // s
+      duration: 1.4 + Math.random() * 0.8,  // s
+      rotateStart: Math.random() * 360,
+      rotateEnd: Math.random() * 720 + 360,
+      drift: -40 + Math.random() * 80,      // px horizontal drift
+      size: 6 + Math.random() * 8,          // px
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    }));
+  }, [confetti]);
+
+  function handleKeepEarning() {
+    if (confetti) return;
+    setConfetti(true);
+    // Burst animation runs ~1.6s; close the modal at the tail.
+    setTimeout(() => {
+      setConfetti(false);
+      setClaimResult(null);
+    }, 1600);
+  }
 
   async function handleClaim() {
     if (claimBusy) return;
@@ -638,6 +668,53 @@ export default function OnchainPortraitDeposit() {
           transition: background 120ms;
         }
         .ocp-claim-cta:hover { background: #F9F6F0; }
+        .ocp-claim-cta:disabled { cursor: not-allowed; }
+
+        /* ── Confetti burst on "KEEP EARNING" click ── */
+        .ocp-confetti-stage {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          overflow: hidden;
+          z-index: 1100;
+        }
+        .ocp-confetti-piece {
+          position: absolute;
+          top: 50%;
+          opacity: 0;
+          animation-name: ocp-confetti-fall;
+          animation-timing-function: cubic-bezier(.25,.46,.45,.94);
+          animation-fill-mode: forwards;
+        }
+        @keyframes ocp-confetti-fall {
+          0% {
+            opacity: 0;
+            transform: translate3d(0, 0, 0) rotate(0deg) scale(0.4);
+          }
+          10% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+            transform: translate3d(var(--drift), 110vh, 0) rotate(var(--rot-end)) scale(1);
+          }
+        }
+        /* Screen-flash so the burst registers immediately */
+        .ocp-claim-flash {
+          position: fixed; inset: 0;
+          pointer-events: none;
+          background: radial-gradient(circle at center, rgba(215,255,58,0.32) 0%, rgba(215,255,58,0) 55%);
+          z-index: 1099;
+          animation: ocp-flash 600ms ease-out forwards;
+        }
+        @keyframes ocp-flash {
+          0%   { opacity: 0; }
+          20%  { opacity: 1; }
+          100% { opacity: 0; }
+        }
 
         /* ── Public global stats strip — always visible ── */
         .ocp-public {
@@ -1013,13 +1090,41 @@ export default function OnchainPortraitDeposit() {
 
             <button
               className="ocp-claim-cta"
-              onClick={() => setClaimResult(null)}
+              onClick={handleKeepEarning}
+              disabled={confetti}
               type="button"
             >
               KEEP EARNING →
             </button>
           </div>
         </div>
+      ) : null}
+
+      {/* ── Confetti burst overlay ── */}
+      {confetti ? (
+        <>
+          <div className="ocp-claim-flash" aria-hidden="true" />
+          <div className="ocp-confetti-stage" aria-hidden="true">
+            {confettiPieces.map((p) => (
+              <span
+                key={p.id}
+                className="ocp-confetti-piece"
+                style={{
+                  left: `${p.left}%`,
+                  width:  `${p.size}px`,
+                  height: `${p.size * 0.42}px`,
+                  background: p.color,
+                  borderRadius: p.size > 10 ? 0 : '1px',
+                  animationDelay:    `${p.delay}s`,
+                  animationDuration: `${p.duration}s`,
+                  '--drift':   `${p.drift}px`,
+                  '--rot-end': `${p.rotateEnd}deg`,
+                  transform: `rotate(${p.rotateStart}deg)`,
+                }}
+              />
+            ))}
+          </div>
+        </>
       ) : null}
     </div>
   );
