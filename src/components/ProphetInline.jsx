@@ -102,6 +102,44 @@ async function fetchPrice(cgId) {
   } catch { return null; }
 }
 
+// Fallback lookup for any coin not in COIN_MAP. CoinGecko's free
+// /search endpoint returns coins ranked by market cap, so the top
+// hit is usually the right one. We prefer exact-symbol matches over
+// fuzzy name hits — if the user types "atom" we want Cosmos (ATOM),
+// not whatever atom-themed memecoin happens to share keywords.
+async function lookupCoin(query) {
+  try {
+    const r = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    const coins = Array.isArray(d?.coins) ? d.coins : [];
+    if (coins.length === 0) return null;
+    const q = String(query).toLowerCase();
+    const exactSym = coins.find((c) => String(c.symbol || '').toLowerCase() === q);
+    if (exactSym) return { id: exactSym.id, name: exactSym.name, symbol: exactSym.symbol };
+    const apiSym = coins.find((c) => String(c.api_symbol || '').toLowerCase() === q);
+    if (apiSym) return { id: apiSym.id, name: apiSym.name, symbol: apiSym.symbol };
+    const top = coins[0];
+    return { id: top.id, name: top.name, symbol: top.symbol };
+  } catch { return null; }
+}
+
+// Generic quip pool used when we don't have a per-coin one-liner.
+// Picked at random so repeated long-tail queries don't read identical.
+const GENERIC_QUIPS = [
+  'the chart speaks for itself.',
+  'no notes.',
+  'send help.',
+  "rotational liquidity, you know how it is.",
+  'pure vibes.',
+  "couldn't make this up.",
+  'sigma move.',
+  "we're so back. or are we.",
+];
+function genericQuip() {
+  return GENERIC_QUIPS[Math.floor(Math.random() * GENERIC_QUIPS.length)];
+}
+
 function formatPrice(usd) {
   if (usd >= 1)      return `$${usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   if (usd >= 0.01)   return `$${usd.toFixed(4)}`;
@@ -246,15 +284,34 @@ export default function ProphetInline() {
     }
     if (intent.kind === 'price') {
       const sym = String(intent.symbol || '').toLowerCase();
-      // Don't trip on "send 100 busts" — busts isn't a tradable coin and
-      // the regex already gives send_busts priority above. Same for our
-      // own context words that occasionally sneak in.
+      // Block our own context words so "balance price" or "help price"
+      // don't accidentally hit the lookup. send_busts already has
+      // priority over price in parseIntent so 'busts' shouldn't reach
+      // here, but keep it in the blocklist as belt-and-braces.
       const blocklist = new Set(['busts', 'bust', 'eth1969', 'thee', 'price', 'usd', 'help', 'balance']);
-      const cgId = !blocklist.has(sym) ? COIN_MAP[sym] : null;
-      if (!cgId) {
-        pushBotText(`Never heard of $${sym.toUpperCase()}. Try a real coin, ser — eth, btc, sol, doge, you know.`);
+      if (blocklist.has(sym)) {
+        pushBotText(`Try a real ticker, ser — eth, btc, sol, atom, pengu, anything that exists.`);
         return;
       }
+
+      // Fast path: hardcoded majors avoid a network round-trip for coin id.
+      let cgId  = COIN_MAP[sym];
+      let label = sym.toUpperCase();
+
+      // Fallback: ask CoinGecko's search index for any coin matching the
+      // user's input. Returns the highest-ranked match (or an exact
+      // symbol match if one exists). Covers everything from $PEPE to
+      // $ATOM to whatever launched yesterday.
+      if (!cgId) {
+        const found = await lookupCoin(sym);
+        if (!found) {
+          pushBotText(`Couldn't find $${sym.toUpperCase()}. Either it doesn't exist or Coingecko hasn't indexed it yet.`);
+          return;
+        }
+        cgId  = found.id;
+        label = `${String(found.symbol || sym).toUpperCase()} · ${found.name}`;
+      }
+
       const data = await fetchPrice(cgId);
       if (!data) {
         pushBotText(`Couldn't fetch ${cgId}. Coingecko ratelimited me, probably. Try in a sec.`);
@@ -268,10 +325,11 @@ export default function ProphetInline() {
         change > 0  ? 'mild green.' :
         change > -5 ? 'mild red.' :
                       'getting cooked.';
+      const quip = PRICE_QUIPS[cgId] || genericQuip();
       pushBot([
-        { type: 'kicker', text: `${sym.toUpperCase()} · ${cgId.toUpperCase()}` },
+        { type: 'kicker', text: label },
         { type: 'line', text: `${formatPrice(data.usd)}` },
-        { type: 'note', text: `24H · ${changeStr} · ${direction} ${PRICE_QUIPS[cgId] || ''}`.trim() },
+        { type: 'note', text: `24H · ${changeStr} · ${direction} ${quip}`.trim() },
       ]);
       return;
     }
