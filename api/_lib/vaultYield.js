@@ -84,14 +84,24 @@ export async function getPoolState() {
 }
 
 /**
- * Compute live APY% for a user's effective weight, given the current
- * global pool. Pure function; no DB.
+ * Compute live APY% for a user's stack against the current global pool.
+ * Pure function; no DB.
+ *
+ * Basis: a single 1× common's reference value (APY_REFERENCE BUSTS/yr).
+ * That makes the displayed APY scale linearly with stake weight — a
+ * stack of 28 weight (e.g. 1 ultra rare + 1 rare) shows ~280%, the SUM
+ * of the per-tier APYs in the static rarity panel (251% + 30%), instead
+ * of the per-token average that diluted mixed-rarity stacks down to
+ * ~140%. The math reflects what users actually earn: more weight, more
+ * yield, regardless of how it's distributed across NFTs.
+ *
+ * Equivalent definition: stack APY = userWeight × headline-per-weight%.
+ * For a poolWeight of 2008, that's userWeight × ~9.96%.
  */
-export function computeApy({ userWeight, userTokens, poolWeight }) {
-  if (!userWeight || !userTokens || !poolWeight) return 0;
+export function computeApy({ userWeight, poolWeight }) {
+  if (!userWeight || !poolWeight) return 0;
   const annualBusts = (userWeight / poolWeight) * DAILY_EMISSION * 365;
-  const refValue    = userTokens * APY_REFERENCE;
-  return (annualBusts / refValue) * 100;
+  return (annualBusts / APY_REFERENCE) * 100;
 }
 
 /**

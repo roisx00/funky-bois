@@ -107,7 +107,7 @@ export default async function handler(req, res) {
   const userWeight   = Math.max(stakesWeight, Number(yieldRow?.active_weight || 0));
   const userTokens   = stakes.length;
   const poolWeight   = Number(pool?.total_weight || 0);
-  const apy          = computeApy({ userWeight, userTokens, poolWeight });
+  const apy          = computeApy({ userWeight, poolWeight });
 
   ok(res, {
     active,
