@@ -36,10 +36,18 @@ export default async function handler(req, res) {
   const out = {};
   if (normalized.length > 0) {
     const cached = await sql`
-      SELECT token_id::text AS tid, rarity, weight FROM token_rarity_cache
+      SELECT token_id::text AS tid, rarity, weight, score, rank
+        FROM token_rarity_cache
        WHERE token_id = ANY(${normalized}::bigint[])
     `;
-    for (const r of cached) out[r.tid] = { rarity: r.rarity, weight: r.weight };
+    for (const r of cached) {
+      out[r.tid] = {
+        rarity: r.rarity,
+        weight: r.weight,
+        score:  r.score ?? null,
+        rank:   r.rank  ?? null,
+      };
+    }
   }
 
   // Resolve misses in parallel (capped concurrency)

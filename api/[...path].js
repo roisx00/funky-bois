@@ -38,7 +38,9 @@ import vaultOnchainIndex   from './_routes/vault-onchain-index.js';
 import vaultOnchainRarities from './_routes/vault-onchain-rarities.js';
 import nftsOfOwner          from './_routes/nfts-of-owner.js';
 import vaultOnchainReconcile from './_routes/vault-onchain-reconcile.js';
+import galleryOwners        from './_routes/gallery-owners.js';
 import adminVaultV2Activate from './_routes/admin-vault-v2-activate.js';
+import adminRarityRebuild   from './_routes/admin-rarity-rebuild.js';
 import inventoryBurn       from './_routes/inventory-burn.js';
 import suspensionAppeal    from './_routes/suspension-appeal.js';
 import adminSuspensionAppeals from './_routes/admin-suspension-appeals.js';
@@ -130,7 +132,9 @@ const ROUTES = {
   'vault-onchain-rarities':   vaultOnchainRarities,
   'nfts-of-owner':              nftsOfOwner,
   'vault-onchain-reconcile':    vaultOnchainReconcile,
+  'gallery-owners':             galleryOwners,
   'admin-vault-v2-activate':  adminVaultV2Activate,
+  'admin-rarity-rebuild':     adminRarityRebuild,
   'inventory-burn':      inventoryBurn,
   'suspension-appeal':   suspensionAppeal,
   'admin-suspension-appeals': adminSuspensionAppeals,

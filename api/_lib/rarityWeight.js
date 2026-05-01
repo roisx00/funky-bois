@@ -92,21 +92,29 @@ function resolveIpfs(uri) {
 }
 
 /**
- * Look up a token's rarity + weight. Tries cache first; on miss, fetches
- * tokenURI from chain, parses metadata, derives rarity, caches the result.
+ * Look up a token's rarity + weight + score + rank. Tries cache first;
+ * on miss, fetches tokenURI from chain, parses metadata, derives rarity,
+ * caches the result. Score = sum of all 8 trait weights (so a token with
+ * many rare traits ranks higher than one with a single legendary).
  *
- * Returns { rarity, weight } or null if metadata isn't available yet
- * (pre-reveal). Never throws.
+ * Returns { rarity, weight, score, rank } or null if metadata isn't
+ * available yet (pre-reveal). Never throws. `rank` may be null until
+ * the rank-backfill endpoint is run.
  */
 export async function getTokenRarity(tokenId) {
   const tid = BigInt(tokenId).toString();
 
   // Cache hit
   const cached = one(await sql`
-    SELECT rarity, weight FROM token_rarity_cache
+    SELECT rarity, weight, score, rank FROM token_rarity_cache
      WHERE token_id = ${tid}::bigint LIMIT 1
   `);
-  if (cached) return { rarity: cached.rarity, weight: cached.weight };
+  if (cached) return {
+    rarity: cached.rarity,
+    weight: cached.weight,
+    score:  cached.score ?? null,
+    rank:   cached.rank  ?? null,
+  };
 
   // Cache miss: fetch tokenURI via chain
   const padded = BigInt(tid).toString(16).padStart(64, '0');
@@ -125,33 +133,73 @@ export async function getTokenRarity(tokenId) {
     meta = await r.json();
   } catch { return null; }
 
-  // Derive overall rarity from attributes
+  // Derive overall rarity AND score from attributes.
+  // Minted metadata uses `trait_type: "Top Rarity"` (per
+  // scripts/generate-mint-art.js) for the explicit rollup. We also walk
+  // every per-trait attribute to compute a `score` = sum of trait
+  // weights, so two Legendary tokens still differ on rank if one has
+  // more rare supporting traits.
   const variantMap = await loadVariantTable();
   const attrs = Array.isArray(meta?.attributes) ? meta.attributes : [];
+  const RARITY_KEYS = new Set(['rarity', 'tier', 'top rarity', 'top_rarity', 'toprarity']);
   let rarity = 'common';
   let bestRank = -1;
+  let score = 0;
   for (const a of attrs) {
-    const tt = String(a?.trait_type || '').toLowerCase();
-    const v  = String(a?.value      || '').toLowerCase().replace(/\s+/g, '_');
-    // Try explicit "rarity"/"tier" attribute first
-    if (tt === 'rarity' || tt === 'tier') {
-      if (RARITY_RANK[v] > bestRank) { rarity = v; bestRank = RARITY_RANK[v]; }
+    const ttRaw = String(a?.trait_type || '').toLowerCase();
+    const tt    = ttRaw.replace(/\s+/g, '_');
+    const v     = String(a?.value || '').toLowerCase().replace(/\s+/g, '_');
+    if (RARITY_KEYS.has(ttRaw) || RARITY_KEYS.has(tt)) {
+      if (RARITY_RANK[v] != null && RARITY_RANK[v] > bestRank) {
+        rarity = v; bestRank = RARITY_RANK[v];
+      }
       continue;
     }
-    // Else look up via ELEMENT_VARIANTS
     const r = variantMap[`${tt}:${v}`];
-    if (r && RARITY_RANK[r] > bestRank) { rarity = r; bestRank = RARITY_RANK[r]; }
+    if (r) {
+      score += RARITY_WEIGHT[r] || 1;
+      if (RARITY_RANK[r] > bestRank) { rarity = r; bestRank = RARITY_RANK[r]; }
+    }
   }
   const weight = RARITY_WEIGHT[rarity] || 1;
 
-  // Cache for future calls
+  // Cache for future calls. Rank is filled in by the rank-backfill
+  // endpoint after all 1969 tokens are scored.
   try {
     await sql`
-      INSERT INTO token_rarity_cache (token_id, rarity, weight)
-      VALUES (${tid}::bigint, ${rarity}, ${weight})
-      ON CONFLICT (token_id) DO NOTHING
+      INSERT INTO token_rarity_cache (token_id, rarity, weight, score)
+      VALUES (${tid}::bigint, ${rarity}, ${weight}, ${score})
+      ON CONFLICT (token_id) DO UPDATE
+        SET rarity = EXCLUDED.rarity,
+            weight = EXCLUDED.weight,
+            score  = EXCLUDED.score
     `;
   } catch { /* ignore */ }
 
-  return { rarity, weight };
+  return { rarity, weight, score, rank: null };
+}
+
+/**
+ * Recompute rank for every cached token. Sorts by score DESC, assigns
+ * dense rank starting at 1 (rarest). Ties get the same rank. Idempotent.
+ * Run after a fresh resolve sweep so the gallery can show "RANK N / total".
+ */
+export async function backfillRanks() {
+  await sql`
+    UPDATE token_rarity_cache t
+       SET rank = r.new_rank
+      FROM (
+        SELECT token_id,
+               DENSE_RANK() OVER (ORDER BY COALESCE(score, 0) DESC) AS new_rank
+          FROM token_rarity_cache
+      ) r
+     WHERE t.token_id = r.token_id
+  `;
+  const stats = await sql`
+    SELECT COUNT(*)::int AS total,
+           MIN(rank)::int AS top,
+           MAX(rank)::int AS bottom
+      FROM token_rarity_cache WHERE score IS NOT NULL
+  `;
+  return stats?.[0] || { total: 0, top: null, bottom: null };
 }

@@ -372,13 +372,14 @@ function OnChainGallery({ totalSupply }) {
     setLoading(false);
   }, [totalSupply]);
 
-  // ── Step 1.5: bulk-fetch rarities for ALL tokens up front ──
-  // Without this, the rarity filter shows "0 / N" until each tile
-  // scrolls into view (lazy metadata load only knows rarity per visible
-  // tile). Bulk loading via /api/vault-onchain-rarities populates the
-  // rarity field for every token so filter + sort work immediately.
+  // ── Step 1.5: bulk-fetch rarity + rank + owner for ALL tokens up front ──
+  // Without this, the rarity filter shows "0 / N" until each tile scrolls
+  // into view (lazy metadata load only knows rarity per visible tile).
+  // The bulk-load populates rarity, rank, and owner for every token so
+  // filter + sort + holder display work immediately.
   // 100 IDs per request, concurrency 4 — finishes ~5-15s on cold cache.
   const [bulkRarityProgress, setBulkRarityProgress] = useState(0);
+  const [owners, setOwners] = useState(() => new Map()); // tokenId → owner address
   useEffect(() => {
     if (tokenIds.length === 0) { setBulkRarityProgress(0); return; }
     let cancelled = false;
@@ -413,6 +414,8 @@ function OnChainGallery({ totalSupply }) {
                   ready: existing.ready ?? false,
                   rarity: info.rarity,
                   weight: info.weight,
+                  score:  info.score ?? null,
+                  rank:   info.rank  ?? null,
                 });
               }
               return next;
@@ -422,6 +425,21 @@ function OnChainGallery({ totalSupply }) {
         done += batch.length;
         if (!cancelled) setBulkRarityProgress(Math.min(1, done / chunks.length));
       }
+      // Owners — single batch call to /api/gallery-owners (Alchemy
+      // returns the full ownership map in one shot, server caches 60s).
+      try {
+        const r = await fetch('/api/gallery-owners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tokenIds }),
+        });
+        if (r.ok && !cancelled) {
+          const d = await r.json();
+          if (d?.owners) {
+            setOwners(new Map(Object.entries(d.owners)));
+          }
+        }
+      } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
   }, [tokenIds]);
@@ -512,6 +530,19 @@ function OnChainGallery({ totalSupply }) {
         const va = ra ? RARITY_RANK[ra] ?? -1 : -1;
         const vb = rb ? RARITY_RANK[rb] ?? -1 : -1;
         return (va - vb) * dir;
+      });
+    }
+    if (sort === 'rank_asc' || sort === 'rank_desc') {
+      // Rank 1 = rarest; default ascending (rarest first).
+      const dir = sort === 'rank_asc' ? 1 : -1;
+      list = [...list].sort((a, b) => {
+        const ra = meta.get(a)?.rank;
+        const rb = meta.get(b)?.rank;
+        // Tokens without a rank yet sort to the end regardless of dir.
+        if (ra == null && rb == null) return 0;
+        if (ra == null) return 1;
+        if (rb == null) return -1;
+        return (ra - rb) * dir;
       });
     }
     return list;
@@ -711,8 +742,10 @@ function OnChainGallery({ totalSupply }) {
         >
           <option value="id_asc">ID ↑</option>
           <option value="id_desc">ID ↓</option>
-          <option value="rarity_desc">RARITY ↓</option>
-          <option value="rarity_asc">RARITY ↑</option>
+          <option value="rank_asc">RANK · RAREST FIRST</option>
+          <option value="rank_desc">RANK · COMMONEST FIRST</option>
+          <option value="rarity_desc">RARITY TIER ↓</option>
+          <option value="rarity_asc">RARITY TIER ↑</option>
         </select>
         <div className="chain-results">
           {filtered.length.toLocaleString()} / {tokenIds.length.toLocaleString()}
@@ -754,7 +787,14 @@ function OnChainGallery({ totalSupply }) {
         <>
           <div className="gallery-grid-premium">
             {visible.map((id) => (
-              <ChainTile key={id} tokenId={id} meta={meta.get(id)} requestMeta={requestMeta} />
+              <ChainTile
+                key={id}
+                tokenId={id}
+                meta={meta.get(id)}
+                owner={owners.get(id) || null}
+                totalSupply={totalSupply}
+                requestMeta={requestMeta}
+              />
             ))}
           </div>
           {remaining > 0 ? (
@@ -814,11 +854,21 @@ function normalizeMetadata(m) {
   return { ready: true, name, image, attributes: attrs, rarity };
 }
 
-function ChainTile({ tokenId, meta, requestMeta }) {
+// Vault contract address — used to detect "in vault" ownership state
+// without prop-drilling. Source of truth is the deployed Vault1969.
+const VAULT_ADDRESS = '0x5aa4742fd137660238f465ba12c2c0220a256203';
+
+function shortAddr(a) {
+  if (!a) return '';
+  const s = String(a);
+  return `${s.slice(0, 6)}…${s.slice(-4)}`;
+}
+
+function ChainTile({ tokenId, meta, owner, totalSupply, requestMeta }) {
   const ref = useRef(null);
   // Lazy-trigger metadata fetch when this tile enters the viewport.
   useEffect(() => {
-    if (meta) return;
+    if (meta?.ready) return;
     const node = ref.current;
     if (!node) return;
     const io = new IntersectionObserver((entries) => {
@@ -832,7 +882,10 @@ function ChainTile({ tokenId, meta, requestMeta }) {
   }, [tokenId, meta, requestMeta]);
 
   const ready = meta?.ready === true;
-  const rarity = ready ? meta.rarity : null;
+  // Rarity may be known from the bulk fetch even before image/attrs load.
+  const rarity = meta?.rarity || null;
+  const rank   = meta?.rank ?? null;
+  const inVault = owner && owner.toLowerCase() === VAULT_ADDRESS.toLowerCase();
 
   return (
     <article ref={ref} className="chain-tile">
@@ -853,21 +906,60 @@ function ChainTile({ tokenId, meta, requestMeta }) {
             {RARITY_LABEL[rarity]}
           </span>
         ) : null}
+        {inVault ? (
+          <span style={{
+            position: 'absolute', top: 10, right: 10,
+            padding: '4px 8px', fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.18em', fontWeight: 700,
+            background: 'var(--ink)', color: 'var(--accent)',
+            border: '1px solid var(--ink)',
+          }}>
+            IN VAULT
+          </span>
+        ) : null}
       </div>
       <div className="chain-tile-info">
-        <span className="chain-tile-id">#{tokenId}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+          <span className="chain-tile-id">#{tokenId}</span>
+          {rank ? (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10,
+              letterSpacing: '0.16em', color: 'var(--text-3)', fontWeight: 700,
+            }}>
+              RANK {rank.toLocaleString()}{totalSupply ? ` / ${totalSupply.toLocaleString()}` : ''}
+            </span>
+          ) : null}
+        </div>
         <span className="chain-tile-name">
           {ready && meta.name ? meta.name : `THE 1969 · ${tokenId}`}
         </span>
-        {ready && meta.attributes?.length ? (
-          <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: 9,
-            letterSpacing: '0.18em', color: 'var(--text-4)',
-            textTransform: 'uppercase', marginTop: 4,
-          }}>
-            {meta.attributes.length} TRAITS
-          </span>
-        ) : null}
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
+          {ready && meta.attributes?.length ? (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 9,
+              letterSpacing: '0.18em', color: 'var(--text-4)',
+              textTransform: 'uppercase',
+            }}>
+              {meta.attributes.length} TRAITS
+            </span>
+          ) : <span />}
+          {owner ? (
+            <a
+              href={`https://etherscan.io/address/${owner}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                fontFamily: 'var(--font-mono)', fontSize: 9,
+                letterSpacing: '0.14em', color: 'var(--text-4)',
+                textTransform: 'uppercase', textDecoration: 'none',
+              }}
+              title={owner}
+            >
+              {inVault ? 'STAKED' : `HELD BY ${shortAddr(owner)}`}
+            </a>
+          ) : null}
+        </div>
       </div>
     </article>
   );

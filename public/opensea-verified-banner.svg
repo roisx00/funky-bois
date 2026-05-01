@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <defs>
+    <style><![CDATA[
+      .paper { fill: #F9F6F0; }
+      .ink { fill: #0E0E0E; }
+      .lime { fill: #D7FF3A; }
+      .rule { stroke: #0E0E0E; stroke-width: 1; fill: none; }
+      .hair { stroke: #0E0E0E; stroke-width: 0.5; fill: none; opacity: 0.35; }
+      .serif-it { font-family: 'Instrument Serif', 'EB Garamond', Georgia, serif; font-style: italic; fill: #0E0E0E; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; fill: #0E0E0E; letter-spacing: 0.16em; text-transform: uppercase; }
+      .mono-light { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; fill: #0E0E0E; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.55; }
+    ]]></style>
+  </defs>
+
+  <!-- Paper -->
+  <rect class="paper" width="1600" height="900"/>
+
+  <!-- Newsprint margins -->
+  <line class="rule" x1="80" y1="80" x2="1520" y2="80"/>
+  <line class="rule" x1="80" y1="820" x2="1520" y2="820"/>
+  <line class="hair" x1="80" y1="84" x2="1520" y2="84"/>
+  <line class="hair" x1="80" y1="816" x2="1520" y2="816"/>
+
+  <!-- Masthead bar -->
+  <text class="mono" x="80" y="64" font-size="11">THE 1969 · DISPATCH</text>
+  <text class="mono-light" x="800" y="64" font-size="11" text-anchor="middle">№ XII · COLLECTION</text>
+  <text class="mono-light" x="1520" y="64" font-size="11" text-anchor="end">VERIFIED · OPENSEA</text>
+
+  <!-- Centered composition -->
+  <g transform="translate(800, 360)">
+    <!-- Big verified mark -->
+    <circle cx="0" cy="0" r="78" fill="#0E0E0E"/>
+    <path d="M-36 2 L-10 28 L40 -22" stroke="#D7FF3A" stroke-width="12" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
+  </g>
+
+  <!-- Headline -->
+  <text class="serif-it" x="800" y="600" font-size="120" letter-spacing="-0.035em" text-anchor="middle">Officially verified.</text>
+
+  <!-- Subhead -->
+  <text class="mono" x="800" y="670" font-size="14" text-anchor="middle">THE 1969 · ON OPENSEA</text>
+
+  <!-- Footer -->
+  <text class="mono" x="80" y="848" font-size="11">OPENSEA.IO/COLLECTION/THE1969-COLLECTION</text>
+  <text class="mono-light" x="800" y="848" font-size="11" text-anchor="middle">⌬ THE VAULT MUST NOT BURN AGAIN</text>
+  <text class="mono-light" x="1520" y="848" font-size="11" text-anchor="end">THE1969.IO</text>
+</svg>
