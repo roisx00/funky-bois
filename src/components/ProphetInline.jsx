@@ -819,7 +819,7 @@ export default function ProphetInline() {
         <div className="proph-avatar">
           <span className="proph-avatar-fallback" aria-hidden="true">P</span>
           <img
-            src="/mr-prophet-pfp.png"
+            src="/sneak-peek-elonmusk.svg"
             alt=""
             onError={(e) => { e.currentTarget.style.display = 'none'; }}
           />
@@ -856,7 +856,7 @@ export default function ProphetInline() {
             {m.role === 'bot' ? <div className="proph-mini-avatar">
                 <span className="proph-mini-avatar-fallback" aria-hidden="true">P</span>
                 <img
-                  src="/mr-prophet-pfp.png"
+                  src="/sneak-peek-elonmusk.svg"
                   alt=""
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
@@ -899,7 +899,7 @@ export default function ProphetInline() {
             <div className="proph-mini-avatar">
                 <span className="proph-mini-avatar-fallback" aria-hidden="true">P</span>
                 <img
-                  src="/mr-prophet-pfp.png"
+                  src="/sneak-peek-elonmusk.svg"
                   alt=""
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
