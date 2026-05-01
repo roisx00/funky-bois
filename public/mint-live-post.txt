@@ -1,0 +1,56 @@
+─────────────────────────────────────────────
+THE 1969 / MINT IS LIVE
+─────────────────────────────────────────────
+
+CAPTION (the tight one, recommended):
+─────────────────────────────────────────────
+Mint is live on OpenSea.
+
+[OpenSea link]
+
+1969 portraits. One shot.
+
+Vault deposits never burn. Withdraw anytime.
+
+
+CAPTION (slightly longer alt):
+─────────────────────────────────────────────
+Mint is live.
+
+→ [OpenSea link]
+
+1969 portraits. One shot. May 1 · 14:00 UTC.
+
+The vault never burns. Deposit your portrait, earn from a $BUSTS pool,
+withdraw anytime. Your token, your custody, always.
+
+
+SHORTEST VARIANT:
+─────────────────────────────────────────────
+Mint is live on OpenSea. [link]
+
+
+REPLY (drop under the post for context):
+─────────────────────────────────────────────
+The vault is custodial only while you're depositing — your NFT sits
+in the staking contract, ownership returns the second you withdraw.
+No burn. No lockup. No penalty. Marketplace listings just resume on
+withdraw.
+
+
+ASSETS:
+─────────────────────────────────────────────
+• mint-live-banner.svg     1080x1080  (primary X post)
+• mint-live-vertical.svg   1080x1350  (X feed dominance / Stories)
+
+
+POSTING NOTES:
+─────────────────────────────────────────────
+• OpenSea collection link goes IN the body this one time. Conversion
+  beats algorithm penalty for the launch moment.
+• Pin the post for the first 2 hours.
+• Reply chain in this order:
+   T+2 min:  trailer-24h-mint-v2.html recording (video)
+   T+10 min: pace screenshot ("X% minted")
+   T+30 min: first ultra-rare pull celebration (when it lands)
+• No hashtags.
