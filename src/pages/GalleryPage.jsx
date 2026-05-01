@@ -361,39 +361,15 @@ function OnChainGallery({ totalSupply }) {
   const [meta, setMeta]           = useState(() => new Map()); // tokenId → { name, image, attributes, rarity }
   const inFlightRef               = useRef(new Set());
 
-  // ── Step 1: fetch all token IDs on the contract ──
+  // ── Step 1: enumerate token IDs ──
+  // The 1969 contract is sequential-mint and NOT ERC-721 Enumerable
+  // (tokenByIndex reverts), so generate [1..totalSupply] directly.
+  // Tokens are 1-indexed per the contract's tokenURI scheme.
   useEffect(() => {
-    let cancelled = false;
     if (!totalSupply || totalSupply <= 0) { setTokenIds([]); setLoading(false); return; }
-
-    (async () => {
-      setLoading(true);
-      // Batch tokenByIndex(i) for i in [0, totalSupply)
-      const BATCH = 200;
-      const padHex = (n) => n.toString(16).padStart(64, '0');
-      const all = [];
-      for (let start = 0; start < totalSupply; start += BATCH) {
-        const end = Math.min(totalSupply, start + BATCH);
-        const reqs = [];
-        for (let i = start; i < end; i++) {
-          reqs.push({
-            jsonrpc: '2.0', id: i + 1, method: 'eth_call',
-            params: [{ to: NFT_CONTRACT, data: '0x4f6ccce5' + padHex(BigInt(i)) }, 'latest'],
-          });
-        }
-        const r = await rpcCall(reqs);
-        if (cancelled) return;
-        if (!r) continue;
-        for (const item of r) {
-          if (!item?.result) continue;
-          try { all.push(BigInt(item.result).toString()); } catch { /* skip */ }
-        }
-      }
-      if (cancelled) return;
-      setTokenIds(all);
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
+    const ids = Array.from({ length: totalSupply }, (_, i) => String(i + 1));
+    setTokenIds(ids);
+    setLoading(false);
   }, [totalSupply]);
 
   // ── Step 2: lazy-load metadata for tokens currently visible ──

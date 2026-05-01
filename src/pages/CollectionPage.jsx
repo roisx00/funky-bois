@@ -413,6 +413,7 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress, children 
   const NFT_STRIP_DEFAULT = 10;
   const [chainNftCount, setChainNftCount] = useState(null);
   const [chainTokenIds, setChainTokenIds] = useState([]); // BigInt-safe strings
+  const [chainTokenMeta, setChainTokenMeta] = useState({}); // tokenId → { image, name }
   const [showAll, setShowAll] = useState(false);
 
   // Discover the user's owned 1969 NFTs via /api/nfts-of-owner
@@ -430,8 +431,13 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress, children 
       .then((d) => {
         if (cancelled) return;
         const ids = Array.isArray(d?.tokenIds) ? d.tokenIds : [];
+        const tokens = Array.isArray(d?.tokens) ? d.tokens : [];
         setChainNftCount(ids.length);
         setChainTokenIds(ids);
+        // Build a lookup so the strip can render each tile's actual artwork
+        const meta = {};
+        for (const t of tokens) meta[String(t.tokenId)] = t;
+        setChainTokenMeta(meta);
       })
       .catch(() => { if (!cancelled) setChainNftCount(0); });
     return () => { cancelled = true; };
@@ -605,27 +611,57 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress, children 
               paddingBottom: 6,
               scrollbarWidth: 'thin',
             }}>
-              {visibleTokens.map((tokenId) => (
-                <div key={tokenId} style={{
-                  flex: '0 0 auto',
-                  width: 96, height: 96,
-                  background: 'var(--ink)',
-                  color: 'var(--accent)',
-                  border: '1px solid var(--ink)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 14, fontWeight: 700, letterSpacing: '0.08em',
-                  position: 'relative',
-                }}>
-                  {/* Token number — when metadata is published post-mint we
-                      can swap this for an <img src={tokenURI image}>. */}
-                  <span style={{ fontSize: 11, opacity: 0.6, position: 'absolute', top: 8, left: 10, letterSpacing: '0.1em' }}>#</span>
-                  <span style={{
-                    fontFamily: 'var(--font-display)', fontStyle: 'italic',
-                    fontSize: 28, color: 'var(--accent)', letterSpacing: '-0.5px',
-                  }}>{tokenId}</span>
-                </div>
-              ))}
+              {visibleTokens.map((tokenId) => {
+                const meta = chainTokenMeta[String(tokenId)];
+                const img  = meta?.image;
+                return (
+                  <div key={tokenId} style={{
+                    flex: '0 0 auto',
+                    width: 96, height: 96,
+                    background: 'var(--ink)',
+                    color: 'var(--accent)',
+                    border: '1px solid var(--ink)',
+                    overflow: 'hidden',
+                    position: 'relative',
+                  }} title={meta?.name || `#${tokenId}`}>
+                    {img ? (
+                      <img
+                        src={img}
+                        alt={meta?.name || `#${tokenId}`}
+                        loading="lazy"
+                        style={{
+                          width: '100%', height: '100%',
+                          objectFit: 'cover', display: 'block',
+                          imageRendering: 'pixelated',
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        position: 'absolute', inset: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <span style={{ fontSize: 11, opacity: 0.6, position: 'absolute', top: 8, left: 10, letterSpacing: '0.1em' }}>#</span>
+                        <span style={{
+                          fontFamily: 'var(--font-display)', fontStyle: 'italic',
+                          fontSize: 28, color: 'var(--accent)', letterSpacing: '-0.5px',
+                        }}>{tokenId}</span>
+                      </div>
+                    )}
+                    {/* Always-visible #id badge in the corner so the user can
+                        identify the token even when artwork is loaded. */}
+                    {img ? (
+                      <span style={{
+                        position: 'absolute', left: 4, bottom: 4,
+                        background: 'rgba(0,0,0,0.72)',
+                        color: 'var(--accent)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 10, letterSpacing: '0.06em', fontWeight: 700,
+                        padding: '2px 5px',
+                      }}>#{tokenId}</span>
+                    ) : null}
+                  </div>
+                );
+              })}
               {!showAll && overflowCount > 0 ? (
                 <button
                   onClick={() => setShowAll(true)}
