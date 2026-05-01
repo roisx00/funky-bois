@@ -265,17 +265,45 @@ export default function OnchainPortraitDeposit() {
       toast.error(e?.shortMessage || e?.message || 'Withdraw rejected');
     }
   }
+  // Celebration modal — shown after a successful claim. null while the
+  // user hasn't claimed yet; { claimed, lifetimeBusts } after.
+  const [claimResult, setClaimResult] = useState(null);
+  const [claimBusy, setClaimBusy] = useState(false);
+
   async function handleClaim() {
+    if (claimBusy) return;
+    setClaimBusy(true);
     try {
       const r = await fetch('/api/vault-onchain-claim', { method: 'POST', credentials: 'same-origin' });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) { toast.error(d?.error || 'Claim failed'); return; }
-      toast.success(`Claimed ${d.claimed.toLocaleString()} BUSTS`);
+      if (!r.ok) {
+        toast.error(d?.error || 'Claim failed');
+        return;
+      }
+      setClaimResult({
+        claimed:        Number(d.claimed || 0),
+        lifetimeBusts:  Number(d.lifetimeBusts || 0),
+      });
       refreshUser();
     } catch (e) {
       toast.error(e?.message || 'Claim failed');
+    } finally {
+      setClaimBusy(false);
     }
   }
+
+  // ESC + body-scroll-lock while modal is open
+  useEffect(() => {
+    if (!claimResult) return;
+    const onKey = (e) => { if (e.key === 'Escape') setClaimResult(null); };
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [claimResult]);
 
   // ── Render ──
   // Pre-launch / disabled state messaging
@@ -472,6 +500,145 @@ export default function OnchainPortraitDeposit() {
           color: rgba(215,255,58,0.65); text-align: center; font-weight: 700;
         }
 
+        /* ── Claim celebration modal ── */
+        @keyframes ocp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes ocp-pop-in {
+          from { opacity: 0; transform: translateY(14px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes ocp-confetti {
+          0%   { transform: translateY(-12px) scale(0.4); opacity: 0; }
+          40%  { transform: translateY(0)     scale(1.1); opacity: 1; }
+          100% { transform: translateY(0)     scale(1);   opacity: 1; }
+        }
+        .ocp-claim-backdrop {
+          position: fixed; inset: 0;
+          background: rgba(0,0,0,0.72);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          display: flex; align-items: center; justify-content: center;
+          padding: 24px;
+          z-index: 1000;
+          animation: ocp-fade-in 220ms ease;
+        }
+        .ocp-claim-modal {
+          position: relative;
+          background: #0A0A0A;
+          border: 1px solid #D7FF3A;
+          width: 100%; max-width: 520px;
+          padding: 44px 36px 30px;
+          text-align: center;
+          box-shadow: 0 30px 100px rgba(215,255,58,0.18);
+          animation: ocp-pop-in 280ms cubic-bezier(.2,.8,.2,1);
+          overflow: hidden;
+        }
+        .ocp-claim-modal::before {
+          content: '';
+          position: absolute; left: 0; top: 0; right: 0;
+          height: 6px; background: #D7FF3A;
+        }
+        .ocp-claim-glow {
+          position: absolute;
+          left: 50%; top: 30%;
+          width: 380px; height: 380px;
+          margin-left: -190px; margin-top: -190px;
+          background: radial-gradient(circle, rgba(215,255,58,0.22) 0%, transparent 60%);
+          pointer-events: none;
+        }
+        .ocp-claim-close {
+          position: absolute; top: 14px; right: 14px;
+          width: 32px; height: 32px;
+          background: transparent;
+          border: 1px solid rgba(249,246,240,0.18);
+          color: rgba(249,246,240,0.65);
+          font-family: var(--font-mono, ui-monospace, monospace);
+          font-size: 14px; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transition: background 120ms, color 120ms;
+        }
+        .ocp-claim-close:hover { background: #D7FF3A; color: #0E0E0E; border-color: #D7FF3A; }
+        .ocp-claim-kicker {
+          position: relative;
+          font-family: var(--font-mono, ui-monospace, monospace);
+          font-size: 11px; letter-spacing: 5px;
+          color: rgba(215,255,58,0.7); font-weight: 700;
+          margin-bottom: 20px;
+        }
+        .ocp-claim-kicker .pulse {
+          display: inline-block;
+          width: 8px; height: 8px; border-radius: 50%;
+          background: #D7FF3A;
+          margin-right: 10px; vertical-align: middle;
+          animation: ocp-fade-in 1.6s ease infinite alternate;
+          box-shadow: 0 0 12px rgba(215,255,58,0.7);
+        }
+        .ocp-claim-amount {
+          position: relative;
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-style: italic;
+          font-weight: 500;
+          font-size: 130px;
+          line-height: 1;
+          letter-spacing: -3px;
+          color: #D7FF3A;
+          text-shadow: 0 0 40px rgba(215,255,58,0.4);
+          animation: ocp-confetti 540ms cubic-bezier(.3,1.6,.4,1) both;
+        }
+        .ocp-claim-unit {
+          position: relative;
+          font-family: var(--font-mono, ui-monospace, monospace);
+          font-size: 16px; letter-spacing: 6px;
+          color: rgba(249,246,240,0.7); font-weight: 700;
+          margin-top: 4px;
+        }
+        .ocp-claim-line {
+          position: relative;
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-style: italic;
+          font-size: 22px;
+          letter-spacing: -0.01em;
+          color: rgba(249,246,240,0.85);
+          margin-top: 24px;
+        }
+        .ocp-claim-stats {
+          position: relative;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1px;
+          background: rgba(249,246,240,0.12);
+          border: 1px solid rgba(249,246,240,0.18);
+          margin-top: 26px;
+          margin-bottom: 22px;
+        }
+        .ocp-claim-stat {
+          background: rgba(0,0,0,0.6);
+          padding: 14px 12px;
+        }
+        .ocp-claim-stat-label {
+          font-family: var(--font-mono, ui-monospace, monospace);
+          font-size: 9px; letter-spacing: 3px;
+          color: rgba(249,246,240,0.5); font-weight: 700;
+        }
+        .ocp-claim-stat-val {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-style: italic;
+          font-size: 24px; line-height: 1;
+          color: #F9F6F0; letter-spacing: -0.02em;
+          margin-top: 6px;
+        }
+        .ocp-claim-cta {
+          position: relative;
+          width: 100%;
+          padding: 14px 20px;
+          background: #D7FF3A; color: #0E0E0E;
+          border: 1px solid #D7FF3A;
+          font-family: var(--font-mono, ui-monospace, monospace);
+          font-size: 12px; letter-spacing: 0.22em; font-weight: 700;
+          cursor: pointer;
+          transition: background 120ms;
+        }
+        .ocp-claim-cta:hover { background: #F9F6F0; }
+
         /* ── Public global stats strip — always visible ── */
         .ocp-public {
           display: grid;
@@ -566,8 +733,8 @@ export default function OnchainPortraitDeposit() {
         <button
           className="ocp-claim"
           onClick={handleClaim}
-          disabled={!v2Active || livePending < 1}
-        >CLAIM →</button>
+          disabled={!v2Active || livePending < 1 || claimBusy}
+        >{claimBusy ? 'CLAIMING…' : 'CLAIM →'}</button>
       </div>
 
       {/* Deposited row */}
@@ -727,6 +894,64 @@ export default function OnchainPortraitDeposit() {
           {availSel.size > 0 && v2Active ? ctaLabel : 'DEPOSIT'}
         </button>
       </div>
+
+      {/* ── Claim celebration modal ── */}
+      {claimResult ? (
+        <div
+          className="ocp-claim-backdrop"
+          onClick={(e) => { if (e.target === e.currentTarget) setClaimResult(null); }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ocp-claim-title"
+        >
+          <div className="ocp-claim-modal">
+            <div className="ocp-claim-glow" aria-hidden="true" />
+            <button
+              className="ocp-claim-close"
+              onClick={() => setClaimResult(null)}
+              aria-label="Close"
+              type="button"
+            >×</button>
+
+            <div className="ocp-claim-kicker">
+              <span className="pulse" />
+              YOU CLAIMED FROM THE POOL
+            </div>
+
+            <div className="ocp-claim-amount" id="ocp-claim-title">
+              +{Number(claimResult.claimed).toLocaleString()}
+            </div>
+            <div className="ocp-claim-unit">$BUSTS</div>
+
+            <div className="ocp-claim-line">
+              Settled to your balance.
+            </div>
+
+            <div className="ocp-claim-stats">
+              <div className="ocp-claim-stat">
+                <div className="ocp-claim-stat-label">LIFETIME EARNED</div>
+                <div className="ocp-claim-stat-val">
+                  {Math.floor(claimResult.lifetimeBusts).toLocaleString()}
+                </div>
+              </div>
+              <div className="ocp-claim-stat">
+                <div className="ocp-claim-stat-label">YOUR APY</div>
+                <div className="ocp-claim-stat-val">
+                  {(me?.user?.apy ?? 0).toFixed(1)}%
+                </div>
+              </div>
+            </div>
+
+            <button
+              className="ocp-claim-cta"
+              onClick={() => setClaimResult(null)}
+              type="button"
+            >
+              KEEP EARNING →
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
