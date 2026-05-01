@@ -60,8 +60,14 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
   useEffect(() => {
     if (!v2Active) return;
     let cancelled = false;
+    // Pass the connected wagmi wallet so the server can match deposits
+    // even when the user staked from a wallet other than their bound
+    // mint wallet (e.g. NFT was transferred between wallets pre-stake).
     const load = () => {
-      fetch('/api/vault-onchain', { credentials: 'same-origin' })
+      const url = walletAddress
+        ? `/api/vault-onchain?wallet=${walletAddress}`
+        : '/api/vault-onchain';
+      fetch(url, { credentials: 'same-origin' })
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => { if (!cancelled && d) setMe(d); })
         .catch(() => {});
@@ -69,7 +75,7 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
     load();
     const id = setInterval(load, 30_000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [v2Active]);
+  }, [v2Active, walletAddress]);
 
   useEffect(() => {
     const id = setInterval(() => setTick((n) => n + 1), 1000);
@@ -197,7 +203,10 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
   }
   async function refreshUser() {
     try {
-      const r = await fetch('/api/vault-onchain', { credentials: 'same-origin' });
+      const url = walletAddress
+        ? `/api/vault-onchain?wallet=${walletAddress}`
+        : '/api/vault-onchain';
+      const r = await fetch(url, { credentials: 'same-origin' });
       const d = r.ok ? await r.json() : null;
       if (d) setMe(d);
     } catch { /* ignore */ }
