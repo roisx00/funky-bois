@@ -7,12 +7,107 @@ import { useGame } from '../context/GameContext';
 import { useToast } from './Toast';
 import { normalizeXHandle, isValidXHandle } from '../utils/xHandle';
 
-// ─── Grammar (mirrors ProphetChat.jsx) ──────────────────────────────
+// ─── Grammar ────────────────────────────────────────────────────────
 const RE_BUSTS_SEND = /(?:^|\b)(?:send|wire|transfer|give|gift|pay)\s+(\d{1,9})\s*(?:busts?|\$busts?)?\s+(?:to\s+)?@?([a-z0-9_]+)/i;
 const RE_NFT_SEND = /(?:^|\b)(?:send|wire|transfer|give)\s+(?:#?(\d{1,5})\s*(?:nft|1969)|(?:nft|1969)\s*#?(\d{1,5}))\s+(?:to\s+)?@?([a-z0-9_]+)/i;
 const RE_BALANCE = /\b(?:balance|how\s+(?:much|many)\s+(?:busts?|\$busts?))\b/i;
 const RE_HELP = /\b(?:help|commands?|what\s+can\s+you\s+do)\b/i;
 const RE_HI = /\b(?:hi|hello|hey|sup|yo|gm|gn)\b/i;
+
+// Price queries — match a few natural shapes:
+//   "eth price" / "price of btc" / "how much is sol" / "$pepe price"
+//   "what's bitcoin at" / "btc to usd"
+const RE_PRICE = /(?:price\s+of\s+|how\s+much\s+(?:is|for)\s+|what(?:'?s|\s+is)\s+|\$)?([a-z]{2,12})\s*(?:price|to\s+usd|in\s+usd)|(?:price\s+of\s+|how\s+much\s+(?:is|for)\s+)\$?([a-z]{2,12})/i;
+
+// Common ticker / name → CoinGecko id. Extend as needed.
+const COIN_MAP = {
+  btc: 'bitcoin', bitcoin: 'bitcoin', xbt: 'bitcoin',
+  eth: 'ethereum', ethereum: 'ethereum', ether: 'ethereum',
+  sol: 'solana', solana: 'solana',
+  doge: 'dogecoin', dogecoin: 'dogecoin',
+  shib: 'shiba-inu', shiba: 'shiba-inu',
+  pepe: 'pepe',
+  bonk: 'bonk',
+  wif: 'dogwifcoin',
+  arb: 'arbitrum', arbitrum: 'arbitrum',
+  op: 'optimism', optimism: 'optimism',
+  matic: 'matic-network', polygon: 'matic-network', pol: 'matic-network',
+  bnb: 'binancecoin', binance: 'binancecoin',
+  ada: 'cardano', cardano: 'cardano',
+  xrp: 'ripple', ripple: 'ripple',
+  dot: 'polkadot', polkadot: 'polkadot',
+  avax: 'avalanche-2', avalanche: 'avalanche-2',
+  ltc: 'litecoin', litecoin: 'litecoin',
+  link: 'chainlink', chainlink: 'chainlink',
+  usdc: 'usd-coin',
+  usdt: 'tether', tether: 'tether',
+  trx: 'tron', tron: 'tron',
+  near: 'near',
+  apt: 'aptos', aptos: 'aptos',
+  sui: 'sui',
+  ton: 'the-open-network', toncoin: 'the-open-network',
+  hype: 'hyperliquid', hyperliquid: 'hyperliquid',
+  ena: 'ethena', ethena: 'ethena',
+  mog: 'mog-coin',
+  brett: 'based-brett',
+  popcat: 'popcat',
+  fart: 'fartcoin', fartcoin: 'fartcoin',
+};
+
+// Witty one-liners keyed by symbol — used as a kicker on the price
+// response so Prophet stays in character.
+const PRICE_QUIPS = {
+  bitcoin:    'still digital gold, still loud about it.',
+  ethereum:   'the laptop kid is doing fine.',
+  solana:     'fast, until it isn\'t.',
+  dogecoin:   'much wow. forever.',
+  'shiba-inu':'still in the trenches.',
+  pepe:       'frog war, ongoing.',
+  bonk:       'a dog. on solana. you know the drill.',
+  dogwifcoin: 'hat: still on.',
+  'usd-coin': 'a dollar. groundbreaking.',
+  tether:     'allegedly a dollar.',
+  ripple:     'still suing the sec in your dreams.',
+  arbitrum:   'rolling up.',
+  optimism:   'rolling up, with vibes.',
+  'matic-network': 'now called pol. confusing, ser.',
+  binancecoin:'cz says hello from somewhere.',
+  cardano:    'academic.',
+  polkadot:   'parachains, parachains everywhere.',
+  'avalanche-2': 'three chains in a trenchcoat.',
+  litecoin:   'silver to bitcoin\'s gold. allegedly.',
+  chainlink:  'oracle pilled.',
+  tron:       'justin still onstage.',
+  near:       'near to what, exactly.',
+  aptos:      'move language enjoyer.',
+  sui:        'move language enjoyer 2.',
+  'the-open-network': 'telegram\'s lottery ticket.',
+  hyperliquid:'perp degens, assemble.',
+  ethena:     'synthetic dollar, real volatility.',
+  'mog-coin': 'mog or be mogged.',
+  'based-brett':'based.',
+  popcat:     'pop pop pop.',
+  fartcoin:   'no comment, ser.',
+};
+
+async function fetchPrice(cgId) {
+  try {
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(cgId)}&vs_currencies=usd&include_24hr_change=true`;
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const d = await r.json();
+    const row = d?.[cgId];
+    if (!row || row.usd == null) return null;
+    return { usd: row.usd, change24h: row.usd_24h_change };
+  } catch { return null; }
+}
+
+function formatPrice(usd) {
+  if (usd >= 1)      return `$${usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  if (usd >= 0.01)   return `$${usd.toFixed(4)}`;
+  if (usd >= 0.0001) return `$${usd.toFixed(6)}`;
+  return `$${usd.toExponential(2)}`;
+}
 
 function parseIntent(text) {
   const t = String(text || '').trim();
@@ -25,15 +120,20 @@ function parseIntent(text) {
     return { kind: 'send_nft', tokenId: m[1] || m[2], handle: normalizeXHandle(m[3]) };
   }
   if (RE_BALANCE.test(t)) return { kind: 'balance' };
-  if (RE_HELP.test(t))    return { kind: 'help' };
-  if (RE_HI.test(t))      return { kind: 'hi' };
+  if ((m = t.match(RE_PRICE))) {
+    const sym = String(m[1] || m[2] || '').toLowerCase();
+    return { kind: 'price', symbol: sym };
+  }
+  if (RE_HELP.test(t)) return { kind: 'help' };
+  if (RE_HI.test(t))   return { kind: 'hi' };
   return { kind: 'unknown', text: t };
 }
 
 const SUGGESTIONS = [
   'send 100 busts to @vitalik',
   "what's my balance",
-  'wire 250 to @bro',
+  'eth price',
+  'how much is sol',
   'help',
 ];
 
@@ -71,9 +171,9 @@ export default function ProphetInline() {
   useEffect(() => {
     if (msgs.length === 0) {
       pushBot([
-        { type: 'kicker', text: 'WIRE CONCIERGE · ONLINE' },
-        { type: 'line', text: "Tell me what to wire — I read plain English." },
-        { type: 'note', text: "I never move funds without you tapping CONFIRM. Try a suggestion below." },
+        { type: 'kicker', text: 'PROPHET · ONLINE' },
+        { type: 'line', text: "Plain English. Real wires. Confirm before anything moves." },
+        { type: 'note', text: "I also do crypto prices. Try 'eth price' or just say what you want." },
       ]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,56 +209,103 @@ export default function ProphetInline() {
     botRespond(() => routeIntent(intent));
   }
 
-  function routeIntent(intent) {
+  async function routeIntent(intent) {
     if (intent.kind === 'hi') {
-      pushBotText("Ser. Tell me what to wire — e.g. 'send 100 busts to @vitalik'.");
+      const greets = [
+        "Hey ser. What we wiring?",
+        "Gm. Tell me what to do.",
+        "Showed up. What's the move?",
+      ];
+      pushBotText(greets[Math.floor(Math.random() * greets.length)]);
       return;
     }
     if (intent.kind === 'help') {
       pushBot([
-        { type: 'kicker', text: 'WHAT I CAN DO' },
+        { type: 'kicker', text: 'WHAT I DO' },
         { type: 'example', text: 'send 100 busts to @vitalik' },
         { type: 'example', text: 'wire 50 to @bro' },
         { type: 'example', text: "what's my balance" },
-        { type: 'note', text: "NFT transfers go live post-mint. I'll handle those once your tokens are in your wallet." },
+        { type: 'example', text: 'eth price' },
+        { type: 'example', text: 'how much is sol' },
+        { type: 'note', text: "NFT transfers come post-mint. I'll move tokens once they're in your wallet — needs a signature, not a server." },
       ]);
       return;
     }
     if (intent.kind === 'balance') {
-      pushBotText(`You hold ${(bustsBalance || 0).toLocaleString()} BUSTS.`);
+      const bal = bustsBalance || 0;
+      const tail =
+        bal === 0       ? "Empty. Earn some, ser." :
+        bal < 100       ? "That's lunch money." :
+        bal < 1000      ? "Modest stack." :
+        bal < 10_000    ? "Respectable." :
+        bal < 100_000   ? "Now we're talking." :
+        bal < 1_000_000 ? "Whale alert." :
+                          "Generational.";
+      pushBotText(`${bal.toLocaleString()} BUSTS. ${tail}`);
+      return;
+    }
+    if (intent.kind === 'price') {
+      const sym = String(intent.symbol || '').toLowerCase();
+      // Don't trip on "send 100 busts" — busts isn't a tradable coin and
+      // the regex already gives send_busts priority above. Same for our
+      // own context words that occasionally sneak in.
+      const blocklist = new Set(['busts', 'bust', 'eth1969', 'thee', 'price', 'usd', 'help', 'balance']);
+      const cgId = !blocklist.has(sym) ? COIN_MAP[sym] : null;
+      if (!cgId) {
+        pushBotText(`Never heard of $${sym.toUpperCase()}. Try a real coin, ser — eth, btc, sol, doge, you know.`);
+        return;
+      }
+      const data = await fetchPrice(cgId);
+      if (!data) {
+        pushBotText(`Couldn't fetch ${cgId}. Coingecko ratelimited me, probably. Try in a sec.`);
+        return;
+      }
+      const change = data.change24h;
+      const sign = change > 0 ? '+' : '';
+      const changeStr = Number.isFinite(change) ? `${sign}${change.toFixed(2)}%` : '—';
+      const direction =
+        change > 5  ? 'green candle szn.' :
+        change > 0  ? 'mild green.' :
+        change > -5 ? 'mild red.' :
+                      'getting cooked.';
+      pushBot([
+        { type: 'kicker', text: `${sym.toUpperCase()} · ${cgId.toUpperCase()}` },
+        { type: 'line', text: `${formatPrice(data.usd)}` },
+        { type: 'note', text: `24H · ${changeStr} · ${direction} ${PRICE_QUIPS[cgId] || ''}`.trim() },
+      ]);
       return;
     }
     if (intent.kind === 'send_nft') {
       pushBot([
-        { type: 'line', text: `NFT #${intent.tokenId} → @${intent.handle}? Soon.` },
-        { type: 'note', text: "On-chain NFT transfers are Phase 2 — they need a wallet signature, not a server call. I'll wire them in after mint settles." },
+        { type: 'line', text: `NFT #${intent.tokenId} → @${intent.handle}? Soon, ser.` },
+        { type: 'note', text: "Phase 2. Once your tokens are in your wallet I'll wire them — needs a wallet signature, not a server call." },
       ]);
       return;
     }
     if (intent.kind === 'send_busts') {
       const { amount, handle } = intent;
       if (!handle || !isValidXHandle(handle)) {
-        pushBotText(`Couldn't read the handle. Try: 'send ${amount} busts to @vitalik'.`);
+        pushBotText(`Bad handle. Try a real one — e.g. 'send ${amount} busts to @vitalik'.`);
         return;
       }
       if (xUser?.username && handle === normalizeXHandle(xUser.username)) {
-        pushBotText("Can't wire to yourself, ser.");
+        pushBotText("You can't pay yourself, captain. That's not how money works.");
         return;
       }
       if (!Number.isFinite(amount) || amount < 1) {
-        pushBotText('Amount has to be at least 1 BUSTS.');
+        pushBotText("Minimum 1 BUSTS. We don't deal in crumbs.");
         return;
       }
       if (amount > (bustsBalance || 0)) {
-        pushBotText(`You only hold ${(bustsBalance || 0).toLocaleString()} BUSTS — that's short.`);
+        pushBotText(`You hold ${(bustsBalance || 0).toLocaleString()}. Math doesn't math, ser.`);
         return;
       }
       pushIntent({ kind: 'send_busts', amount, handle });
       return;
     }
     pushBot([
-      { type: 'line', text: "I didn't catch that." },
-      { type: 'note', text: "Try 'send 100 busts to @vitalik' or 'help' for the full menu." },
+      { type: 'line', text: "Didn't catch that." },
+      { type: 'note', text: "Try 'send 100 busts to @vitalik', 'eth price', or 'help'." },
     ]);
   }
 
@@ -176,9 +323,15 @@ export default function ProphetInline() {
           result: { amount: r.amount, recipient: r.recipient },
         });
         toast.success(`Sent ${r.amount.toLocaleString()} BUSTS to @${r.recipient}`);
-        // Bot follow-up confirmation message
+        // Bot follow-up confirmation — keep the post-send reply short
+        // and dry, in character.
+        const tails = [
+          `Wired ${r.amount.toLocaleString()} BUSTS to @${r.recipient}. They claim from their inbox.`,
+          `Done. ${r.amount.toLocaleString()} BUSTS → @${r.recipient}. Now in their inbox.`,
+          `Sent. @${r.recipient} owes you a follow at minimum.`,
+        ];
         botRespond(
-          () => pushBotText(`✓ Wired ${r.amount.toLocaleString()} BUSTS to @${r.recipient}. They claim from their inbox.`),
+          () => pushBotText(`✓ ${tails[Math.floor(Math.random() * tails.length)]}`),
           280
         );
       } else {
