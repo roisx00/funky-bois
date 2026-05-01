@@ -499,7 +499,7 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress, children 
           sub={vault ? `tier ${powerOrTier(vault.power)}` : 'loading'}
         />
         <MetricTile
-          label="CONNECTED WALLET"
+          label="BOUND WALLET"
           value={short || '—'}
           sub={short ? 'bound · mint ready' : 'not bound'}
           mono

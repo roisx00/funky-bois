@@ -139,34 +139,40 @@ export default function Nav({ currentPage, onNavigate }) {
     }
   };
 
-  // Manage-wallet handler. RainbowKit's openAccountModal returns undefined
-  // whenever wagmi's connection state is transient (after reloads, network
-  // switches, or while the modal is initialising). Calling
-  // openAccountModal?.() in that state is a silent no-op — that's the
-  // "Manage wallet does nothing" bug. Fall through to a forced disconnect
-  // so the user can re-connect with a clean state.
+  // Manage-wallet handler. The "Wallet" we're managing here is the
+  // browser wagmi/RainbowKit session — NOT the server-bound mint wallet
+  // (which is permanent). Three cases:
+  //   1. Wagmi connected + RainbowKit ready → open account modal
+  //   2. Wagmi disconnected but RainbowKit ready → open connect modal
+  //   3. Both unavailable but wagmi reports connected → force disconnect
+  //      to break the deadlock so the next click works
   const handleManageWallet = () => {
     setUserMenuOpen(false);
     if (openAccountModal) {
       openAccountModal();
+    } else if (openConnectModal) {
+      openConnectModal();
+      toast.info?.('Connect a wallet to manage it.');
     } else if (wagmiConnected) {
-      // Account modal unavailable but wagmi thinks it's connected.
-      // Force-disconnect so RainbowKit re-initialises and the connect
-      // modal becomes available again on the next click.
       try { disconnect(); } catch (e) { console.warn('[Nav] forced disconnect failed:', e); }
-      toast.info?.('Wallet state reset. Connect again to continue.');
+      toast.info?.('Wallet state reset. Try the button again in a moment.');
     } else {
-      toast.error('Wallet not connected. Use Connect Wallet first.');
+      toast.error('Wallet system unavailable. Refresh the page.');
     }
   };
 
-  // Manual disconnect — gives stuck users a one-click escape hatch when
-  // wagmi/RainbowKit are out of sync. Called from the user menu.
+  // Disconnect handler. Only affects the browser wagmi session; the
+  // server-bound wallet (used for mint allowlist + on-chain reads) is
+  // permanent and cannot be undone here. Toast copy makes that clear.
   const handleDisconnect = () => {
     setUserMenuOpen(false);
+    if (!wagmiConnected) {
+      toast.info?.('No browser wallet to disconnect. Your bound wallet is recorded server-side and stays.');
+      return;
+    }
     try {
       disconnect();
-      toast.success?.('Wallet disconnected.');
+      toast.success?.('Browser wallet session disconnected. Your bound wallet stays.');
     } catch (e) {
       console.warn('[Nav] disconnect failed:', e);
       toast.error('Disconnect failed. Refresh the page.');
@@ -267,19 +273,19 @@ export default function Nav({ currentPage, onNavigate }) {
                         onClick={handleManageWallet}
                       >
                         <div>
-                          <div className="nav-user-menu-kicker">Wallet</div>
-                          <div className="nav-user-menu-text">Manage wallet</div>
+                          <div className="nav-user-menu-kicker">Browser session</div>
+                          <div className="nav-user-menu-text">Manage browser wallet</div>
                         </div>
                         <span className="nav-user-menu-arrow">↗</span>
                       </button>
                       <button
                         className="nav-user-menu-item"
                         onClick={handleDisconnect}
-                        title="Disconnect to reset wallet state"
+                        title="Disconnect the browser wagmi session. Bound wallet stays."
                       >
                         <div>
-                          <div className="nav-user-menu-kicker">Wallet</div>
-                          <div className="nav-user-menu-text">Disconnect wallet</div>
+                          <div className="nav-user-menu-kicker">Browser session</div>
+                          <div className="nav-user-menu-text">Disconnect browser wallet</div>
                         </div>
                         <span className="nav-user-menu-arrow">×</span>
                       </button>
