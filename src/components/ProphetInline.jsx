@@ -247,10 +247,20 @@ export default function ProphetInline() {
         .proph-name {
           font-family: var(--font-display);
           font-style: italic;
-          font-size: 28px;
+          font-weight: 500;
+          font-size: 44px;
           line-height: 1;
-          letter-spacing: -0.02em;
+          letter-spacing: -0.03em;
           color: var(--ink);
+        }
+        .proph-subname {
+          font-family: var(--font-display);
+          font-style: italic;
+          font-size: 16px;
+          line-height: 1.1;
+          letter-spacing: -0.01em;
+          color: var(--text-3);
+          margin-top: 4px;
         }
         .proph-status {
           display: inline-flex;
@@ -537,9 +547,10 @@ export default function ProphetInline() {
           letter-spacing: -0.02em;
         }
         @media (max-width: 540px) {
-          .proph-thread { max-height: 380px; }
-          .proph-name   { font-size: 24px; }
-          .proph-bubble { max-width: 88%; }
+          .proph-thread  { max-height: 380px; }
+          .proph-name    { font-size: 34px; }
+          .proph-subname { font-size: 14px; }
+          .proph-bubble  { max-width: 88%; }
         }
       `}</style>
 
@@ -547,8 +558,9 @@ export default function ProphetInline() {
       <div className="proph-inline-head">
         <div className="proph-avatar">P</div>
         <div className="proph-inline-head-text">
-          <div className="proph-kicker">§02 · MR PROPHET</div>
-          <div className="proph-name">Wire concierge.</div>
+          <div className="proph-kicker">§02</div>
+          <div className="proph-name">Mr Prophet.</div>
+          <div className="proph-subname">Wire concierge.</div>
           <div className="proph-status">
             <span className="dot" />
             ONLINE · NATURAL LANGUAGE WIRE
