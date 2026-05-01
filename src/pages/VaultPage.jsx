@@ -1157,12 +1157,17 @@ function TvlCell({ num, label, unit, hero }) {
 // of every active user balance + every locked vault deposit.
 function BustsCirculationPanel() {
   const [data, setData] = useState(null);
+  const [burned, setBurned] = useState(null);
   useEffect(() => {
     let cancelled = false;
     const fetchOnce = () => {
       fetch('/api/busts-circulation')
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => { if (!cancelled && d) setData(d); })
+        .catch(() => {});
+      fetch('/api/busts-burned')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (!cancelled && d) setBurned(d); })
         .catch(() => {});
     };
     fetchOnce();
@@ -1182,13 +1187,18 @@ function BustsCirculationPanel() {
       {/* Responsive rules — total number shrinks, head row stacks,
           3-tile breakdown collapses to 1 column on narrow viewports. */}
       <style>{`
+        @media (max-width: 880px) {
+          .vlt-circ-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
         @media (max-width: 720px) {
           .vlt-circ { padding: 22px 16px !important; }
           .vlt-circ-head { flex-direction: column !important; align-items: flex-start !important; }
           .vlt-circ-head-right { text-align: left !important; margin-top: 14px; }
           .vlt-circ-total { font-size: 44px !important; letter-spacing: -1px !important; }
-          .vlt-circ-grid { grid-template-columns: 1fr !important; }
           .vlt-circ-tile-num { font-size: 22px !important; }
+        }
+        @media (max-width: 460px) {
+          .vlt-circ-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
       <div className="vlt-circ-head" style={{
@@ -1251,7 +1261,7 @@ function BustsCirculationPanel() {
 
       <div className="vlt-circ-grid" style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(4, 1fr)',
         gap: 1,
         background: 'var(--hairline)',
         border: '1px solid var(--hairline)',
@@ -1324,6 +1334,47 @@ function BustsCirculationPanel() {
             color: 'var(--text-4)',
             marginTop: 4,
           }}>{'WITH BALANCE > 0'}</div>
+        </div>
+        {/* BURNED — deflationary tile, lime accent stripe to flag it as
+            the "removed from supply forever" stat. Sourced from
+            /api/busts-burned which sums every Vault reinforce burn row
+            in busts_ledger. */}
+        <div style={{
+          background: 'var(--paper)',
+          padding: '16px 18px',
+          position: 'relative',
+        }}>
+          <span style={{
+            position: 'absolute',
+            left: 0, top: 0, bottom: 0,
+            width: 4,
+            background: 'var(--accent)',
+          }} />
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.22em',
+            color: 'var(--text-4)',
+          }}>BURNED</div>
+          <div className="vlt-circ-tile-num" style={{
+            fontFamily: 'var(--font-display)',
+            fontStyle: 'italic',
+            fontSize: 28,
+            color: 'var(--ink)',
+            marginTop: 4,
+            fontFeatureSettings: '"tnum"',
+          }}>
+            {burned ? burned.totalBurned.toLocaleString() : '...'}
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9, letterSpacing: '0.16em',
+            color: 'var(--text-4)',
+            marginTop: 4,
+          }}>
+            {burned && burned.burned24h > 0
+              ? `+${burned.burned24h.toLocaleString()} · 24H`
+              : 'PERMANENTLY RETIRED'}
+          </div>
         </div>
       </div>
     </section>

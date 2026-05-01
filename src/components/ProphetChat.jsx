@@ -63,7 +63,7 @@ const MAX_HISTORY = 40;
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
 export default function ProphetChat() {
-  const { sendBusts, bustsBalance, xUser } = useGame();
+  const { sendBusts, bustsBalance, xUser, suspended } = useGame();
   const toast = useToast();
 
   const [open, setOpen] = useState(false);
@@ -108,6 +108,11 @@ export default function ProphetChat() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Hide for not-signed-in users (no balance to wire) and suspended
+  // accounts (server-side send would 403 anyway). Hooks above must run
+  // first so React's hook-order rule stays happy across re-renders.
+  if (!xUser || suspended) return null;
 
   function push(message) {
     setMsgs((prev) => [...prev, { ...message, id: uid(), at: Date.now() }]);
