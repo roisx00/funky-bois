@@ -1171,7 +1171,7 @@ function BustsCirculationPanel() {
   }, []);
 
   return (
-    <section style={{
+    <section className="vlt-circ" style={{
       maxWidth: 1180,
       margin: '0 auto 36px',
       padding: '28px 24px',
@@ -1179,7 +1179,19 @@ function BustsCirculationPanel() {
       borderTop: '1px solid var(--hairline)',
       borderBottom: '1px solid var(--hairline)',
     }}>
-      <div style={{
+      {/* Responsive rules — total number shrinks, head row stacks,
+          3-tile breakdown collapses to 1 column on narrow viewports. */}
+      <style>{`
+        @media (max-width: 720px) {
+          .vlt-circ { padding: 22px 16px !important; }
+          .vlt-circ-head { flex-direction: column !important; align-items: flex-start !important; }
+          .vlt-circ-head-right { text-align: left !important; margin-top: 14px; }
+          .vlt-circ-total { font-size: 44px !important; letter-spacing: -1px !important; }
+          .vlt-circ-grid { grid-template-columns: 1fr !important; }
+          .vlt-circ-tile-num { font-size: 22px !important; }
+        }
+      `}</style>
+      <div className="vlt-circ-head" style={{
         display: 'flex',
         alignItems: 'baseline',
         justifyContent: 'space-between',
@@ -1211,8 +1223,8 @@ function BustsCirculationPanel() {
             Total in motion right now. Sum of every active balance + every locked vault deposit.
           </div>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{
+        <div className="vlt-circ-head-right" style={{ textAlign: 'right' }}>
+          <div className="vlt-circ-total" style={{
             fontFamily: 'var(--font-display)',
             fontStyle: 'italic',
             fontSize: 64,
@@ -1237,7 +1249,7 @@ function BustsCirculationPanel() {
         </div>
       </div>
 
-      <div style={{
+      <div className="vlt-circ-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
         gap: 1,
@@ -1250,7 +1262,7 @@ function BustsCirculationPanel() {
             fontSize: 9, letterSpacing: '0.22em',
             color: 'var(--text-4)',
           }}>IN BALANCES</div>
-          <div style={{
+          <div className="vlt-circ-tile-num" style={{
             fontFamily: 'var(--font-display)',
             fontStyle: 'italic',
             fontSize: 28,
@@ -1273,7 +1285,7 @@ function BustsCirculationPanel() {
             fontSize: 9, letterSpacing: '0.22em',
             color: 'var(--text-4)',
           }}>IN VAULTS</div>
-          <div style={{
+          <div className="vlt-circ-tile-num" style={{
             fontFamily: 'var(--font-display)',
             fontStyle: 'italic',
             fontSize: 28,
@@ -1296,7 +1308,7 @@ function BustsCirculationPanel() {
             fontSize: 9, letterSpacing: '0.22em',
             color: 'var(--text-4)',
           }}>HOLDERS</div>
-          <div style={{
+          <div className="vlt-circ-tile-num" style={{
             fontFamily: 'var(--font-display)',
             fontStyle: 'italic',
             fontSize: 28,

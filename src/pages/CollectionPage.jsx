@@ -408,15 +408,29 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress }) {
 
   return (
     <>
-      {/* ─── Metrics row — 4 tiles ─── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: 1,
-        background: 'var(--hairline)',
-        border: '1px solid var(--hairline)',
-        marginBottom: 28,
-      }}>
+      {/* Responsive CSS for the metrics row + the NFT strip below.
+          On wide screens we want the four tiles in one row; on
+          narrower viewports they stack to 2x2, then a single column
+          on the smallest phones. */}
+      <style>{`
+        .dash-metrics-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1px;
+          background: var(--hairline);
+          border: 1px solid var(--hairline);
+          margin-bottom: 28px;
+        }
+        @media (max-width: 880px) {
+          .dash-metrics-row { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 460px) {
+          .dash-metrics-row { grid-template-columns: 1fr; }
+        }
+      `}</style>
+
+      {/* ─── Metrics row — 4 tiles, responsive ─── */}
+      <div className="dash-metrics-row">
         <MetricTile
           label="ETH BALANCE"
           value={ethBalance != null ? ethBalance.toFixed(4) : (walletAddress ? '…' : '—')}
@@ -522,29 +536,42 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress }) {
 
 function MetricTile({ label, value, sub, mono }) {
   return (
-    <div style={{
+    <div className="dash-metric-tile" style={{
       background: 'var(--paper)',
       padding: '20px 18px',
       display: 'flex', flexDirection: 'column', gap: 6,
+      minWidth: 0,  // critical: lets flex/grid children shrink below content width
+      overflow: 'hidden',
     }}>
       <span style={{
         fontFamily: 'var(--font-mono)',
         fontSize: 9, letterSpacing: '0.22em',
         color: 'var(--text-4)',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
       }}>{label}</span>
-      <span style={{
+      <span className="dash-metric-value" style={{
         fontFamily: mono ? 'var(--font-mono)' : 'var(--font-display)',
         fontStyle: mono ? 'normal' : 'italic',
         fontSize: mono ? 16 : 28,
-        lineHeight: 1,
+        lineHeight: 1.05,
         color: 'var(--ink)',
         fontFeatureSettings: '"tnum"',
+        // Mono wallet addresses should ellipsize cleanly when there's
+        // not enough room; italic numerals shouldn't truncate.
+        whiteSpace: mono ? 'nowrap' : 'normal',
+        overflow: mono ? 'hidden' : 'visible',
+        textOverflow: mono ? 'ellipsis' : 'clip',
       }}>{value}</span>
       {sub ? (
         <span style={{
           fontFamily: 'var(--font-mono)',
           fontSize: 9, letterSpacing: '0.16em',
           color: 'var(--text-4)',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}>{sub}</span>
       ) : null}
     </div>
