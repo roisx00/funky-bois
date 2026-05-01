@@ -124,5 +124,56 @@ export default function WalletBridge() {
     })();
   }, [authenticated, isConnected, address, completedNFTs, xUser, recordWhitelist, signMessageAsync, isWhitelisted, walletAddress, walletBound]);
 
+  // 3. Auto-sync Discord tier role on wallet connect.
+  //
+  // When a user with a linked Discord (xUser.discordId set) connects
+  // their wagmi wallet, fire POST /api/discord-holder-finish so the
+  // backend counts holdings (wallet + vault) and assigns the correct
+  // tier role in our Discord server. No signature prompt — the wagmi
+  // connection is sufficient proof since MetaMask only exposes
+  // addresses the user holds the key for.
+  //
+  // Dedupe per (wallet, discordId) via localStorage so refreshes don't
+  // hammer Discord. The cron-discord-sync job re-syncs everyone every
+  // 6h regardless, so missed assignments self-heal.
+  const lastDiscordSyncRef = useRef('');
+  useEffect(() => {
+    if (!authenticated) return;
+    if (!isConnected || !address) return;
+    if (!xUser?.discordId) return;
+
+    const key = `${address.toLowerCase()}:${xUser.discordId}`;
+    if (lastDiscordSyncRef.current === key) return;
+    const lsKey = `the1969-discord-synced:${key}`;
+    try {
+      if (window.localStorage.getItem(lsKey)) {
+        lastDiscordSyncRef.current = key;
+        return;
+      }
+    } catch { /* private mode */ }
+    lastDiscordSyncRef.current = key;
+
+    (async () => {
+      try {
+        const r = await fetch('/api/discord-holder-finish', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet: address }),
+        });
+        if (!r.ok) {
+          // Don't pin the flag on failure so a refresh can retry.
+          console.warn('[WalletBridge] discord sync failed:', r.status);
+          lastDiscordSyncRef.current = '';
+          return;
+        }
+        try { window.localStorage.setItem(lsKey, '1'); } catch {}
+      } catch (e) {
+        console.warn('[WalletBridge] discord sync threw:', e?.message);
+        lastDiscordSyncRef.current = '';
+      }
+    })();
+  }, [authenticated, isConnected, address, xUser?.discordId]);
+
   return null;
 }

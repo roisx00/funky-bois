@@ -40,6 +40,12 @@ import nftsOfOwner          from './_routes/nfts-of-owner.js';
 import vaultOnchainReconcile from './_routes/vault-onchain-reconcile.js';
 import galleryOwners        from './_routes/gallery-owners.js';
 import cronSalesWatcher     from './_routes/cron-sales-watcher.js';
+import discordHolderInit    from './_routes/discord-holder-init.js';
+import discordHolderCallback from './_routes/discord-holder-callback.js';
+import discordHolderFinish  from './_routes/discord-holder-finish.js';
+import cronDiscordSync      from './_routes/cron-discord-sync.js';
+import adminDiscordPurgeRoles from './_routes/admin-discord-purge-roles.js';
+import adminDiscordPostVerify from './_routes/admin-discord-post-verify.js';
 import adminVaultV2Activate from './_routes/admin-vault-v2-activate.js';
 import adminRarityRebuild   from './_routes/admin-rarity-rebuild.js';
 import inventoryBurn       from './_routes/inventory-burn.js';
@@ -135,6 +141,12 @@ const ROUTES = {
   'vault-onchain-reconcile':    vaultOnchainReconcile,
   'gallery-owners':             galleryOwners,
   'cron-sales-watcher':         cronSalesWatcher,
+  'discord-holder-init':        discordHolderInit,
+  'discord-holder-callback':    discordHolderCallback,
+  'discord-holder-finish':      discordHolderFinish,
+  'cron-discord-sync':          cronDiscordSync,
+  'admin-discord-purge-roles':  adminDiscordPurgeRoles,
+  'admin-discord-post-verify':  adminDiscordPostVerify,
   'admin-vault-v2-activate':  adminVaultV2Activate,
   'admin-rarity-rebuild':     adminRarityRebuild,
   'inventory-burn':      inventoryBurn,
