@@ -181,7 +181,7 @@ function TierRow({ name, min }) {
   );
 }
 
-const pageStyle = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)', padding: 24 };
+const pageStyle = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg, #F9F6F0)', padding: 24 };
 const cardStyle = { width: '100%', maxWidth: 540, padding: '40px 36px', background: 'var(--paper-2)', border: '1px solid var(--ink)' };
 const kickerStyle = { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 12 };
 const kickerSmStyle = { fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-4)', textTransform: 'uppercase', marginTop: 32 };

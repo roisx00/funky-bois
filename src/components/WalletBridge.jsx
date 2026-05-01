@@ -20,6 +20,7 @@ export default function WalletBridge() {
   const {
     isWalletConnected, walletAddress, walletBound, bridgeWallet,
     completedNFTs, authenticated, recordWhitelist, xUser, isWhitelisted,
+    discordId,
   } = useGame();
 
   // Guard so we only ATTEMPT a WL POST once per (wallet, portrait) pair
@@ -140,9 +141,9 @@ export default function WalletBridge() {
   useEffect(() => {
     if (!authenticated) return;
     if (!isConnected || !address) return;
-    if (!xUser?.discordId) return;
+    if (!discordId) return;
 
-    const key = `${address.toLowerCase()}:${xUser.discordId}`;
+    const key = `${address.toLowerCase()}:${discordId}`;
     if (lastDiscordSyncRef.current === key) return;
     const lsKey = `the1969-discord-synced:${key}`;
     try {
@@ -173,7 +174,7 @@ export default function WalletBridge() {
         lastDiscordSyncRef.current = '';
       }
     })();
-  }, [authenticated, isConnected, address, xUser?.discordId]);
+  }, [authenticated, isConnected, address, discordId]);
 
   return null;
 }
