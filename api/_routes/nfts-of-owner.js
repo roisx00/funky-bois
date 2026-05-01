@@ -30,15 +30,15 @@ export default async function handler(req, res) {
     });
   }
 
-  const tokenIds = [];
+  const tokens = [];        // [{ tokenId, name, image }]
+  const tokenIds = [];      // legacy: just IDs (for older callers)
   let pageKey = null;
-  // Loop pages (capped) until we've drained all ownedNfts.
   for (let i = 0; i < 10; i++) {
     const url = new URL(`https://eth-mainnet.g.alchemy.com/nft/v3/${key}/getNFTsForOwner`);
     url.searchParams.set('owner', wallet);
     url.searchParams.append('contractAddresses[]', NFT_CONTRACT);
     url.searchParams.set('pageSize', '100');
-    url.searchParams.set('withMetadata', 'false');
+    url.searchParams.set('withMetadata', 'true');   // need image URLs for the deposit tiles
     if (pageKey) url.searchParams.set('pageKey', pageKey);
 
     let r;
@@ -53,9 +53,15 @@ export default async function handler(req, res) {
     }
     const d = await r.json();
     for (const nft of (d?.ownedNfts || [])) {
-      // tokenId in v3 is decimal string already
       const id = String(nft.tokenId);
-      if (/^\d+$/.test(id)) tokenIds.push(id);
+      if (!/^\d+$/.test(id)) continue;
+      // Alchemy image object has cachedUrl (preferred), thumbnailUrl,
+      // pngUrl, originalUrl. Pick the first one that exists.
+      const img = nft.image || {};
+      const image = img.cachedUrl || img.pngUrl || img.thumbnailUrl || img.originalUrl || null;
+      const name = nft.name || `THE 1969 #${id}`;
+      tokens.push({ tokenId: id, name, image });
+      tokenIds.push(id);
     }
     if (!d?.pageKey) break;
     pageKey = d.pageKey;
@@ -65,7 +71,8 @@ export default async function handler(req, res) {
   ok(res, {
     wallet,
     contract: NFT_CONTRACT,
-    count: tokenIds.length,
+    count: tokens.length,
     tokenIds,
+    tokens,
   });
 }

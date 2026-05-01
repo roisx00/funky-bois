@@ -100,27 +100,36 @@ export default function OnchainPortraitDeposit() {
   });
   const ownedCount = balanceRaw != null ? Number(balanceRaw) : 0;
 
-  // Discover the user's owned 1969 token IDs via /api/nfts-of-owner
-  // (server-side Alchemy NFT API proxy). The 1969 contract is NOT
-  // ERC-721 Enumerable so tokenOfOwnerByIndex reverts; the Alchemy
-  // NFT API works on any ERC-721 by indexing Transfer events.
+  // Discover the user's owned 1969 token IDs via /api/nfts-of-owner.
+  // Stores both the IDs and the metadata (name + image) so the deposit
+  // tiles can render the actual portrait artwork.
   const [ownedIds, setOwnedIds] = useState([]);
+  const [ownedTokens, setOwnedTokens] = useState([]);  // [{ tokenId, name, image }]
   const [ownedLoading, setOwnedLoading] = useState(false);
   useEffect(() => {
-    if (!walletAddress) { setOwnedIds([]); return; }
+    if (!walletAddress) { setOwnedIds([]); setOwnedTokens([]); return; }
     let cancelled = false;
     setOwnedLoading(true);
     fetch(`/api/nfts-of-owner?wallet=${walletAddress}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (cancelled) return;
-        const ids = Array.isArray(d?.tokenIds) ? d.tokenIds : [];
+        const ids    = Array.isArray(d?.tokenIds) ? d.tokenIds : [];
+        const tokens = Array.isArray(d?.tokens)   ? d.tokens   : [];
         setOwnedIds(ids);
+        setOwnedTokens(tokens);
         setOwnedLoading(false);
       })
       .catch(() => { if (!cancelled) setOwnedLoading(false); });
     return () => { cancelled = true; };
   }, [walletAddress, ownedCount]);
+
+  // Quick lookup: tokenId → metadata
+  const tokenMeta = useMemo(() => {
+    const m = new Map();
+    for (const t of ownedTokens) m.set(String(t.tokenId), t);
+    return m;
+  }, [ownedTokens]);
 
   // ── Rarity batch resolver ──
   const [rarities, setRarities] = useState({});
@@ -359,6 +368,7 @@ export default function OnchainPortraitDeposit() {
           border: 2px solid rgba(249,246,240,0.18);
           position: relative; cursor: pointer;
           transition: border-color 120ms, transform 120ms;
+          overflow: hidden;
         }
         .ocp-tile:hover { border-color: rgba(215,255,58,0.5); transform: translateY(-2px); }
         .ocp-tile.selected { border-color: #D7FF3A; }
@@ -368,6 +378,16 @@ export default function OnchainPortraitDeposit() {
           color: #D7FF3A;
           font-family: var(--font-mono, ui-monospace, monospace);
           font-size: 14px; font-weight: 700;
+          z-index: 3;
+          background: rgba(0,0,0,0.6);
+          padding: 1px 4px;
+        }
+        .ocp-tile-img {
+          position: absolute; inset: 0;
+          width: 100%; height: 100%;
+          object-fit: cover; display: block;
+          image-rendering: pixelated;
+          image-rendering: crisp-edges;
         }
         .ocp-tile-id {
           position: absolute; left: 0; right: 0; top: 26px;
@@ -375,6 +395,20 @@ export default function OnchainPortraitDeposit() {
           font-family: 'Instrument Serif', Georgia, serif;
           font-style: italic; font-size: 24px;
           color: #D7FF3A; letter-spacing: -0.02em;
+          z-index: 2;
+        }
+        /* When an image is present, the #N text becomes a small overlay
+           in the corner instead of the full center label. */
+        .ocp-tile.with-img .ocp-tile-id {
+          top: auto; bottom: 16px; left: 6px; right: auto;
+          font-size: 14px;
+          background: rgba(0,0,0,0.6);
+          padding: 1px 5px;
+          color: #D7FF3A;
+        }
+        .ocp-tile.with-img .ocp-tile-rarity {
+          background: rgba(0,0,0,0.7);
+          color: #D7FF3A !important;
         }
         .ocp-tile-rarity {
           position: absolute; left: 0; right: 0; bottom: 0;
@@ -538,25 +572,52 @@ export default function OnchainPortraitDeposit() {
       <div>
         <div className="ocp-block-head">
           <span className="ocp-block-label">DEPOSITED · {stakedIds.length}</span>
-          <span className="ocp-block-meta">
+          <span className="ocp-block-meta" style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
             {stakedSel.size > 0 ? `${stakedSel.size} SELECTED` : 'TAP TO SELECT'}
+            {stakedIds.length > VISIBLE_LIMIT ? (
+              <button
+                type="button"
+                onClick={() => setShowAllStaked((v) => !v)}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(215,255,58,0.5)',
+                  color: '#D7FF3A',
+                  fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+                  fontSize: 9, letterSpacing: '0.18em', fontWeight: 700,
+                  padding: '4px 8px', cursor: 'pointer',
+                }}
+              >
+                {showAllStaked
+                  ? 'COLLAPSE ↑'
+                  : `VIEW ALL · ${stakedIds.length} →`}
+              </button>
+            ) : null}
           </span>
         </div>
         {stakedIds.length === 0 ? (
           <div className="ocp-empty">NO ON-CHAIN PORTRAITS DEPOSITED YET</div>
         ) : (
-          <div className="ocp-strip">
+          <div
+            className="ocp-strip"
+            style={showAllStaked ? { flexWrap: 'wrap', overflowX: 'visible' } : undefined}
+          >
             {visibleStaked.map((id) => {
               const stake = (me?.stakes || []).find((s) => String(s.tokenId) === id);
               const tier = stake?.rarity || 'common';
               const sel = stakedSel.has(id);
+              const meta = tokenMeta.get(String(id));
+              const img  = meta?.image;
               return (
                 <button
                   key={id}
-                  className={`ocp-tile ${sel ? 'selected' : ''}`}
+                  className={`ocp-tile ${sel ? 'selected' : ''} ${img ? 'with-img' : ''}`}
                   onClick={() => toggle(stakedSel, setStakedSel, id)}
                   type="button"
+                  title={meta?.name || `#${id}`}
                 >
+                  {img ? (
+                    <img className="ocp-tile-img" src={img} alt={meta?.name || `#${id}`} loading="lazy" />
+                  ) : null}
                   <span className="ocp-tile-id">#{id}</span>
                   <span className="ocp-tile-rarity" style={{ background: RARITY_TINT[tier] }}>
                     {RARITY_LABELS[tier]} · {stake?.weight || 1}×
@@ -577,8 +638,26 @@ export default function OnchainPortraitDeposit() {
       <div>
         <div className="ocp-block-head">
           <span className="ocp-block-label">AVAILABLE · {availableIds.length}</span>
-          <span className="ocp-block-meta">
+          <span className="ocp-block-meta" style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
             {availSel.size > 0 ? `${availSel.size} SELECTED` : 'IN YOUR WALLET'}
+            {availableIds.length > VISIBLE_LIMIT ? (
+              <button
+                type="button"
+                onClick={() => setShowAllAvail((v) => !v)}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(215,255,58,0.5)',
+                  color: '#D7FF3A',
+                  fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+                  fontSize: 9, letterSpacing: '0.18em', fontWeight: 700,
+                  padding: '4px 8px', cursor: 'pointer',
+                }}
+              >
+                {showAllAvail
+                  ? 'COLLAPSE ↑'
+                  : `VIEW ALL · ${availableIds.length} →`}
+              </button>
+            ) : null}
           </span>
         </div>
         {availableIds.length === 0 ? (
@@ -590,18 +669,27 @@ export default function OnchainPortraitDeposit() {
                 : 'EVERY PORTRAIT IS DEPOSITED'}
           </div>
         ) : (
-          <div className="ocp-strip">
+          <div
+            className="ocp-strip"
+            style={showAllAvail ? { flexWrap: 'wrap', overflowX: 'visible' } : undefined}
+          >
             {visibleAvail.map((id) => {
               const r = rarities[id];
               const tier = r?.rarity || 'common';
               const sel = availSel.has(id);
+              const meta = tokenMeta.get(String(id));
+              const img  = meta?.image;
               return (
                 <button
                   key={id}
-                  className={`ocp-tile ${sel ? 'selected' : ''}`}
+                  className={`ocp-tile ${sel ? 'selected' : ''} ${img ? 'with-img' : ''}`}
                   onClick={() => toggle(availSel, setAvailSel, id)}
                   type="button"
+                  title={meta?.name || `#${id}`}
                 >
+                  {img ? (
+                    <img className="ocp-tile-img" src={img} alt={meta?.name || `#${id}`} loading="lazy" />
+                  ) : null}
                   <span className="ocp-tile-id">#{id}</span>
                   <span className="ocp-tile-rarity" style={{ background: RARITY_TINT[tier] }}>
                     {r ? RARITY_LABELS[tier] : 'LOADING'}
