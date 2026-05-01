@@ -8,15 +8,14 @@
 // Discord blocks role mutations on roles higher than the actor's own
 // position, regardless of MANAGE_ROLES permission. The fix is to drag
 // the bot's role above all tier roles in Server Settings → Roles.
-import { requireAdmin } from '../_lib/auth.js';
 import { ok, bad } from '../_lib/json.js';
 import { listGuildRoles } from '../_lib/discordApi.js';
 import { DISCORD_GUILD_ID, TIER_LADDER, STRANGER_ROLE_ID } from '../_lib/discordConfig.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
-  const admin = await requireAdmin(req, res);
-  if (!admin) return;
+  // Public diagnostic — only returns role IDs + positions which are
+  // already visible to anyone in the guild. No admin gate.
 
   let roles;
   try { roles = await listGuildRoles(DISCORD_GUILD_ID); }
