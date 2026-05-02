@@ -185,6 +185,8 @@ A holder receives the **highest tier they qualify for**, no stacking. Sale or tr
 
 Verification flow: **the1969.io/discord/verify** → sign in with Discord → connect wallet → role auto-assigned. No transaction fee, no signature prompt for read-only verification.
 
+Discord server: **https://discord.gg/MpTUFvNHPj**
+
 ---
 
 ## VI. Verifications & Public Audit Trail
@@ -249,6 +251,7 @@ Vault                  0x5aa4742fd137660238f465ba12c2c0220a256203
 ENS (vault forward)    the1969vault.eth
 Site                   https://the1969.io
 OpenSea                https://opensea.io/collection/the1969
+Discord                https://discord.gg/MpTUFvNHPj
 ```
 
 ### Doctrine

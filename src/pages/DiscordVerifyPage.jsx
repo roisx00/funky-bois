@@ -198,6 +198,14 @@ function NoStateView() {
         the contract.
       </p>
       <a href="/api/discord-holder-init" className="dv-cta">SIGN IN WITH DISCORD →</a>
+      <a
+        href="https://discord.gg/MpTUFvNHPj"
+        target="_blank"
+        rel="noreferrer"
+        className="dv-cta-ghost"
+      >
+        NOT IN THE SERVER YET? · JOIN DISCORD →
+      </a>
     </>
   );
 }
@@ -465,6 +473,28 @@ const LOCAL_CSS = `
     transition: background 120ms, color 120ms;
   }
   .dv-cta:hover { background: #0E0E0E; color: #D7FF3A; border-color: #D7FF3A; }
+
+  /* Secondary CTA for "not in the server yet" — same shape as primary
+     but transparent/outline so it reads as a fallback path. */
+  .dv-cta-ghost {
+    display: inline-block;
+    margin-left: 14px;
+    padding: 18px 28px;
+    background: transparent;
+    color: #F9F6F0;
+    border: 1px solid rgba(249,246,240,0.4);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 120ms, color 120ms, border-color 120ms;
+  }
+  .dv-cta-ghost:hover { background: #F9F6F0; color: #0E0E0E; border-color: #F9F6F0; }
+  @media (max-width: 720px) {
+    .dv-cta-ghost { display: block; margin: 12px 0 0; padding: 16px 20px; }
+  }
 
   /* Receipt block — shown on success */
   .dv-receipt {
