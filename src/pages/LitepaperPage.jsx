@@ -909,9 +909,9 @@ function BustsAllocationTable() {
   const rows = [
     ['Public Sale',           240, '24%', 'Open access. Holder priority window.'],
     ['Long Term Reserve',     240, '24%', 'Multisig + on chain timelock. Default state is locked.'],
-    ['Vault Emissions',       200, '20%', 'Existing vault rewards. Multi year stream.'],
     ['Liquidity',             150, '15%', 'Paired at listing. Locked 12 months.'],
     ['Game + Future Systems', 150, '15%', 'Released only when systems ship.'],
+    ['Vault Emissions',       100, '10%', 'Existing vault rewards. Multi year stream.'],
     ['Treasury',               70, '7%',  'Multisig controlled. Audits, infra, ops.'],
     ['Team',                   50, '5%',  'Long cliff. Small monthly drip after.'],
   ];
