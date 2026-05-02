@@ -32,22 +32,22 @@
     <path d="M 912 444 L 912 458 L 898 458"/>
   </g>
 
-  <!-- HEADLINE — centered vertically, generous left margin -->
-  <text x="48" y="290"
+  <!-- HEADLINE — sized to fit comfortably inside the 48/912 margin -->
+  <text x="48" y="270"
         font-family="'Instrument Serif', Georgia, serif"
         font-style="italic" font-weight="500"
-        font-size="120" fill="#0E0E0E"
-        letter-spacing="-2.4">the litepaper.</text>
+        font-size="92" fill="#0E0E0E"
+        letter-spacing="-1.8">the litepaper.</text>
 
   <!-- VERSION / EDITION SUBHEAD -->
-  <text x="48" y="346"
+  <text x="48" y="316"
         font-family="'Instrument Serif', Georgia, serif"
         font-style="italic" font-weight="500"
-        font-size="42" fill="#5C5C5C"
-        letter-spacing="-0.6">v1.0 · post-mint edition.</text>
+        font-size="34" fill="#5C5C5C"
+        letter-spacing="-0.5">v1.0 · post-mint edition.</text>
 
   <!-- ACCENT RULE -->
-  <line x1="48" y1="380" x2="240" y2="380" stroke="#D7FF3A" stroke-width="6"/>
+  <line x1="48" y1="346" x2="200" y2="346" stroke="#D7FF3A" stroke-width="6"/>
 
   <!-- BOTTOM RULE -->
   <line x1="48" y1="476" x2="912" y2="476" stroke="#0E0E0E" stroke-width="1"/>
