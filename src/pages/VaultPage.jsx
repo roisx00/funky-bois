@@ -1150,13 +1150,16 @@ function Leaderboard({ data }) {
       <ol className="vlt-lb-list">
         {top.map((row) => {
           const mine = me && me.xUsername === row.xUsername;
+          const displayName = row.xUsername
+            ? `@${row.xUsername}`
+            : (row.wallet ? `${row.wallet.slice(0, 6)}…${row.wallet.slice(-4)}` : '—');
           return (
             <li key={row.rank} className={`vlt-lb-row ${mine ? 'mine' : ''} ${row.rank <= 3 ? `top-${row.rank}` : ''}`}>
               <span className="vlt-lb-rank">{row.rank.toString().padStart(2, '0')}</span>
               <span className="vlt-lb-handle">
                 {row.xAvatar ? <img src={row.xAvatar} alt="" /> : <span className="vlt-lb-handle-fallback">@</span>}
-                <span className="vlt-lb-handle-name">@{row.xUsername}</span>
-                {row.hasPortrait ? <span className="vlt-lb-bound" title="Portrait bound">◐</span> : null}
+                <span className="vlt-lb-handle-name">{displayName}</span>
+                {row.hasPortrait ? <span className="vlt-lb-bound" title="Portrait bound" aria-hidden="true" /> : null}
               </span>
               <span className="vlt-lb-power">
                 <span className="vlt-lb-power-val">{row.power.toLocaleString()}</span>
@@ -1177,8 +1180,8 @@ function Leaderboard({ data }) {
             <span className="vlt-lb-rank">#{me.rank}</span>
             <span className="vlt-lb-handle">
               {me.xAvatar ? <img src={me.xAvatar} alt="" /> : <span className="vlt-lb-handle-fallback">@</span>}
-              <span className="vlt-lb-handle-name">@{me.xUsername}</span>
-              {me.hasPortrait ? <span className="vlt-lb-bound" title="Portrait bound">◐</span> : null}
+              <span className="vlt-lb-handle-name">{me.xUsername ? `@${me.xUsername}` : (me.wallet ? `${me.wallet.slice(0, 6)}…${me.wallet.slice(-4)}` : '—')}</span>
+              {me.hasPortrait ? <span className="vlt-lb-bound" title="Portrait bound" aria-hidden="true" /> : null}
             </span>
             <span className="vlt-lb-power">
               <span className="vlt-lb-power-val">{me.power.toLocaleString()}</span>
@@ -4071,20 +4074,20 @@ function Style() {
         border-bottom: 1px solid var(--hairline);
         transition: background 200ms ease;
       }
-      .vlt-lb-row:hover { background: rgba(14,14,14,0.025); }
+      .vlt-lb-row:hover { background: var(--paper-2); }
       .vlt-lb-row.mine {
         background: rgba(215,255,58,0.18);
-        border-left: 3px solid #0E0E0E;
+        border-left: 3px solid var(--ink);
         padding-left: 9px;
       }
-      .vlt-lb-row.top-1 .vlt-lb-rank { color: #0E0E0E; font-weight: 700; font-size: 16px; }
-      .vlt-lb-row.top-2 .vlt-lb-rank { color: #0E0E0E; font-weight: 700; }
-      .vlt-lb-row.top-3 .vlt-lb-rank { color: #0E0E0E; font-weight: 700; }
+      .vlt-lb-row.top-1 .vlt-lb-rank { color: var(--ink); font-weight: 700; font-size: 16px; }
+      .vlt-lb-row.top-2 .vlt-lb-rank { color: var(--ink); font-weight: 700; }
+      .vlt-lb-row.top-3 .vlt-lb-rank { color: var(--ink); font-weight: 700; }
       .vlt-lb-rank {
         font-family: var(--font-mono, ui-monospace, monospace);
         font-size: 13px;
         letter-spacing: 2px;
-        color: var(--text-3, #5C5C5C);
+        color: var(--text-3);
         font-feature-settings: 'tnum';
       }
       .vlt-lb-handle {
@@ -4095,13 +4098,13 @@ function Style() {
         width: 32px; height: 32px;
         border-radius: 50%;
         object-fit: cover;
-        background: #eee;
+        background: var(--paper-3);
         flex-shrink: 0;
       }
       .vlt-lb-handle-fallback {
         width: 32px; height: 32px;
         border-radius: 50%;
-        background: #0E0E0E; color: #D7FF3A;
+        background: var(--ink); color: var(--accent);
         display: flex; align-items: center; justify-content: center;
         font-family: var(--font-mono, ui-monospace, monospace);
         font-size: 14px;
@@ -4110,17 +4113,24 @@ function Style() {
       .vlt-lb-handle-name {
         font-family: 'Instrument Serif', Georgia, serif;
         font-size: 18px;
-        color: var(--ink, #0E0E0E);
+        color: var(--ink);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        min-width: 0;
+        flex: 1;
       }
+      /* Subtle lime dot indicating "portrait bound". Was a chunky lime
+         pill with a half-moon glyph that read as a UI toggle and crowded
+         the row. Now a 6px dot, just enough to register on a careful
+         scan without dominating. */
       .vlt-lb-bound {
-        font-size: 14px; color: #0E0E0E;
-        background: #D7FF3A;
-        padding: 2px 6px;
-        border-radius: 999px;
-        line-height: 1;
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex-shrink: 0;
+        display: inline-block;
+        box-shadow: 0 0 0 2px rgba(215,255,58,0.18);
       }
       .vlt-lb-power, .vlt-lb-yield {
         display: flex; flex-direction: column; align-items: flex-end;
@@ -4130,18 +4140,18 @@ function Style() {
         font-family: 'Instrument Serif', Georgia, serif;
         font-size: 22px;
         line-height: 1;
-        color: var(--ink, #0E0E0E);
+        color: var(--ink);
       }
       .vlt-lb-power-unit, .vlt-lb-yield-unit {
         font-family: var(--font-mono, ui-monospace, monospace);
         font-size: 9px; letter-spacing: 2px;
-        color: var(--text-3, #5C5C5C);
+        color: var(--text-3);
         margin-top: 2px;
       }
       .vlt-lb-yield-val {
         font-family: var(--font-mono, ui-monospace, monospace);
         font-size: 14px;
-        color: var(--text-2, #3A3A3A);
+        color: var(--ink);
         font-weight: 700;
       }
       .vlt-lb-self {
