@@ -173,7 +173,7 @@ function StandoffView() {
       });
       const d = await r.json();
       if (!r.ok) {
-        toast.error(d?.reason ? `Purchase failed: ${d.reason}` : 'Purchase failed');
+        toast.error(d?.error ? `Purchase failed: ${d.reason}` : 'Purchase failed');
         return;
       }
       setInv(d.inventory);
@@ -200,7 +200,7 @@ function StandoffView() {
       });
       const d = await r.json();
       if (!r.ok) {
-        toast.error(d?.reason ? `Can't enter: ${d.reason}` : 'Failed to enter');
+        toast.error(d?.error ? `Can't enter: ${d.reason}` : 'Failed to enter');
         return;
       }
       // Refresh inventory snapshot
@@ -272,6 +272,9 @@ function StandoffView() {
 
   return (
     <div className="standoff">
+      {/* HOW TO PLAY — collapsible primer */}
+      <HowToPlay />
+
       {/* PROFILE STRIP */}
       <section className="standoff-profile">
         <div className="standoff-profile-inner">
@@ -409,6 +412,72 @@ function StandoffView() {
   );
 }
 
+// ─── HOW TO PLAY ─────────────────────────────────────────────────────
+function HowToPlay() {
+  const [open, setOpen] = useState(true);
+  return (
+    <section className="howto">
+      <div className="howto-head">
+        <div className="standoff-section-kicker">HOW TO PLAY</div>
+        <button
+          className="howto-toggle"
+          onClick={() => setOpen((v) => !v)}
+          type="button"
+        >
+          {open ? 'HIDE' : 'SHOW'}
+        </button>
+      </div>
+      {open && (
+        <div className="howto-body">
+          <ol className="howto-list">
+            <li>
+              <span className="howto-step">01</span>
+              <div>
+                <strong>Pick your loadout.</strong> Each fight burns 3 bullets.
+                Lead is free and unlimited. Tracer, Hollow, AP, Silver are paid
+                from the BUSTS shop and burn 100% on purchase.
+              </div>
+            </li>
+            <li>
+              <span className="howto-step">02</span>
+              <div>
+                <strong>Pick your mode.</strong>
+                <span className="howto-mode-line">
+                  <span className="howto-tag practice">PRACTICE</span> Free, fight the house bot. No BUSTS at stake.
+                </span>
+                <span className="howto-mode-line">
+                  <span className="howto-tag real">REAL</span> 100 BUSTS entry, matched against another holder. Winner takes the pot, 15% burns.
+                </span>
+              </div>
+            </li>
+            <li>
+              <span className="howto-step">03</span>
+              <div>
+                <strong>The fight.</strong> 3 rounds. Both sides shoot
+                simultaneously each round. Power tilts the odds (capped at 3:1
+                ratio so underdogs always have a real shot). Bullets bend the
+                math: AP cuts armor in half, Silver ignores armor and dodge.
+              </div>
+            </li>
+            <li>
+              <span className="howto-step">04</span>
+              <div>
+                <strong>Outcome.</strong> First to 0 HP loses. If neither side
+                drops in 3 rounds, lower remaining HP loses. Winner gets paid,
+                ELO updates, replay log persists for the public feed.
+              </div>
+            </li>
+          </ol>
+          <div className="howto-tip">
+            Tip — if you're the underdog, load AP or Silver. They cut through
+            heavy armor and are how lower-tier holders beat Soldiers.
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ─── helpers ─────────────────────────────────────────────────────────
 function Stat({ label, value, hint, hero }) {
   return (
@@ -483,7 +552,7 @@ function BulletShop({ inv, busy, buy, balance }) {
 }
 
 function MatchReplay({ match, onClose }) {
-  const [round, setRound] = useState(-1);
+  const [round, setRound] = useState(0);
   // Animate rounds appearing one by one
   useEffect(() => {
     let i = 0;
@@ -492,23 +561,78 @@ function MatchReplay({ match, onClose }) {
       i++;
       if (i > match.rounds.length) return;
       setRound(i);
-      setTimeout(tick, 900);
+      setTimeout(tick, 1200);
     };
-    setTimeout(tick, 400);
+    setTimeout(tick, 600);
   }, [match]);
 
   const youWon = match.youWon;
+  // Snapshot stats — match A is opponent, B is the user.
+  const aMaxHp = match.rounds[0]?.aHpAfter !== undefined
+    ? Math.max(...match.rounds.map((r) => r.aHpAfter), match.aHpFinal ?? 0) || 200
+    : 200;
+  const bMaxHp = match.rounds[0]?.bHpAfter !== undefined
+    ? Math.max(...match.rounds.map((r) => r.bHpAfter), match.bHpFinal ?? 0) || 200
+    : 200;
+  const aHpNow = round === 0 ? aMaxHp : (match.rounds[round - 1]?.aHpAfter ?? aMaxHp);
+  const bHpNow = round === 0 ? bMaxHp : (match.rounds[round - 1]?.bHpAfter ?? bMaxHp);
+  const aPctNow = Math.max(0, Math.min(100, (aHpNow / aMaxHp) * 100));
+  const bPctNow = Math.max(0, Math.min(100, (bHpNow / bMaxHp) * 100));
+  const lastEvent = round > 0 ? match.rounds[round - 1] : null;
+
   return (
     <section className={`match-replay ${youWon ? 'won' : 'lost'}`}>
       <div className="match-replay-head">
         <div className="standoff-section-kicker">
-          STANDOFF · MATCH {match.matchId}
+          STANDOFF · MATCH {match.matchId}{match.practice ? ' · PRACTICE' : ''}
         </div>
         <button className="match-replay-close" onClick={onClose} type="button">
           NEW FIGHT →
         </button>
       </div>
 
+      {/* CINEMATIC SCENE — two fighter columns with HP bars */}
+      <div className="scene">
+        <div className="scene-side">
+          <div className="scene-mark a">
+            <span className="scene-mark-letter">A</span>
+          </div>
+          <div className="scene-name">OPPONENT</div>
+          <div className="scene-hp">
+            <div className="scene-hp-bar">
+              <div className="scene-hp-fill" style={{ width: `${aPctNow}%` }} />
+            </div>
+            <div className="scene-hp-num">{aHpNow} HP</div>
+          </div>
+        </div>
+
+        <div className="scene-vs">
+          <div className="scene-vs-label">{round === 0 ? 'READY' : (round > match.rounds.length ? 'END' : `ROUND ${round}`)}</div>
+          <div className="scene-vs-letter">VS</div>
+          {lastEvent ? (
+            <div className={`scene-event ${lastEvent.aHit || lastEvent.bHit ? 'fire' : ''}`}>
+              {lastEvent.aHit ? <span className="hit small">A HIT {lastEvent.aDamage}</span> : <span className="miss small">A MISS</span>}
+              {' · '}
+              {lastEvent.bHit ? <span className="hit small">B HIT {lastEvent.bDamage}</span> : <span className="miss small">B MISS</span>}
+            </div>
+          ) : <div className="scene-event idle">resolving...</div>}
+        </div>
+
+        <div className="scene-side right">
+          <div className="scene-mark b">
+            <span className="scene-mark-letter">B</span>
+          </div>
+          <div className="scene-name">YOU</div>
+          <div className="scene-hp">
+            <div className="scene-hp-bar">
+              <div className="scene-hp-fill" style={{ width: `${bPctNow}%` }} />
+            </div>
+            <div className="scene-hp-num">{bHpNow} HP</div>
+          </div>
+        </div>
+      </div>
+
+      {/* DETAILED LOG */}
       <div className="match-replay-frame">
         {match.rounds.slice(0, round).map((r) => (
           <div key={r.round} className="match-round">
@@ -533,16 +657,20 @@ function MatchReplay({ match, onClose }) {
               {youWon ? <em>You won.</em> : <em>You lost.</em>}
             </div>
             <div className="match-result-stats">
-              {youWon
-                ? `+${match.payout} BUSTS · ELO ${match.eloB.before} → ${match.eloB.after}`
-                : `0 BUSTS · ELO ${match.eloB.before} → ${match.eloB.after}`}
+              {match.practice
+                ? 'Practice match · no BUSTS at stake'
+                : youWon
+                  ? `+${match.payout} BUSTS · ELO ${match.eloB.before} → ${match.eloB.after}`
+                  : `0 BUSTS · ELO ${match.eloB.before} → ${match.eloB.after}`}
             </div>
             {match.payoutMultiplier > 1 ? (
               <div className="match-result-mult">UPSET BONUS · {match.payoutMultiplier}×</div>
             ) : null}
-            <div className="match-result-burn">
-              {match.burn} BUSTS burned · pot {match.pot}
-            </div>
+            {!match.practice && (
+              <div className="match-result-burn">
+                {match.burn} BUSTS burned · pot {match.pot}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -785,6 +913,59 @@ function FacilityStyles() {
       }
       .standoff-cancel-btn:hover { background: var(--paper-2); }
 
+      /* ── HOW TO PLAY ── */
+      .howto {
+        margin-bottom: 24px; border: 1px solid var(--hairline);
+        background: var(--paper-2); padding: 18px 22px;
+      }
+      .howto-head {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 14px;
+      }
+      .howto-toggle {
+        background: transparent; border: 1px solid var(--ink); color: var(--ink);
+        font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em;
+        font-weight: 700; padding: 4px 10px; cursor: pointer;
+      }
+      .howto-toggle:hover { background: var(--accent); color: #0E0E0E; }
+      .howto-list {
+        list-style: none; margin: 0; padding: 0;
+        display: flex; flex-direction: column; gap: 16px;
+      }
+      .howto-list li {
+        display: grid; grid-template-columns: 50px 1fr; gap: 14px;
+        align-items: start;
+      }
+      .howto-step {
+        font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em;
+        font-weight: 700; color: #D7FF3A; background: #0E0E0E;
+        padding: 6px 8px; text-align: center;
+      }
+      .howto-list li > div {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: 16px; line-height: 1.55; color: var(--ink);
+      }
+      .howto-list li strong {
+        font-style: normal; font-family: var(--font-mono);
+        font-size: 12px; letter-spacing: 0.06em; font-weight: 700;
+        margin-right: 8px;
+      }
+      .howto-mode-line {
+        display: block; margin-top: 6px; font-size: 14px;
+      }
+      .howto-tag {
+        display: inline-block; padding: 2px 7px; margin-right: 8px;
+        font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.22em;
+        font-weight: 700; font-style: normal;
+      }
+      .howto-tag.practice { background: var(--paper-3); color: var(--ink); border: 1px solid var(--hairline); }
+      .howto-tag.real     { background: #0E0E0E; color: #D7FF3A; }
+      .howto-tip {
+        margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--hairline);
+        font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em;
+        color: var(--text-3);
+      }
+
       /* ── Match replay ── */
       .match-replay {
         border: 1px solid var(--ink); padding: 24px;
@@ -805,6 +986,74 @@ function FacilityStyles() {
         letter-spacing: 0.22em; font-weight: 700; cursor: pointer;
       }
       .match-replay-frame { padding-left: 16px; }
+
+      /* ── Cinematic scene (two-column face-off with HP bars) ── */
+      .scene {
+        background: #0E0E0E; color: #F9F6F0;
+        margin: 0 -24px 28px; padding: 30px 24px;
+        display: grid; grid-template-columns: 1fr auto 1fr;
+        gap: 24px; align-items: center;
+        border-top: 4px solid #D7FF3A; border-bottom: 1px solid rgba(215,255,58,0.2);
+      }
+      .scene-side {
+        display: flex; flex-direction: column; align-items: center;
+        text-align: center; gap: 12px;
+      }
+      .scene-side.right { align-items: center; }
+      .scene-mark {
+        width: 80px; height: 80px; border-radius: 50%;
+        background: #D7FF3A; border: 3px solid #F9F6F0;
+        display: flex; align-items: center; justify-content: center;
+        position: relative;
+      }
+      .scene-mark.b { background: #F9F6F0; }
+      .scene-mark-letter {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: 44px; font-weight: 500; color: #0E0E0E;
+      }
+      .scene-name {
+        font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.28em;
+        font-weight: 700; color: rgba(215,255,58,0.7);
+      }
+      .scene-hp { width: 200px; }
+      .scene-hp-bar {
+        width: 100%; height: 8px; background: rgba(249,246,240,0.12);
+        border: 1px solid rgba(249,246,240,0.3);
+        position: relative; overflow: hidden;
+      }
+      .scene-hp-fill {
+        height: 100%; background: #D7FF3A;
+        transition: width 0.7s ease-out;
+      }
+      .scene-hp-num {
+        margin-top: 6px; font-family: var(--font-mono); font-size: 14px;
+        font-weight: 700; color: #F9F6F0; letter-spacing: 0.05em;
+      }
+      .scene-vs {
+        text-align: center; padding: 0 16px;
+      }
+      .scene-vs-label {
+        font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.32em;
+        color: #D7FF3A; font-weight: 700; margin-bottom: 8px;
+      }
+      .scene-vs-letter {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: 56px; line-height: 1; color: #F9F6F0;
+        letter-spacing: -0.04em;
+      }
+      .scene-event {
+        margin-top: 14px; min-height: 24px;
+        font-family: var(--font-mono); font-size: 11px;
+        letter-spacing: 0.06em; color: rgba(249,246,240,0.7);
+      }
+      .scene-event .hit.small {
+        background: #D7FF3A; color: #0E0E0E; padding: 1px 5px;
+        font-size: 10px; font-weight: 700;
+      }
+      .scene-event .miss.small {
+        color: rgba(249,246,240,0.5); font-size: 10px;
+      }
+      .scene-event.idle { color: rgba(249,246,240,0.4); }
       .match-round { padding: 12px 0; border-bottom: 1px dashed var(--hairline); }
       .match-round:last-child { border-bottom: 0; }
       .match-round-label {
@@ -891,6 +1140,12 @@ function FacilityStyles() {
         .standoff-feed-row { grid-template-columns: 40px 1fr 1fr auto; }
         .standoff-feed-vs { display: none; }
         .match-result-headline { font-size: 40px; }
+        .scene { grid-template-columns: 1fr; gap: 20px; padding: 22px 16px; }
+        .scene-mark { width: 60px; height: 60px; }
+        .scene-mark-letter { font-size: 32px; }
+        .scene-vs-letter { font-size: 36px; }
+        .scene-hp { width: 100%; max-width: 240px; }
+        .howto-list li { grid-template-columns: 40px 1fr; gap: 10px; }
       }
     `}</style>
   );
