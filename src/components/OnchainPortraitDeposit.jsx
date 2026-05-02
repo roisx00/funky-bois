@@ -254,34 +254,99 @@ export default function OnchainPortraitDeposit({ onDepositSuccess } = {}) {
   async function handleDeposit() {
     if (!vaultAddress) { toast.error('Vault contract not deployed yet.'); return; }
     if (availSel.size === 0) return;
-    if (!isApproved) { handleApprove(); return; }
+
+    // ── Auto-chain approval + deposit ─────────────────────────────
+    // Old flow: clicking DEPOSIT before approval would only submit
+    // the approval, leaving the user thinking the deposit went
+    // through. Now we fire approval, AWAIT it, then auto-fire the
+    // deposit so one click = both txs.
+    if (!isApproved) {
+      toast.info('Step 1 of 2 — approving the vault. Confirm in your wallet.');
+      try {
+        const approvalTx = await writeContractAsync({
+          address: NFT_CONTRACT_ADDRESS,
+          abi: ERC721_ABI,
+          functionName: 'setApprovalForAll',
+          args: [vaultAddress, true],
+          chainId: 1,
+        });
+        toast.success('Approval submitted. Waiting for confirmation...');
+        if (publicClient) {
+          const rec = await publicClient.waitForTransactionReceipt({ hash: approvalTx });
+          if (rec.status !== 'success') {
+            toast.error('Approval transaction failed. Try again.');
+            return;
+          }
+        }
+        await refetchApproval();
+        toast.info('Step 2 of 2 — depositing portraits. Confirm in your wallet.');
+        // fall through to the deposit call below
+      } catch (e) {
+        toast.error(e?.shortMessage || e?.message || 'Approval rejected');
+        return;
+      }
+    }
+
+    // ── Deposit transaction ───────────────────────────────────────
     const ids = [...availSel].map((s) => BigInt(s));
+    let tx;
     try {
-      const tx = await writeContractAsync({
+      tx = await writeContractAsync({
         address: vaultAddress,
         abi: VAULT_ABI,
         functionName: 'deposit',
         args: [ids],
         chainId: 1,
       });
-      toast.success('Deposit submitted.');
-      setPendingTxHash(tx);
-      const depositCount = ids.length;
-      setAvailSel(new Set());
-      // Fire the parent's vault-door animation immediately so the user
-      // sees the door open / portrait fly in / door close while the tx
-      // is mining. Doesn't wait for confirmation — the visual is the
-      // reward for the click.
-      if (typeof onDepositSuccess === 'function') {
-        try { onDepositSuccess(depositCount); }
-        catch (e) { console.warn('[ocp] deposit anim hook failed:', e); }
-      }
-      setTimeout(async () => {
-        await postIndex(tx); setPendingTxHash(null); refreshUser();
-      }, 18_000);
     } catch (e) {
-      toast.error(e?.shortMessage || e?.message || 'Deposit rejected');
+      // User-rejected, gas issues, simulation revert — anything that
+      // never made it on-chain. Surface clearly with extra duration so
+      // it can't be missed.
+      toast.error(
+        `Deposit rejected: ${e?.shortMessage || e?.message || 'unknown error'}. ` +
+        `Your portraits stayed in your wallet.`,
+        { duration: 8000 }
+      );
+      return;
     }
+
+    toast.success('Deposit submitted. Verifying on-chain...');
+    setPendingTxHash(tx);
+    const depositCount = ids.length;
+    setAvailSel(new Set());
+
+    // Fire the vault-door animation while the tx mines.
+    if (typeof onDepositSuccess === 'function') {
+      try { onDepositSuccess(depositCount); }
+      catch (e) { console.warn('[ocp] deposit anim hook failed:', e); }
+    }
+
+    // Wait for the receipt before declaring success. If the tx was
+    // submitted but reverted on-chain (revert from Vault contract,
+    // out-of-gas, etc.) we surface it here so the user knows their
+    // portraits did NOT get staked despite the "submitted" toast.
+    try {
+      if (publicClient) {
+        const rec = await publicClient.waitForTransactionReceipt({ hash: tx });
+        if (rec.status !== 'success') {
+          toast.error(
+            'Deposit transaction reverted on-chain. Your portraits are still in your wallet. ' +
+            'Try again, or contact support if this keeps happening.',
+            { duration: 12000 }
+          );
+          setPendingTxHash(null);
+          return;
+        }
+      }
+    } catch (e) {
+      // Receipt fetch failed — fall through to optimistic indexing.
+      console.warn('[ocp] receipt wait failed:', e);
+    }
+
+    toast.success(`✓ ${depositCount} portrait${depositCount === 1 ? '' : 's'} staked.`);
+    await postIndex(tx);
+    setPendingTxHash(null);
+    refreshUser();
   }
   async function handleWithdraw() {
     if (!vaultAddress) return;
