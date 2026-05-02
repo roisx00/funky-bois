@@ -409,37 +409,60 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress, children 
   // ERC-721 Enumerable). Both reads via batched JSON-RPC against a
   // public mainnet endpoint with fallback. Refreshes every 60s while
   // page is open so newly minted/transferred NFTs appear automatically.
-  const NFT_CONTRACT = '0x890db94d920bbf44862005329d7236cc7067efab';
   const NFT_STRIP_DEFAULT = 10;
   const [chainNftCount, setChainNftCount] = useState(null);
   const [chainTokenIds, setChainTokenIds] = useState([]); // BigInt-safe strings
-  const [chainTokenMeta, setChainTokenMeta] = useState({}); // tokenId → { image, name }
+  const [chainTokenMeta, setChainTokenMeta] = useState({}); // tokenId → { image, name, staked }
   const [showAll, setShowAll] = useState(false);
 
-  // Discover the user's owned 1969 NFTs via /api/nfts-of-owner
-  // (Alchemy NFT API proxy). The 1969 contract is NOT ERC-721
-  // Enumerable, so tokenOfOwnerByIndex reverts; the Alchemy API
-  // works on any ERC-721 by indexing Transfer events.
+  // Discover the user's owned + staked 1969 NFTs.
+  //   Wallet-held: /api/nfts-of-owner (Alchemy proxy, since the 1969
+  //                contract is NOT ERC-721 Enumerable).
+  //   Vault-staked: /api/vault-onchain — the user's stakes regardless
+  //                 of which wallet originally deposited (uses the
+  //                 multi-wallet match on the server).
+  // Both are merged into one list so the dashboard reflects beneficial
+  // ownership, not just the wagmi-connected wallet's snapshot.
   useEffect(() => {
     if (!walletAddress) {
       setChainNftCount(null); setChainTokenIds([]);
       return;
     }
     let cancelled = false;
-    fetch(`/api/nfts-of-owner?wallet=${walletAddress}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (cancelled) return;
-        const ids = Array.isArray(d?.tokenIds) ? d.tokenIds : [];
-        const tokens = Array.isArray(d?.tokens) ? d.tokens : [];
-        setChainNftCount(ids.length);
-        setChainTokenIds(ids);
-        // Build a lookup so the strip can render each tile's actual artwork
-        const meta = {};
-        for (const t of tokens) meta[String(t.tokenId)] = t;
-        setChainTokenMeta(meta);
-      })
-      .catch(() => { if (!cancelled) setChainNftCount(0); });
+    Promise.all([
+      fetch(`/api/nfts-of-owner?wallet=${walletAddress}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`/api/vault-onchain?wallet=${walletAddress}`, { credentials: 'same-origin' })
+        .then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(async ([owned, vault]) => {
+      if (cancelled) return;
+      const ownedIds   = Array.isArray(owned?.tokenIds) ? owned.tokenIds : [];
+      const ownedTokens = Array.isArray(owned?.tokens)  ? owned.tokens   : [];
+      const stakedIds  = Array.isArray(vault?.stakes)
+        ? vault.stakes.map((s) => String(s.tokenId))
+        : [];
+
+      // Merge + dedupe
+      const all = [...new Set([...ownedIds.map(String), ...stakedIds])];
+      const meta = {};
+      for (const t of ownedTokens) meta[String(t.tokenId)] = { ...t, staked: false };
+      // Fetch metadata for staked tokens (the vault contract owns them
+      // on-chain, so getNFTsForOwner won't return them).
+      if (stakedIds.length > 0) {
+        try {
+          const r = await fetch(`/api/nfts-of-owner?tokenIds=${stakedIds.join(',')}`);
+          if (r.ok) {
+            const d = await r.json();
+            for (const t of (d.tokens || [])) {
+              meta[String(t.tokenId)] = { ...t, staked: true };
+            }
+          }
+        } catch { /* ignore */ }
+      }
+      if (cancelled) return;
+      setChainNftCount(all.length);
+      setChainTokenIds(all);
+      setChainTokenMeta(meta);
+    });
     return () => { cancelled = true; };
   }, [walletAddress]);
 
@@ -555,26 +578,10 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress, children 
                   }}>HELD · ON CHAIN</span>
                 </>
               ) : chainNftCount === 0 && walletAddress ? (
-                <>
-                  <span style={{
-                    fontFamily: 'var(--font-display)', fontStyle: 'italic',
-                    fontSize: 28, color: 'var(--ink)', letterSpacing: '-0.5px',
-                  }}>Detecting on-chain.</span>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 10, letterSpacing: '0.22em',
-                    background: 'var(--accent)', color: 'var(--ink)',
-                    border: '1px solid var(--ink)',
-                    padding: '3px 8px', fontWeight: 700,
-                  }}>
-                    <span style={{
-                      display: 'inline-block', width: 5, height: 5, borderRadius: '50%',
-                      background: 'var(--ink)',
-                    }} />
-                    SOON
-                  </span>
-                </>
+                <span style={{
+                  fontFamily: 'var(--font-display)', fontStyle: 'italic',
+                  fontSize: 28, color: 'var(--ink)', letterSpacing: '-0.5px',
+                }}>None held in this wallet.</span>
               ) : (
                 <span style={{
                   fontFamily: 'var(--font-display)', fontStyle: 'italic',
@@ -659,6 +666,16 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress, children 
                         padding: '2px 5px',
                       }}>#{tokenId}</span>
                     ) : null}
+                    {meta?.staked ? (
+                      <span style={{
+                        position: 'absolute', right: 4, top: 4,
+                        background: 'var(--accent)', color: 'var(--ink)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 8, letterSpacing: '0.16em', fontWeight: 700,
+                        padding: '2px 5px',
+                        border: '1px solid var(--ink)',
+                      }}>STAKED</span>
+                    ) : null}
                   </div>
                 );
               })}
@@ -695,7 +712,7 @@ function DashboardExtras({ completedNFTs, bustsBalance, walletAddress, children 
             lineHeight: 1.5,
             maxWidth: 560,
           }}>
-            Mint opens 2026-05-01 14:00 UTC. Once you hold a 1969 NFT, this strip auto-detects from the contract and shows up to 10 tokens at a time.
+            We read your 1969 holdings live from the contract — wallet-held + vault-staked. If you don't see anything yet, buy a 1969 on OpenSea and refresh, or stake from a wallet that holds one.
           </p>
         )}
 
