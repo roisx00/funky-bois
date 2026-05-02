@@ -21,7 +21,10 @@ export const config = {
   matcher: '/((?!451|favicon\\.ico|manifest\\.webmanifest|api/cron-).*)',
 };
 
-const BLOCKED = new Set(['NG']);
+// Geo-block disabled — empty set means the middleware is a no-op for
+// every request. To re-enable later, add ISO 3166-1 alpha-2 codes:
+//   const BLOCKED = new Set(['NG']);
+const BLOCKED = new Set();
 
 export default function middleware(request) {
   const country = request.headers.get('x-vercel-ip-country') || '';
