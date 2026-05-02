@@ -212,11 +212,11 @@ export default function LandingPage({ onNavigate }) {
             </div>
             <button
               className="hero-litepaper-link"
-              onClick={() => window.open('/whitepaper.md', '_blank')}
+              onClick={() => onNavigate('litepaper')}
               type="button"
             >
               <span className="hero-litepaper-tag">DOC</span>
-              Read the whitepaper
+              Read the litepaper
               <span aria-hidden="true">→</span>
             </button>
 
@@ -577,7 +577,7 @@ export default function LandingPage({ onNavigate }) {
               <li><a onClick={() => onNavigate('gallery')}>Gallery</a></li>
               <li><a onClick={() => onNavigate('dashboard')}>Dashboard</a></li>
               <li><a onClick={() => onNavigate('1969')}>1969 — Archive</a></li>
-              <li><a href="/whitepaper.md" target="_blank" rel="noreferrer">Whitepaper</a></li>
+              <li><a onClick={() => onNavigate('litepaper')} style={{ cursor: 'pointer' }}>Litepaper</a></li>
             </ul>
           </div>
 

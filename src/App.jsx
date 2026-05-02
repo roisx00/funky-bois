@@ -234,6 +234,18 @@ function AppInner() {
     );
   }
 
+  // Litepaper renders without the global Nav so the document feels
+  // like a standalone technical paper — masthead-style page, no app
+  // chrome competing with the typography.
+  if (page === 'litepaper') {
+    return (
+      <>
+        <WalletBridge />
+        <LitepaperPage onNavigate={navigate} />
+      </>
+    );
+  }
+
   return (
     <>
       <WalletBridge />
@@ -251,7 +263,6 @@ function AppInner() {
       {page === 'gallery' && <GalleryPage onNavigate={navigate} />}
       {page === 'collab' && <CollabPage onNavigate={navigate} />}
       {page === '1969' && <LorePage1969 onNavigate={navigate} />}
-      {page === 'litepaper' && <LitepaperPage onNavigate={navigate} />}
       {page === 'vault' && <VaultPage onNavigate={navigate} />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}
     </>

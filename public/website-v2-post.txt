@@ -1,0 +1,86 @@
+─────────────────────────────────────────────
+  THE 1969 · WEBSITE V2 LIVE · X POST
+─────────────────────────────────────────────
+
+▌ POST A · primary (with banner attached)
+
+the1969.io v2 is live.
+
+we shifted the entire site from pre-mint to post-mint. the drop, the
+build, the whitelist application — all retired. the new spine is the
+vault.
+
+what's live now:
+
+→ vault stats on the home page · live deposits, depositors, headline APY
+→ rarity-weighted yield curve · 6% common to 150% ultra rare
+→ on-chain holder verification · /discord/verify
+→ tier roles auto-assigned from on-chain holdings
+→ live gallery with rank, holder, and 'in vault' state per token
+→ on-chain sales bot in discord
+→ litepaper · the1969.io/litepaper
+
+the doctrine holds. the vault is open. ⌬ the vault must not burn again.
+
+the1969.io
+
+
+─────────────────────────────────────────────
+
+▌ POST B · short alt
+
+the1969.io v2 — post-mint redesign live.
+
+vault as the spine. live deposits, rarity-weighted APY, holder tier
+roles, full gallery with ranks. drop / build / whitelist removed.
+
+the1969.io
+
+
+─────────────────────────────────────────────
+
+▌ POST C · single-line
+
+the1969.io v2 is live · pre-mint surfaces retired · vault is the spine.
+
+
+─────────────────────────────────────────────
+
+▌ THREAD VERSION (5 tweets, optional)
+
+1/ the1969.io v2 is live.
+
+   we shifted the whole site from pre-mint to post-mint. drop, build,
+   whitelist — all retired. the vault is the new spine.
+
+2/ home page now shows live vault stats:
+   · portraits deposited
+   · unique depositors
+   · headline APY (drops as pool fills)
+   · rarity ladder · 6% / 18% / 48% / 150%
+
+3/ holders verify on /discord/verify · sign in with discord · connect
+   your wallet · the system auto-assigns your tier role:
+
+   the queen · the nurse · the rebel · the poet · the monk · the soldier
+
+4/ the gallery now shows the on-chain truth · every portrait, every
+   holder, every rank. tokens in the vault show 'staked' inline.
+
+5/ litepaper at the1969.io/litepaper
+   discord at discord.gg/MpTUFvNHPj
+
+   ⌬ the vault must not burn again.
+
+
+─────────────────────────────────────────────
+
+▌ NOTES
+
+- "v2 is live" framing announces the shift cleanly without saying
+  "we redesigned" (which sounds defensive)
+- Bullet list reads like a changelog — confident, factual
+- Doctrine line closes the post (already a brand signature)
+- Thread variant for replies / community questions
+
+─────────────────────────────────────────────
