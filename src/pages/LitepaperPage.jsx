@@ -278,14 +278,6 @@ apy_percent    = (annual_busts / APY_REFERENCE) * 100`}
             </Body>
 
             <RarityDistributionTable />
-
-            <Body>
-              Quick note on why Common is the second rarest tier. Common requires
-              every single slot to be common. With eight slots and a real chance of
-              at least one rare or higher trait per slot, fully common rolls are
-              statistically scarce. Same reason all attribute free CryptoPunks
-              command a premium.
-            </Body>
           </Section>
 
           {/* §06 */}
@@ -470,16 +462,11 @@ total_holdings = wallet_held + vault_staked`}
           {/* §12 */}
           <Section n="12" title="Roadmap">
             <Body>
-              <strong>Done.</strong> Mint sold out at 1,969. Reveal via ERC 4906.
-              OpenSea verification. Vault deployment plus verification. Holder
-              verification system plus Discord tier roles. Live gallery with
-              rank and holder display. On chain sales bot.
+              <strong>Done.</strong> Mint. Reveal. Vault. Verify.
             </Body>
 
             <Body>
-              <strong>Active.</strong> Vault staking and ongoing $BUSTS accrual.
-              Holder tier sync every 6 hours. Anti abuse infrastructure plus
-              holder support response.
+              <strong>Active.</strong> Staking. Accrual. Tier sync. Quiet ops.
             </Body>
 
             <Body>
@@ -487,15 +474,14 @@ total_holdings = wallet_held + vault_staked`}
             </Body>
 
             <BulletList items={[
-              '$BUSTS migration to on chain ERC 20',
-              'Expanded vault utility (governance signals, holder only surfaces)',
-              'Cross collection collaborations',
-              'Long form publications under our editorial voice',
+              '$BUSTS goes on chain',
+              'The Game',
+              'Vault, deeper',
+              'Things we are not ready to name',
             ]} />
 
             <Body>
-              The roadmap is intentionally short. We ship one surface, then announce
-              the next. We don't put dates on things until we know they'll hit.
+              No dates. We ship, then we tell you.
             </Body>
 
             <Pull big lime>
