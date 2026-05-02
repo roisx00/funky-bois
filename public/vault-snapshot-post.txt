@@ -1,0 +1,54 @@
+─────────────────────────────────────────────
+  THE 1969 · VAULT SNAPSHOT · X POST
+─────────────────────────────────────────────
+
+▌ POST A · primary (with banner attached)
+
+vault snapshot ·
+
+   533 / 1,969 portraits deposited
+   324 wallets earning
+   6% headline APY · scales with rarity weight
+
+→ 1× common      6%
+→ 3× rare       18%
+→ 8× legendary  48%
+→ 25× ultra    150%
+
+stake → earn $busts on the rarity curve. anytime withdraw, no penalty.
+the1969.io/vault
+
+⌬ the vault must not burn again.
+
+
+─────────────────────────────────────────────
+
+▌ POST B · short alt
+
+27% of THE 1969 is already in the vault.
+
+533 portraits staked across 324 wallets, earning rarity-weighted $busts
+at 6% / 18% / 48% / 150% APY (common → ultra rare).
+
+the1969.io/vault
+
+
+─────────────────────────────────────────────
+
+▌ POST C · single-line
+
+vault: 533 portraits · 324 depositors · earning 6–150% APY by rarity.
+the1969.io/vault
+
+
+─────────────────────────────────────────────
+
+▌ NOTES
+
+- "headline APY drops as pool fills" reframes dilution as positive
+  signal — APY dropping means more holders are joining
+- weight tiers shown explicitly so people understand their ultra rare
+  earns 25× a common
+- "anytime withdraw, no penalty" pre-empts the "is my NFT locked?" Q
+
+─────────────────────────────────────────────

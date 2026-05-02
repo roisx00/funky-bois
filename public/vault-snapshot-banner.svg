@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <defs>
+    <style><![CDATA[
+      .ink-bg { fill: #0E0E0E; }
+      .paper { fill: #F9F6F0; }
+      .lime { fill: #D7FF3A; }
+      .gold { fill: #FFD43A; }
+      .rule { stroke: #F9F6F0; stroke-width: 1; fill: none; opacity: 0.25; }
+      .hair { stroke: #F9F6F0; stroke-width: 0.5; fill: none; opacity: 0.15; }
+      .serif-it { font-family: 'Instrument Serif', 'EB Garamond', Georgia, serif; font-style: italic; fill: #F9F6F0; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; fill: #F9F6F0; letter-spacing: 0.16em; text-transform: uppercase; }
+      .mono-light { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; fill: #F9F6F0; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.5; }
+      .mono-lime { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; fill: #D7FF3A; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 700; }
+    ]]></style>
+  </defs>
+
+  <!-- Dark canvas -->
+  <rect class="ink-bg" width="1600" height="900"/>
+
+  <!-- Newsprint margins -->
+  <line class="rule" x1="80" y1="80" x2="1520" y2="80"/>
+  <line class="rule" x1="80" y1="820" x2="1520" y2="820"/>
+  <line class="hair" x1="80" y1="84" x2="1520" y2="84"/>
+  <line class="hair" x1="80" y1="816" x2="1520" y2="816"/>
+
+  <!-- Masthead -->
+  <text class="mono" x="80" y="64" font-size="11">THE 1969 · DISPATCH</text>
+  <text class="mono-light" x="800" y="64" font-size="11" text-anchor="middle">№ XV · VAULT SNAPSHOT</text>
+  <text class="mono-light" x="1520" y="64" font-size="11" text-anchor="end">LIVE · ON-CHAIN</text>
+
+  <!-- Live dot kicker -->
+  <g transform="translate(80, 140)">
+    <circle cx="8" cy="8" r="6" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
+    <text class="mono-lime" x="28" y="13" font-size="11">LIVE · POOL FILLING</text>
+  </g>
+
+  <!-- Headline -->
+  <text class="serif-it" x="80" y="280" font-size="116" letter-spacing="-0.04em">27% of the 1969</text>
+  <text class="serif-it" x="80" y="400" font-size="116" letter-spacing="-0.04em">is already <tspan fill="#D7FF3A">in the vault.</tspan></text>
+
+  <!-- Stats grid · 3 cells matching the dashboard -->
+  <g transform="translate(80, 470)">
+    <line class="rule" x1="0" y1="0" x2="1440" y2="0"/>
+
+    <!-- DEPOSITED -->
+    <g transform="translate(0, 40)">
+      <text class="mono-light" x="0" y="0" font-size="11">DEPOSITED</text>
+      <text class="serif-it" x="0" y="76" font-size="92" fill="#D7FF3A" letter-spacing="-0.03em">533</text>
+      <text class="mono" x="0" y="112" font-size="11">PORTRAITS · ON-CHAIN</text>
+    </g>
+
+    <!-- DEPOSITORS -->
+    <g transform="translate(500, 40)">
+      <text class="mono-light" x="0" y="0" font-size="11">DEPOSITORS</text>
+      <text class="serif-it" x="0" y="76" font-size="92" letter-spacing="-0.03em">324</text>
+      <text class="mono" x="0" y="112" font-size="11">UNIQUE WALLETS · EARNING</text>
+    </g>
+
+    <!-- HEADLINE APY -->
+    <g transform="translate(1000, 40)">
+      <text class="mono-light" x="0" y="0" font-size="11">HEADLINE APY</text>
+      <text class="serif-it" x="0" y="76" font-size="92" letter-spacing="-0.03em">6%</text>
+      <text class="mono" x="0" y="112" font-size="11">COMMON 1× · DROPS AS POOL FILLS</text>
+    </g>
+
+    <line class="rule" x1="0" y1="160" x2="1440" y2="160"/>
+  </g>
+
+  <!-- Rarity tier APYs -->
+  <g transform="translate(80, 700)">
+    <text class="mono-light" x="0" y="0" font-size="11">RARITY MULTIPLIER · YOUR APY</text>
+
+    <g transform="translate(0, 30)">
+      <text class="mono" x="0" y="14" font-size="13" fill="#aaaaaa">1× COMMON</text>
+      <text class="serif-it" x="160" y="20" font-size="22" fill="#D7FF3A">6%</text>
+    </g>
+
+    <g transform="translate(280, 30)">
+      <text class="mono" x="0" y="14" font-size="13" fill="#F9F6F0">3× RARE</text>
+      <text class="serif-it" x="160" y="20" font-size="22" fill="#D7FF3A">18%</text>
+    </g>
+
+    <g transform="translate(560, 30)">
+      <text class="mono" x="0" y="14" font-size="13" fill="#FFD43A">8× LEGENDARY</text>
+      <text class="serif-it" x="160" y="20" font-size="22" fill="#D7FF3A">48%</text>
+    </g>
+
+    <g transform="translate(880, 30)">
+      <text class="mono" x="0" y="14" font-size="13" fill="#D7FF3A">25× ULTRA RARE</text>
+      <text class="serif-it" x="200" y="20" font-size="22" fill="#D7FF3A">150%</text>
+    </g>
+  </g>
+
+  <!-- Footer -->
+  <text class="mono-lime" x="80" y="848" font-size="11" font-weight="700">→ THE1969.IO/VAULT</text>
+  <text class="mono-light" x="800" y="848" font-size="11" text-anchor="middle">⌬ THE VAULT MUST NOT BURN AGAIN</text>
+  <text class="mono-light" x="1520" y="848" font-size="11" text-anchor="end">ANYTIME WITHDRAW · NO PENALTY</text>
+</svg>
