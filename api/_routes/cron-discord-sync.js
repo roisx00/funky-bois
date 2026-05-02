@@ -94,23 +94,59 @@ async function syncOne(row) {
   const tier = pickTier(holdings);
 
   if (row.current_tier_role === (tier?.roleId || null) && row.current_holdings === holdings) {
-    // No change. Just bump the timestamp.
-    await sql`UPDATE discord_verifications SET last_synced_at = now() WHERE discord_id = ${row.discord_id}`;
+    // No change. Just bump the timestamp + clear any pending defer.
+    await sql`
+      UPDATE discord_verifications
+         SET last_synced_at = now(),
+             demote_pending_since = NULL
+       WHERE discord_id = ${row.discord_id}
+    `;
     return { unchanged: true };
   }
 
-  // Stale-read guard: if previous holdings were positive but we now read
-  // zero, treat as suspicious (deposit indexer race, cross-wallet
-  // attribution gap, or Etherscan-direct deposit). Skip the demote on
-  // this pass and re-check soon. If it's still zero on the next pass,
-  // the demote goes through.
-  if ((row.current_holdings || 0) > 0 && holdings === 0) {
+  // Stale-read guard: defer ANY decrease in holdings (covers full strip
+  // AND tier downgrade) for up to 24h. Catches the deposit-indexer race,
+  // Alchemy lag, cross-wallet attribution gap, and direct Etherscan
+  // deposits. After 24h of pending defer, the demote applies — so a
+  // genuine sale isn't deferred forever.
+  const isDecrease = holdings < (row.current_holdings || 0);
+  const pendingSinceTs = row.demote_pending_since
+    ? (row.demote_pending_since instanceof Date
+        ? row.demote_pending_since.getTime()
+        : new Date(row.demote_pending_since).getTime())
+    : null;
+  const pendingHours = pendingSinceTs ? (Date.now() - pendingSinceTs) / 3_600_000 : 0;
+
+  if (isDecrease && (!pendingSinceTs || pendingHours < 24)) {
+    // First time seeing the decrease (or still within the 24h window).
+    // Mark first-seen if not already, rewind the clock so the next pass
+    // is in ~2h, and skip the role update.
+    if (!pendingSinceTs) {
+      await sql`
+        UPDATE discord_verifications
+           SET demote_pending_since = now(),
+               last_synced_at = now() - interval '4 hours'
+         WHERE discord_id = ${row.discord_id}
+      `;
+    } else {
+      await sql`
+        UPDATE discord_verifications
+           SET last_synced_at = now() - interval '4 hours'
+         WHERE discord_id = ${row.discord_id}
+      `;
+    }
+    return { deferred: true };
+  }
+
+  // No decrease (recovered or upgraded), or decrease has been pending
+  // > 24h. Either way, clear the pending marker and proceed with the
+  // normal role-sync path below.
+  if (pendingSinceTs) {
     await sql`
       UPDATE discord_verifications
-         SET last_synced_at = now() - interval '4 hours'
+         SET demote_pending_since = NULL
        WHERE discord_id = ${row.discord_id}
     `;
-    return { deferred: true };
   }
 
   // Sync via single PATCH that replaces the member's full role array.
@@ -164,7 +200,8 @@ export default async function handler(req, res) {
   }
 
   const rows = await sql`
-    SELECT discord_id, wallet, current_tier_role, current_holdings
+    SELECT discord_id, wallet, current_tier_role, current_holdings,
+           demote_pending_since
       FROM discord_verifications
      ORDER BY last_synced_at ASC NULLS FIRST
      LIMIT ${MAX_PER_CALL}

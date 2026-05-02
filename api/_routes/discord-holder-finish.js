@@ -150,23 +150,20 @@ export default async function handler(req, res) {
   const holdings = walletCount + vaultCount;
   let tier = pickTier(holdings);
 
-  // Stale-read guard. If this Discord user previously held a tier role
-  // and we now read zero, treat as suspicious (deposit-indexer race,
-  // Alchemy lag, cross-wallet attribution gap). Keep the existing tier
-  // for this call. The 6h cron will re-check, and the *next* run will
-  // demote if the zero is real. Saves users from getting roles stripped
-  // mid-deposit.
+  // Stale-read guard. If holdings have decreased vs the last persisted
+  // count (tier downgrade OR full strip), treat as suspicious (deposit-
+  // indexer race, Alchemy lag, cross-wallet attribution gap). Keep the
+  // existing tier for this call. The 6h cron has its own 24h pending
+  // ceiling and will eventually apply a genuine decrease.
   let stale = false;
-  if (holdings === 0) {
-    const prev = one(await sql`
-      SELECT current_tier_role, current_holdings
-        FROM discord_verifications WHERE discord_id = ${id.discordId} LIMIT 1
-    `);
-    if (prev?.current_tier_role && (prev.current_holdings || 0) > 0) {
-      stale = true;
-      const prevTier = TIER_LADDER.find((t) => t.roleId === prev.current_tier_role) || null;
-      tier = prevTier;
-    }
+  const prev = one(await sql`
+    SELECT current_tier_role, current_holdings
+      FROM discord_verifications WHERE discord_id = ${id.discordId} LIMIT 1
+  `);
+  if (prev?.current_tier_role && holdings < (prev.current_holdings || 0)) {
+    stale = true;
+    const prevTier = TIER_LADDER.find((t) => t.roleId === prev.current_tier_role) || null;
+    tier = prevTier;
   }
 
   // Sync roles via a single PATCH that replaces the member's full role
