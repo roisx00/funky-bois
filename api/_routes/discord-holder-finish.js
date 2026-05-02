@@ -246,10 +246,24 @@ export default async function handler(req, res) {
   // Bind users.discord_id when we have a JWT user. Closes the
   // cross-wallet attribution gap so the cron can match vault deposits
   // by user_id regardless of which wallet they staked from.
+  //
+  // Auto-heal conflicts: if this discord_id already lives on a
+  // *different* users row, move the binding to the JWT user. Successful
+  // OAuth proves Discord ownership, so the verifier is authorized to
+  // relocate the link. Without this step, the unique constraint on
+  // users.discord_id would throw and the verify would 500. Most-recent-
+  // verify wins.
   if (id.user?.id) {
     await sql`
       UPDATE users
-         SET discord_id = ${id.discordId},
+         SET discord_id = NULL,
+             discord_username = NULL
+       WHERE discord_id = ${id.discordId}
+         AND id <> ${id.user.id}::uuid
+    `;
+    await sql`
+      UPDATE users
+         SET discord_id       = ${id.discordId},
              discord_username = COALESCE(${id.discordUsername}, discord_username)
        WHERE id = ${id.user.id}::uuid
     `;
