@@ -6,6 +6,7 @@ import BrandMark from './BrandMark';
 import { useToast } from './Toast';
 import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
 import { useAccount, useDisconnect } from 'wagmi';
+import ThemeToggle from './ThemeToggle';
 
 const BASE_PAGES = [
   { id: 'home',     label: 'Index' },
@@ -229,6 +230,8 @@ export default function Nav({ currentPage, onNavigate }) {
               Admin
             </button>
           )}
+
+          <ThemeToggle />
 
           {xUser ? (
             <div className="nav-user-wrap" ref={menuRef}>

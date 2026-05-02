@@ -62,17 +62,59 @@
   --off-white:   var(--paper-1);
   --light-gray:  var(--paper-4);
   --surface-3:   var(--paper-2);
+}
+
+/* ─── DARK THEME ────────────────────────────────────────────────
+   Triggered by data-theme="dark" on the root html element. The
+   ThemeToggle component flips this attribute and persists the
+   preference in localStorage. */
+[data-theme="dark"] {
+  --paper-0:  #000000;
+  --paper-1:  #0E0E0E;
+  --paper-2:  #181818;
+  --paper-3:  #232323;
+  --paper-4:  #2F2F2F;
+  --paper-5:  #3F3F3F;
+  --paper-6:  #585858;
+  --paper-7:  #8a8378;
+  --paper-8:  #B0AA9F;
+  --paper-9:  #DDD7CB;
+  --paper-10: #F9F6F0;
+  --paper-11: #FFFFFF;
+
+  --bg:        var(--paper-1);
+  --bg-alt:    var(--paper-2);
+  --surface:   var(--paper-0);
+  --surface-2: var(--paper-2);
+  --hairline:  var(--paper-4);
+  --rule:      var(--paper-5);
+  --ink:       var(--paper-10);
+  --text:      var(--paper-10);
+  --text-2:    var(--paper-9);
+  --text-3:    var(--paper-8);
+  --text-4:    var(--paper-7);
+
+  --border-color:        var(--hairline);
+  --border-color-med:    var(--rule);
+  --border-color-strong: var(--paper-10);
+  --border:      1px solid var(--paper-10);
+  --border-thin: 1px solid var(--hairline);
+
+  --gold-dim:    rgba(249,246,240,0.08);
   --bg-2:        var(--paper-2);
   --bg-3:        var(--paper-3);
-  --accent-glow:    none;
-  --accent-glow-sm: none;
+}
 
-  /* ── Typography ── */
+/* Typography + base styles applied to :root in BOTH themes. */
+:root {
   --font-display: 'Space Grotesk', system-ui, sans-serif;
   --font-body:    'Space Grotesk', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
   --font-serif:   'Instrument Serif', Georgia, serif;
   --font-sketch:  var(--font-display);
+
+  --accent-glow:    none;
+  --accent-glow-sm: none;
 
   font-family: var(--font-body);
   font-size: 15px;

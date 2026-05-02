@@ -2,6 +2,7 @@
 // Plain English tech doc. No em-dashes. No marketing voice.
 
 import { useState, useEffect } from 'react';
+import ThemeToggle from '../components/ThemeToggle';
 
 const NFT_CONTRACT  = '0x890db94d920bbf44862005329d7236cc7067efab';
 const VAULT_CONTRACT = '0x5aa4742fd137660238f465ba12c2c0220a256203';
@@ -30,6 +31,8 @@ export default function LitepaperPage({ onNavigate }) {
       color: 'var(--ink)', position: 'relative',
     }}>
       <ResponsiveStyles />
+
+      <ThemeToggle floating />
 
       <Hero />
 
