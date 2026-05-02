@@ -23,10 +23,21 @@ import {
   buildVaultSVG, vaultTraits,
   powerTierOf, POWER_TIER_LABELS, POWER_TIER_THRESHOLDS,
   UPGRADE_CATALOG, UPGRADE_ICONS,
-  projectYieldExact,
 } from '../data/vaults';
 
 const QUICK_DEPOSIT = [100, 500, 1000, 5000, 10000];
+
+// Compact rate formatter. Big rates show as integers, small rates
+// show two decimals so a holder with a 100 BUSTS deposit doesn't see
+// "0 / day" when they're actually accruing 0.98 / day.
+function formatRate(n) {
+  const v = Number(n) || 0;
+  if (v >= 100)  return Math.round(v).toLocaleString();
+  if (v >= 10)   return v.toFixed(1);
+  if (v >= 1)    return v.toFixed(2);
+  if (v >  0)    return v.toFixed(3);
+  return '0';
+}
 
 export default function VaultPage({ onNavigate }) {
   const { authenticated, xUser, bustsBalance, completedNFTs, refreshMe } = useGame();
@@ -131,46 +142,40 @@ export default function VaultPage({ onNavigate }) {
   }, [authenticated, refresh]);
 
   // ── derived: live exact yield + daily rate ──────────────────────
-  // Daily rate combines the BUSTS-deposit yield (0.1% / day) and the
-  // flat portrait bond bonus (+10 / day). Returned as a number; the UI
-  // formats it with up to 2 decimals so small deposits don't display
-  // as "1" when they're actually accruing 1.50/day.
+  // BUSTS yield is now pool-based (10M / 365d distributed by deposit
+  // share). The server returns the user's exact daily rate and per-
+  // second rate in vault.apy.userPerDay and vault.yieldRatePerSec, so
+  // we read them directly. Old 0.1%/day per-balance math is retired.
   const dailyRate = useMemo(() => {
     if (!vault) return 0;
-    const bustsRate = vault.bustsDeposited * 0.001;
-    // Once mint is live, the legacy +10/day bonus stops accruing —
-    // server matches this in vault-settle.js. Without gating here, the
-    // client-side projection drifts higher than what the server actually
-    // credits, which causes "nothing to claim" toasts on small windows.
-    const portraitRate = (!mintActive && vault.portraitId) ? 10 : 0;
-    return bustsRate + portraitRate;
+    return Number(vault?.apy?.userPerDay || 0);
   }, [vault]);
 
-  // Hero live yield ticker — ticks the projected pending yield every
-  // 250ms so the page feels like it's actually working FOR the user.
-  // Independent of the YieldCard ticker; both read from the same vault
-  // snapshot but render at different prominence.
+  // Per-second rate from the server (pool-based, recomputed on each
+  // /api/vault read using the live total-deposited pool). We use the
+  // server number directly so the ticker can never drift higher than
+  // what settle credits.
+  const ratePerSec = useMemo(() => {
+    if (!vault) return 0;
+    return Number(vault.yieldRatePerSec || 0);
+  }, [vault]);
+
+  // Hero live yield ticker. Starts from the server's pendingExact
+  // snapshot at the moment of fetch and adds elapsed time × the
+  // server-provided per-second rate.
   const [heroLiveYield, setHeroLiveYield] = useState(0);
   useEffect(() => {
     if (!vault) { setHeroLiveYield(0); return; }
+    const baselineExact = Number(vault.pendingExact || vault.pendingYield || 0);
+    const baselineAt = Date.now();
     const tick = () => {
-      const e = projectYieldExact({
-        bustsDeposited: vault.bustsDeposited,
-        hasPortrait: !!vault.portraitId,
-        lastYieldAt: vault.lastYieldAt,
-      });
-      setHeroLiveYield(e);
+      const elapsed = Math.max(0, (Date.now() - baselineAt) / 1000);
+      setHeroLiveYield(baselineExact + elapsed * ratePerSec);
     };
     tick();
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
-  }, [vault]);
-
-  // Per-second rate (sum of busts deposit yield + portrait flat).
-  const ratePerSec = useMemo(() => {
-    if (!vault) return 0;
-    return vault.bustsDeposited * 0.001 / 86400 + (!mintActive && vault.portraitId ? 10 / 86400 : 0);
-  }, [vault]);
+  }, [vault, ratePerSec]);
 
   const amountInput = useMemo(() => Math.trunc(Number(bustsAmount)) || 0, [bustsAmount]);
   const projectedPower = useMemo(() => {
@@ -246,6 +251,17 @@ export default function VaultPage({ onNavigate }) {
       toast.error(`Vault has only ${vault.bustsDeposited.toLocaleString()} BUSTS.`);
       return;
     }
+    // Project the new daily rate after this deposit / withdraw using
+    // pool-share math. Shifting the user's deposit also shifts the
+    // total deposited (since they're moving in / out of the same pool).
+    const poolTotal      = Number(vault?.pool?.total || 10_000_000);
+    const dailyEmission  = Number(vault?.pool?.dailyEmission || (poolTotal / 365));
+    const totalDeposited = Number(vault?.pool?.totalDeposited || 0);
+    const projectNewDaily = (newUserDeposit, deltaPool) => {
+      const newTotalPool = Math.max(1, totalDeposited + deltaPool);
+      const share = newUserDeposit / newTotalPool;
+      return share * dailyEmission;
+    };
     const ok = await askConfirm(bustsMode === 'deposit' ? {
       title: 'Confirm deposit',
       kicker: '§01 · DEPOSIT',
@@ -253,7 +269,7 @@ export default function VaultPage({ onNavigate }) {
       items: [
         { label: 'Amount', value: `${amountInput.toLocaleString()} BUSTS` },
         { label: 'Vault after', value: `${(vault.bustsDeposited + amountInput).toLocaleString()} BUSTS` },
-        { label: 'New rate', value: `${Math.floor((vault.bustsDeposited + amountInput) * 0.001 + (!mintActive && vault.portraitId ? 10 : 0))} / day` },
+        { label: 'New rate', value: `${formatRate(projectNewDaily(vault.bustsDeposited + amountInput, +amountInput))} / day` },
       ],
       confirmLabel: 'Deposit',
       tone: 'accent',
@@ -264,7 +280,7 @@ export default function VaultPage({ onNavigate }) {
       items: [
         { label: 'Amount', value: `${amountInput.toLocaleString()} BUSTS` },
         { label: 'Vault after', value: `${Math.max(0, vault.bustsDeposited - amountInput).toLocaleString()} BUSTS` },
-        { label: 'New rate', value: `${Math.floor(Math.max(0, vault.bustsDeposited - amountInput) * 0.001 + (!mintActive && vault.portraitId ? 10 : 0))} / day` },
+        { label: 'New rate', value: `${formatRate(projectNewDaily(Math.max(0, vault.bustsDeposited - amountInput), -amountInput))} / day` },
       ],
       confirmLabel: 'Withdraw',
       tone: 'danger',
@@ -642,8 +658,8 @@ export default function VaultPage({ onNavigate }) {
           n="03"
           title="Yield"
           sub={mintActive
-            ? 'Real-time BUSTS for what you keep inside. 0.1% per day on deposited BUSTS. Settles to your balance whenever you claim or move funds. The legacy +10 / day portrait bonus retired at mint — on-chain portrait yield is now in §02.'
-            : 'Real-time BUSTS for what you keep inside. 0.1% per day on deposited BUSTS. +10 BUSTS/day flat while a portrait is bound. Settles to your balance whenever you claim or move funds.'}
+            ? 'Pool-based yield. 10M BUSTS over 365 days, distributed by deposit share. Headline APY drops as more BUSTS get staked. Settles to your balance whenever you claim or move funds. On-chain portrait yield is in §02.'
+            : 'Pool-based yield. 10M BUSTS over 365 days, distributed by deposit share. Headline APY drops as more BUSTS get staked. Settles to your balance whenever you claim or move funds.'}
         />
         <YieldCard vault={vault} dailyRate={dailyRate} busy={busy} onClaim={handleClaim} mintActive={mintActive} />
       </section>
@@ -1435,37 +1451,33 @@ function SectionHead({ n, title, sub }) {
 // Yield bar — slim editorial paper-themed claim row. The State section
 // already shows the live ticker, sources, and lifetime, so this is just
 // the action point: pending amount on the left, claim button on the right.
-function YieldCard({ vault, dailyRate, busy, onClaim, mintActive }) {
+function YieldCard({ vault, dailyRate, busy, onClaim }) {
+  // Live ticker. Starts from the server's pendingExact at fetch time
+  // and adds elapsed seconds × yieldRatePerSec. No client-side rate
+  // math — server is the source of truth.
   const [exact, setExact] = useState(0);
-  const lastVaultRef = useRef(null);
-
+  const ratePerSec = Number(vault?.yieldRatePerSec || 0);
   useEffect(() => {
-    lastVaultRef.current = vault;
+    if (!vault) { setExact(0); return; }
+    const baseline = Number(vault.pendingExact || vault.pendingYield || 0);
+    const baselineAt = Date.now();
     const tick = () => {
-      const v = lastVaultRef.current;
-      if (!v) return;
-      const e = projectYieldExact({
-        bustsDeposited: v.bustsDeposited,
-        // Once mint is live, the legacy +10/day bonus stops accruing
-        // (server matches this in vault-settle.js). Without zeroing it
-        // here, the client-side ticker drifts higher than the server's
-        // actual pending value → "nothing to claim" toasts.
-        hasPortrait: !mintActive && !!v.portraitId,
-        lastYieldAt: v.lastYieldAt,
-      });
-      setExact(e);
+      const elapsed = Math.max(0, (Date.now() - baselineAt) / 1000);
+      setExact(baseline + elapsed * ratePerSec);
     };
     tick();
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
-  }, [vault]);
+  }, [vault, ratePerSec]);
 
   const whole = Math.floor(exact);
   const frac  = (exact - whole).toFixed(4).slice(1); // ".XXXX"
   const canClaim = whole >= 1;
   const isLive = dailyRate > 0;
-  const bustsPerDay = vault.bustsDeposited * 0.001;
-  const portraitPerDay = (!mintActive && vault.portraitId) ? 10 : 0;
+
+  const headlineApy   = Number(vault?.apy?.headline || 0);
+  const userShare     = Number(vault?.apy?.userShare || 0);
+  const totalDeposited = Number(vault?.pool?.totalDeposited || 0);
 
   return (
     <div className={`vlt-yield-bar ${isLive ? 'on' : ''}`}>
@@ -1480,20 +1492,21 @@ function YieldCard({ vault, dailyRate, busy, onClaim, mintActive }) {
           <span className="vlt-yield-bar-unit">BUSTS</span>
         </div>
         <div className="vlt-yield-bar-sources">
-          <span className={bustsPerDay > 0 ? 'on' : ''}>
-            <strong>{bustsPerDay > 0 ? bustsPerDay.toFixed(2) : '—'}</strong> / day from BUSTS
+          <span className={dailyRate > 0 ? 'on' : ''}>
+            <strong>{formatRate(dailyRate)}</strong> / day at your share
           </span>
-          {mintActive ? null : (
-            <>
-              <span className="vlt-yield-bar-sep">+</span>
-              <span className={portraitPerDay > 0 ? 'on' : ''}>
-                <strong>{portraitPerDay > 0 ? portraitPerDay : '—'}</strong> / day from PORTRAIT
-              </span>
-            </>
-          )}
-          <span className="vlt-yield-bar-sep">=</span>
-          <span className="vlt-yield-bar-total">
-            <strong>{Number.isInteger(dailyRate) ? dailyRate.toLocaleString() : dailyRate.toFixed(2)}</strong> / day total
+          <span className="vlt-yield-bar-sep">·</span>
+          <span>
+            <strong>{headlineApy > 0 ? headlineApy.toFixed(0) : '—'}%</strong> headline APY
+          </span>
+          <span className="vlt-yield-bar-sep">·</span>
+          <span>
+            pool share <strong>{userShare > 0 ? (userShare * 100).toFixed(2) : '0.00'}%</strong>
+          </span>
+        </div>
+        <div className="vlt-yield-bar-sources" style={{ marginTop: 4, opacity: 0.7 }}>
+          <span style={{ fontSize: 10 }}>
+            POOL · 10M BUSTS over 365 days · {totalDeposited.toLocaleString()} currently deposited
           </span>
         </div>
       </div>
