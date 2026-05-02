@@ -543,6 +543,137 @@ export default function LandingPage({ onNavigate }) {
         </div>
       </section>
 
+      {/* WHAT'S NEXT — editorial tease, suspenseful, names The Game without explaining */}
+      <section id="sec-next" className="section">
+        <div className="section-header reveal" ref={setRef(12)}>
+          <div className="section-index"><b>07</b>What's next</div>
+          <div>
+            <h2 className="section-title">
+              We are not done. <em>Quietly building.</em>
+            </h2>
+          </div>
+        </div>
+
+        <div className="reveal" ref={setRef(13)} style={{
+          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16,
+          maxWidth: 1100, margin: '0 auto',
+        }}>
+          <div style={{
+            border: '1px solid var(--ink)', padding: '28px 26px 30px',
+            background: 'var(--paper-1)', position: 'relative',
+          }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'var(--accent)' }} />
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.24em',
+              textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 700,
+              marginBottom: 14,
+            }}>NEXT · 01</div>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontStyle: 'italic',
+              fontSize: 32, lineHeight: 1.1, letterSpacing: '-0.02em',
+              color: 'var(--ink)', marginBottom: 12,
+            }}>$BUSTS goes on chain.</div>
+            <div style={{
+              fontFamily: 'Georgia, serif', fontSize: 14, lineHeight: 1.6,
+              color: 'var(--text-2)',
+            }}>
+              ERC 20. Hard cap of one billion. Mint disabled at deployment.
+              One to one from the current ledger. No rebase, no surprise.
+            </div>
+          </div>
+
+          <div style={{
+            border: '1px solid var(--ink)', padding: '28px 26px 30px',
+            background: 'var(--ink)', color: 'var(--paper-1)',
+            position: 'relative', overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'var(--accent)' }} />
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.24em',
+              textTransform: 'uppercase', color: 'var(--accent)', fontWeight: 700,
+              marginBottom: 14,
+            }}>NEXT · 02</div>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontStyle: 'italic',
+              fontSize: 36, lineHeight: 1.05, letterSpacing: '-0.02em',
+              color: 'var(--paper-1)', marginBottom: 12,
+            }}>The Game.</div>
+            <div style={{
+              fontFamily: 'Georgia, serif', fontSize: 14, lineHeight: 1.6,
+              color: 'rgba(249,246,240,0.78)',
+            }}>
+              Holder facing. Wager. Progression. Attrition.
+              $BUSTS is the entry. Portraits are the players.
+              The rest is sealed.
+            </div>
+          </div>
+
+          <div style={{
+            border: '1px solid var(--ink)', padding: '28px 26px 30px',
+            background: 'var(--paper-1)', position: 'relative',
+          }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: 'var(--accent)' }} />
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.24em',
+              textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 700,
+              marginBottom: 14,
+            }}>NEXT · 03</div>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontStyle: 'italic',
+              fontSize: 32, lineHeight: 1.1, letterSpacing: '-0.02em',
+              color: 'var(--ink)', marginBottom: 12,
+            }}>Vault, deeper.</div>
+            <div style={{
+              fontFamily: 'Georgia, serif', fontSize: 14, lineHeight: 1.6,
+              color: 'var(--text-2)',
+            }}>
+              Trait reroll burn. Governance signals.
+              Holder only surfaces. Things we are not ready to name.
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          maxWidth: 1100, margin: '36px auto 0', textAlign: 'center',
+          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.18em',
+          textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 700,
+        }}>
+          No dates · No promises · We ship, then we tell you
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: 28 }}>
+          <button
+            type="button"
+            onClick={() => onNavigate('litepaper')}
+            style={{
+              padding: '14px 28px',
+              background: 'transparent',
+              border: '1px solid var(--ink)',
+              color: 'var(--ink)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              letterSpacing: '0.22em',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              transition: 'background 120ms, color 120ms',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            Read the litepaper →
+          </button>
+        </div>
+      </section>
+
+      <style>{`
+        @media (max-width: 880px) {
+          #sec-next > div[class~="reveal"]:nth-of-type(2) {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+
       {/* CTA BAND */}
       <section className="cta-band">
         <h2 className="cta-band-title">

@@ -423,11 +423,47 @@ total_holdings = wallet_held + vault_staked`}
               don't make any representation about its market value.
             </Body>
 
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.24em',
+              textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 700,
+              marginTop: 36, marginBottom: 14,
+            }}>Going on chain</div>
+
             <Body>
-              What's next. A migration to an on chain ERC 20 is on the roadmap. We
-              haven't shipped it yet. When we do, the design (snapshot rules,
-              vesting, conversion) will be documented before any conversion event.
-              Holders get notified through official channels with full lead time.
+              The next step is a migration to a standard ERC 20 on Ethereum.
+              Off chain ledger balances snapshot at a specific block, mint 1:1
+              into the on chain contract, and the old ledger goes read only the
+              same hour. No rebase. No conversion ratio. No surprise dilution.
+            </Body>
+
+            <Body>
+              Total supply is fixed at one billion $BUSTS. The mint function is
+              permanently disabled at deployment. There is no upgrade path, no
+              admin reissue, no second tranche. The cap is the cap.
+            </Body>
+
+            <BustsAllocationTable />
+
+            <Body>
+              Each bucket has a defined unlock cadence. Nothing on this list is
+              discretionary. Anyone can verify the schedules on chain after
+              deployment.
+            </Body>
+
+            <BustsUnlockTable />
+
+            <Body>
+              The reserve is the largest single bucket and the most carefully
+              guarded. It sits in a multisig behind an on chain timelock and
+              cannot be moved without a proposal that respects the delay.
+              It is reserve, not runway. The default state is locked.
+            </Body>
+
+            <Body>
+              Sinks matter as much as the cap. $BUSTS gets burned by vault
+              upgrades, trait rerolls, gameplay entry, cosmetic systems, event
+              participation, and future ecosystem mechanics. Utility consumption,
+              not passive holding, is the design.
             </Body>
           </Section>
 
@@ -462,11 +498,13 @@ total_holdings = wallet_held + vault_staked`}
           {/* §12 */}
           <Section n="12" title="Roadmap">
             <Body>
-              <strong>Done.</strong> Mint. Reveal. Vault. Verify.
+              <strong>Done.</strong> Mint. Reveal. OpenSea. Vault. Verify.
+              Live gallery. On chain sales. Discord tier roles. Off chain ledger.
             </Body>
 
             <Body>
-              <strong>Active.</strong> Staking. Accrual. Tier sync. Quiet ops.
+              <strong>Active.</strong> Staking. Rarity weighted accrual. Tier
+              sync every six hours. Anti abuse. Holder support. Quiet ops.
             </Body>
 
             <Body>
@@ -474,14 +512,16 @@ total_holdings = wallet_held + vault_staked`}
             </Body>
 
             <BulletList items={[
-              '$BUSTS goes on chain',
-              'The Game',
-              'Vault, deeper',
-              'Things we are not ready to name',
+              '$BUSTS goes on chain. ERC 20, hard capped, mint disabled. 1:1 from the current ledger.',
+              'The Game. Holder facing. Wager, progression, attrition. $BUSTS is the entry.',
+              'Vault, deeper. Governance signals. Holder only surfaces. Trait reroll burn.',
+              'Things we are not ready to name.',
             ]} />
 
             <Body>
-              No dates. We ship, then we tell you.
+              <strong>When.</strong> No dates. We ship, then we tell you. The
+              order above is the order we are working in. Each item replaces a
+              quiet release note when it lands.
             </Body>
 
             <Pull big lime>
@@ -861,6 +901,95 @@ function RarityDistributionTable() {
         <span>TOTAL</span>
         <span>{total} portraits. 100.0%</span>
       </div>
+    </div>
+  );
+}
+
+function BustsAllocationTable() {
+  const rows = [
+    ['Public Sale',           240, '24%', 'Open access. Holder priority window.'],
+    ['Long Term Reserve',     240, '24%', 'Multisig + on chain timelock. Default state is locked.'],
+    ['Vault Emissions',       200, '20%', 'Existing vault rewards. Multi year stream.'],
+    ['Liquidity',             150, '15%', 'Paired at listing. Locked 12 months.'],
+    ['Game + Future Systems', 150, '15%', 'Released only when systems ship.'],
+    ['Treasury',               70, '7%',  'Multisig controlled. Audits, infra, ops.'],
+    ['Team',                   50, '5%',  'Long cliff. Small monthly drip after.'],
+  ];
+  const total = rows.reduce((s, r) => s + r[1], 0);
+  return (
+    <div style={{ margin: '20px 0', border: '1px solid var(--ink)' }}>
+      <div className="lp-row" style={{
+        display: 'grid', gridTemplateColumns: '200px 110px 60px 1fr',
+        padding: '12px 20px', alignItems: 'baseline',
+        borderBottom: '1px solid var(--ink)', background: 'var(--paper-2)',
+        fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em',
+        textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 700,
+      }}>
+        <div>Bucket</div>
+        <div style={{ textAlign: 'right' }}>Tokens (M)</div>
+        <div style={{ textAlign: 'right' }}>Share</div>
+        <div style={{ paddingLeft: 24 }}>Notes</div>
+      </div>
+      {rows.map((r, i) => (
+        <div key={i} className="lp-row" style={{
+          display: 'grid', gridTemplateColumns: '200px 110px 60px 1fr',
+          padding: '14px 20px', alignItems: 'baseline',
+          borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none',
+          fontSize: 13,
+        }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 22 }}>{r[0]}</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 22, color: 'var(--accent)', textAlign: 'right' }}>{r[1]}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', textAlign: 'right' }}>{r[2]}</div>
+          <div style={{ fontFamily: 'Georgia, serif', color: 'var(--text-2)', paddingLeft: 24 }}>{r[3]}</div>
+        </div>
+      ))}
+      <div style={{
+        padding: '14px 20px', background: 'var(--paper-2)',
+        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.06em',
+        color: 'var(--text-3)', display: 'flex', justifyContent: 'space-between',
+      }}>
+        <span>TOTAL</span>
+        <span>{total}M $BUSTS · 100.0% · Hard cap, mint disabled</span>
+      </div>
+    </div>
+  );
+}
+
+function BustsUnlockTable() {
+  const rows = [
+    ['Public Sale',           'TGE',           'All distributed at token generation. Buyers receive on day one.'],
+    ['Liquidity',             '12 month lock', 'Paired with sale ETH. LP position timelocked. Verifiable on chain.'],
+    ['Vault Emissions',       '3% per year',   'Continues the existing rarity weighted vault stream. Slow and predictable.'],
+    ['Game + Future Systems', '5% per year',   'Released to a metered contract as gameplay and ecosystem features ship.'],
+    ['Treasury',              '1% per year',   'Linear from TGE. Multisig signed. Every spend posts on chain.'],
+    ['Team',                  '1% month one, 1% per year after', 'Hard cliff. The rest drips on a one percent annual schedule.'],
+    ['Long Term Reserve',     'Governance gated', 'Locked by default. Any unlock requires a proposal and respects the on chain timelock delay.'],
+  ];
+  return (
+    <div style={{ margin: '20px 0', border: '1px solid var(--ink)' }}>
+      <div className="lp-row" style={{
+        display: 'grid', gridTemplateColumns: '220px 220px 1fr',
+        padding: '12px 20px', alignItems: 'baseline',
+        borderBottom: '1px solid var(--ink)', background: 'var(--paper-2)',
+        fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em',
+        textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 700,
+      }}>
+        <div>Bucket</div>
+        <div>Unlock</div>
+        <div style={{ paddingLeft: 24 }}>Mechanism</div>
+      </div>
+      {rows.map((r, i) => (
+        <div key={i} className="lp-row" style={{
+          display: 'grid', gridTemplateColumns: '220px 220px 1fr',
+          padding: '14px 20px', alignItems: 'baseline',
+          borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none',
+          fontSize: 13,
+        }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 20 }}>{r[0]}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', color: 'var(--ink)' }}>{r[1]}</div>
+          <div style={{ fontFamily: 'Georgia, serif', color: 'var(--text-2)', paddingLeft: 24 }}>{r[2]}</div>
+        </div>
+      ))}
     </div>
   );
 }
