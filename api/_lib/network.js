@@ -15,6 +15,12 @@ export const FINAL_ROUND_CINEMATIC_SECONDS = 15;
 export const SPIN_UP_SECONDS = 3;
 export const MATCH_MAX_ROUNDS = 6;
 export const SEATS_PER_LOBBY  = 10;
+// Wait window in seconds — how long an open lobby stays open after
+// the FIRST player deploys. Once this elapses, remaining seats fill
+// with bots automatically and the match spins up. This means a single
+// player can start a match within 30s, but if 9 other humans show up
+// in time, they all play together with no bot-fill needed.
+export const LOBBY_WAIT_SECONDS = 30;
 
 // ─── Bot user IDs (pre-created in users table) ─────────────────────
 // Used to auto-fill empty seats so a single real player can deploy

@@ -11,7 +11,6 @@ import { ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
 import {
   buildMatchSeed, assignSeat, SEATS_PER_LOBBY, MATCH_MAX_ROUNDS,
-  NETWORK_BOT_IDS,
 } from '../_lib/network.js';
 import { computeFighterProfile } from '../_lib/arena-profile.js';
 
@@ -79,14 +78,21 @@ export default async function handler(req, res) {
     seatNo  = 1;
   }
 
-  // Assign codename + profile deterministically from seat index (0-9).
-  const { codename, profile: behavior } = assignSeat(seed, seatNo - 1);
+  // Profile is still random from seed (drives LLM tone). Display name
+  // is the user's @x_username, falling back to a wallet truncation if
+  // they have no X handle.
+  const { profile: behavior } = assignSeat(seed, seatNo - 1);
+  const displayName = user.x_username
+    ? `@${user.x_username}`
+    : (user.wallet_address
+        ? `${user.wallet_address.slice(0, 6)}...${user.wallet_address.slice(-4)}`
+        : `agent_${seatNo}`);
 
-  // Insert the seat.
+  // Insert the seat using the display name as the codename column.
   try {
     await sql`
       INSERT INTO network_seats (lobby_id, seat_no, user_id, codename, profile, power)
-      VALUES (${lobbyId}, ${seatNo}, ${user.id}::uuid, ${codename}, ${behavior}, ${power})
+      VALUES (${lobbyId}, ${seatNo}, ${user.id}::uuid, ${displayName}, ${behavior}, ${power})
     `;
   } catch (e) {
     // Race: another player took this seat. Refund and tell the client to retry.
@@ -107,45 +113,9 @@ export default async function handler(req, res) {
     VALUES (${user.id}, ${-ENTRY_FEE}, ${`THE NETWORK · deploy · lobby ${lobbyId}`})
   `;
 
-  // BOT-FILL: after a real player joins, immediately fill remaining
-  // seats with bots so the match can start without waiting for 9
-  // others. This makes the game playable end-to-end with one real
-  // human. Each bot gets a deterministic codename + profile from the
-  // same seed so the assignment is verifiable.
-  if (seatNo < SEATS_PER_LOBBY) {
-    const remainingSlots = SEATS_PER_LOBBY - seatNo;
-    for (let i = 0; i < remainingSlots; i++) {
-      const botSeatNo = seatNo + 1 + i;
-      const botUserId = NETWORK_BOT_IDS[i];
-      if (!botUserId) break;
-      const { codename: botCodename, profile: botProfile } = assignSeat(seed, botSeatNo - 1);
-      // Bots get a randomized power in the 200-900 range so matches
-      // have varied dynamics.
-      const botPower = 200 + Math.floor(Math.random() * 700);
-      try {
-        await sql`
-          INSERT INTO network_seats (lobby_id, seat_no, user_id, codename, profile, power)
-          VALUES (${lobbyId}, ${botSeatNo}, ${botUserId}::uuid, ${botCodename}, ${botProfile}, ${botPower})
-        `;
-        await sql`
-          UPDATE network_lobbies SET pot_busts = pot_busts + ${ENTRY_FEE}
-           WHERE id = ${lobbyId}
-        `;
-      } catch (e) {
-        // Bot already in another concurrent lobby — skip this slot
-        // and leave it open. Lobby will spin up with fewer than 10
-        // if needed.
-      }
-    }
-  }
-
-  // Re-check fill state after bot-fill.
-  const filledRow = one(await sql`
-    SELECT COUNT(*)::int AS n FROM network_seats WHERE lobby_id = ${lobbyId}
-  `);
-  const totalFilled = Number(filledRow?.n) || seatNo;
-
-  if (totalFilled >= SEATS_PER_LOBBY) {
+  // If this fills the lobby naturally (10 humans), flip to spinning.
+  // Otherwise the resolve endpoint will bot-fill after LOBBY_WAIT_SECONDS.
+  if (seatNo === SEATS_PER_LOBBY) {
     await sql`
       UPDATE network_lobbies
          SET status = 'spinning', started_at = now()
@@ -156,11 +126,10 @@ export default async function handler(req, res) {
   ok(res, {
     lobbyId,
     seatNo,
-    codename,
+    codename: displayName,
     profile: behavior,
     power,
-    full: totalFilled >= SEATS_PER_LOBBY,
-    botsFilled: totalFilled - seatNo,
+    full: seatNo === SEATS_PER_LOBBY,
     newBalance: Number(debit.busts_balance),
   });
 }

@@ -24,9 +24,12 @@ import { readBody, ok, bad } from '../_lib/json.js';
 import {
   applyStances, pickEliminations, eliminationsThisRound,
   ROUND_COMMIT_SECONDS, FINAL_ROUND_COMMIT_SECONDS, SPIN_UP_SECONDS,
-  BOT_ID_SET, pickBotStance,
+  LOBBY_WAIT_SECONDS, SEATS_PER_LOBBY, NETWORK_BOT_IDS,
+  BOT_ID_SET, pickBotStance, assignSeat,
 } from '../_lib/network.js';
 import { generateRoundDialogueLLM, summarizeRoundEvents } from '../_lib/network-llm.js';
+
+const ENTRY_FEE = 100;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
@@ -43,6 +46,49 @@ export default async function handler(req, res) {
       FROM network_lobbies WHERE id = ${lobbyId}
   `);
   if (!lobby) return bad(res, 404, 'lobby_not_found');
+
+  // ─── OPEN — waiting for humans, then bot-fill ───────────────────
+  // First player triggers a 30s window. If the lobby fills with humans
+  // in that time, deploy() flips it to 'spinning' directly. If 30s
+  // pass and seats are still open, bot-fill the rest and start.
+  if (lobby.status === 'open') {
+    const openedMs = lobby.opened_at ? new Date(lobby.opened_at).getTime() : Date.now();
+    const elapsed  = (Date.now() - openedMs) / 1000;
+    const filled   = (await sql`SELECT COUNT(*)::int AS n FROM network_seats WHERE lobby_id = ${lobbyId}`)[0]?.n || 0;
+
+    if (filled >= 1 && elapsed >= LOBBY_WAIT_SECONDS && filled < SEATS_PER_LOBBY) {
+      // Fill remaining seats with bots.
+      let botIdx = 0;
+      for (let seatNo = filled + 1; seatNo <= SEATS_PER_LOBBY && botIdx < NETWORK_BOT_IDS.length; seatNo++, botIdx++) {
+        const botUserId = NETWORK_BOT_IDS[botIdx];
+        const { profile } = assignSeat(lobby.match_seed, seatNo - 1);
+        const botName = `BOT_${String(seatNo).padStart(2, '0')}`;
+        const botPower = 200 + Math.floor(Math.random() * 700);
+        try {
+          await sql`
+            INSERT INTO network_seats (lobby_id, seat_no, user_id, codename, profile, power)
+            VALUES (${lobbyId}, ${seatNo}, ${botUserId}::uuid, ${botName}, ${profile}, ${botPower})
+          `;
+          await sql`
+            UPDATE network_lobbies SET pot_busts = pot_busts + ${ENTRY_FEE}
+             WHERE id = ${lobbyId}
+          `;
+        } catch (e) { /* bot busy in another lobby — skip */ }
+      }
+      await sql`
+        UPDATE network_lobbies
+           SET status = 'spinning', started_at = now()
+         WHERE id = ${lobbyId} AND status = 'open'
+      `;
+      return ok(res, { phase: 'spinning', botsFilled: SEATS_PER_LOBBY - filled });
+    }
+
+    return ok(res, {
+      phase: 'open',
+      filled,
+      secsLeft: Math.max(0, Math.ceil(LOBBY_WAIT_SECONDS - elapsed)),
+    });
+  }
 
   // ─── SPINNING → ACTIVE round 1 ───────────────────────────────────
   if (lobby.status === 'spinning') {

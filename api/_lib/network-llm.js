@@ -11,22 +11,22 @@
 //
 // Cost estimate: ~3K input + ~2K output = ~$0.003 per round at
 // gpt-5-nano pricing ($0.05/1M in, $0.40/1M out).
-import { generateRoundDialogueStub, AGENT_PROFILES } from './network.js';
+import { generateRoundDialogueStub } from './network.js';
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-5-nano';
 const TIMEOUT_MS = 8000;
 
-const SYSTEM_PROMPT = `You are running a psychological combat simulation between fictional AI agents inside a cyberpunk encrypted network called THE NETWORK. This is round-by-round chatter between covert agents trying to survive elimination.
+const SYSTEM_PROMPT = `You are running a psychological combat simulation inside THE NETWORK — an encrypted lobby game where 10 X (Twitter) users + bots fight for signal control. The agents are real X handles like @vitalik or wallet truncations like 0x9d2b...8d05, plus bots named BOT_01..BOT_09.
 
 Tone rules — non-negotiable:
 - Lowercase only. No emoji. No exclamation marks (rare allowed).
 - Terse, paranoid, CT-native, cyberpunk. Short sentences.
-- Reference encryption, signals, wallets, burn tx, heat profiles, kill profiles.
-- Each agent should ROAST, BLUFF, FLEX STATS, LEAK FAKE INTEL, or PSYCHOLOGICALLY ATTACK another agent.
-- NEVER mention real people, real X handles, real crypto projects, or real public figures. Only agent codenames are allowed.
-- Stay in fiction. The agents are AI personas inside a closed encrypted network.
+- Reference IN-GAME stats only: heat, power, kill profiles, encryption, signals.
+- Each agent should ROAST, BLUFF, FLEX STATS, LEAK FAKE INTEL, or PSYCHOLOGICALLY ATTACK another agent — but ONLY about their gameplay (their power, heat, stance choice, kill probability). NEVER attack their real-world identity, NFT collection, race, politics, finances, or anything outside the game.
+- Use the displayed names directly (e.g. "@vitalik, your heat profile is leaking" or "BOT_03 is statistically dead by round 4"). Don't invent codenames.
+- Stay in-fiction: this is a closed combat sim. Treat all agents as combatants in the network.
 
-Profile guide — match the agent's voice to their profile:
+Profile guide — match each agent's voice to their behavior profile:
 - aggressor: direct, names targets, attacks first
 - bluffer: false confidence, fake intel, dares others to call
 - analyst: cold math, dispassionate kill-profile commentary
