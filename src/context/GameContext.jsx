@@ -523,27 +523,12 @@ export function GameProvider({ children }) {
   // It's a no-op now; the new DropPage doesn't use it.
   const armDrop = useCallback(async () => ({ ok: true }), []);
 
-  const openMysteryBox = useCallback(async (tier) => {
-    if (!state.authenticated) return { ok: false, reason: 'Sign in with X first' };
-    const r = await jpost('/api/box-open', { tier });
-    if (!r.ok) {
-      if (r.error === 'min_followers_not_met') {
-        const need = Number(r.required) || 20;
-        const have = Number(r.have) || 0;
-        return {
-          ok: false,
-          reason: `Mystery boxes require at least ${need} followers on X. Your account currently has ${have}. Grow your X account, then try again.`,
-        };
-      }
-      if (r.error === 'insufficient_busts') {
-        return { ok: false, reason: 'Not enough BUSTS for this tier.' };
-      }
-      return { ok: false, reason: r.error || 'Box open failed' };
-    }
-    dispatch({ type: 'ADD_INVENTORY', element: r.element });
-    dispatch({ type: 'BUMP_BALANCE', amount: -(state.bustsBalance - r.newBalance), reason: `Opened ${tier} box` });
-    return { ok: true, element: r.element, newBalance: r.newBalance };
-  }, [state.authenticated, state.bustsBalance]);
+  // Mystery-box feature removed entirely. Stub kept as a back-compat
+  // shim so any cached client referencing context.openMysteryBox gets
+  // a clean closed-state response instead of a runtime error.
+  const openMysteryBox = useCallback(async () => {
+    return { ok: false, reason: 'Mystery boxes are retired.' };
+  }, []);
 
   const sendGift = useCallback(async (toXUsername, element) => {
     const r = await jpost('/api/gift-send', { toXUsername, elementType: element.type, variant: element.variant });

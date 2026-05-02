@@ -400,8 +400,8 @@ export default function LandingPage({ onNavigate }) {
               Earn BUSTS. <em>Spend with intent.</em>
             </h2>
             <p className="section-body" style={{ marginTop: 20 }}>
-              BUSTS are the off-chain credits that power the experience. Earned from drops, X
-              engagement, referrals. Burned on mystery boxes packed with rare traits.
+              BUSTS are the off-chain credits that power the experience. Earned from drops
+              and referrals. Stake your 1969 in the vault to keep earning, rarity-weighted.
             </p>
           </div>
         </div>
