@@ -18,7 +18,7 @@ const BULLET_META = {
 const BULLET_KEYS = ['lead', 'tracer', 'hollow', 'ap', 'silver'];
 
 export default function FacilityPage() {
-  const [tab, setTab] = useState('standoff');
+  const [tab, setTab] = useState('network');
 
   return (
     <div className="fac-page">
@@ -42,22 +42,18 @@ export default function FacilityPage() {
       {/* TABS */}
       <nav className="fac-tabs">
         <button
-          className={`fac-tab ${tab === 'standoff' ? 'active' : ''}`}
-          onClick={() => setTab('standoff')}
-          type="button"
-        >
-          <span className="fac-tab-no">01</span>
-          <span className="fac-tab-name">Standoff</span>
-          <span className="fac-tab-status">LIVE</span>
-        </button>
-        <button
           className={`fac-tab ${tab === 'network' ? 'active' : ''}`}
           onClick={() => setTab('network')}
           type="button"
         >
-          <span className="fac-tab-no">02</span>
+          <span className="fac-tab-no">01</span>
           <span className="fac-tab-name">The Network</span>
           <span className="fac-tab-status">LIVE</span>
+        </button>
+        <button className="fac-tab disabled" disabled type="button">
+          <span className="fac-tab-no">02</span>
+          <span className="fac-tab-name">Standoff</span>
+          <span className="fac-tab-status">PAUSED</span>
         </button>
         <button className="fac-tab disabled" disabled type="button">
           <span className="fac-tab-no">03</span>
@@ -71,7 +67,6 @@ export default function FacilityPage() {
         </button>
       </nav>
 
-      {tab === 'standoff' && <StandoffView />}
       {tab === 'network' && <NetworkView />}
     </div>
   );
