@@ -8,8 +8,8 @@ import CollectionPage from './pages/CollectionPage';
 import GalleryPage from './pages/GalleryPage';
 import AdminPanel from './pages/AdminPanel';
 import BuilderPage from './pages/BuilderPage';
-import LeaderboardPage from './pages/LeaderboardPage';
-import TasksPage from './pages/TasksPage';
+// import LeaderboardPage from './pages/LeaderboardPage'; // removed
+// import TasksPage from './pages/TasksPage'; // task system removed — sybil leak
 // import ArtPage from './pages/ArtPage'; // hidden — re-import to re-enable
 import CollabPage from './pages/CollabPage';
 import LorePage1969 from './pages/LorePage1969';
@@ -136,7 +136,7 @@ function BuilderGate({ navigate }) {
 // the Nav entry + route render below.
 // 'vault' is reachable by direct URL only during Phase 1 review; add to
 // Nav.jsx BASE_PAGES when ready to surface publicly.
-const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'leaderboard', 'collab', '1969', 'litepaper', 'vault', 'tasks', 'discord-verify'];
+const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'collab', '1969', 'litepaper', 'vault', 'discord-verify'];
 
 function pathToPage(pathname) {
   const clean = pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -249,8 +249,6 @@ function AppInner() {
         <BuilderGate navigate={navigate} />
       )}
       {page === 'gallery' && <GalleryPage onNavigate={navigate} />}
-      {page === 'leaderboard' && <LeaderboardPage onNavigate={navigate} />}
-      {page === 'tasks' && <TasksPage onNavigate={navigate} />}
       {page === 'collab' && <CollabPage onNavigate={navigate} />}
       {page === '1969' && <LorePage1969 onNavigate={navigate} />}
       {page === 'litepaper' && <LitepaperPage onNavigate={navigate} />}

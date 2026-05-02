@@ -22,7 +22,8 @@ const X_PAGES = [
   // 'builder' removed from menu — portrait building is permanently
   // closed. Direct URL still resolves but renders the closed-state
   // takeover (see App.jsx).
-  { id: 'tasks',     label: 'Tasks',     requiresX: true },
+  // 'tasks' removed — task system was the largest sybil-mint vector.
+  // Dashboard is the only X-gated nav now.
   { id: 'dashboard', label: 'Dashboard', requiresX: true },
 ];
 
