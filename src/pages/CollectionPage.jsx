@@ -153,77 +153,9 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
       {/* §02 Gift moved up — now renders inside DashboardExtras between
           the metrics row and the YOUR 1969 NFTS panel. */}
 
-      <DashSectionHead n="03" title="Overview" />
-      {true && (
-        <div className="dash-overview-grid">
-          {/* Mint wallet card — only shown to relevant audiences. The
-              "Progress toward portrait" card is hidden once the user has
-              built (it would just be a confusing wall of green checkmarks). */}
-          <MintWalletCard
-            hasBuilt={completedNFTs.length > 0}
-            isWhitelisted={isWhitelisted}
-            dropEligible={dropEligible === true}
-            walletBound={walletBound === true}
-            serverWalletAddress={serverWalletAddress}
-            xUsername={xUser?.username}
-            bindMintWallet={bindMintWallet}
-            cutoffMs={mintWalletCutoffMs}
-          />
-
-          {completedNFTs.length === 0 && (
-            <div className="gift-card">
-              <div className="gift-card-title">Progress toward portrait</div>
-              <div className="gift-card-sub">
-                You've collected {progressCount} of {TOTAL_TYPES} trait types. Complete the set to build your portrait and unlock whitelist.
-              </div>
-              <div className="progress-bar-wrap" style={{ marginBottom: 20 }}>
-                <div className="progress-bar-fill" style={{ width: `${(progressCount/TOTAL_TYPES)*100}%` }} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-                {ELEMENT_TYPES.map((type) => {
-                  const has = byType[type].length > 0;
-                  return (
-                    <div key={type} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '10px 14px', border: '1px solid var(--hairline)',
-                      background: has ? 'var(--accent-dim)' : 'var(--paper-2)',
-                    }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.06em', color: has ? 'var(--ink)' : 'var(--text-4)' }}>
-                        {ELEMENT_LABELS[type]}
-                      </span>
-                      <span style={{ color: has ? 'var(--ink)' : 'var(--text-4)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-                        {has ? '✓' : '/'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-                <button className="btn btn-solid btn-sm btn-arrow" onClick={() => onNavigate('drop')}>Go to drop</button>
-                {hasAllTypes && <button className="btn btn-accent btn-sm" onClick={() => onNavigate('builder')}>Build portrait</button>}
-              </div>
-            </div>
-          )}
-
-          {/* Shortcut card retired — all four sections are visible inline below
-              now that the tab system is removed. Keeping referrals stat. */}
-          <div className="gift-card">
-            <div className="gift-card-title">Activity</div>
-            <div className="gift-card-sub" style={{ marginBottom: 18 }}>
-              All your action surfaces are open below — tasks, gift, history. Scroll to skim.
-            </div>
-            <div style={{ padding: '14px 18px', border: '1px solid var(--hairline)', background: 'var(--paper-2)' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-4)', marginBottom: 6 }}>Referrals</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 500, letterSpacing: '-0.025em' }}>
-                {referralCount} joined
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>50 BUSTS per successful invite</div>
-            </div>
-
-            <ConnectDiscord username={discordUsername} inviteUrl={discordInviteUrl} />
-          </div>
-        </div>
-      )}
+      {/* §03 Overview retired — Mint wallet + Activity panels removed
+          post-mint. Discord linking moved into the bound-wallet flow;
+          referral count surfaces in the §06 Referrals section below. */}
 
       {/* ─── Tasks ─── */}
       {/* Tasks moved to its own page (/tasks) — used to occupy this slot. */}
@@ -329,9 +261,9 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
         );
       })()}
 
-      {/* ─── Top BUSTS holders (last 20) ─── */}
-      <DashSectionHead n="05" title="Top holders" sub="Top 20 by BUSTS in circulation. Updated every 30 seconds." />
-      <TopBustsHolders />
+      {/* §05 Top holders retired — leaderboard removed entirely.
+          Rankings were heavily distorted by the sybil farm and the
+          surface no longer adds value post-mint. */}
     </div>
   );
 }
