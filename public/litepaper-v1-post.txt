@@ -1,0 +1,101 @@
+─────────────────────────────────────────────
+  THE 1969 — LITEPAPER v1.0 UPDATE POSTS
+  POST-MINT EDITION
+─────────────────────────────────────────────
+
+▌ POST A — primary (cover graphic attached)
+
+litepaper · v1.0 · post-mint edition.
+
+twelve sections. tokenomics inside.
+
+$BUSTS goes on chain. one billion, hard capped, mint disabled. allocation table, unlock schedules, sinks. the reserve is multisig and timelocked.
+
+The Game is named. roadmap, sharpened.
+
+→ the1969.io/litepaper
+
+
+─────────────────────────────────────────────
+
+▌ POST B — alternate (terse, two beats)
+
+the litepaper just got the tokenomics it deserves.
+
+§10 · 1B BUSTS hard cap. mint disabled at deploy.
+       allocation, unlocks, sinks. all on the page.
+
+§12 · The Game is on the roadmap, by name.
+
+→ the1969.io/litepaper
+
+
+─────────────────────────────────────────────
+
+▌ POST C — direct, single beat
+
+litepaper v1.0 is live.
+
+post-mint edition. tokenomics added. roadmap sharpened. dark mode included.
+
+read it. push back.
+
+the1969.io/litepaper
+
+
+─────────────────────────────────────────────
+
+▌ THREAD VERSION (5 tweets, optional)
+
+1/  the litepaper just shipped v1.0.
+
+    post-mint edition. twelve sections. ~16 minutes.
+    the1969.io/litepaper
+
+2/  what's new in §10 — the $BUSTS Layer.
+
+    one billion supply. hard capped. mint disabled.
+    full allocation table. per-bucket unlock cadence.
+    multisig + timelock on the reserve.
+    no prices. structure only.
+
+3/  the allocation:
+       Public Sale         24%
+       Long Term Reserve   24%
+       Vault Emissions     20%
+       Liquidity           15%
+       Game + Future       15%
+       Treasury             7%
+       Team                 5%
+
+4/  what's new in §12 — Roadmap.
+
+    Done. Active. Next.
+    The Game, named. $BUSTS on chain, named.
+    Vault, deeper. Things we are not ready to name.
+
+    no dates. we ship, then we tell you.
+
+5/  the document is the contract.
+
+    everything we said we would do is in there.
+    everything we did is in there.
+    everything we plan to do is in there.
+
+    the1969.io/litepaper
+
+
+─────────────────────────────────────────────
+
+▌ HASHTAGS (use sparingly — pick at most 2)
+   #the1969  #NFT  #Ethereum
+─────────────────────────────────────────────
+
+▌ NOTES FOR POSTING
+   • Attach: public/litepaper-v1-banner.svg (or PNG export 1200x675)
+   • POST A is the safest single-tweet announcement
+   • POST B leads with the tokenomics, best for a holder-leaning audience
+   • Thread is the right form for the BUSTS-curious — tells the
+     allocation story without being sales-y
+   • Pin the chosen post for 48h — this is the post-mint pivot moment
+─────────────────────────────────────────────
