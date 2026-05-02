@@ -472,8 +472,9 @@ function NetworkView() {
           setExposeTarget(null);
           lastRound = d.lobby.currentRound;
         }
-        // Trigger resolve when needed
-        if (d.lobby.status === 'spinning' || d.lobby.status === 'active') {
+        // Trigger resolve when needed. Now also fires on 'open' so the
+        // 30s wait window can elapse and bot-fill triggers automatically.
+        if (['open', 'spinning', 'active'].includes(d.lobby.status)) {
           fetch('/api/network-resolve', {
             method: 'POST',
             credentials: 'same-origin',
@@ -514,6 +515,29 @@ function NetworkView() {
       if (typeof refreshMe === 'function') refreshMe();
       // Auto-transition from identity reveal to in-lobby after 4s
       setTimeout(() => setPhase('in-lobby'), 4000);
+    } catch (e) {
+      toast.error('Network error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function forceStart() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await fetch('/api/network-resolve', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ lobbyId: myLobbyId, forceStart: true }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        toast.error(`Force start failed: ${d?.error || 'unknown'}`);
+      } else {
+        toast.success('Filling lobby with bots...');
+      }
     } catch (e) {
       toast.error('Network error');
     } finally {
@@ -572,6 +596,7 @@ function NetworkView() {
         exposeTarget={exposeTarget}
         setExposeTarget={setExposeTarget}
         onCommit={commitStance}
+        onForceStart={forceStart}
         busy={busy}
       />
     );
@@ -682,23 +707,54 @@ function NetworkIdentity({ agent }) {
   );
 }
 
-function NetworkLobby({ state, myAgent, stanceLocked, exposeTarget, setExposeTarget, onCommit, busy }) {
+function NetworkLobby({ state, myAgent, stanceLocked, exposeTarget, setExposeTarget, onCommit, onForceStart, busy }) {
   const { lobby, seats, messages } = state;
   const me = seats.find((s) => s.seatNo === myAgent?.seatNo);
   const active = seats.filter((s) => s.status === 'active');
   const isFinal = lobby.currentRound === lobby.maxRounds || (lobby.status === 'active' && active.length === 2);
   const filled = seats.length;
 
-  // Filling state
+  // Tick a 1-second countdown for the lobby wait window.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    if (lobby.status !== 'open') return;
+    const id = setInterval(() => forceTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [lobby.status]);
+
+  // Filling state — show 30-second countdown + force-start button.
   if (lobby.status === 'open') {
+    const openedMs = lobby.openedAt ? new Date(lobby.openedAt).getTime() : Date.now();
+    const elapsed  = Math.floor((Date.now() - openedMs) / 1000);
+    const secsLeft = Math.max(0, 30 - elapsed);
+    const willAutoFill = secsLeft === 0;
     return (
       <div className="net-page">
         <div className="net-meta-strip">
           LOBBY #{String(lobby.id).padStart(4, '0')} · ROUND 0/{lobby.maxRounds} · POT {lobby.pot}/1000 ⌬
         </div>
         <NetworkRoster seats={seats} myAgent={myAgent} />
-        <div className="net-status-line">
-          {filled}/10 deployed · waiting for the rest of the network
+
+        <div className="net-countdown">
+          <div className="net-countdown-label">
+            {willAutoFill ? 'BOT-FILLING NOW...' : 'MATCH STARTS IN'}
+          </div>
+          <div className={`net-countdown-num ${willAutoFill ? 'filling' : ''}`}>
+            {willAutoFill ? '...' : String(secsLeft).padStart(2, '0')}
+          </div>
+          <div className="net-countdown-sub">
+            {filled}/10 deployed · {willAutoFill ? 'spinning up combat' : 'waiting for more humans, then auto-fill with bots'}
+          </div>
+          {!willAutoFill && (
+            <button
+              className="net-force-btn"
+              onClick={onForceStart}
+              disabled={busy}
+              type="button"
+            >
+              {busy ? 'STARTING...' : 'START NOW · FILL WITH BOTS →'}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -1613,6 +1669,45 @@ function FacilityStyles() {
         font-family: ui-monospace, monospace; font-size: 11px;
         letter-spacing: 0.18em; color: rgba(249,246,240,0.6);
       }
+      /* ── Lobby countdown / force-start ── */
+      .net-countdown {
+        background: #0E0E0E; padding: 36px 24px; margin: 0 -24px 24px;
+        text-align: center; border-top: 1px solid rgba(215,255,58,0.2);
+        border-bottom: 1px solid rgba(215,255,58,0.2);
+      }
+      .net-countdown-label {
+        font-family: ui-monospace, monospace; font-size: 11px;
+        letter-spacing: 0.32em; color: rgba(215,255,58,0.85);
+        font-weight: 700; margin-bottom: 14px;
+      }
+      .net-countdown-num {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: clamp(72px, 12vw, 140px); line-height: 1;
+        letter-spacing: -0.04em; color: #F9F6F0;
+        margin-bottom: 16px;
+        font-feature-settings: 'tnum';
+      }
+      .net-countdown-num.filling {
+        font-size: 48px; color: #D7FF3A;
+        animation: pulseDim 0.9s ease-in-out infinite;
+      }
+      .net-countdown-sub {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: 16px; color: rgba(249,246,240,0.6);
+        max-width: 480px; margin: 0 auto 28px;
+      }
+      .net-force-btn {
+        background: #D7FF3A; color: #0E0E0E; border: 2px solid #D7FF3A;
+        padding: 16px 36px; cursor: pointer;
+        font-family: ui-monospace, monospace; font-size: 12px;
+        letter-spacing: 0.28em; font-weight: 700;
+        transition: background 120ms, color 120ms, transform 120ms;
+      }
+      .net-force-btn:hover:not(:disabled) {
+        background: #0E0E0E; color: #D7FF3A; transform: translateY(-1px);
+      }
+      .net-force-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
       .net-terminated {
         margin-top: 24px; padding: 30px;
         background: rgba(196,53,43,0.1); border: 1px solid #c4352b;

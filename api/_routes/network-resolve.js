@@ -38,6 +38,7 @@ export default async function handler(req, res) {
 
   const body = (await readBody(req)) || {};
   const lobbyId = Number(body.lobbyId);
+  const forceStart = !!body.forceStart;
   if (!Number.isInteger(lobbyId) || lobbyId <= 0) return bad(res, 400, 'invalid_lobby_id');
 
   const lobby = one(await sql`
@@ -56,7 +57,7 @@ export default async function handler(req, res) {
     const elapsed  = (Date.now() - openedMs) / 1000;
     const filled   = (await sql`SELECT COUNT(*)::int AS n FROM network_seats WHERE lobby_id = ${lobbyId}`)[0]?.n || 0;
 
-    if (filled >= 1 && elapsed >= LOBBY_WAIT_SECONDS && filled < SEATS_PER_LOBBY) {
+    if (filled >= 1 && (forceStart || elapsed >= LOBBY_WAIT_SECONDS) && filled < SEATS_PER_LOBBY) {
       // Fill remaining seats with bots.
       let botIdx = 0;
       for (let seatNo = filled + 1; seatNo <= SEATS_PER_LOBBY && botIdx < NETWORK_BOT_IDS.length; seatNo++, botIdx++) {
