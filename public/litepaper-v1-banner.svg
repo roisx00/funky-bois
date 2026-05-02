@@ -22,105 +22,32 @@
   </g>
 
   <!-- TOP-RIGHT META -->
-  <text x="912" y="44" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">v1.0 · POST-MINT EDITION · 12 SECTIONS</text>
+  <text x="912" y="44" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">UPDATED · v1.0</text>
 
-  <!-- LEFT BLOCK CORNER MARKS -->
+  <!-- CORNER BRACKETS — dossier feel -->
   <g stroke="#0E0E0E" stroke-width="1" fill="none">
     <path d="M 48 110 L 48 96 L 62 96"/>
-    <path d="M 462 110 L 462 96 L 448 96"/>
+    <path d="M 912 110 L 912 96 L 898 96"/>
+    <path d="M 48 444 L 48 458 L 62 458"/>
+    <path d="M 912 444 L 912 458 L 898 458"/>
   </g>
 
-  <!-- HEADLINE -->
-  <text x="48" y="220"
+  <!-- HEADLINE — centered vertically, generous left margin -->
+  <text x="48" y="290"
         font-family="'Instrument Serif', Georgia, serif"
         font-style="italic" font-weight="500"
-        font-size="78" fill="#0E0E0E"
-        letter-spacing="-1.5">the litepaper.</text>
+        font-size="120" fill="#0E0E0E"
+        letter-spacing="-2.4">the litepaper.</text>
 
-  <!-- VERSION CALLOUT -->
-  <text x="48" y="262"
+  <!-- VERSION / EDITION SUBHEAD -->
+  <text x="48" y="346"
         font-family="'Instrument Serif', Georgia, serif"
         font-style="italic" font-weight="500"
-        font-size="34" fill="#5C5C5C"
-        letter-spacing="-0.5">v1.0 · post-mint edition.</text>
+        font-size="42" fill="#5C5C5C"
+        letter-spacing="-0.6">v1.0 · post-mint edition.</text>
 
   <!-- ACCENT RULE -->
-  <line x1="48" y1="288" x2="180" y2="288" stroke="#D7FF3A" stroke-width="6"/>
-
-  <!-- WHAT'S NEW BANDS -->
-  <g transform="translate(48, 318)">
-    <text x="0" y="0" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" letter-spacing="3" fill="#5C5C5C">WHAT'S NEW</text>
-
-    <g transform="translate(0, 18)">
-      <rect x="0" y="0" width="14" height="14" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
-      <text x="24" y="11" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="20" fill="#0E0E0E">$BUSTS goes on chain. 1B cap. Mint disabled.</text>
-    </g>
-    <g transform="translate(0, 46)">
-      <rect x="0" y="0" width="14" height="14" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
-      <text x="24" y="11" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="20" fill="#0E0E0E">Full allocation table. Unlock schedules. Sinks.</text>
-    </g>
-    <g transform="translate(0, 74)">
-      <rect x="0" y="0" width="14" height="14" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
-      <text x="24" y="11" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="20" fill="#0E0E0E">The Game, named. Roadmap, sharpened.</text>
-    </g>
-    <g transform="translate(0, 102)">
-      <rect x="0" y="0" width="14" height="14" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
-      <text x="24" y="11" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="20" fill="#0E0E0E">Reads in the dark. Toggle top right.</text>
-    </g>
-  </g>
-
-  <!-- RIGHT-SIDE TABLE OF CONTENTS CARD -->
-  <g transform="translate(540, 96)">
-    <!-- card frame -->
-    <rect x="0" y="0" width="372" height="360" fill="#FFFFFF" stroke="#0E0E0E" stroke-width="1"/>
-    <!-- corner brackets -->
-    <g stroke="#D7FF3A" stroke-width="2" fill="none">
-      <path d="M 8 8 L 8 22 M 8 8 L 22 8"/>
-      <path d="M 364 352 L 364 338 M 364 352 L 350 352"/>
-    </g>
-    <!-- header -->
-    <text x="20" y="34" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" letter-spacing="3" fill="#5C5C5C">FILE / 1969-LP-v1.0 · 2026 · POST-MINT</text>
-    <line x1="20" y1="48" x2="352" y2="48" stroke="#0E0E0E" stroke-width="1"/>
-    <text x="20" y="74" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-weight="500" font-size="22" fill="#0E0E0E" letter-spacing="-0.5">Table of Contents</text>
-
-    <!-- TOC rows — 12 sections, two columns -->
-    <g font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" fill="#0E0E0E" letter-spacing="1.5">
-      <!-- col 1 (1-6) -->
-      <text x="20"  y="108"><tspan fill="#5C5C5C">§01</tspan>  System Overview</text>
-      <text x="20"  y="130"><tspan fill="#5C5C5C">§02</tspan>  The Contracts</text>
-      <text x="20"  y="152"><tspan fill="#5C5C5C">§03</tspan>  The Vault</text>
-      <text x="20"  y="174"><tspan fill="#5C5C5C">§04</tspan>  Yield Mechanics</text>
-      <text x="20"  y="196"><tspan fill="#5C5C5C">§05</tspan>  Rarity</text>
-      <text x="20"  y="218"><tspan fill="#5C5C5C">§06</tspan>  Holder Verification</text>
-      <!-- col 2 (7-12) -->
-      <text x="196" y="108"><tspan fill="#5C5C5C">§07</tspan>  Discord Tiers</text>
-      <text x="196" y="130"><tspan fill="#5C5C5C">§08</tspan>  Read Paths</text>
-      <text x="196" y="152"><tspan fill="#5C5C5C">§09</tspan>  Sales Indexer</text>
-      <!-- highlight §10 (tokenomics) -->
-      <text x="196" y="174"><tspan fill="#5C5C5C">§10</tspan>  <tspan fill="#0E0E0E" font-weight="700">$BUSTS Layer</tspan> <tspan fill="#0E0E0E" font-size="9" letter-spacing="2">★ NEW</tspan></text>
-      <text x="196" y="196"><tspan fill="#5C5C5C">§11</tspan>  Security</text>
-      <!-- highlight §12 (roadmap) -->
-      <text x="196" y="218"><tspan fill="#5C5C5C">§12</tspan>  <tspan fill="#0E0E0E" font-weight="700">Roadmap</tspan> <tspan fill="#0E0E0E" font-size="9" letter-spacing="2">★ NEW</tspan></text>
-    </g>
-
-    <line x1="20" y1="248" x2="352" y2="248" stroke="#E0DCD0" stroke-width="1" stroke-dasharray="2 3"/>
-
-    <!-- inline meta strip -->
-    <g transform="translate(20, 264)">
-      <text x="0" y="12" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" letter-spacing="2.5" fill="#5C5C5C">CAP · 1,000,000,000 BUSTS</text>
-      <text x="0" y="30" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" letter-spacing="2.5" fill="#5C5C5C">MINT · PERMANENTLY DISABLED</text>
-      <text x="0" y="48" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" letter-spacing="2.5" fill="#5C5C5C">RESERVE · MULTISIG + TIMELOCK</text>
-    </g>
-
-    <line x1="20" y1="320" x2="352" y2="320" stroke="#E0DCD0" stroke-width="1" stroke-dasharray="2 3"/>
-
-    <!-- read-now badge -->
-    <g transform="translate(20, 332)">
-      <rect x="0" y="0" width="120" height="26" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1"/>
-      <text x="60" y="18" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="700" letter-spacing="2.5" fill="#0E0E0E">READ NOW →</text>
-    </g>
-    <text x="148" y="350" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" letter-spacing="2" fill="#5C5C5C">THE1969.IO/LITEPAPER</text>
-  </g>
+  <line x1="48" y1="380" x2="240" y2="380" stroke="#D7FF3A" stroke-width="6"/>
 
   <!-- BOTTOM RULE -->
   <line x1="48" y1="476" x2="912" y2="476" stroke="#0E0E0E" stroke-width="1"/>
@@ -128,5 +55,5 @@
   <!-- FOOTER -->
   <text x="48" y="510" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">@THE1969ETH</text>
   <text x="480" y="510" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">THE1969.IO/LITEPAPER</text>
-  <text x="912" y="510" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">v1.0 · 2026</text>
+  <text x="912" y="510" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">2026</text>
 </svg>
