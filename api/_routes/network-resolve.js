@@ -23,9 +23,9 @@ import { requireActiveUser as requireUser } from '../_lib/auth.js';
 import { readBody, ok, bad } from '../_lib/json.js';
 import {
   applyStances, pickEliminations, eliminationsThisRound,
-  generateRoundDialogueStub, ROUND_COMMIT_SECONDS, ROUND_CINEMATIC_SECONDS,
-  FINAL_ROUND_COMMIT_SECONDS, SPIN_UP_SECONDS, MATCH_MAX_ROUNDS,
+  ROUND_COMMIT_SECONDS, FINAL_ROUND_COMMIT_SECONDS, SPIN_UP_SECONDS,
 } from '../_lib/network.js';
+import { generateRoundDialogueLLM, summarizeRoundEvents } from '../_lib/network-llm.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
@@ -127,7 +127,26 @@ async function getRoundStartedAt(lobbyId, roundNo) {
 
 async function generateAndPersistDialogue(lobbyId, roundNo, seed) {
   const seats = await loadSeats(lobbyId);
-  const messages = generateRoundDialogueStub(seats, roundNo, seed);
+
+  // Pull last round's events so the LLM has context. Empty array on
+  // round 1.
+  let lastRoundEvents = [];
+  if (roundNo > 1) {
+    const prevRound = roundNo - 1;
+    const prevMessages = await sql`
+      SELECT round_no, from_seat, to_seat, text, msg_type
+        FROM network_messages
+       WHERE lobby_id = ${lobbyId} AND round_no = ${prevRound}
+       ORDER BY id ASC
+    `;
+    const prevElims = await sql`
+      SELECT seat_no FROM network_eliminations
+       WHERE lobby_id = ${lobbyId} AND round_no = ${prevRound}
+    `;
+    lastRoundEvents = summarizeRoundEvents(prevMessages, prevElims, seats);
+  }
+
+  const messages = await generateRoundDialogueLLM(seats, roundNo, seed, lastRoundEvents);
   for (const m of messages) {
     await sql`
       INSERT INTO network_messages (lobby_id, round_no, from_seat, to_seat, text, msg_type)
