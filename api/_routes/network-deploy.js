@@ -11,6 +11,7 @@ import { ok, bad } from '../_lib/json.js';
 import { rateLimit } from '../_lib/ratelimit.js';
 import {
   buildMatchSeed, assignSeat, SEATS_PER_LOBBY, MATCH_MAX_ROUNDS,
+  NETWORK_BOT_IDS,
 } from '../_lib/network.js';
 import { computeFighterProfile } from '../_lib/arena-profile.js';
 
@@ -106,9 +107,45 @@ export default async function handler(req, res) {
     VALUES (${user.id}, ${-ENTRY_FEE}, ${`THE NETWORK · deploy · lobby ${lobbyId}`})
   `;
 
-  // If lobby is now full, flip status to 'spinning'. The client will
-  // poll the lobby endpoint and see the transition.
-  if (seatNo === SEATS_PER_LOBBY) {
+  // BOT-FILL: after a real player joins, immediately fill remaining
+  // seats with bots so the match can start without waiting for 9
+  // others. This makes the game playable end-to-end with one real
+  // human. Each bot gets a deterministic codename + profile from the
+  // same seed so the assignment is verifiable.
+  if (seatNo < SEATS_PER_LOBBY) {
+    const remainingSlots = SEATS_PER_LOBBY - seatNo;
+    for (let i = 0; i < remainingSlots; i++) {
+      const botSeatNo = seatNo + 1 + i;
+      const botUserId = NETWORK_BOT_IDS[i];
+      if (!botUserId) break;
+      const { codename: botCodename, profile: botProfile } = assignSeat(seed, botSeatNo - 1);
+      // Bots get a randomized power in the 200-900 range so matches
+      // have varied dynamics.
+      const botPower = 200 + Math.floor(Math.random() * 700);
+      try {
+        await sql`
+          INSERT INTO network_seats (lobby_id, seat_no, user_id, codename, profile, power)
+          VALUES (${lobbyId}, ${botSeatNo}, ${botUserId}::uuid, ${botCodename}, ${botProfile}, ${botPower})
+        `;
+        await sql`
+          UPDATE network_lobbies SET pot_busts = pot_busts + ${ENTRY_FEE}
+           WHERE id = ${lobbyId}
+        `;
+      } catch (e) {
+        // Bot already in another concurrent lobby — skip this slot
+        // and leave it open. Lobby will spin up with fewer than 10
+        // if needed.
+      }
+    }
+  }
+
+  // Re-check fill state after bot-fill.
+  const filledRow = one(await sql`
+    SELECT COUNT(*)::int AS n FROM network_seats WHERE lobby_id = ${lobbyId}
+  `);
+  const totalFilled = Number(filledRow?.n) || seatNo;
+
+  if (totalFilled >= SEATS_PER_LOBBY) {
     await sql`
       UPDATE network_lobbies
          SET status = 'spinning', started_at = now()
@@ -122,7 +159,8 @@ export default async function handler(req, res) {
     codename,
     profile: behavior,
     power,
-    full: seatNo === SEATS_PER_LOBBY,
+    full: totalFilled >= SEATS_PER_LOBBY,
+    botsFilled: totalFilled - seatNo,
     newBalance: Number(debit.busts_balance),
   });
 }

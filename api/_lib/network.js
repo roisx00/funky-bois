@@ -16,6 +16,37 @@ export const SPIN_UP_SECONDS = 3;
 export const MATCH_MAX_ROUNDS = 6;
 export const SEATS_PER_LOBBY  = 10;
 
+// ─── Bot user IDs (pre-created in users table) ─────────────────────
+// Used to auto-fill empty seats so a single real player can deploy
+// and start a match without waiting for 9 others. Bots get random
+// stances each round, picked deterministically from the seed so
+// they're consistent across re-runs.
+export const NETWORK_BOT_IDS = [
+  '309747c1-6dac-4637-8012-4092e52c2661',
+  '6f38607b-b908-4028-8a8e-fedf3a561521',
+  'aec1bd44-9f57-4025-b00e-ff0860c9e104',
+  '47961ddf-f9ee-4734-a1bb-b2c62425baed',
+  'eac5fe01-a492-42c0-9cea-197cd42a0b09',
+  '0e2844c6-0be1-42a3-92e9-44de9c36d29b',
+  '614dbc62-d1e2-4788-9ba6-5fac65988c59',
+  'e623d49d-bee7-4338-a730-936f0d99a67f',
+  'ff7dfae2-6251-4ef8-9ddf-0a54e49f209e',
+];
+export const BOT_ID_SET = new Set(NETWORK_BOT_IDS);
+
+// Pick a bot's stance for the current round. Random distribution
+// weighted toward the "interesting" choices to keep matches lively.
+export function pickBotStance(seed, lobbyId, seatNo, roundNo, isFinal) {
+  const r = rng(seed, 'botstance', lobbyId, seatNo, roundNo);
+  if (isFinal) {
+    return r < 0.55 ? 'strike' : 'evade';
+  }
+  // Weighted: 40% aggressive, 35% deflect, 25% expose
+  if (r < 0.40) return 'aggressive';
+  if (r < 0.75) return 'deflect';
+  return 'expose';
+}
+
 // ─── 10 agent codenames ────────────────────────────────────────────
 export const AGENT_CODENAMES = [
   'OPERATOR_V',

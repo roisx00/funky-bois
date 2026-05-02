@@ -24,6 +24,7 @@ import { readBody, ok, bad } from '../_lib/json.js';
 import {
   applyStances, pickEliminations, eliminationsThisRound,
   ROUND_COMMIT_SECONDS, FINAL_ROUND_COMMIT_SECONDS, SPIN_UP_SECONDS,
+  BOT_ID_SET, pickBotStance,
 } from '../_lib/network.js';
 import { generateRoundDialogueLLM, summarizeRoundEvents } from '../_lib/network-llm.js';
 
@@ -159,6 +160,39 @@ async function resolveRound(res, lobby, seats) {
   const roundNo = lobby.current_round;
   const lobbyId = Number(lobby.id);
 
+  // Auto-commit bot stances. Any active seat that's a bot AND has no
+  // stance committed yet gets one picked deterministically from the
+  // match seed. EXPOSE-targeted bots pick another active non-self
+  // agent at random.
+  const isFinal = seats.filter((s) => s.status === 'active').length === 2
+                  || roundNo === lobby.max_rounds;
+  for (const s of seats) {
+    if (s.status !== 'active') continue;
+    if (!BOT_ID_SET.has(s.user_id)) continue;
+    if (s.current_stance) continue; // already set somehow — leave alone
+
+    const stance = pickBotStance(lobby.match_seed, lobbyId, s.seat_no, roundNo, isFinal);
+    let exposeTarget = null;
+    if (stance === 'expose') {
+      const others = seats.filter((x) => x.status === 'active' && x.seat_no !== s.seat_no);
+      if (others.length > 0) {
+        const idx = Math.floor(Math.random() * others.length);
+        exposeTarget = others[idx].seat_no;
+      } else {
+        // No targets — fall back to deflect.
+        s.current_stance = 'deflect';
+      }
+    }
+    s.current_stance = stance;
+    s.expose_target = exposeTarget;
+    await sql`
+      UPDATE network_seats
+         SET current_stance = ${stance},
+             expose_target  = ${exposeTarget}
+       WHERE lobby_id = ${lobbyId} AND seat_no = ${s.seat_no}
+    `;
+  }
+
   // Apply stances → updated heat values.
   const updated = applyStances(seats);
   for (const s of updated) {
@@ -170,9 +204,8 @@ async function resolveRound(res, lobby, seats) {
   }
 
   const activeBefore = updated.filter((s) => s.status === 'active');
-  const isFinal = roundNo === lobby.max_rounds || activeBefore.length === 2;
 
-  // Pick eliminations.
+  // Pick eliminations. (`isFinal` already computed above for bot-stance step.)
   let killCount;
   if (isFinal) {
     // Final round: 1 elimination, leaving 1 winner.
