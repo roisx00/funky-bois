@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" font-family="Inter, system-ui, sans-serif">
+  <!-- BACKGROUNDS — split canvas: left cream (light), right ink (dark) -->
+  <rect x="0"   y="0" width="480" height="540" fill="#F9F6F0"/>
+  <rect x="480" y="0" width="480" height="540" fill="#0E0E0E"/>
+
+  <!-- subtle grid, both halves -->
+  <g opacity="0.06">
+    <line x1="0" y1="135" x2="480" y2="135" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="0" y1="270" x2="480" y2="270" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="0" y1="405" x2="480" y2="405" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="120" y1="0" x2="120" y2="540" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="240" y1="0" x2="240" y2="540" stroke="#0E0E0E" stroke-width="1"/>
+    <line x1="360" y1="0" x2="360" y2="540" stroke="#0E0E0E" stroke-width="1"/>
+  </g>
+  <g opacity="0.08">
+    <line x1="480" y1="135" x2="960" y2="135" stroke="#F9F6F0" stroke-width="1"/>
+    <line x1="480" y1="270" x2="960" y2="270" stroke="#F9F6F0" stroke-width="1"/>
+    <line x1="480" y1="405" x2="960" y2="405" stroke="#F9F6F0" stroke-width="1"/>
+    <line x1="600" y1="0" x2="600" y2="540" stroke="#F9F6F0" stroke-width="1"/>
+    <line x1="720" y1="0" x2="720" y2="540" stroke="#F9F6F0" stroke-width="1"/>
+    <line x1="840" y1="0" x2="840" y2="540" stroke="#F9F6F0" stroke-width="1"/>
+  </g>
+
+  <!-- TOP RULES -->
+  <line x1="48" y1="64"  x2="432" y2="64"  stroke="#0E0E0E" stroke-width="1"/>
+  <line x1="528" y1="64" x2="912" y2="64"  stroke="#F9F6F0" stroke-width="1"/>
+
+  <!-- LEFT KICKER -->
+  <g transform="translate(48,44)">
+    <circle cx="6" cy="-4" r="6" fill="#F9F6F0" stroke="#0E0E0E" stroke-width="1"/>
+    <text x="22" y="0" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">THE 1969 · PAPER MODE</text>
+  </g>
+
+  <!-- RIGHT KICKER -->
+  <g transform="translate(528,44)">
+    <circle cx="6" cy="-4" r="6" fill="#D7FF3A" stroke="#D7FF3A" stroke-width="1"/>
+    <text x="22" y="0" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#D7FF3A">DARK MODE · NEW</text>
+  </g>
+
+  <!-- LEFT corner brackets — dossier feel -->
+  <g stroke="#0E0E0E" stroke-width="1" fill="none">
+    <path d="M 48 110 L 48 96 L 62 96"/>
+    <path d="M 432 110 L 432 96 L 418 96"/>
+  </g>
+  <!-- RIGHT corner brackets -->
+  <g stroke="#F9F6F0" stroke-width="1" fill="none">
+    <path d="M 528 110 L 528 96 L 542 96"/>
+    <path d="M 912 110 L 912 96 L 898 96"/>
+  </g>
+
+  <!-- LEFT HEADLINE -->
+  <text x="48" y="220"
+        font-family="'Instrument Serif', Georgia, serif"
+        font-style="italic" font-weight="500"
+        font-size="86" letter-spacing="-1.6" fill="#0E0E0E">Lights on.</text>
+  <line x1="48" y1="252" x2="180" y2="252" stroke="#D7FF3A" stroke-width="6"/>
+
+  <!-- RIGHT HEADLINE -->
+  <text x="528" y="220"
+        font-family="'Instrument Serif', Georgia, serif"
+        font-style="italic" font-weight="500"
+        font-size="86" letter-spacing="-1.6" fill="#F9F6F0">Lights off.</text>
+  <line x1="528" y1="252" x2="660" y2="252" stroke="#D7FF3A" stroke-width="6"/>
+
+  <!-- LEFT body copy -->
+  <text x="48" y="298" font-family="Georgia, serif" font-style="italic" font-size="22" fill="#0E0E0E">Cream paper. Ink type.</text>
+  <text x="48" y="326" font-family="Georgia, serif" font-style="italic" font-size="22" fill="#0E0E0E">The original.</text>
+
+  <!-- RIGHT body copy -->
+  <text x="528" y="298" font-family="Georgia, serif" font-style="italic" font-size="22" fill="#F9F6F0">Ink page. Cream type.</text>
+  <text x="528" y="326" font-family="Georgia, serif" font-style="italic" font-size="22" fill="#F9F6F0">For when the lights are out.</text>
+
+  <!-- CENTER TOGGLE PILL — straddles the seam at x=480 -->
+  <g transform="translate(480,420)">
+    <!-- pill body (cream half) -->
+    <rect x="-66" y="-26" width="132" height="52" rx="26" fill="#F9F6F0"/>
+    <!-- right half overlay (ink) -->
+    <rect x="0" y="-26" width="66" height="52" fill="#0E0E0E"/>
+    <!-- pill border (lime, full) -->
+    <rect x="-66" y="-26" width="132" height="52" rx="26" fill="none" stroke="#D7FF3A" stroke-width="3"/>
+    <!-- inner ink border on cream half (so it reads as a real toggle in light mode too) -->
+    <path d="M -66,0 A 66,26 0 0,1 0,-26 L 0,26 A 66,26 0 0,1 -66,0 Z" fill="none" stroke="#0E0E0E" stroke-width="1.5" opacity="0.5"/>
+
+    <!-- SUN icon — left half -->
+    <circle cx="-36" cy="0" r="7" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="1.5"/>
+    <g stroke="#0E0E0E" stroke-width="1.8" stroke-linecap="round">
+      <line x1="-50" y1="0"  x2="-46" y2="0"/>
+      <line x1="-26" y1="0"  x2="-22" y2="0"/>
+      <line x1="-36" y1="-14" x2="-36" y2="-10"/>
+      <line x1="-36" y1="10"  x2="-36" y2="14"/>
+      <line x1="-46" y1="-10" x2="-43" y2="-7"/>
+      <line x1="-29" y1="7"   x2="-26" y2="10"/>
+      <line x1="-46" y1="10"  x2="-43" y2="7"/>
+      <line x1="-29" y1="-7"  x2="-26" y2="-10"/>
+    </g>
+
+    <!-- KNOB on the right (active = dark) -->
+    <circle cx="36" cy="0" r="20" fill="#D7FF3A" stroke="#0E0E0E" stroke-width="2"/>
+    <!-- MOON icon (crescent) -->
+    <path d="M 30 -10 A 10 10 0 1 0 42 10 A 7 7 0 1 1 30 -10 Z" fill="#0E0E0E"/>
+  </g>
+
+  <!-- TOGGLE LABEL -->
+  <text x="480" y="468" text-anchor="middle"
+        font-family="ui-monospace, 'JetBrains Mono', monospace"
+        font-size="10" letter-spacing="3" fill="#5C5C5C">TOGGLE · TOP RIGHT · EVERY PAGE</text>
+
+  <!-- BOTTOM RULES -->
+  <line x1="48" y1="486"  x2="432" y2="486" stroke="#0E0E0E" stroke-width="1"/>
+  <line x1="528" y1="486" x2="912" y2="486" stroke="#F9F6F0" stroke-width="1"/>
+
+  <!-- FOOTER LEFT -->
+  <text x="48"  y="514" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#0E0E0E">@THE1969ETH</text>
+  <text x="432" y="514" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#5C5C5C">THE1969.IO</text>
+
+  <!-- FOOTER RIGHT -->
+  <text x="528" y="514" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#F9F6F0">v2 · DISPLAY</text>
+  <text x="912" y="514" text-anchor="end" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="11" letter-spacing="3" fill="#D7FF3A">NOW LIVE</text>
+</svg>
