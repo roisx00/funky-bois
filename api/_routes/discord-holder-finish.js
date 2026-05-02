@@ -148,7 +148,26 @@ export default async function handler(req, res) {
     countVaultHoldings({ wallet, userId: id.user?.id || null }),
   ]);
   const holdings = walletCount + vaultCount;
-  const tier = pickTier(holdings);
+  let tier = pickTier(holdings);
+
+  // Stale-read guard. If this Discord user previously held a tier role
+  // and we now read zero, treat as suspicious (deposit-indexer race,
+  // Alchemy lag, cross-wallet attribution gap). Keep the existing tier
+  // for this call. The 6h cron will re-check, and the *next* run will
+  // demote if the zero is real. Saves users from getting roles stripped
+  // mid-deposit.
+  let stale = false;
+  if (holdings === 0) {
+    const prev = one(await sql`
+      SELECT current_tier_role, current_holdings
+        FROM discord_verifications WHERE discord_id = ${id.discordId} LIMIT 1
+    `);
+    if (prev?.current_tier_role && (prev.current_holdings || 0) > 0) {
+      stale = true;
+      const prevTier = TIER_LADDER.find((t) => t.roleId === prev.current_tier_role) || null;
+      tier = prevTier;
+    }
+  }
 
   // Sync roles via a single PATCH that replaces the member's full role
   // array. ONE API call instead of 7+ (was triggering Discord rate
@@ -203,24 +222,48 @@ export default async function handler(req, res) {
     }
   }
 
-  // Persist + mark state used.
-  await sql`
-    INSERT INTO discord_verifications
-      (discord_id, discord_username, wallet, current_tier_role, current_holdings, last_synced_at)
-    VALUES
-      (${id.discordId}, ${id.discordUsername}, ${wallet}, ${tier?.roleId || null}, ${holdings}, now())
-    ON CONFLICT (discord_id) DO UPDATE
-       SET wallet = EXCLUDED.wallet,
-           current_tier_role = EXCLUDED.current_tier_role,
-           current_holdings = EXCLUDED.current_holdings,
-           last_synced_at = now()
-  `;
+  // Persist + mark state used. When stale, keep the previously-stored
+  // current_holdings/tier so the row's state isn't overwritten with a
+  // bad zero read — the 6h cron will reconcile.
+  if (stale) {
+    await sql`
+      UPDATE discord_verifications
+         SET wallet = ${wallet},
+             last_synced_at = now()
+       WHERE discord_id = ${id.discordId}
+    `;
+  } else {
+    await sql`
+      INSERT INTO discord_verifications
+        (discord_id, discord_username, wallet, current_tier_role, current_holdings, last_synced_at)
+      VALUES
+        (${id.discordId}, ${id.discordUsername}, ${wallet}, ${tier?.roleId || null}, ${holdings}, now())
+      ON CONFLICT (discord_id) DO UPDATE
+         SET wallet = EXCLUDED.wallet,
+             current_tier_role = EXCLUDED.current_tier_role,
+             current_holdings = EXCLUDED.current_holdings,
+             last_synced_at = now()
+    `;
+  }
+
+  // Bind users.discord_id when we have a JWT user. Closes the
+  // cross-wallet attribution gap so the cron can match vault deposits
+  // by user_id regardless of which wallet they staked from.
+  if (id.user?.id) {
+    await sql`
+      UPDATE users
+         SET discord_id = ${id.discordId},
+             discord_username = COALESCE(${id.discordUsername}, discord_username)
+       WHERE id = ${id.user.id}::uuid
+    `;
+  }
+
   if (id.state) {
     await sql`UPDATE discord_verify_state SET used_at = now() WHERE state = ${id.state}`;
   }
 
   ok(res, {
-    holdings, walletCount, vaultCount,
+    holdings, walletCount, vaultCount, stale,
     tier: tier ? { name: tier.name, roleId: tier.roleId, minHoldings: tier.minHoldings } : null,
     removeFailures: removeFailures.length,
   });

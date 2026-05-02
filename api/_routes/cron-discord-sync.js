@@ -99,6 +99,20 @@ async function syncOne(row) {
     return { unchanged: true };
   }
 
+  // Stale-read guard: if previous holdings were positive but we now read
+  // zero, treat as suspicious (deposit indexer race, cross-wallet
+  // attribution gap, or Etherscan-direct deposit). Skip the demote on
+  // this pass and re-check soon. If it's still zero on the next pass,
+  // the demote goes through.
+  if ((row.current_holdings || 0) > 0 && holdings === 0) {
+    await sql`
+      UPDATE discord_verifications
+         SET last_synced_at = now() - interval '4 hours'
+       WHERE discord_id = ${row.discord_id}
+    `;
+    return { deferred: true };
+  }
+
   // Sync via single PATCH that replaces the member's full role array.
   // ONE call instead of 7+ — keeps Discord rate limits happy when the
   // 6h cron sweeps hundreds of holders.
