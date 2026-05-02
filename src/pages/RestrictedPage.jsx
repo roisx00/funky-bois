@@ -1,7 +1,40 @@
 // 451 — Unavailable For Legal Reasons.
 // Editorial dossier-style restricted-access page. Renders without Nav.
 // Reached via the geo-block middleware redirect.
+//
+// Self-escape: when the user lands here, we ping the /api/me endpoint
+// (which is blocked by the same middleware). If it responds 200, the
+// block is OFF and this user is stuck on a cached redirect — auto-
+// bounce them home. If it responds 451, the block is real and they
+// stay here.
+import { useEffect, useState } from 'react';
+
+function useGeoBlockSelfCheck() {
+  const [blocked, setBlocked] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' })
+      .then((r) => {
+        if (cancelled) return;
+        if (r.status === 451) {
+          setBlocked(true);
+        } else {
+          // 200 / 401 / anything else = block is OFF, this user is
+          // stuck on a cached redirect. Bounce them home.
+          setBlocked(false);
+          // Force-reload to bust the cached 302 in the browser.
+          window.location.replace('/?via=451-escape');
+        }
+      })
+      .catch(() => { /* network failed — stay on page */ });
+    return () => { cancelled = true; };
+  }, []);
+  return blocked;
+}
+
 export default function RestrictedPage() {
+  useGeoBlockSelfCheck();
+
   return (
     <div style={{
       minHeight: '100vh',

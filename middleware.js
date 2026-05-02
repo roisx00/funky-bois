@@ -44,5 +44,15 @@ export default function middleware(request) {
   }
 
   // Page requests redirect to the editorial 451 page.
-  return Response.redirect(new URL('/451', request.url), 302);
+  // Use a 307 (temporary) + Cache-Control: no-store so browsers don't
+  // cache the redirect — important because if we later UNBLOCK this
+  // country, cached 302s would keep sending users to /451 even after
+  // the block is removed. Always re-evaluate at the edge.
+  return new Response(null, {
+    status: 307,
+    headers: {
+      Location: new URL('/451', request.url).toString(),
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    },
+  });
 }
