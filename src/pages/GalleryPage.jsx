@@ -53,11 +53,14 @@ function decodeAbiString(hex) {
   catch { return ''; }
 }
 
-// ipfs:// → https gateway. Leaves http(s) URLs untouched.
+// ipfs:// → https gateway. Cloudflare's gateway is way faster and
+// has fewer rate-limits than ipfs.io (which was timing out on the
+// gallery and leaving every tile on the #N placeholder). Leaves
+// http(s) URLs untouched.
 function resolveIpfs(uri) {
   if (!uri) return null;
-  if (uri.startsWith('ipfs://ipfs/')) return `https://ipfs.io/ipfs/${uri.slice(12)}`;
-  if (uri.startsWith('ipfs://'))      return `https://ipfs.io/ipfs/${uri.slice(7)}`;
+  if (uri.startsWith('ipfs://ipfs/')) return `https://cloudflare-ipfs.com/ipfs/${uri.slice(12)}`;
+  if (uri.startsWith('ipfs://'))      return `https://cloudflare-ipfs.com/ipfs/${uri.slice(7)}`;
   return uri;
 }
 
