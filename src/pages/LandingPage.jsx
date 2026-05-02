@@ -94,14 +94,15 @@ const ARCHETYPES = [
 ];
 
 export default function LandingPage({ onNavigate }) {
-  // Live vault stats — replaces the pre-mint "build progress" meter.
-  const [pool, setPool] = useState(null);
+  // Live vault stats. /api/vault-pool returns { pool: {...}, apy: {...},
+  // program: {...} } — read each field from the right nested key.
+  const [vault, setVault] = useState(null);
   useEffect(() => {
     let cancelled = false;
     const load = () => {
       fetch('/api/vault-pool')
         .then((r) => (r.ok ? r.json() : null))
-        .then((d) => { if (!cancelled && d) setPool(d); })
+        .then((d) => { if (!cancelled && d) setVault(d); })
         .catch(() => {});
     };
     load();
@@ -109,13 +110,9 @@ export default function LandingPage({ onNavigate }) {
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
-  const totalDeposited   = pool?.totalTokens ?? 0;
-  const activeDepositors = pool?.activeDepositors ?? 0;
-  const headlineApy = useMemo(() => {
-    const w = Number(pool?.totalWeight || 0);
-    if (!w) return null;
-    return ((20_000_000 / Math.max(1, w)) / 100_000) * 100;
-  }, [pool]);
+  const totalDeposited   = vault?.pool?.totalTokens ?? 0;
+  const activeDepositors = vault?.pool?.activeDepositors ?? 0;
+  const headlineApy      = vault?.apy?.headline ?? null;
 
   const stripItems = useMemo(() => makeStripPortraits(16), []);
 
