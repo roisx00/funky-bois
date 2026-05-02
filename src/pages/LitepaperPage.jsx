@@ -798,7 +798,7 @@ function ContractTable() {
   return (
     <div style={{ margin: '24px 0', border: '1px solid var(--ink)' }}>
       {rows.map((r, i) => (
-        <div key={i} style={{
+        <div key={i} className="lp-row" style={{
           display: 'grid', gridTemplateColumns: '160px 140px 1fr',
           padding: '14px 18px', alignItems: 'baseline',
           borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none',
@@ -806,8 +806,8 @@ function ContractTable() {
         }}>
           <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 22 }}>{r[0]}</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase' }}>{r[1]}</div>
-          <div>
-            <code style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', wordBreak: 'break-all' }}>{r[2]}</code>
+          <div style={{ minWidth: 0 }}>
+            <code className="lp-addr" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', wordBreak: 'break-all' }}>{r[2]}</code>
             <div style={{ fontFamily: 'Georgia, serif', fontSize: 13, color: 'var(--text-2)', marginTop: 4 }}>{r[3]}</div>
           </div>
         </div>
@@ -824,7 +824,7 @@ function RarityWeightTable() {
     ['Ultra Rare', '25x', '~150%', '#D7FF3A'],
   ];
   return (
-    <div style={{
+    <div className="lp-rarity-grid" style={{
       margin: '20px 0', border: '1px solid var(--ink)',
       display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'var(--ink)',
     }}>
@@ -859,7 +859,7 @@ function RarityDistributionTable() {
   return (
     <div style={{ margin: '20px 0', border: '1px solid var(--ink)' }}>
       {rows.map((r, i) => (
-        <div key={i} style={{
+        <div key={i} className="lp-row" style={{
           display: 'grid', gridTemplateColumns: '180px 100px 1fr 80px',
           padding: '14px 20px', alignItems: 'baseline',
           borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none',
@@ -891,7 +891,7 @@ function TierLadderTable() {
   return (
     <div style={{ margin: '20px 0', border: '1px solid var(--ink)' }}>
       {rows.map((r, i) => (
-        <div key={i} style={{
+        <div key={i} className="lp-row lp-row-tier" style={{
           display: 'grid', gridTemplateColumns: '1fr 120px',
           padding: '14px 20px', alignItems: 'baseline',
           borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none',
@@ -916,7 +916,7 @@ function ReadPathTable() {
   return (
     <div style={{ margin: '20px 0', border: '1px solid var(--ink)' }}>
       {rows.map((r, i) => (
-        <div key={i} style={{
+        <div key={i} className="lp-row" style={{
           display: 'grid', gridTemplateColumns: '180px 130px 1fr',
           padding: '12px 18px', fontSize: 13,
           borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none',
@@ -943,7 +943,7 @@ function SecurityTable() {
   return (
     <div style={{ margin: '20px 0', border: '1px solid var(--ink)' }}>
       {rows.map((r, i) => (
-        <div key={i} style={{
+        <div key={i} className="lp-row" style={{
           display: 'grid', gridTemplateColumns: '280px 1fr', padding: '14px 20px',
           fontSize: 13, alignItems: 'baseline', gap: 18,
           borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none',
@@ -1268,6 +1268,34 @@ function ResponsiveStyles() {
         .lp-grid { grid-template-columns: 1fr !important; }
         .lp-aside { position: static !important; margin-top: 32px; }
       }
+
+      /* Mobile: stack every table row into a single column. The fixed
+         pixel grid templates (160px 140px 1fr, 280px 1fr, etc.) overflow
+         the viewport otherwise. !important needed because each row sets
+         grid-template-columns inline. */
+      @media (max-width: 720px) {
+        .lp-row {
+          grid-template-columns: 1fr !important;
+          gap: 6px !important;
+          padding: 14px 16px !important;
+        }
+        .lp-row-tier {
+          grid-template-columns: 1fr auto !important;
+        }
+        .lp-rarity-grid {
+          grid-template-columns: repeat(2, 1fr) !important;
+        }
+        .lp-addr {
+          font-size: 10px !important;
+          word-break: break-all;
+        }
+      }
+      @media (max-width: 460px) {
+        .lp-rarity-grid {
+          grid-template-columns: 1fr !important;
+        }
+      }
+
       .litepaper-page code {
         font-family: var(--font-mono);
         font-size: 11px;
