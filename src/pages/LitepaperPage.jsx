@@ -1169,7 +1169,7 @@ function VaultStateMachine() {
 
 function DepositSequenceDiagram() {
   return (
-    <svg viewBox="0 0 720 280" style={{ width: '100%', height: 'auto', maxWidth: 720 }} fontFamily="JetBrains Mono, monospace">
+    <svg viewBox="0 0 720 280" style={{ width: '100%', height: 'auto', maxWidth: 720, color: 'var(--ink)' }} fontFamily="JetBrains Mono, monospace" fill="currentColor">
       {[
         ['User wallet',   60],
         ['NFT contract',  220],
@@ -1178,38 +1178,38 @@ function DepositSequenceDiagram() {
         ['Rewards ledger',680],
       ].map(([label, x]) => (
         <g key={label}>
-          <rect x={x-50} y="10" width="100" height="26" fill="#0E0E0E" />
+          <rect x={x-50} y="10" width="100" height="26" fill="currentColor" />
           <text x={x} y="28" textAnchor="middle" fontSize="11" fill="#D7FF3A" fontWeight="700">{label}</text>
-          <line x1={x} y1="36" x2={x} y2="260" stroke="#0E0E0E" strokeDasharray="2,3" opacity="0.4" />
+          <line x1={x} y1="36" x2={x} y2="260" stroke="currentColor" strokeDasharray="2,3" opacity="0.4" />
         </g>
       ))}
 
       <g fontSize="10">
-        <line x1="60" y1="60" x2="220" y2="60" stroke="#0E0E0E" markerEnd="url(#arr2)" />
+        <line x1="60" y1="60" x2="220" y2="60" stroke="currentColor" markerEnd="url(#arr2)" />
         <text x="140" y="55" textAnchor="middle">setApprovalForAll(vault, true)</text>
 
-        <line x1="60" y1="100" x2="380" y2="100" stroke="#0E0E0E" markerEnd="url(#arr2)" />
+        <line x1="60" y1="100" x2="380" y2="100" stroke="currentColor" markerEnd="url(#arr2)" />
         <text x="220" y="95" textAnchor="middle">deposit([tokenId])</text>
 
-        <line x1="380" y1="130" x2="220" y2="130" stroke="#0E0E0E" markerEnd="url(#arr2)" />
+        <line x1="380" y1="130" x2="220" y2="130" stroke="currentColor" markerEnd="url(#arr2)" />
         <text x="300" y="125" textAnchor="middle">safeTransferFrom(user, vault, id)</text>
 
-        <line x1="380" y1="160" x2="380" y2="180" stroke="#0E0E0E" markerEnd="url(#arr2)" />
-        <text x="455" y="173" fontSize="9" fill="#0E0E0E">depositor[id] = user</text>
+        <line x1="380" y1="160" x2="380" y2="180" stroke="currentColor" markerEnd="url(#arr2)" />
+        <text x="455" y="173" fontSize="9">depositor[id] = user</text>
 
         <line x1="380" y1="195" x2="540" y2="195" stroke="#D7FF3A" strokeWidth="2" markerEnd="url(#arr3)" />
         <text x="460" y="190" textAnchor="middle">emit Deposit(user, id, ts)</text>
 
-        <line x1="540" y1="225" x2="680" y2="225" stroke="#0E0E0E" markerEnd="url(#arr2)" />
+        <line x1="540" y1="225" x2="680" y2="225" stroke="currentColor" markerEnd="url(#arr2)" />
         <text x="610" y="220" textAnchor="middle">UPSERT vault stake</text>
 
-        <line x1="680" y1="252" x2="680" y2="252" stroke="#0E0E0E" />
-        <text x="680" y="250" textAnchor="middle" fontSize="9" fill="#0E0E0E">accrual begins</text>
+        <line x1="680" y1="252" x2="680" y2="252" stroke="currentColor" />
+        <text x="680" y="250" textAnchor="middle" fontSize="9">accrual begins</text>
       </g>
 
       <defs>
         <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="strokeWidth" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="#0E0E0E" />
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
         </marker>
         <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="strokeWidth" markerWidth="6" markerHeight="6" orient="auto">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="#D7FF3A" />
@@ -1292,7 +1292,7 @@ function RarityPipelineDiagram() {
 
 function VerifySequenceDiagram() {
   return (
-    <svg viewBox="0 0 720 320" style={{ width: '100%', height: 'auto', maxWidth: 720 }} fontFamily="JetBrains Mono, monospace">
+    <svg viewBox="0 0 720 320" style={{ width: '100%', height: 'auto', maxWidth: 720, color: 'var(--ink)' }} fontFamily="JetBrains Mono, monospace" fill="currentColor">
       {[
         ['User',     60],
         ['Discord',  220],
@@ -1301,33 +1301,33 @@ function VerifySequenceDiagram() {
         ['Bot',      680],
       ].map(([label, x]) => (
         <g key={label}>
-          <rect x={x-50} y="10" width="100" height="26" fill="#0E0E0E" />
+          <rect x={x-50} y="10" width="100" height="26" fill="currentColor" />
           <text x={x} y="28" textAnchor="middle" fontSize="11" fill="#D7FF3A" fontWeight="700">{label}</text>
-          <line x1={x} y1="36" x2={x} y2="300" stroke="#0E0E0E" strokeDasharray="2,3" opacity="0.4" />
+          <line x1={x} y1="36" x2={x} y2="300" stroke="currentColor" strokeDasharray="2,3" opacity="0.4" />
         </g>
       ))}
 
       <g fontSize="10">
-        <line x1="60" y1="64" x2="380" y2="64" stroke="#0E0E0E" markerEnd="url(#arr6)" />
+        <line x1="60" y1="64" x2="380" y2="64" stroke="currentColor" markerEnd="url(#arr6)" />
         <text x="220" y="59" textAnchor="middle">opens /discord/verify</text>
 
-        <line x1="380" y1="94" x2="220" y2="94" stroke="#0E0E0E" markerEnd="url(#arr6)" />
+        <line x1="380" y1="94" x2="220" y2="94" stroke="currentColor" markerEnd="url(#arr6)" />
         <text x="300" y="89" textAnchor="middle">redirect to OAuth consent</text>
 
-        <line x1="220" y1="124" x2="60" y2="124" stroke="#0E0E0E" markerEnd="url(#arr6)" />
+        <line x1="220" y1="124" x2="60" y2="124" stroke="currentColor" markerEnd="url(#arr6)" />
         <text x="140" y="119" textAnchor="middle">user authorizes (identify scope)</text>
 
-        <line x1="220" y1="154" x2="380" y2="154" stroke="#0E0E0E" markerEnd="url(#arr6)" />
+        <line x1="220" y1="154" x2="380" y2="154" stroke="currentColor" markerEnd="url(#arr6)" />
         <text x="300" y="149" textAnchor="middle">{'code -> mint state token (15 min TTL)'}</text>
 
-        <line x1="380" y1="184" x2="540" y2="184" stroke="#0E0E0E" markerEnd="url(#arr6)" />
+        <line x1="380" y1="184" x2="540" y2="184" stroke="currentColor" markerEnd="url(#arr6)" />
         <text x="460" y="179" textAnchor="middle">connect wallet</text>
 
-        <line x1="540" y1="214" x2="380" y2="214" stroke="#0E0E0E" markerEnd="url(#arr6)" />
+        <line x1="540" y1="214" x2="380" y2="214" stroke="currentColor" markerEnd="url(#arr6)" />
         <text x="460" y="209" textAnchor="middle">address exposed</text>
 
-        <line x1="380" y1="244" x2="380" y2="262" stroke="#0E0E0E" markerEnd="url(#arr6)" />
-        <text x="455" y="255" fontSize="9" fill="#0E0E0E">count holdings + pick tier</text>
+        <line x1="380" y1="244" x2="380" y2="262" stroke="currentColor" markerEnd="url(#arr6)" />
+        <text x="455" y="255" fontSize="9">count holdings + pick tier</text>
 
         <line x1="380" y1="278" x2="680" y2="278" stroke="#D7FF3A" strokeWidth="2" markerEnd="url(#arr7)" />
         <text x="530" y="273" textAnchor="middle">PATCH member.roles via bot</text>
@@ -1335,7 +1335,7 @@ function VerifySequenceDiagram() {
 
       <defs>
         <marker id="arr6" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="strokeWidth" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="#0E0E0E" />
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
         </marker>
         <marker id="arr7" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="strokeWidth" markerWidth="6" markerHeight="6" orient="auto">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="#D7FF3A" />
