@@ -96,6 +96,10 @@ import discordAwardBusts      from './_routes/discord-award-busts.js';
 import discordChatTick        from './_routes/discord-chat-tick.js';
 import discordUserStatus      from './_routes/discord-user-status.js';
 import discordLinkedUsers     from './_routes/discord-linked-users.js';
+import arenaLoadout           from './_routes/arena-loadout.js';
+import arenaQueue             from './_routes/arena-queue.js';
+import arenaCancel            from './_routes/arena-cancel.js';
+import arenaHistory           from './_routes/arena-history.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
 // regardless of Vercel's catch-all behaviour for nested segments.
@@ -198,6 +202,10 @@ const ROUTES = {
   'discord-chat-tick':        discordChatTick,
   'discord-user-status':      discordUserStatus,
   'discord-linked-users':     discordLinkedUsers,
+  'arena-loadout':            arenaLoadout,
+  'arena-queue':              arenaQueue,
+  'arena-cancel':             arenaCancel,
+  'arena-history':            arenaHistory,
 
   // slash aliases (backward compat — keep until all callers migrated)
   'gift/send':           giftSendHandler,
