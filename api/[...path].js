@@ -93,6 +93,7 @@ import adminCollabReview      from './_routes/admin-collab-review.js';
 import discordOAuthInit       from './_routes/discord-oauth-init.js';
 import discordOAuthCallback   from './_routes/discord-oauth-callback.js';
 import discordAwardBusts      from './_routes/discord-award-busts.js';
+import discordChatTick        from './_routes/discord-chat-tick.js';
 import discordUserStatus      from './_routes/discord-user-status.js';
 import discordLinkedUsers     from './_routes/discord-linked-users.js';
 
@@ -194,6 +195,7 @@ const ROUTES = {
   'discord-oauth-init':       discordOAuthInit,
   'discord-oauth-callback':   discordOAuthCallback,
   'discord-award-busts':      discordAwardBusts,
+  'discord-chat-tick':        discordChatTick,
   'discord-user-status':      discordUserStatus,
   'discord-linked-users':     discordLinkedUsers,
 
