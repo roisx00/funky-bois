@@ -186,8 +186,9 @@ function StandoffView() {
     }
   }
 
-  async function enterFight() {
+  async function enterFight(modeOverride) {
     if (busy) return;
+    const mode = modeOverride || 'quick';
     setBusy(true);
     setActiveMatch(null);
     try {
@@ -195,7 +196,7 @@ function StandoffView() {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ loadout, mode: 'quick' }),
+        body: JSON.stringify({ loadout, mode }),
       });
       const d = await r.json();
       if (!r.ok) {
@@ -311,15 +312,29 @@ function StandoffView() {
           <div className="standoff-fight-row">
             <div className="standoff-fight-summary">
               Entry fee <strong>100 BUSTS</strong> · 15% burns on settlement
+              <div style={{ marginTop: 6, fontStyle: 'italic', color: 'var(--text-3)', fontSize: 14 }}>
+                Or fight the house bot for free — no BUSTS at stake.
+              </div>
             </div>
-            <button
-              className="standoff-fight-btn"
-              onClick={enterFight}
-              disabled={busy || !canFight || (bustsBalance || 0) < 100 || !inv}
-              type="button"
-            >
-              {busy ? 'WORKING...' : 'ENTER THE FIELD →'}
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <button
+                className="standoff-practice-btn"
+                onClick={() => enterFight('practice')}
+                disabled={busy || !canFight || !inv}
+                type="button"
+                title="Free practice match against the house bot"
+              >
+                {busy ? 'WORKING...' : 'PRACTICE VS BOT'}
+              </button>
+              <button
+                className="standoff-fight-btn"
+                onClick={() => enterFight('quick')}
+                disabled={busy || !canFight || (bustsBalance || 0) < 100 || !inv}
+                type="button"
+              >
+                {busy ? 'WORKING...' : 'ENTER THE FIELD →'}
+              </button>
+            </div>
           </div>
           {!inv ? (
             <div className="standoff-fight-warn neutral">Loading your loadout inventory...</div>
@@ -689,6 +704,16 @@ function FacilityStyles() {
         background: #D7FF3A; color: #0E0E0E;
       }
       .standoff-fight-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+      .standoff-practice-btn {
+        padding: 14px 20px; background: transparent; color: var(--ink);
+        border: 1px solid var(--ink); cursor: pointer;
+        font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em;
+        font-weight: 700; transition: background 120ms, color 120ms;
+      }
+      .standoff-practice-btn:hover:not(:disabled) {
+        background: var(--ink); color: var(--accent);
+      }
+      .standoff-practice-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       .standoff-fight-warn {
         margin-top: 12px; font-family: var(--font-mono); font-size: 11px;
         color: #c4352b; letter-spacing: 0.06em;

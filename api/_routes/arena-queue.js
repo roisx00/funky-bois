@@ -20,8 +20,35 @@ import { rateLimit } from '../_lib/ratelimit.js';
 import { resolveMatch, buildSeed, eloUpdate, payoutMultiplier } from '../_lib/arena.js';
 import { computeFighterProfile, validateLoadout } from '../_lib/arena-profile.js';
 
-const ENTRY_FEE = { quick: 100 };
-const BURN_RATE = { quick: 0.15 };
+const ENTRY_FEE = { quick: 100, practice: 0 };
+const BURN_RATE = { quick: 0.15, practice: 0 };
+
+// Bot user used for PRACTICE matches. Pre-created in users table.
+const BOT_USER_ID = '118a7176-fcb5-4714-8f84-6fd4c09a0666';
+
+// Synthesize a bot fighter for practice mode. Stats are randomized
+// inside a balanced range so the bot feels different each match but
+// stays beatable. Loadout favors mid-tier ammo so users see HIT/MISS
+// variety without getting one-shot by Silver.
+function makeBotFighter() {
+  const loadoutPool = [
+    ['lead', 'lead', 'lead'],
+    ['lead', 'tracer', 'lead'],
+    ['hollow', 'lead', 'lead'],
+    ['lead', 'hollow', 'tracer'],
+    ['hollow', 'hollow', 'lead'],
+    ['ap', 'lead', 'lead'],
+    ['tracer', 'tracer', 'lead'],
+  ];
+  const loadout = loadoutPool[Math.floor(Math.random() * loadoutPool.length)];
+  return {
+    power:    250 + Math.floor(Math.random() * 250),  // 250–500
+    hp:       150,
+    armorPct: 5  + Math.floor(Math.random() * 10),    // 5–15
+    dodgePct: 2  + Math.floor(Math.random() * 5),     // 2–7
+    loadout,
+  };
+}
 
 export default async function handler(req, res) {
   const user = await requireUser(req, res);
@@ -43,12 +70,25 @@ export default async function handler(req, res) {
 
   const body = (await readBody(req)) || {};
   const mode = String(body.mode || 'quick');
-  if (!ENTRY_FEE[mode]) return bad(res, 400, 'invalid_mode');
+  if (ENTRY_FEE[mode] === undefined) return bad(res, 400, 'invalid_mode');
   const loadout = Array.isArray(body.loadout) ? body.loadout.map((b) => String(b).toLowerCase()) : [];
 
-  // Build the fighter profile from existing vault state.
-  const profile = await computeFighterProfile(user.id);
-  if (!profile.eligible) return bad(res, 403, profile.reason || 'not_eligible');
+  // Build the fighter profile from existing vault state. Practice mode
+  // is permissive — users without NFT holdings get a default Queen-tier
+  // profile so they can try the demo. Real (paid) modes still gate.
+  let profile = await computeFighterProfile(user.id);
+  if (!profile.eligible) {
+    if (mode === 'practice') {
+      profile = {
+        eligible: true,
+        tier: 'Queen', holdings: 0,
+        power: 100, hp: 120, armorPct: 0, dodgePct: 0,
+        upgrades: [],
+      };
+    } else {
+      return bad(res, 403, profile.reason || 'not_eligible');
+    }
+  }
 
   // Pull current bullet inventory.
   await sql`INSERT INTO arena_loadouts (user_id) VALUES (${user.id}::uuid) ON CONFLICT DO NOTHING`;
@@ -88,6 +128,73 @@ export default async function handler(req, res) {
            updated_at = now()
      WHERE user_id = ${user.id}::uuid
   `;
+
+  // PRACTICE MODE — fight the bot synchronously. No queue, no waiting,
+  // no payout. Match record persists with the bot as player A so the
+  // user sees it in their replay history.
+  if (mode === 'practice') {
+    const botFighter = makeBotFighter();
+    const userFighter = {
+      power:    profile.power,
+      hp:       profile.hp,
+      armorPct: profile.armorPct,
+      dodgePct: profile.dodgePct,
+      loadout,
+    };
+    const seedPractice = buildSeed(`practice-${user.id}-${Date.now()}`, '');
+    const result = resolveMatch(botFighter, userFighter, seedPractice);
+    const winnerSide = result.winner;
+
+    const matchRow = one(await sql`
+      INSERT INTO arena_matches
+        (match_seed, player_a_id, player_b_id,
+         player_a_power, player_b_power,
+         player_a_hp, player_b_hp,
+         player_a_armor, player_b_armor,
+         player_a_dodge, player_b_dodge,
+         player_a_loadout, player_b_loadout,
+         winner, pot_busts, payout_busts, burn_busts, mode)
+      VALUES
+        (${seedPractice}, ${BOT_USER_ID}::uuid, ${user.id}::uuid,
+         ${botFighter.power}, ${userFighter.power},
+         ${botFighter.hp},    ${userFighter.hp},
+         ${botFighter.armorPct}, ${userFighter.armorPct},
+         ${botFighter.dodgePct}, ${userFighter.dodgePct},
+         ${JSON.stringify(botFighter.loadout)}::jsonb, ${JSON.stringify(loadout)}::jsonb,
+         ${winnerSide}, 0, 0, 0, 'practice')
+      RETURNING id
+    `);
+    const matchId = matchRow.id;
+    for (const r of result.rounds) {
+      await sql`
+        INSERT INTO arena_rounds
+          (match_id, round_no, a_bullet, b_bullet,
+           a_hit_chance, b_hit_chance, a_roll, b_roll,
+           a_hit, b_hit, a_damage, b_damage, a_hp_after, b_hp_after)
+        VALUES
+          (${matchId}, ${r.round}, ${r.aBullet}, ${r.bBullet},
+           ${r.aHitChance}, ${r.bHitChance}, ${r.aRoll}, ${r.bRoll},
+           ${r.aHit}, ${r.bHit}, ${r.aDamage}, ${r.bDamage}, ${r.aHpAfter}, ${r.bHpAfter})
+      `;
+    }
+
+    return ok(res, {
+      waiting: false,
+      practice: true,
+      matchId,
+      youAre: 'B',
+      winner: winnerSide,
+      youWon: winnerSide === 'B',
+      pot: 0, payout: 0, burn: 0,
+      payoutMultiplier: 1,
+      rounds: result.rounds,
+      aHpFinal: result.aHpFinal,
+      bHpFinal: result.bHpFinal,
+      eloA: { before: 1200, after: 1200 },
+      eloB: { before: 1200, after: 1200 },
+      newBalance: Number((await sql`SELECT busts_balance FROM users WHERE id = ${user.id}`)[0]?.busts_balance) || 0,
+    });
+  }
 
   // Try to claim a pending opponent. SKIP LOCKED so we don't fight
   // another concurrent matcher for the same row.
