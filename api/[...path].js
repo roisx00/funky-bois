@@ -100,6 +100,10 @@ import arenaLoadout           from './_routes/arena-loadout.js';
 import arenaQueue             from './_routes/arena-queue.js';
 import arenaCancel            from './_routes/arena-cancel.js';
 import arenaHistory           from './_routes/arena-history.js';
+import networkDeploy          from './_routes/network-deploy.js';
+import networkLobby           from './_routes/network-lobby.js';
+import networkStance          from './_routes/network-stance.js';
+import networkResolve         from './_routes/network-resolve.js';
 
 // Routes accept BOTH slash and hyphen forms so client URLs work
 // regardless of Vercel's catch-all behaviour for nested segments.
@@ -206,6 +210,10 @@ const ROUTES = {
   'arena-queue':              arenaQueue,
   'arena-cancel':             arenaCancel,
   'arena-history':            arenaHistory,
+  'network-deploy':           networkDeploy,
+  'network-lobby':            networkLobby,
+  'network-stance':           networkStance,
+  'network-resolve':          networkResolve,
 
   // slash aliases (backward compat — keep until all callers migrated)
   'gift/send':           giftSendHandler,

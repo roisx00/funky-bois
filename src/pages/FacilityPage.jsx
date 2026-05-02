@@ -4,7 +4,7 @@
 // All combat resolution happens server-side via /api/arena-* endpoints.
 // This page just renders state, posts user actions, and animates the
 // returned match log.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { useToast } from '../components/Toast';
 
@@ -50,10 +50,14 @@ export default function FacilityPage() {
           <span className="fac-tab-name">Standoff</span>
           <span className="fac-tab-status">LIVE</span>
         </button>
-        <button className="fac-tab disabled" disabled type="button">
+        <button
+          className={`fac-tab ${tab === 'network' ? 'active' : ''}`}
+          onClick={() => setTab('network')}
+          type="button"
+        >
           <span className="fac-tab-no">02</span>
-          <span className="fac-tab-name">The Vault</span>
-          <span className="fac-tab-status">SOON</span>
+          <span className="fac-tab-name">The Network</span>
+          <span className="fac-tab-status">LIVE</span>
         </button>
         <button className="fac-tab disabled" disabled type="button">
           <span className="fac-tab-no">03</span>
@@ -68,6 +72,7 @@ export default function FacilityPage() {
       </nav>
 
       {tab === 'standoff' && <StandoffView />}
+      {tab === 'network' && <NetworkView />}
     </div>
   );
 }
@@ -408,6 +413,465 @@ function StandoffView() {
           </ul>
         )}
       </section>
+    </div>
+  );
+}
+
+// ─── THE NETWORK ─────────────────────────────────────────────────────
+function NetworkView() {
+  const { authenticated, bustsBalance, refreshMe } = useGame();
+  const toast = useToast();
+  const [phase, setPhase] = useState('discover');
+  const [lobbies, setLobbies] = useState({ active: [], finished: [] });
+  const [myLobbyId, setMyLobbyId] = useState(null);
+  const [myAgent, setMyAgent] = useState(null); // { codename, profile, seatNo, lobbyId }
+  const [lobbyState, setLobbyState] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [stanceLocked, setStanceLocked] = useState(false);
+  const [exposeTarget, setExposeTarget] = useState(null);
+
+  // Initial fetch — am I in a lobby? what's open?
+  useEffect(() => {
+    if (!authenticated) return;
+    let cancelled = false;
+    (async () => {
+      const [mineR, listR] = await Promise.all([
+        fetch('/api/network-lobby?mine=1', { credentials: 'same-origin' }),
+        fetch('/api/network-lobby'),
+      ]);
+      if (cancelled) return;
+      if (mineR.ok) {
+        const d = await mineR.json();
+        if (d.lobbyId) {
+          setMyLobbyId(d.lobbyId);
+          setPhase('in-lobby');
+        }
+      }
+      if (listR.ok) {
+        const d = await listR.json();
+        setLobbies({ active: d.active || [], finished: d.finished || [] });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [authenticated]);
+
+  // Poll lobby state when in a lobby
+  useEffect(() => {
+    if (!myLobbyId || phase !== 'in-lobby') return;
+    let cancelled = false;
+    let lastRound = null;
+    const poll = async () => {
+      try {
+        const r = await fetch(`/api/network-lobby?id=${myLobbyId}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        if (cancelled) return;
+        setLobbyState(d);
+        // Resync myAgent from seats
+        const me = d.seats.find((s) => s.userId && myAgent?.seatNo === s.seatNo) ||
+                   d.seats.find((s) => s.userId === myAgent?.userId);
+        if (me) setMyAgent((prev) => prev ? { ...prev, ...me, codename: me.codename, profile: me.profile, seatNo: me.seatNo } : prev);
+        // Reset stance lock on new round
+        if (d.lobby.currentRound !== lastRound) {
+          setStanceLocked(false);
+          setExposeTarget(null);
+          lastRound = d.lobby.currentRound;
+        }
+        // Trigger resolve when needed
+        if (d.lobby.status === 'spinning' || d.lobby.status === 'active') {
+          fetch('/api/network-resolve', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ lobbyId: myLobbyId }),
+          }).catch(() => {});
+        }
+        // Check win/loss
+        if (d.lobby.status === 'finished') {
+          setPhase('finished');
+          if (typeof refreshMe === 'function') refreshMe();
+        }
+      } catch (e) { /* ignore */ }
+    };
+    poll();
+    const id = setInterval(poll, 2500);
+    return () => { cancelled = true; clearInterval(id); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myLobbyId, phase]);
+
+  async function deploy() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await fetch('/api/network-deploy', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      const d = await r.json();
+      if (!r.ok) { toast.error(`Deploy failed: ${d?.error || 'unknown'}`); return; }
+      setMyAgent({
+        lobbyId: d.lobbyId, seatNo: d.seatNo,
+        codename: d.codename, profile: d.profile, power: d.power,
+        userId: null,
+      });
+      setMyLobbyId(d.lobbyId);
+      setPhase('identity');
+      if (typeof refreshMe === 'function') refreshMe();
+      // Auto-transition from identity reveal to in-lobby after 4s
+      setTimeout(() => setPhase('in-lobby'), 4000);
+    } catch (e) {
+      toast.error('Network error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function commitStance(stance, target) {
+    if (stanceLocked || busy) return;
+    setBusy(true);
+    try {
+      const body = { lobbyId: myLobbyId, stance };
+      if (stance === 'expose' && target) body.exposeTarget = target;
+      const r = await fetch('/api/network-stance', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok) { toast.error(`Stance failed: ${d?.error || 'unknown'}`); return; }
+      setStanceLocked(true);
+      toast.success(`STANCE LOCKED: ${stance.toUpperCase()}`);
+    } catch (e) {
+      toast.error('Network error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="fac-gate">
+        <div className="fac-gate-text"><em>Sign in</em> to enter THE NETWORK.</div>
+      </div>
+    );
+  }
+
+  // ── PHASE: DISCOVER (no lobby yet) ──
+  if (phase === 'discover') {
+    return <NetworkDiscover lobbies={lobbies} balance={bustsBalance} busy={busy} onDeploy={deploy} />;
+  }
+
+  // ── PHASE: IDENTITY (codename reveal, 4s) ──
+  if (phase === 'identity' && myAgent) {
+    return <NetworkIdentity agent={myAgent} />;
+  }
+
+  // ── PHASE: IN-LOBBY (filling, spinning, active) ──
+  if (phase === 'in-lobby' && lobbyState) {
+    return (
+      <NetworkLobby
+        state={lobbyState}
+        myAgent={myAgent}
+        stanceLocked={stanceLocked}
+        exposeTarget={exposeTarget}
+        setExposeTarget={setExposeTarget}
+        onCommit={commitStance}
+        busy={busy}
+      />
+    );
+  }
+
+  // ── PHASE: FINISHED ──
+  if (phase === 'finished' && lobbyState) {
+    return <NetworkFinished state={lobbyState} myAgent={myAgent} onExit={() => {
+      setPhase('discover'); setMyAgent(null); setMyLobbyId(null); setLobbyState(null);
+    }} />;
+  }
+
+  return <div className="fac-gate"><div className="fac-gate-text">Connecting...</div></div>;
+}
+
+function NetworkDiscover({ lobbies, balance, busy, onDeploy }) {
+  return (
+    <div className="net-page">
+      <div className="net-hero">
+        <div className="net-hero-quote">
+          <em>"Inside an encrypted off-grid layer, ten agents fight for signal control. One survives. Nine get terminated."</em>
+        </div>
+        <div className="net-hero-rules">
+          100 BUSTS to deploy · 90% to the winner · 10% burns to the void
+        </div>
+      </div>
+
+      <section className="net-list">
+        <div className="standoff-section-kicker">ACTIVE LOBBIES · {lobbies.active.length} OPEN</div>
+        {lobbies.active.length === 0 ? (
+          <div className="net-list-empty">No lobbies open. Deploy to start a new one.</div>
+        ) : (
+          <ul className="net-list-rows">
+            {lobbies.active.slice(0, 8).map((l) => (
+              <li key={l.id} className="net-list-row">
+                <span className="net-list-num">#{String(l.id).padStart(4, '0')}</span>
+                <span className="net-list-status">{l.filled}/10 deployed</span>
+                <span className="net-list-phase">{l.status === 'open' ? 'open' : l.status === 'spinning' ? 'spinning up' : 'in combat'}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="net-deploy">
+        <button
+          className="net-deploy-btn"
+          onClick={onDeploy}
+          disabled={busy || (balance || 0) < 100}
+          type="button"
+        >
+          {busy ? 'DEPLOYING...' : (balance || 0) < 100 ? 'NEED 100 BUSTS' : 'DEPLOY · 100 BUSTS →'}
+        </button>
+        <div className="net-deploy-hint">
+          You'll be assigned an encrypted codename on entry. All identities are masked until the final reveal.
+        </div>
+      </section>
+
+      {lobbies.finished.length > 0 && (
+        <section className="net-recent">
+          <div className="standoff-section-kicker">RECENT WINNERS</div>
+          <ul className="net-list-rows">
+            {lobbies.finished.slice(0, 6).map((l) => (
+              <li key={l.id} className="net-list-row">
+                <span className="net-list-num">#{String(l.id).padStart(4, '0')}</span>
+                <span className="net-list-status">@{l.winnerUsername || '—'}</span>
+                <span className="net-list-phase">{l.payout} BUSTS · {l.burn} burned</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function NetworkIdentity({ agent }) {
+  const [revealed, setRevealed] = useState(0);
+  useEffect(() => {
+    let i = 0;
+    const tick = () => {
+      i++;
+      if (i > agent.codename.length) return;
+      setRevealed(i);
+      setTimeout(tick, 80);
+    };
+    setTimeout(tick, 400);
+  }, [agent.codename]);
+  return (
+    <div className="net-identity">
+      <div className="net-identity-pre">
+        {'> '}ESTABLISHING SECURE CHANNEL<br />
+        {'> '}ENCRYPTING IDENTITY<br />
+        {'> '}ASSIGNING CODENAME
+      </div>
+      <div className="net-identity-name">
+        <em>{agent.codename.slice(0, revealed)}</em>
+        <span className="net-cursor" />
+      </div>
+      <div className="net-identity-sub">YOU ARE NOW THIS AGENT.</div>
+      <div className="net-identity-stats">
+        <span>PROFILE: {agent.profile?.toUpperCase()}</span>
+        <span>POWER: {agent.power}</span>
+        <span>HEAT: 0</span>
+        <span>STATUS: AWAITING DEPLOYMENT</span>
+      </div>
+    </div>
+  );
+}
+
+function NetworkLobby({ state, myAgent, stanceLocked, exposeTarget, setExposeTarget, onCommit, busy }) {
+  const { lobby, seats, messages } = state;
+  const me = seats.find((s) => s.seatNo === myAgent?.seatNo);
+  const active = seats.filter((s) => s.status === 'active');
+  const isFinal = lobby.currentRound === lobby.maxRounds || (lobby.status === 'active' && active.length === 2);
+  const filled = seats.length;
+
+  // Filling state
+  if (lobby.status === 'open') {
+    return (
+      <div className="net-page">
+        <div className="net-meta-strip">
+          LOBBY #{String(lobby.id).padStart(4, '0')} · ROUND 0/{lobby.maxRounds} · POT {lobby.pot}/1000 ⌬
+        </div>
+        <NetworkRoster seats={seats} myAgent={myAgent} />
+        <div className="net-status-line">
+          {filled}/10 deployed · waiting for the rest of the network
+        </div>
+      </div>
+    );
+  }
+
+  // Spinning state
+  if (lobby.status === 'spinning') {
+    return (
+      <div className="net-spinning">
+        <div className="net-spinning-text">
+          {'> '}SPINNING UP NETWORK<br />
+          {'> '}ALL AGENTS ENCRYPTED<br />
+          {'> '}COMBAT INITIATED
+        </div>
+        <div className="net-spinning-counter"><em>03 · 02 · 01</em></div>
+      </div>
+    );
+  }
+
+  // Active
+  return (
+    <div className="net-page">
+      <div className="net-meta-strip">
+        THE NETWORK · #{String(lobby.id).padStart(4, '0')} · ROUND {lobby.currentRound}/{lobby.maxRounds} · POT {lobby.pot} ⌬
+      </div>
+
+      <div className="net-grid">
+        <NetworkRoster seats={seats} myAgent={myAgent} />
+        <NetworkFeed messages={messages} />
+      </div>
+
+      {me?.status === 'active' && (
+        <NetworkStancePicker
+          isFinal={isFinal}
+          stanceLocked={stanceLocked}
+          busy={busy}
+          activeSeats={active.filter((s) => s.seatNo !== me.seatNo)}
+          exposeTarget={exposeTarget}
+          setExposeTarget={setExposeTarget}
+          onCommit={onCommit}
+        />
+      )}
+      {me?.status === 'terminated' && (
+        <div className="net-terminated">
+          ████ AGENT {me.codename} TERMINATED · ROUND {me.terminatedRound} ████<br />
+          Spectating remaining rounds.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NetworkRoster({ seats, myAgent }) {
+  return (
+    <div className="net-roster">
+      <div className="standoff-section-kicker">AGENTS [{seats.filter((s) => s.status === 'active').length}/{seats.length}]</div>
+      <ul className="net-roster-list">
+        {seats.sort((a,b) => a.seatNo - b.seatNo).map((s) => {
+          const isMe = s.seatNo === myAgent?.seatNo;
+          const isDead = s.status === 'terminated';
+          return (
+            <li key={s.seatNo} className={`net-roster-row ${isDead ? 'dead' : ''} ${isMe ? 'me' : ''}`}>
+              <span className="net-r-no">{String(s.seatNo).padStart(2,'0')}</span>
+              <span className="net-r-mark">{isDead ? '✕' : '▣'}</span>
+              <span className="net-r-name">{s.codename}{isMe ? ' ◀ YOU' : ''}</span>
+              <span className="net-r-pwr">pwr {s.power}</span>
+              <span className="net-r-heat">
+                <span className="net-r-heat-bar" style={{ width: `${Math.min(100, s.heat * 8)}%` }} />
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function NetworkFeed({ messages }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [messages]);
+  return (
+    <div className="net-feed" ref={ref}>
+      <div className="standoff-section-kicker">NETWORK FEED · LIVE</div>
+      <div className="net-feed-body">
+        {messages.length === 0 && <div className="net-msg sys">{'> AWAITING SIGNAL...'}</div>}
+        {messages.map((m) => (
+          <div key={m.id} className={`net-msg ${m.type}`}>
+            {m.type === 'agent' && m.fromSeat && (
+              <span className="net-msg-from">{`> AGENT_${m.fromSeat}`}</span>
+            )}
+            {m.type === 'system' || m.type === 'noise' || m.type === 'elimination' || m.type === 'final' ? (
+              <span>{m.text}</span>
+            ) : (
+              <span>: {m.text}</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NetworkStancePicker({ isFinal, stanceLocked, busy, activeSeats, exposeTarget, setExposeTarget, onCommit }) {
+  if (isFinal) {
+    return (
+      <div className="net-stance">
+        <div className="standoff-section-kicker">FINAL ROUND · COMMIT</div>
+        <div className="net-stance-row">
+          <button className="net-stance-btn strike" onClick={() => onCommit('strike')} disabled={stanceLocked || busy}>STRIKE →</button>
+          <button className="net-stance-btn evade" onClick={() => onCommit('evade')} disabled={stanceLocked || busy}>EVADE</button>
+        </div>
+        {stanceLocked && <div className="net-stance-lock">STANCE LOCKED</div>}
+      </div>
+    );
+  }
+  return (
+    <div className="net-stance">
+      <div className="standoff-section-kicker">COMMIT YOUR STANCE</div>
+      <div className="net-stance-row">
+        <button className="net-stance-btn aggressive" onClick={() => onCommit('aggressive')} disabled={stanceLocked || busy}>AGGRESSIVE</button>
+        <button className="net-stance-btn deflect" onClick={() => onCommit('deflect')} disabled={stanceLocked || busy}>DEFLECT</button>
+        <button
+          className="net-stance-btn expose"
+          onClick={() => exposeTarget && onCommit('expose', exposeTarget)}
+          disabled={stanceLocked || busy || !exposeTarget}
+        >EXPOSE →</button>
+      </div>
+      <div className="net-expose-targets">
+        <span className="net-expose-label">expose target:</span>
+        {activeSeats.map((s) => (
+          <button
+            key={s.seatNo}
+            className={`net-expose-pill ${exposeTarget === s.seatNo ? 'sel' : ''}`}
+            onClick={() => setExposeTarget(s.seatNo)}
+            disabled={stanceLocked}
+          >
+            {s.codename}
+          </button>
+        ))}
+      </div>
+      {stanceLocked && <div className="net-stance-lock">STANCE LOCKED</div>}
+    </div>
+  );
+}
+
+function NetworkFinished({ state, myAgent, onExit }) {
+  const winner = state.seats.find((s) => s.seatNo === state.lobby.winnerSeatNo);
+  const won = winner?.seatNo === myAgent?.seatNo;
+  return (
+    <div className="net-page">
+      <div className="net-final">
+        <div className="standoff-section-kicker">DECRYPTING WINNER</div>
+        <div className="net-final-name"><em>{winner?.codename}</em></div>
+        {winner?.username && (
+          <div className="net-final-real"><em>@{winner.username} surfaces</em></div>
+        )}
+        <div className="net-final-stats">
+          <div>POT {state.lobby.pot} BUSTS</div>
+          <div>WINNER {state.lobby.payout} BUSTS</div>
+          <div>BURN {state.lobby.burn} BUSTS · permanently destroyed</div>
+        </div>
+        <div className={`net-final-verdict ${won ? 'won' : 'lost'}`}>
+          {won ? 'YOU WON.' : 'YOU FELL.'}
+        </div>
+        <button className="net-deploy-btn" onClick={onExit} type="button">DEPLOY AGAIN →</button>
+      </div>
     </div>
   );
 }
@@ -912,6 +1376,290 @@ function FacilityStyles() {
         letter-spacing: 0.22em; font-weight: 700; cursor: pointer;
       }
       .standoff-cancel-btn:hover { background: var(--paper-2); }
+
+      /* ════════ THE NETWORK ════════════════════════════════════════ */
+      .net-page { max-width: 1100px; margin: 0 auto; padding: 32px 24px; color: #F9F6F0; }
+      .net-hero {
+        margin: 0 -24px 32px; padding: 40px 24px;
+        background: #0E0E0E; color: #F9F6F0;
+        border-bottom: 4px solid #D7FF3A;
+      }
+      .net-hero-quote {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: 28px; line-height: 1.3; max-width: 800px; margin: 0 auto;
+        color: #F9F6F0; text-align: center;
+      }
+      .net-hero-rules {
+        margin-top: 18px; text-align: center;
+        font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px;
+        letter-spacing: 0.18em; color: rgba(215,255,58,0.85);
+      }
+      .net-list {
+        background: #0E0E0E; padding: 24px; margin: 0 -24px 24px;
+        border-top: 1px solid rgba(249,246,240,0.1);
+        border-bottom: 1px solid rgba(249,246,240,0.1);
+      }
+      .net-list-empty {
+        padding: 40px; text-align: center;
+        font-family: ui-monospace, monospace; font-size: 12px;
+        color: rgba(249,246,240,0.5); letter-spacing: 0.04em;
+      }
+      .net-list-rows { list-style: none; margin: 0; padding: 0; }
+      .net-list-row {
+        display: grid; grid-template-columns: 90px 1fr 1fr;
+        padding: 12px 4px; border-bottom: 1px solid rgba(249,246,240,0.08);
+        font-family: ui-monospace, monospace; font-size: 12px;
+        letter-spacing: 0.04em; color: rgba(249,246,240,0.85);
+      }
+      .net-list-num    { color: rgba(215,255,58,0.7); font-weight: 700; }
+      .net-list-status { font-weight: 700; }
+      .net-list-phase  { color: rgba(249,246,240,0.6); text-align: right; }
+      .net-deploy {
+        text-align: center; padding: 40px 0; background: #0E0E0E;
+        margin: 0 -24px 24px;
+      }
+      .net-deploy-btn {
+        background: #D7FF3A; color: #0E0E0E; border: 2px solid #D7FF3A;
+        padding: 18px 48px; cursor: pointer;
+        font-family: ui-monospace, monospace; font-size: 13px;
+        letter-spacing: 0.28em; font-weight: 700;
+        transition: background 120ms, color 120ms, transform 120ms;
+      }
+      .net-deploy-btn:hover:not(:disabled) {
+        background: #0E0E0E; color: #D7FF3A;
+        transform: translateY(-1px);
+      }
+      .net-deploy-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+      .net-deploy-hint {
+        margin-top: 16px; font-family: 'Instrument Serif', Georgia, serif;
+        font-style: italic; font-size: 14px; color: rgba(249,246,240,0.6);
+        max-width: 460px; margin-left: auto; margin-right: auto;
+      }
+      .net-recent { padding: 0 24px; margin: 0 -24px 24px; background: #0E0E0E; padding-top: 24px; padding-bottom: 24px; }
+
+      /* ── Identity reveal ── */
+      .net-identity {
+        background: #0E0E0E; min-height: 60vh;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 40px 24px; margin: 0 -24px;
+        text-align: center; color: #F9F6F0;
+      }
+      .net-identity-pre {
+        font-family: ui-monospace, monospace; font-size: 12px;
+        letter-spacing: 0.18em; color: rgba(215,255,58,0.7);
+        line-height: 2; margin-bottom: 32px;
+      }
+      .net-identity-name {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-weight: 500; font-size: clamp(48px, 9vw, 96px);
+        letter-spacing: -0.03em; margin-bottom: 18px;
+      }
+      .net-cursor {
+        display: inline-block; width: 0.4em; height: 0.8em; vertical-align: text-bottom;
+        background: #D7FF3A; animation: blinkCursor 0.7s step-end infinite;
+        margin-left: 6px;
+      }
+      @keyframes blinkCursor { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+      .net-identity-sub {
+        font-family: ui-monospace, monospace; font-size: 11px;
+        letter-spacing: 0.32em; color: rgba(249,246,240,0.7);
+        margin-bottom: 32px;
+      }
+      .net-identity-stats {
+        display: flex; flex-direction: column; gap: 8px;
+        font-family: ui-monospace, monospace; font-size: 12px;
+        letter-spacing: 0.18em; color: rgba(249,246,240,0.85);
+      }
+
+      /* ── Lobby in-progress ── */
+      .net-meta-strip {
+        background: #0E0E0E; padding: 14px 24px; margin: 0 -24px 24px;
+        font-family: ui-monospace, monospace; font-size: 11px;
+        letter-spacing: 0.22em; color: rgba(215,255,58,0.85); font-weight: 700;
+        border-bottom: 1px solid rgba(249,246,240,0.1);
+      }
+      .net-grid {
+        display: grid; grid-template-columns: 320px 1fr; gap: 18px;
+        background: #0E0E0E; padding: 18px; margin: 0 -24px 24px;
+      }
+      .net-roster {
+        background: rgba(249,246,240,0.03); padding: 16px;
+        border: 1px solid rgba(249,246,240,0.1);
+      }
+      .net-roster-list { list-style: none; margin: 8px 0 0; padding: 0; }
+      .net-roster-row {
+        display: grid; grid-template-columns: 24px 14px 1fr auto;
+        gap: 8px; align-items: center;
+        padding: 7px 4px; border-bottom: 1px solid rgba(249,246,240,0.06);
+        font-family: ui-monospace, monospace; font-size: 11px;
+        color: rgba(249,246,240,0.8);
+      }
+      .net-roster-row.dead { color: rgba(249,246,240,0.3); text-decoration: line-through; }
+      .net-roster-row.me { background: rgba(215,255,58,0.08); }
+      .net-r-no { color: rgba(249,246,240,0.4); }
+      .net-r-mark { color: #D7FF3A; }
+      .net-roster-row.dead .net-r-mark { color: #c4352b; }
+      .net-r-name { font-weight: 700; }
+      .net-r-pwr { font-size: 9px; color: rgba(249,246,240,0.5); letter-spacing: 0.06em; }
+      .net-r-heat {
+        grid-column: 1 / -1; height: 3px;
+        background: rgba(249,246,240,0.1); margin-top: 4px;
+        position: relative;
+      }
+      .net-r-heat-bar {
+        position: absolute; left: 0; top: 0; bottom: 0;
+        background: #D7FF3A;
+      }
+      .net-feed {
+        background: rgba(249,246,240,0.03); padding: 16px;
+        border: 1px solid rgba(249,246,240,0.1);
+        height: 480px; display: flex; flex-direction: column;
+      }
+      .net-feed-body {
+        flex: 1; overflow-y: auto; margin-top: 10px;
+        font-family: ui-monospace, monospace; font-size: 13px;
+        line-height: 1.7; color: rgba(249,246,240,0.85);
+        scrollbar-width: thin;
+      }
+      .net-feed-body::-webkit-scrollbar { width: 4px; }
+      .net-feed-body::-webkit-scrollbar-thumb { background: rgba(249,246,240,0.2); }
+      .net-msg { padding: 4px 0; }
+      .net-msg.system, .net-msg.sys { color: rgba(215,255,58,0.85); font-weight: 700; }
+      .net-msg.noise { color: rgba(249,246,240,0.35); font-style: italic; }
+      .net-msg.elimination { color: #c4352b; font-weight: 700; }
+      .net-msg.final { color: #D7FF3A; font-weight: 700; font-size: 14px; }
+      .net-msg-from { color: rgba(215,255,58,0.85); font-weight: 700; }
+
+      /* ── Stance picker ── */
+      .net-stance {
+        background: #0E0E0E; padding: 22px 24px; margin: 0 -24px 24px;
+        border-top: 1px solid rgba(215,255,58,0.4);
+      }
+      .net-stance-row {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+        margin-top: 14px;
+      }
+      .net-stance-btn {
+        padding: 16px 20px; cursor: pointer;
+        font-family: ui-monospace, monospace; font-size: 11px;
+        letter-spacing: 0.22em; font-weight: 700;
+        transition: background 120ms, color 120ms;
+      }
+      .net-stance-btn.aggressive {
+        background: transparent; color: #c4352b; border: 1px solid #c4352b;
+      }
+      .net-stance-btn.aggressive:hover:not(:disabled) {
+        background: #c4352b; color: #F9F6F0;
+      }
+      .net-stance-btn.deflect {
+        background: transparent; color: rgba(249,246,240,0.85);
+        border: 1px solid rgba(249,246,240,0.4);
+      }
+      .net-stance-btn.deflect:hover:not(:disabled) {
+        background: rgba(249,246,240,0.1);
+      }
+      .net-stance-btn.expose, .net-stance-btn.strike {
+        background: #D7FF3A; color: #0E0E0E; border: 1px solid #D7FF3A;
+      }
+      .net-stance-btn.expose:hover:not(:disabled),
+      .net-stance-btn.strike:hover:not(:disabled) {
+        background: #0E0E0E; color: #D7FF3A;
+      }
+      .net-stance-btn.evade {
+        background: transparent; color: #F9F6F0; border: 1px solid #F9F6F0;
+      }
+      .net-stance-btn.evade:hover:not(:disabled) {
+        background: #F9F6F0; color: #0E0E0E;
+      }
+      .net-stance-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+      .net-stance-lock {
+        margin-top: 14px; padding: 8px;
+        background: rgba(215,255,58,0.1); color: #D7FF3A;
+        font-family: ui-monospace, monospace; font-size: 10px;
+        letter-spacing: 0.28em; font-weight: 700; text-align: center;
+      }
+      .net-expose-targets {
+        margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px;
+        align-items: center;
+      }
+      .net-expose-label {
+        font-family: ui-monospace, monospace; font-size: 9px;
+        letter-spacing: 0.22em; color: rgba(249,246,240,0.5);
+        margin-right: 6px;
+      }
+      .net-expose-pill {
+        font-family: ui-monospace, monospace; font-size: 10px;
+        letter-spacing: 0.06em; padding: 5px 10px;
+        background: transparent; color: rgba(249,246,240,0.85);
+        border: 1px solid rgba(249,246,240,0.3); cursor: pointer;
+      }
+      .net-expose-pill.sel { background: #D7FF3A; color: #0E0E0E; border-color: #D7FF3A; }
+      .net-expose-pill:disabled { opacity: 0.4; cursor: not-allowed; }
+
+      /* ── Spinning + Status ── */
+      .net-spinning {
+        background: #0E0E0E; min-height: 60vh; padding: 40px 24px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        margin: 0 -24px;
+      }
+      .net-spinning-text {
+        font-family: ui-monospace, monospace; font-size: 13px;
+        letter-spacing: 0.18em; color: rgba(215,255,58,0.85);
+        line-height: 2.2; text-align: center; margin-bottom: 36px;
+      }
+      .net-spinning-counter {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: 56px; color: #F9F6F0; letter-spacing: 0.1em;
+        animation: pulseDim 1s ease-in-out infinite;
+      }
+      @keyframes pulseDim { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+      .net-status-line {
+        text-align: center; padding: 18px;
+        font-family: ui-monospace, monospace; font-size: 11px;
+        letter-spacing: 0.18em; color: rgba(249,246,240,0.6);
+      }
+      .net-terminated {
+        margin-top: 24px; padding: 30px;
+        background: rgba(196,53,43,0.1); border: 1px solid #c4352b;
+        text-align: center;
+        font-family: ui-monospace, monospace; font-size: 12px;
+        letter-spacing: 0.04em; line-height: 1.8; color: #c4352b;
+      }
+
+      /* ── Final reveal ── */
+      .net-final {
+        background: #0E0E0E; min-height: 70vh; padding: 60px 24px;
+        margin: 0 -24px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center;
+      }
+      .net-final-name {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: clamp(56px, 11vw, 120px); letter-spacing: -0.03em;
+        color: #F9F6F0; margin: 18px 0 12px;
+      }
+      .net-final-real {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: 22px; color: rgba(249,246,240,0.6); margin-bottom: 32px;
+      }
+      .net-final-stats {
+        display: flex; flex-direction: column; gap: 8px;
+        font-family: ui-monospace, monospace; font-size: 12px;
+        letter-spacing: 0.16em; color: rgba(249,246,240,0.85);
+        margin-bottom: 32px;
+      }
+      .net-final-verdict {
+        font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+        font-size: 36px; margin-bottom: 28px;
+      }
+      .net-final-verdict.won { color: #D7FF3A; }
+      .net-final-verdict.lost { color: #c4352b; }
+
+      @media (max-width: 760px) {
+        .net-grid { grid-template-columns: 1fr; }
+        .net-stance-row { grid-template-columns: 1fr; }
+        .net-feed { height: 360px; }
+      }
 
       /* ── HOW TO PLAY ── */
       .howto {

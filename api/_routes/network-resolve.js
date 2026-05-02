@@ -1,0 +1,271 @@
+// POST /api/network-resolve
+// body: { lobbyId }
+//
+// State machine driver. Idempotent — calling it advances the lobby
+// from whatever phase it's in to the next stable state. The client
+// polls this every few seconds while watching a match. Returns the
+// new lobby state so the UI can render the transition.
+//
+// Phases:
+//   open      → fills naturally as players deploy (no advance here)
+//   spinning  → after SPIN_UP_SECONDS, roll into round 1 (active)
+//   active    → if round commit window expired, generate dialogue +
+//               apply stances + eliminate + advance round counter,
+//               OR if last round done, finish + settle
+//   finished  → no-op
+//
+// Anyone with a session can call this — it's safe to invoke for any
+// lobby because the math is server-deterministic from the seed and
+// only fires once per round (idempotency guard via current_round +
+// timestamp).
+import { sql, one } from '../_lib/db.js';
+import { requireActiveUser as requireUser } from '../_lib/auth.js';
+import { readBody, ok, bad } from '../_lib/json.js';
+import {
+  applyStances, pickEliminations, eliminationsThisRound,
+  generateRoundDialogueStub, ROUND_COMMIT_SECONDS, ROUND_CINEMATIC_SECONDS,
+  FINAL_ROUND_COMMIT_SECONDS, SPIN_UP_SECONDS, MATCH_MAX_ROUNDS,
+} from '../_lib/network.js';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return bad(res, 405, 'method_not_allowed');
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const body = (await readBody(req)) || {};
+  const lobbyId = Number(body.lobbyId);
+  if (!Number.isInteger(lobbyId) || lobbyId <= 0) return bad(res, 400, 'invalid_lobby_id');
+
+  const lobby = one(await sql`
+    SELECT id, status, current_round, max_rounds, match_seed,
+           pot_busts, started_at, finished_at
+      FROM network_lobbies WHERE id = ${lobbyId}
+  `);
+  if (!lobby) return bad(res, 404, 'lobby_not_found');
+
+  // ─── SPINNING → ACTIVE round 1 ───────────────────────────────────
+  if (lobby.status === 'spinning') {
+    const startedMs = lobby.started_at ? new Date(lobby.started_at).getTime() : Date.now();
+    if (Date.now() - startedMs < SPIN_UP_SECONDS * 1000) {
+      return ok(res, { phase: 'spinning', secsLeft: SPIN_UP_SECONDS - Math.floor((Date.now() - startedMs)/1000) });
+    }
+    await sql`
+      UPDATE network_lobbies
+         SET status = 'active', current_round = 1, started_at = COALESCE(started_at, now())
+       WHERE id = ${lobbyId} AND status = 'spinning'
+    `;
+    // Generate round 1 dialogue immediately so the feed has content.
+    await generateAndPersistDialogue(lobbyId, 1, lobby.match_seed);
+    return ok(res, { phase: 'active', currentRound: 1 });
+  }
+
+  // ─── ACTIVE — check if commit window expired ─────────────────────
+  if (lobby.status === 'active') {
+    const seats = await loadSeats(lobbyId);
+    const active = seats.filter((s) => s.status === 'active');
+    if (active.length <= 1) {
+      // One survivor → finish.
+      return finishLobby(res, lobby, seats);
+    }
+
+    // Round commit window starts when the round begins. We track this
+    // by the timestamp of the latest 'system' message of type "round X
+    // begins" — or fall back to the round's first dialogue message.
+    const roundStarted = await getRoundStartedAt(lobbyId, lobby.current_round);
+    if (!roundStarted) {
+      // First time entering this round path — record the start.
+      await sql`
+        INSERT INTO network_messages (lobby_id, round_no, from_seat, to_seat, text, msg_type)
+        VALUES (${lobbyId}, ${lobby.current_round}, NULL, NULL, ${`> ROUND ${lobby.current_round} LIVE`}, 'system')
+      `;
+      return ok(res, { phase: 'active', currentRound: lobby.current_round, justStarted: true });
+    }
+
+    const commitWindow = lobby.current_round === lobby.max_rounds
+      ? FINAL_ROUND_COMMIT_SECONDS
+      : ROUND_COMMIT_SECONDS;
+    const elapsed = (Date.now() - roundStarted.getTime()) / 1000;
+
+    if (elapsed < commitWindow) {
+      return ok(res, {
+        phase: 'active',
+        currentRound: lobby.current_round,
+        secsLeft: Math.max(0, Math.ceil(commitWindow - elapsed)),
+      });
+    }
+
+    // Commit window expired — resolve the round.
+    return resolveRound(res, lobby, seats);
+  }
+
+  // ─── FINISHED ────────────────────────────────────────────────────
+  if (lobby.status === 'finished') {
+    return ok(res, { phase: 'finished' });
+  }
+
+  // 'open' or 'cancelled' — nothing to do.
+  ok(res, { phase: lobby.status });
+}
+
+// ─── helpers ───────────────────────────────────────────────────────
+async function loadSeats(lobbyId) {
+  return await sql`
+    SELECT lobby_id, seat_no, user_id, codename, profile, power, heat, status,
+           terminated_round, current_stance, expose_target
+      FROM network_seats WHERE lobby_id = ${lobbyId}
+     ORDER BY seat_no ASC
+  `;
+}
+
+async function getRoundStartedAt(lobbyId, roundNo) {
+  const row = one(await sql`
+    SELECT MIN(created_at) AS t FROM network_messages
+     WHERE lobby_id = ${lobbyId} AND round_no = ${roundNo}
+  `);
+  return row?.t ? new Date(row.t) : null;
+}
+
+async function generateAndPersistDialogue(lobbyId, roundNo, seed) {
+  const seats = await loadSeats(lobbyId);
+  const messages = generateRoundDialogueStub(seats, roundNo, seed);
+  for (const m of messages) {
+    await sql`
+      INSERT INTO network_messages (lobby_id, round_no, from_seat, to_seat, text, msg_type)
+      VALUES (${lobbyId}, ${roundNo}, ${m.from_seat}, ${m.to_seat}, ${m.text}, ${m.msg_type})
+    `;
+  }
+}
+
+async function resolveRound(res, lobby, seats) {
+  const roundNo = lobby.current_round;
+  const lobbyId = Number(lobby.id);
+
+  // Apply stances → updated heat values.
+  const updated = applyStances(seats);
+  for (const s of updated) {
+    if (s.status !== 'active') continue;
+    await sql`
+      UPDATE network_seats SET heat = ${s.heat}
+       WHERE lobby_id = ${lobbyId} AND seat_no = ${s.seat_no}
+    `;
+  }
+
+  const activeBefore = updated.filter((s) => s.status === 'active');
+  const isFinal = roundNo === lobby.max_rounds || activeBefore.length === 2;
+
+  // Pick eliminations.
+  let killCount;
+  if (isFinal) {
+    // Final round: 1 elimination, leaving 1 winner.
+    killCount = activeBefore.length - 1;
+  } else {
+    killCount = Math.min(eliminationsThisRound(roundNo), Math.max(0, activeBefore.length - 1));
+  }
+  const eliminatedSeats = pickEliminations(updated, killCount, lobby.match_seed, roundNo);
+
+  for (const seatNo of eliminatedSeats) {
+    const target = updated.find((s) => s.seat_no === seatNo);
+    await sql`
+      UPDATE network_seats
+         SET status = 'terminated', terminated_round = ${roundNo}
+       WHERE lobby_id = ${lobbyId} AND seat_no = ${seatNo}
+    `;
+    await sql`
+      INSERT INTO network_eliminations (lobby_id, round_no, seat_no, heat_at_kill, reason)
+      VALUES (${lobbyId}, ${roundNo}, ${seatNo}, ${target?.heat || 0}, ${`Heat threshold exceeded`})
+    `;
+    await sql`
+      INSERT INTO network_messages (lobby_id, round_no, from_seat, to_seat, text, msg_type)
+      VALUES (${lobbyId}, ${roundNo}, NULL, ${seatNo},
+              ${`> [AGENT ${target?.codename || 'UNKNOWN'} TERMINATED · CONNECTION LOST]`}, 'elimination')
+    `;
+  }
+
+  // Clear stances for next round.
+  await sql`
+    UPDATE network_seats SET current_stance = NULL, expose_target = NULL
+     WHERE lobby_id = ${lobbyId} AND status = 'active'
+  `;
+
+  // Reload seats post-elimination.
+  const postSeats = await loadSeats(lobbyId);
+  const stillActive = postSeats.filter((s) => s.status === 'active');
+
+  // If only 1 active seat → finish.
+  if (stillActive.length <= 1) {
+    return finishLobby(res, lobby, postSeats);
+  }
+
+  // Otherwise advance round.
+  const nextRound = roundNo + 1;
+  await sql`
+    UPDATE network_lobbies SET current_round = ${nextRound}
+     WHERE id = ${lobbyId}
+  `;
+
+  // Generate the next round's dialogue immediately.
+  await generateAndPersistDialogue(lobbyId, nextRound, lobby.match_seed);
+
+  ok(res, {
+    phase: 'active',
+    currentRound: nextRound,
+    eliminatedSeats,
+    activeRemaining: stillActive.length,
+  });
+}
+
+async function finishLobby(res, lobby, seats) {
+  const lobbyId = Number(lobby.id);
+  const winner = seats.find((s) => s.status === 'active');
+  if (!winner) {
+    // Edge case: everyone terminated. Mark cancelled, full refund.
+    await sql`
+      UPDATE network_lobbies
+         SET status = 'cancelled', finished_at = now()
+       WHERE id = ${lobbyId} AND status NOT IN ('cancelled','finished')
+    `;
+    return ok(res, { phase: 'cancelled' });
+  }
+
+  const pot = Number(lobby.pot_busts) || 0;
+  const burn   = Math.round(pot * 0.10);
+  const payout = pot - burn;
+
+  // Finalize lobby + pay winner. Idempotency: only credit if
+  // status not already finished.
+  const updated = one(await sql`
+    UPDATE network_lobbies
+       SET status = 'finished',
+           finished_at = now(),
+           winner_user_id = ${winner.user_id}::uuid,
+           winner_seat_no = ${winner.seat_no},
+           burn_busts = ${burn},
+           payout_busts = ${payout}
+     WHERE id = ${lobbyId} AND status NOT IN ('finished','cancelled')
+    RETURNING id
+  `);
+
+  if (updated) {
+    await sql`
+      UPDATE users SET busts_balance = busts_balance + ${payout}
+       WHERE id = ${winner.user_id}
+    `;
+    await sql`
+      INSERT INTO busts_ledger (user_id, amount, reason)
+      VALUES (${winner.user_id}, ${payout}, ${`THE NETWORK · win · lobby ${lobbyId}`})
+    `;
+    // Final-reveal message
+    await sql`
+      INSERT INTO network_messages (lobby_id, round_no, from_seat, to_seat, text, msg_type)
+      VALUES (${lobbyId}, ${lobby.current_round}, NULL, ${winner.seat_no},
+              ${`> WINNER: ${winner.codename} · ${payout} BUSTS · BURNED ${burn}`}, 'final')
+    `;
+  }
+
+  ok(res, {
+    phase: 'finished',
+    winnerSeatNo: winner.seat_no,
+    winnerCodename: winner.codename,
+    pot, payout, burn,
+  });
+}
