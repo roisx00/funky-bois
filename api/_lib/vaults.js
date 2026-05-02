@@ -5,45 +5,54 @@
 // If the costs/bonuses ever drift, server-side balance checks will
 // disagree with the client UI.
 
-// ─── YIELD CONFIG ─────────────────────────────────────────────────
-// Off-chain BUSTS yield while assets are deposited in the vault.
-// Pre-mint: settled in the off-chain BUSTS ledger.
-// Post-mint: same math, settled in $BUSTS on-chain.
-//   BUSTS deposit yield   = 0.1% per day   (1,000 deposited → 1/day)
-//   Portrait deposit bonus = 10 BUSTS/day flat (single portrait per vault)
-const SECONDS_PER_DAY = 86400;
-export const YIELD_RATE_BUSTS_PER_SEC    = 0.001 / SECONDS_PER_DAY;  // ~1.157e-8
-export const YIELD_RATE_PORTRAIT_PER_SEC = 10    / SECONDS_PER_DAY;  // ~1.157e-4
-
-// Compute the pending whole BUSTS a vault has accrued since lastYieldAt.
-// Fractional leftovers stay on the clock — when we credit N whole BUSTS,
-// we advance lastYieldAt by exactly the time it took to earn N (not all
-// the way to "now"), so the user never loses sub-unit accrual.
+// ─── BUSTS DEPOSIT YIELD CONFIG (pool-based, mirrors NFT vault) ─────
+// Holders deposit BUSTS into the off-chain vault. The pool emits a
+// fixed 10M BUSTS over 365 days, distributed proportionally to each
+// depositor's share of the total deposited pool.
 //
-// Returns { pendingWhole, pendingExact, totalRate, newLastYieldAt }.
-// Caller decides whether to credit (>=1) or skip (0).
-export function settleYield({ bustsDeposited, hasPortrait, lastYieldAt }) {
-  const lastTs = lastYieldAt instanceof Date
-    ? lastYieldAt.getTime()
-    : new Date(lastYieldAt).getTime();
-  const totalRate = (bustsDeposited || 0) * YIELD_RATE_BUSTS_PER_SEC
-                  + (hasPortrait ? YIELD_RATE_PORTRAIT_PER_SEC : 0);
-  if (totalRate <= 0) {
-    return { pendingWhole: 0, pendingExact: 0, totalRate: 0, newLastYieldAt: new Date(lastTs) };
-  }
-  const secondsSince = Math.max(0, (Date.now() - lastTs) / 1000);
-  const pendingExact = totalRate * secondsSince;
-  const pendingWhole = Math.floor(pendingExact);
-  let newLastYieldAt;
-  if (pendingWhole > 0) {
-    // Advance lastYieldAt by exactly the time those whole units took.
-    const secondsConsumed = pendingWhole / totalRate;
-    newLastYieldAt = new Date(lastTs + secondsConsumed * 1000);
-  } else {
-    // Sub-unit accrual: leave lastYieldAt alone so it keeps building.
-    newLastYieldAt = new Date(lastTs);
-  }
-  return { pendingWhole, pendingExact, totalRate, newLastYieldAt };
+// Old model (0.1% per day per balance, no cap) is retired. The new
+// model self-balances: as more BUSTS get staked, headline APY drops.
+const SECONDS_PER_DAY = 86400;
+
+export const BUSTS_POOL_TOTAL    = 10_000_000;          // BUSTS
+export const BUSTS_POOL_DAYS     = 365;
+export const BUSTS_DAILY_EMISSION = BUSTS_POOL_TOTAL / BUSTS_POOL_DAYS;     // ~27,397 / day
+export const BUSTS_PER_SECOND     = BUSTS_DAILY_EMISSION / SECONDS_PER_DAY; // ~0.317 / sec
+
+// APY display reference (tokens/year reference). 100k matches the NFT
+// vault for a consistent UI. With pool-based math, headline APY here =
+// (POOL_TOTAL / total_deposited) * 100. e.g. 10M pool / 5M deposited
+// = 200% APY for a 1-BUSTS-deposited "common" share.
+export const BUSTS_APY_REFERENCE = 1; // pool model: APY = pool/total directly
+
+// Legacy portrait bonus retired post-mint. The 10/day flat for a
+// pre-built portrait deposit is no longer accruing. Existing portrait
+// deposits stay in their vaults until the user withdraws them.
+
+// Pure math helper: given total deposited (across all vaults) and a
+// user's deposited amount, return the per-second BUSTS rate accruing
+// to that user. Caller multiplies by elapsed seconds to get the
+// fractional reward to add to the accumulator.
+export function bustsPerSecondFor(userDeposit, totalDeposited) {
+  const u = Number(userDeposit) || 0;
+  const t = Number(totalDeposited) || 0;
+  if (u <= 0 || t <= 0) return 0;
+  return (u / t) * BUSTS_PER_SECOND;
+}
+
+// Headline APY for the BUSTS pool at the current composition. Same
+// across all depositors since everyone earns proportional to share.
+export function bustsHeadlineApy(totalDeposited) {
+  const t = Math.max(1, Number(totalDeposited) || 0);
+  return (BUSTS_POOL_TOTAL / t) * 100;
+}
+
+// Compatibility shims so old callers (not yet migrated) keep working.
+// These will be removed once vault.js + downstream are updated.
+export const YIELD_RATE_BUSTS_PER_SEC    = 0;
+export const YIELD_RATE_PORTRAIT_PER_SEC = 0;
+export function settleYield() {
+  return { pendingWhole: 0, pendingExact: 0, totalRate: 0, newLastYieldAt: new Date() };
 }
 
 export const UPGRADE_CATALOG = {

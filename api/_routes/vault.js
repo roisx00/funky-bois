@@ -7,13 +7,17 @@
 import { sql, one } from '../_lib/db.js';
 import { getSessionUser } from '../_lib/auth.js';
 import { ok, bad } from '../_lib/json.js';
-import { computePower, totalUpgradeBonus, settleYield, YIELD_RATE_BUSTS_PER_SEC, YIELD_RATE_PORTRAIT_PER_SEC } from '../_lib/vaults.js';
+import {
+  computePower, totalUpgradeBonus,
+  bustsPerSecondFor, bustsHeadlineApy,
+  BUSTS_POOL_TOTAL, BUSTS_POOL_DAYS, BUSTS_DAILY_EMISSION, BUSTS_PER_SECOND,
+} from '../_lib/vaults.js';
 
 async function loadVault(userId) {
-  // Lazy-create
   let row = one(await sql`
     SELECT user_id, busts_deposited, burn_count, win_count,
            portrait_id, last_yield_at, lifetime_yield_paid,
+           COALESCE(fractional_yield, 0)::numeric AS fractional_yield,
            created_at, updated_at
       FROM vaults WHERE user_id = ${userId}::uuid
   `);
@@ -23,12 +27,14 @@ async function loadVault(userId) {
       ON CONFLICT (user_id) DO NOTHING
       RETURNING user_id, busts_deposited, burn_count, win_count,
                 portrait_id, last_yield_at, lifetime_yield_paid,
+                COALESCE(fractional_yield, 0)::numeric AS fractional_yield,
                 created_at, updated_at
     `);
     if (!row) {
       row = one(await sql`
         SELECT user_id, busts_deposited, burn_count, win_count,
                portrait_id, last_yield_at, lifetime_yield_paid,
+               COALESCE(fractional_yield, 0)::numeric AS fractional_yield,
                created_at, updated_at
           FROM vaults WHERE user_id = ${userId}::uuid
       `);
@@ -47,12 +53,26 @@ async function loadVault(userId) {
     upgradeBonusTotal,
   });
 
-  // Pending yield (live snapshot at request time — client extrapolates further)
-  const yieldState = settleYield({
-    bustsDeposited: row.busts_deposited,
-    hasPortrait:    !!row.portrait_id,
-    lastYieldAt:    row.last_yield_at,
-  });
+  // Pool composition for live APY display.
+  const poolRow = one(await sql`
+    SELECT COALESCE(SUM(busts_deposited), 0)::bigint AS total
+      FROM vaults WHERE busts_deposited > 0
+  `);
+  const totalDeposited = Number(poolRow?.total || 0);
+
+  // Live pending = stored fractional + accrual since last_yield_at.
+  const userDeposit = Number(row.busts_deposited) || 0;
+  const lastTs = new Date(row.last_yield_at).getTime();
+  const secondsSince = Math.max(0, (Date.now() - lastTs) / 1000);
+  const userPerSec = bustsPerSecondFor(userDeposit, totalDeposited);
+  const liveAccrued = userPerSec * secondsSince;
+  const pendingExact = Number(row.fractional_yield) + liveAccrued;
+  const pendingWhole = Math.floor(pendingExact);
+
+  const headlineApy = bustsHeadlineApy(totalDeposited);
+  const userShare   = totalDeposited > 0 ? userDeposit / totalDeposited : 0;
+  const userDaily   = userShare * BUSTS_DAILY_EMISSION;
+  const userAnnual  = userShare * BUSTS_POOL_TOTAL;
 
   return {
     userId: row.user_id,
@@ -65,12 +85,29 @@ async function loadVault(userId) {
     upgrades:       upgrades.map((u) => ({ track: u.track, tier: u.tier })),
     upgradeBonus:   upgradeBonusTotal,
     power,
-    pendingYield:   yieldState.pendingWhole,
-    yieldRatePerSec: yieldState.totalRate,
+
+    // Yield surface — same shape as the NFT vault for UI consistency.
+    pendingYield:    pendingWhole,
+    pendingExact:    pendingExact,
+    yieldRatePerSec: userPerSec,
     yieldRates: {
-      bustsPerSec:    YIELD_RATE_BUSTS_PER_SEC,
-      portraitPerSec: YIELD_RATE_PORTRAIT_PER_SEC,
+      bustsPerSec:    userPerSec,
+      portraitPerSec: 0, // legacy field, retired
     },
+    apy: {
+      headline:   headlineApy,           // 100 × (POOL/total) — same for everyone
+      userPerDay: userDaily,
+      userPerYear: userAnnual,
+      userShare,
+    },
+    pool: {
+      total:          BUSTS_POOL_TOTAL,
+      days:           BUSTS_POOL_DAYS,
+      dailyEmission:  BUSTS_DAILY_EMISSION,
+      perSecond:      BUSTS_PER_SECOND,
+      totalDeposited,
+    },
+
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
   };
