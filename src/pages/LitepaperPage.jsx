@@ -1,16 +1,5 @@
-// THE 1969 — Litepaper · Post-Mint Technical Edition
-//
-// Public technical document. Lives at /litepaper. Documents the
-// post-mint system architecture: contracts, vault mechanics, yield
-// math, rarity engine, holder verification, sales pipeline.
-//
-// Editorial rules:
-//   - No mint price, no treasury address, no internal endpoint
-//     names, no specific admin handles, no source-control links.
-//   - $BUSTS migration to ERC-20 is hinted, not promised, not dated.
-//   - Architecture descriptions are at the level of "what it does",
-//     not "where the code lives".
-//   - Anti-abuse specifics are at architectural level only.
+// THE 1969 · Litepaper, post-mint edition.
+// Plain English tech doc. No em-dashes. No marketing voice.
 
 import { useState, useEffect } from 'react';
 
@@ -52,56 +41,54 @@ export default function LitepaperPage({ onNavigate }) {
           <Abstract />
           <TableOfContents />
 
-          {/* §01 — System Overview */}
+          {/* §01 */}
           <Section n="01" title="System Overview">
             <Body>
-              <DropCap letter="T">HE 1969 is a finite NFT collective + custodial staking
-              system + holder identity layer, glued together by an off-chain rewards ledger.</DropCap>
-              The mint is complete. All 1,969 portraits are minted on Ethereum mainnet. The
-              system is in steady-state operation: holders deposit portraits, the vault
-              records the deposit, the rewards engine accrues $BUSTS by rarity weight, and
-              the verification subsystem maps wallets to Discord identities for tier roles.
+              THE 1969 is a 1,969 piece NFT collection on Ethereum plus a staking vault
+              that pays off chain rewards. Mint is done. All 1,969 portraits live on
+              the contract. The vault is open and people are staking. This document
+              explains how it works.
             </Body>
             <Body>
-              The architecture is split across three trust zones: <em>on-chain</em>
-              (contracts, immutable, public), <em>indexed</em> (events read from the chain
-              and mirrored to a relational database for fast queries), and <em>off-chain</em>
-              (the rewards ledger, holder roles, gallery cache). Every off-chain value is
-              derivable from on-chain state — the chain is canonical, everything else is
-              optimization.
+              The setup has three layers. On chain is the truth: that's where the NFT
+              and the vault contracts live. We index the chain into a database so the
+              site is fast (you don't want to wait on RPC for every gallery tile). On
+              top of that we run an off chain rewards ledger that tracks who earned
+              what. If our servers go down tomorrow, your NFT is still in the vault and
+              you can withdraw it directly from Etherscan.
             </Body>
-            <DiagramFrame caption="Top-level component diagram. Solid arrows = data flow. Dashed = trust boundary.">
+            <DiagramFrame caption="Three layers. Chain is canonical. Index is for speed. Frontend is just a way to look at it.">
               <SystemDiagram />
             </DiagramFrame>
             <Pull>
-              The chain is the truth. Everything else is a faster way to read the chain.
+              The chain is the truth. Everything else is just a fast way to read it.
             </Pull>
           </Section>
 
-          {/* §02 — Smart Contract Layer */}
-          <Section n="02" title="Smart Contract Architecture">
+          {/* §02 */}
+          <Section n="02" title="The Contracts">
             <Body>
-              Two contracts. The NFT itself, and the Vault that custody-stakes it. Both
-              are deployed on Ethereum mainnet, both are Etherscan-verified, both have
-              no upgrade path.
+              Two contracts on mainnet. Both are verified on Etherscan. Neither has an
+              admin key. Neither has an upgrade path. We can't touch them after deploy
+              and neither can anyone else.
             </Body>
 
             <ContractTable />
 
             <Body>
-              The NFT contract is a sequential-mint ERC-721 with metadata served from
-              IPFS. Token IDs are 1..1,969. The contract is <em>not</em> ERC-721
-              Enumerable (calling tokenByIndex reverts), so enumeration uses Transfer
-              event indexing rather than on-chain pagination.
+              The NFT contract is a normal ERC 721 with sequential mint. Token IDs run
+              from 1 to 1,969. One thing to note: it's not ERC 721 Enumerable, so
+              calling tokenByIndex reverts. You enumerate the collection by reading
+              Transfer events, not by paginating on chain.
             </Body>
             <Body>
-              The Vault is a minimal custodial holder. It implements deposit, withdraw,
-              ERC-721 receiver, and reentrancy guard. It does not mint, transfer, or
-              hold any reward token — yield is settled off-chain against on-chain stake
-              state.
+              The vault is a custodial holder contract. About 100 lines of Solidity.
+              All it does is hold tokens for people, record who deposited each one,
+              and let them pull it back out. It does not mint, transfer, or hold any
+              reward token. Yield is settled off chain against on chain stake state.
             </Body>
 
-            <CodeBlock title="Vault interface (Solidity)">
+            <CodeBlock title="Vault interface">
 {`function deposit(uint256[] calldata tokenIds) external nonReentrant
 function withdraw(uint256[] calldata tokenIds) external nonReentrant
 
@@ -121,145 +108,136 @@ error EmptyBatch();`}
             </CodeBlock>
 
             <Pull>
-              No admin keys. No upgrade proxy. No pause. No fee. The contract is what
-              it is.
+              No admin keys. No upgrade proxy. No pause function. No fee.
+              The contract is what it is.
             </Pull>
           </Section>
 
-          {/* §03 — The Vault */}
-          <Section n="03" title="The Vault — State Machine">
+          {/* §03 */}
+          <Section n="03" title="The Vault, How It Works">
             <Body>
-              Every 1969 token has exactly one of three states with respect to the
-              vault: <em>unstaked</em> (the token's <code>ownerOf</code> is the
-              user), <em>staked</em> (the token's <code>ownerOf</code> is the vault
-              contract, and <code>depositor[tokenId]</code> records who deposited it),
-              or <em>withdrawn</em> (a token that was previously staked but is now
-              back in a wallet). The third state is just a transition; on-chain it
-              looks identical to never-staked.
+              Every 1969 token is in one of three states: in your wallet, in the vault,
+              or back in your wallet after a withdraw. The third state is just a
+              transition. On chain it looks the same as never staked.
             </Body>
 
-            <DiagramFrame caption="Token state transitions in the vault. The contract holds no penalty; transitions are reversible at any time.">
+            <DiagramFrame caption="Token state transitions in the vault. Reversible, anytime, no fee.">
               <VaultStateMachine />
             </DiagramFrame>
 
             <Body>
-              <strong>Deposit invariants.</strong> The contract enforces three rules at
-              the moment of deposit:
+              When you deposit, the contract checks three things. The token can't
+              already be staked (otherwise it reverts AlreadyStaked). The transfer
+              has to succeed (which means you actually own the token and you've
+              approved the vault). The reentrancy lock has to be open. If any of
+              those fails, the whole deposit reverts and nothing changes.
             </Body>
-            <BulletList items={[
-              'depositor[tokenId] must be address(0) — already-staked tokens revert with AlreadyStaked',
-              'safeTransferFrom must succeed — the user must own the token AND have approved the vault contract',
-              'reentrancy guard must be unlocked — single-status pattern, blocks recursive deposits',
-            ]} />
 
             <Body>
-              <strong>Withdraw invariants.</strong> A withdraw is a strict
-              reciprocal: the caller must equal <code>depositor[tokenId]</code>.
-              The contract has no admin override; if a token is staked under wallet
-              A and wallet B calls withdraw, the call reverts with{' '}
-              <code>NotDepositor</code>. This is by design — yield accrues to the
-              <em> depositor</em>, not the address holding the most-recent
-              ownership of the original wallet.
+              When you withdraw, it checks one thing: are you the depositor. The
+              contract records depositor[tokenId] when you stake. Withdraw checks
+              that msg.sender matches. There is no admin override. If you staked
+              from wallet A and you're calling from wallet B, you get NotDepositor
+              and the call fails. By design. The depositor is who earns the yield,
+              not whoever happens to hold the wallet now.
             </Body>
 
-            <DiagramFrame caption="Deposit lifecycle: from approve → safeTransferFrom → vault state mutation → event indexing → reward accrual.">
+            <DiagramFrame caption="Deposit flow from approve through transfer to indexed event.">
               <DepositSequenceDiagram />
             </DiagramFrame>
           </Section>
 
-          {/* §04 — Yield Engine */}
-          <Section n="04" title="Yield Engine — Math & Settlement">
+          {/* §04 */}
+          <Section n="04" title="Yield Math">
             <Body>
-              The vault distributes <em>off-chain $BUSTS rewards</em> from a fixed
-              annual emission pool. Rewards are not minted on-chain by the vault
-              contract; the contract emits Deposit/Withdraw events, the indexer
-              mirrors stake state to the database, and a settlement function
-              advances each user's pending balance based on their weight share.
+              The vault pays $BUSTS rewards out of a fixed pool. Not minted on chain
+              by the vault contract. We mirror stake state from the chain into a
+              database, and a settlement function adds your share to your pending
+              balance whenever you (or the system) reads your account.
             </Body>
 
             <CodeBlock title="Constants">
 {`POOL_TOTAL          = 20,000,000 BUSTS
 POOL_DURATION       = 365 days
-DAILY_EMISSION      = POOL_TOTAL / POOL_DURATION  ≈ 54,794.52 BUSTS / day
-PER_SECOND_RATE     = DAILY_EMISSION / 86,400     ≈ 0.6342 BUSTS / sec
-APY_REFERENCE       = 100,000 BUSTS / token / year (display normalization)`}
+DAILY_EMISSION      = POOL_TOTAL / POOL_DURATION  ~ 54,794.52 BUSTS / day
+PER_SECOND_RATE     = DAILY_EMISSION / 86,400     ~ 0.6342 BUSTS / sec
+APY_REFERENCE       = 100,000 BUSTS / token / year (display only)`}
             </CodeBlock>
 
             <Body>
-              <strong>Rarity weights.</strong> A token's contribution to the pool is
-              keyed to its rarity tier:
+              Each token has a weight based on its rarity. Higher rarity, more weight,
+              bigger share of the pool.
             </Body>
 
             <RarityWeightTable />
 
             <Body>
-              <strong>Per-user yield.</strong> A user's daily reward is their total
-              weight as a fraction of the pool, times the daily emission:
+              Your daily reward is your weight as a fraction of the total weight in
+              the pool, times the daily emission. That's it.
             </Body>
 
-            <CodeBlock title="Settlement formula">
+            <CodeBlock title="The formula">
 {`user_weight    = sum(rarity_weights[token]) for token in user.staked_tokens
 pool_weight    = sum(rarity_weights[token]) for token in all_staked_tokens
 
-annual_busts   = (user_weight / pool_weight) × DAILY_EMISSION × 365
-daily_busts    = (user_weight / pool_weight) × DAILY_EMISSION
-per_second     = (user_weight / pool_weight) × PER_SECOND_RATE
+annual_busts   = (user_weight / pool_weight) * DAILY_EMISSION * 365
+daily_busts    = (user_weight / pool_weight) * DAILY_EMISSION
+per_second     = (user_weight / pool_weight) * PER_SECOND_RATE
 
-apy_percent    = (annual_busts / APY_REFERENCE) × 100`}
+apy_percent    = (annual_busts / APY_REFERENCE) * 100`}
             </CodeBlock>
 
             <Body>
-              <strong>Settlement is lazy.</strong> Pending rewards aren't computed on
-              every chain block — they're computed when the user (or the system)
-              reads their state. The settlement function:
+              We don't compute pending rewards on every block. That would be wasteful.
+              Instead settlement is lazy. When you (or the system) reads your account,
+              the function does this:
             </Body>
 
             <BulletList items={[
-              'Reads the user\'s current active_weight + last_settled_at',
-              'Reads the global pool_weight at this moment',
-              'Computes seconds elapsed × user_weight/pool_weight × per_second',
-              'Adds the result to pending_busts, advances last_settled_at to now',
+              'Read your active_weight and last_settled_at',
+              'Read the pool_weight at this moment',
+              'Compute seconds since last settle, then user_weight / pool_weight times per_second times those seconds',
+              'Add the result to your pending_busts. Set last_settled_at to now.',
             ]} />
 
             <Body>
-              The pool weight changes every time anyone deposits or withdraws, so
-              each settlement uses the pool weight at the moment of computation,
-              not at the moment of last settlement. As the pool fills, headline APY
-              for any single token drops; as tokens unstake, headline APY rises.
-              This is the natural equilibrium.
+              The pool weight changes every time anyone deposits or withdraws. Each
+              settlement uses the pool weight at the moment of computation, not the
+              one from your last settle. That's why the headline APY drops as more
+              people stake. Same pool, more people sharing it. As people pull out,
+              APY goes back up. It self balances.
             </Body>
 
-            <DiagramFrame caption="Per-second emission distributed proportionally to staker weight share. Pool fills → individual yield drops, automatically.">
+            <DiagramFrame caption="The pool emits a fixed rate per second. Stakers split it by weight share.">
               <YieldFlowDiagram />
             </DiagramFrame>
 
             <Pull>
-              Headline APY is not a promise. It's a snapshot. The pool emits a fixed
-              total; everyone shares it.
+              Headline APY isn't a promise. It's a snapshot. The pool emits a fixed
+              total. Everyone shares it.
             </Pull>
           </Section>
 
-          {/* §05 — Rarity System */}
-          <Section n="05" title="Rarity System — Score & Rank">
+          {/* §05 */}
+          <Section n="05" title="Rarity, Score, and Rank">
             <Body>
-              Every portrait has eight trait slots: Background, Outfit, Skin, Eyes,
-              Facial Hair, Hair, Headwear, Face Mark. Each slot draws from a tiered
-              variant pool: Common, Rare, Legendary, Ultra Rare. The combinatorial
-              space is large enough that 1,969 unique combinations are easy; the
-              generator rejects duplicates at the seed stage.
+              Every portrait has eight trait slots. Background, Outfit, Skin, Eyes,
+              Facial Hair, Hair, Headwear, Face Mark. Each slot picks from a tiered
+              pool: Common, Rare, Legendary, Ultra Rare. The generator rejected
+              duplicates at the seed stage so all 1,969 portraits are unique.
             </Body>
 
             <Body>
-              <strong>Tier rollup.</strong> A token's overall tier is the highest
-              rarity present in any of its eight slots:
+              A token's overall tier is the highest rarity it has across any slot.
+              One ultra rare trait makes the whole token ultra rare.
             </Body>
 
-            <CodeBlock title="Tier derivation">
+            <CodeBlock title="Tier rollup">
 {`function rollup(traits):
   best_rank = -1
   best_tier = "common"
   for slot, value in traits:
-    rank = TIER_RANK[lookup(slot, value)]   # 0=common, 1=rare, 2=leg, 3=ultra
+    rank = TIER_RANK[lookup(slot, value)]
     if rank > best_rank:
       best_rank = rank
       best_tier = TIER_OF[rank]
@@ -267,261 +245,254 @@ apy_percent    = (annual_busts / APY_REFERENCE) × 100`}
             </CodeBlock>
 
             <Body>
-              <strong>Rarity score.</strong> A token's score is the sum of weights
-              across all eight slots — distinguishing two Legendary-tier tokens
-              that have very different supporting traits:
+              The score is the sum of weights across all eight slots. Two legendary
+              tier tokens with different supporting traits will have different scores.
+              That's how we differentiate within a tier.
             </Body>
 
-            <CodeBlock title="Score derivation">
+            <CodeBlock title="Score">
 {`function score(traits):
   total = 0
   for slot, value in traits:
     tier = lookup(slot, value)
     total += WEIGHT[tier]   # 1, 3, 8, or 25
-  return total              # range observed: 8 to 62`}
+  return total              # range we observed: 8 to 62`}
             </CodeBlock>
 
             <Body>
-              <strong>Rank.</strong> All 1,969 tokens are sorted by score descending,
-              with ties broken by token id ascending. Each token is assigned a rank
-              from 1 (rarest) to 1,969 (most common). Rank is recomputed whenever
-              the rarity cache is rebuilt.
+              Rank is computed by sorting all 1,969 tokens by score descending, with
+              ties broken by token id ascending. Rank 1 is the rarest. Rank 1,969 is
+              the most common. We recompute rank whenever the rarity cache rebuilds.
             </Body>
 
-            <DiagramFrame caption="Rarity pipeline: per-trait lookup → tier rollup + score → DENSE rank position.">
+            <DiagramFrame caption="Rarity pipeline: trait lookup, tier rollup, score sum, rank position.">
               <RarityPipelineDiagram />
             </DiagramFrame>
 
             <Body>
-              <strong>Final distribution</strong> (124 + 544 + 1,106 + 195 = 1,969):
+              Final on chain distribution. 124 plus 544 plus 1,106 plus 195 equals
+              1,969. Numbers check out.
             </Body>
 
             <RarityDistributionTable />
 
             <Body>
-              The Common tier is the second-rarest because Common requires <em>every</em>{' '}
-              slot to be common. With eight independent slots and a non-trivial chance of
-              at least one Rare-or-higher trait per slot, fully-common rolls are
-              statistically scarce.
+              Quick note on why Common is the second rarest tier. Common requires
+              every single slot to be common. With eight slots and a real chance of
+              at least one rare or higher trait per slot, fully common rolls are
+              statistically scarce. Same reason all attribute free CryptoPunks
+              command a premium.
             </Body>
           </Section>
 
-          {/* §06 — Identity & Verification */}
-          <Section n="06" title="Identity & Verification">
+          {/* §06 */}
+          <Section n="06" title="Holder Verification">
             <Body>
-              Holder identity is a three-way binding: <em>wallet address</em> (proof
-              of ownership), <em>Discord user ID</em> (proof of community membership),
-              and <em>X handle</em> (display name, optional). The system maintains the
-              binding and re-checks on-chain ownership on a fixed schedule.
+              We bind three things together for each holder: a wallet address, a
+              Discord user ID, and an X handle if they want one. The wallet is
+              proof of ownership. Discord is proof of community. The system
+              re checks ownership on a fixed schedule.
             </Body>
 
             <Body>
-              The verification flow uses Discord OAuth as the identity assertion and
-              wagmi-style wallet connection as the ownership assertion. The wallet
-              connection is sufficient proof of control because wallet apps only
-              expose addresses where the user holds the key. No extra signature is
-              required for read-only verification.
+              Verify flow uses Discord OAuth for identity and a wagmi wallet
+              connection for ownership. We don't ask for an extra signature on
+              read only verify. The wallet apps already only expose addresses
+              you have the key for. That's enough proof for assigning a tier role.
             </Body>
 
-            <DiagramFrame caption="Holder verification sequence. Each step is bounded by a 15-minute state token; tokens are single-use.">
+            <DiagramFrame caption="Verify flow. Each step is bounded by a 15 minute state token. Single use.">
               <VerifySequenceDiagram />
             </DiagramFrame>
 
             <Body>
-              Once verified, the system computes the user's effective holdings as
-              the sum of two sources:
+              Once verified we count your effective holdings as wallet held plus
+              vault staked.
             </Body>
 
             <CodeBlock title="Effective holdings">
 {`wallet_held   = NFTs whose ownerOf(id) = user.verified_wallet
 vault_staked  = NFTs whose vault.depositor[id] = user.verified_wallet
-              ∪ NFTs whose vault entry has user_id = user.id
+              + NFTs whose vault entry has user_id = user.id
 
 total_holdings = wallet_held + vault_staked`}
             </CodeBlock>
 
             <Body>
-              <strong>Re-verification cadence.</strong> A scheduled job walks all
-              verified holders every 6 hours. For each, it recomputes the holdings
-              count, derives the appropriate tier, and updates Discord roles via
-              an atomic PATCH that replaces the user's full role array. A user who
-              sells gets downgraded; a user who buys more gets upgraded; a user who
-              drops to zero gets all tier roles revoked.
+              A scheduled job walks every verified holder every 6 hours. For each,
+              it recomputes the holdings count, picks the right tier, and updates
+              Discord roles in one PATCH that replaces the user's full role array.
+              Sell some tokens, get downgraded. Buy more, get upgraded. Drop to
+              zero, all tier roles get pulled.
             </Body>
           </Section>
 
-          {/* §07 — Holder Tier Ladder */}
-          <Section n="07" title="Holder Tier Ladder">
+          {/* §07 */}
+          <Section n="07" title="The Tier Ladder">
             <Body>
-              The community tier system is a six-rung ladder mapped to holder
-              count. The user receives exactly one tier role: the highest rung
-              they qualify for.
+              Six tiers. Holdings count includes wallet plus vault. You get exactly
+              one tier role. The highest one you qualify for.
             </Body>
 
             <TierLadderTable />
 
             <Body>
-              The ladder reflects a continuous progression rather than discrete
-              "you're a whale or you're not." A 4-token holder is The Queen and a
-              22-token holder is The Poet, and there's no shame in either; both are
-              earning $BUSTS proportional to their stake.
+              The ladder is meant to be a continuous progression. A 4 token holder
+              is The Queen and a 22 token holder is The Poet. Both are earning
+              $BUSTS proportional to their stake. There's no shame in either.
             </Body>
           </Section>
 
-          {/* §08 — On-Chain Reads */}
-          <Section n="08" title="On-Chain Reads — Gallery & Dashboard">
+          {/* §08 */}
+          <Section n="08" title="How the Site Reads the Chain">
             <Body>
-              The site's read paths are constructed to match on-chain state with
-              minimum trust in any cached layer. Every read either calls a public
-              JSON-RPC method directly, or queries an indexer that mirrors a
-              specific contract event.
+              The site's reads are built so we trust the chain over any cache. Every
+              read either calls a public RPC method directly or queries an indexer
+              that mirrors a specific contract event. We don't make up numbers.
             </Body>
 
             <ReadPathTable />
 
             <Body>
-              The gallery's bulk read prefetches rarity for all 1,969 tokens via a
-              batch endpoint. Image metadata is lazy-loaded per visible tile via
-              IntersectionObserver. The dashboard's "your 1969s" panel merges
-              wallet-held tokens with vault stakes, marking each tile with its
-              source.
+              The gallery prefetches rarity for all 1,969 tokens through a batch
+              call. Image metadata loads per visible tile with IntersectionObserver.
+              The dashboard's "your 1969s" panel merges your wallet held tokens with
+              your vault stakes and tags each tile so you know which is which.
             </Body>
           </Section>
 
-          {/* §09 — Sales Watcher */}
-          <Section n="09" title="Sales Watcher — Chain-Native Pipeline">
+          {/* §09 */}
+          <Section n="09" title="Sales Watcher">
             <Body>
-              The community sales bot detects marketplace sales of 1969 tokens by
-              reading the chain directly, not by polling a third-party API. The
-              pipeline is purely on-chain reads + receipt scanning, which means it
-              works regardless of which marketplace handled the sale.
+              The sales bot in Discord detects marketplace sales by reading the
+              chain directly. We don't poll a third party API. The whole pipeline
+              is RPC reads plus receipt scanning, which means it works no matter
+              which marketplace the sale happened on.
             </Body>
 
-            <DiagramFrame caption="Sales detection pipeline. Every step is auditable from public chain data.">
+            <DiagramFrame caption="Sales detection. Every step is auditable from public chain data.">
               <SalesPipelineDiagram />
             </DiagramFrame>
 
             <Body>
-              The watcher tracks a <code>last_processed_block</code> in state and
-              runs every minute. Each pass:
+              The watcher tracks the last block it processed and runs every minute.
+              Each pass:
             </Body>
 
             <BulletList items={[
-              'Calls eth_blockNumber to get the current head',
-              'Calls eth_getLogs for ERC-721 Transfer events on the 1969 contract since last_processed_block',
+              'Calls eth_blockNumber to get the head',
+              'Calls eth_getLogs for ERC 721 Transfer events on the 1969 contract since last_processed_block',
               'Skips mints (from = address(0))',
-              'For each remaining transfer, fetches the transaction + receipt',
-              'Scans the receipt logs for known marketplace contracts (Seaport / Blur / LooksRare / X2Y2)',
-              'Reads the sale price from tx.value (native ETH)',
-              'Posts a rich embed to the configured Discord channel',
-              'Persists the (tx_hash, log_index) pair to dedupe future polls',
+              'For each Transfer, fetches the transaction and receipt',
+              'Scans the receipt logs for known marketplace contracts (Seaport, Blur, LooksRare, X2Y2)',
+              'Reads the price from tx.value',
+              'Posts an embed to the Discord channel',
+              'Saves the tx_hash + log_index pair so we don\'t double post',
             ]} />
 
             <Body>
-              Sale embeds include rarity tier and rank, pulled from the same cache
-              the gallery uses, so Discord context exactly matches what the user
-              sees on the site.
+              Embeds include the rarity tier and rank, pulled from the same cache
+              the gallery uses. So the Discord post matches what you see on the
+              site. Same data, same numbers.
             </Body>
           </Section>
 
-          {/* §10 — $BUSTS Token Layer */}
-          <Section n="10" title="$BUSTS — The Token Layer">
+          {/* §10 */}
+          <Section n="10" title="The $BUSTS Layer">
             <Body>
-              <strong>Current state.</strong> $BUSTS is an off-chain ledger credit.
-              Balances live in a relational database, settled deterministically
-              against on-chain stake state. This is the right shape for the launch
-              window: holders earn and spend without paying gas on each action,
-              and the team retains design optionality on supply and migration.
+              Right now $BUSTS is an off chain ledger credit. Balances live in our
+              database, settled deterministically against on chain stake state.
+              We picked this shape on purpose. Holders earn and spend without
+              paying gas on every action, and we keep design optionality on
+              supply mechanics and migration timing.
             </Body>
 
             <Body>
-              <strong>What earns $BUSTS today:</strong>
+              Two things mint new $BUSTS today:
             </Body>
 
             <BulletList items={[
-              'Vault staking — primary, ongoing source. Rarity-weighted.',
-              'Referrals — small fixed bonus for verified joins, gated against farm.',
-              'Discord chat — fractional accumulator on a daily cap.',
+              'Vault staking. Primary, ongoing source. Rarity weighted.',
+              'Discord chat. Fractional accumulator on a daily message cap.',
             ]} />
 
             <Body>
-              <strong>What it is not.</strong> $BUSTS is a utility credit. It is not
-              a security, not an investment vehicle, and not a redeemable claim on
-              project assets. The team makes no representation about its market
-              value.
+              That's it. No tasks. No drops. No referral payouts. No follow bonus.
+              No mystery boxes. All retired post mint. We documented the closures
+              so the supply curve is easy to reason about.
             </Body>
 
             <Body>
-              <strong>Forward path.</strong> A migration to an on-chain ERC-20
-              representation is on the roadmap. The migration design — including
-              snapshot rules, vesting structure, and the relationship to existing
-              balances — will be documented before any conversion event. Holders
-              will be notified through official channels with full lead time.
+              What $BUSTS is not. It's a utility credit. It's not a security. It's
+              not an investment vehicle. It's not a redeemable claim on assets. We
+              don't make any representation about its market value.
+            </Body>
+
+            <Body>
+              What's next. A migration to an on chain ERC 20 is on the roadmap. We
+              haven't shipped it yet. When we do, the design (snapshot rules,
+              vesting, conversion) will be documented before any conversion event.
+              Holders get notified through official channels with full lead time.
             </Body>
           </Section>
 
-          {/* §11 — Security Properties */}
+          {/* §11 */}
           <Section n="11" title="Security Properties">
             <Body>
-              The system is structured so that the worst-case failure of any
-              off-chain component does not put user assets at risk. The contract
-              layer is the security boundary; everything else is convenience.
+              The system is structured so that the worst case failure of any off
+              chain component does not put your assets at risk. The contract layer
+              is the security boundary. Everything else is just convenience.
             </Body>
 
             <SecurityTable />
 
             <Body>
-              <strong>Vault audit profile.</strong> The vault is small —
-              approximately 100 lines of Solidity, no inheritance from third-party
-              libraries beyond the ERC-721 receiver interface, no upgrade pattern,
-              no admin functions. The two state-changing functions
-              (<code>deposit</code>, <code>withdraw</code>) are guarded by a
-              single-status reentrancy lock and use <code>safeTransferFrom</code>
-              for all token movement.
+              The vault is small. About 100 lines of Solidity, no fancy inheritance,
+              no upgrade pattern, no admin functions. Both state changing functions
+              (deposit and withdraw) are guarded by a single status reentrancy lock
+              and use safeTransferFrom for all token movement.
             </Body>
 
             <Body>
-              <strong>Recovery scenarios.</strong> Three potential bad scenarios and
-              what would happen:
+              Three scenarios worth thinking about:
             </Body>
 
             <BulletList items={[
-              'Off-chain database is destroyed → vault stake state is fully reconstructable from on-chain Deposit/Withdraw events. Users are at no risk; only the off-chain rewards ledger needs to be re-derived from on-chain history.',
-              'Project team disappears → users can withdraw their staked NFTs by calling vault.withdraw() directly via Etherscan. No project intervention required.',
-              'A bug in the off-chain settlement code → on-chain stake is unaffected. Withdrawals continue to work. Users get full-fidelity recovery via the contract.',
+              'Our database gets nuked. Vault stake state is fully reconstructable from on chain Deposit and Withdraw events. You\'re fine. Only the off chain reward balances need re deriving.',
+              'The team disappears. You can withdraw your staked NFTs by calling vault.withdraw() directly from Etherscan. No project intervention required. The chain doesn\'t care if we\'re here.',
+              'Off chain settlement code has a bug. On chain stake is unaffected. Withdrawals keep working. You always have full fidelity recovery via the contract itself.',
             ]} />
           </Section>
 
-          {/* §12 — Roadmap & Doctrine */}
-          <Section n="12" title="Roadmap & Doctrine">
+          {/* §12 */}
+          <Section n="12" title="Roadmap">
             <Body>
-              <strong>Completed.</strong> Mint (1,969 portraits, sold out). Reveal
-              via ERC-4906 BatchMetadataUpdate. OpenSea verification. Vault
-              deployment + verification. Holder verification system + Discord tier
-              roles. Live gallery with rank + holder display. On-chain sales bot.
+              <strong>Done.</strong> Mint sold out at 1,969. Reveal via ERC 4906.
+              OpenSea verification. Vault deployment plus verification. Holder
+              verification system plus Discord tier roles. Live gallery with
+              rank and holder display. On chain sales bot.
             </Body>
 
             <Body>
-              <strong>Active.</strong> Vault staking + ongoing $BUSTS accrual.
-              Holder tier sync (every 6 hours). Anti-abuse + holder support
-              response infrastructure.
+              <strong>Active.</strong> Vault staking and ongoing $BUSTS accrual.
+              Holder tier sync every 6 hours. Anti abuse infrastructure plus
+              holder support response.
             </Body>
 
             <Body>
-              <strong>Forward.</strong>
+              <strong>Next.</strong>
             </Body>
 
             <BulletList items={[
-              '$BUSTS migration to on-chain ERC-20 (design doc forthcoming)',
-              'Expanded vault utility — governance signals, holder-only surfaces',
-              'Cross-collection collaborations',
-              'Long-form publications under the project\'s editorial voice',
+              '$BUSTS migration to on chain ERC 20',
+              'Expanded vault utility (governance signals, holder only surfaces)',
+              'Cross collection collaborations',
+              'Long form publications under our editorial voice',
             ]} />
 
             <Body>
-              The roadmap is intentionally compact. Each surface ships before the
-              next is announced. No timelines are committed without execution
-              certainty.
+              The roadmap is intentionally short. We ship one surface, then announce
+              the next. We don't put dates on things until we know they'll hit.
             </Body>
 
             <Pull big lime>
@@ -530,17 +501,17 @@ total_holdings = wallet_held + vault_staked`}
 
             <Body>
               The doctrine is both literal and figurative. Literal: the vault
-              contract is immutable, has no admin, and cannot be drained, paused,
-              or upgraded. Figurative: the system was built to outlast the people
-              running it. The chain is the truth. The off-chain layer is a faster
-              way to read it. If the off-chain layer dies, the chain remains.
+              contract is immutable. It can't be drained, paused, or upgraded.
+              Figurative: we built the system to outlast the people running it.
+              The chain stays. The off chain layer is just a faster way to read
+              it. If the off chain layer dies, the chain remains. Your stake
+              remains. You can always get out.
             </Body>
           </Section>
 
           <Footer />
         </article>
 
-        {/* STICKY SIDE TOC (desktop only) */}
         <aside className="lp-aside" style={{ position: 'sticky', top: 56 }}>
           <TOCSticky activeSection={activeSection} />
           <div style={{ marginTop: 32, fontFamily: 'var(--font-mono)', fontSize: 10, lineHeight: 1.7, color: 'var(--text-4)', letterSpacing: '0.06em' }}>
@@ -550,7 +521,7 @@ total_holdings = wallet_held + vault_staked`}
             <div style={{ marginTop: 8 }}>Vault&nbsp;contract:</div>
             <code style={{ fontSize: 9, wordBreak: 'break-all', color: 'var(--text-3)' }}>{VAULT_CONTRACT}</code>
             <div style={{ marginTop: 14, color: 'var(--text-4)', fontStyle: 'italic' }}>
-              Both Etherscan-verified.
+              Both Etherscan verified.
             </div>
           </div>
         </aside>
@@ -585,8 +556,8 @@ function Hero() {
         fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.04em',
         color: 'var(--text-3)', maxWidth: 720, marginTop: 24,
       }}>
-        a technical document · contracts, vault mechanics, yield math,
-        rarity engine, holder verification · post-mint operating manual
+        a tech document. contracts, vault mechanics, yield math, rarity engine,
+        verification flow. written for people who want to know how it actually works.
       </div>
     </header>
   );
@@ -602,22 +573,21 @@ function Abstract() {
         fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.22em',
         textTransform: 'uppercase', color: 'var(--text-4)', marginBottom: 10,
       }}>
-        Abstract
+        TL;DR
       </div>
       <p style={{
         fontFamily: 'Georgia, serif', fontSize: 16, lineHeight: 1.7,
         margin: 0, color: 'var(--ink)',
       }}>
-        THE 1969 is a 1,969-piece monochrome NFT collective on Ethereum, paired
-        with an immutable custodial staking vault that distributes rarity-weighted
-        $BUSTS rewards from a fixed annual emission pool. The vault has no admin
-        keys, no upgrade path, no penalty for withdrawal. Holder identity is
-        verified via a Discord OAuth + on-chain ownership flow that auto-assigns
-        tier roles and re-syncs every six hours. Sales of 1969 tokens are detected
-        by a chain-native indexer that scans Transfer events and cross-references
-        marketplace contracts in the same transaction. This document specifies the
-        contracts, the yield math, the rarity engine, the verification pipeline,
-        and the security properties that hold across the system.
+        THE 1969 is 1,969 monochrome NFTs on Ethereum plus a custodial staking vault
+        that pays rarity weighted $BUSTS rewards from a fixed annual emission pool.
+        The vault has no admin keys, no upgrade path, no penalty for withdraw. Holder
+        identity ties wallet to Discord through OAuth plus on chain ownership check.
+        Tier roles auto assign and re sync every 6 hours. Sales of 1969 tokens get
+        detected by a chain native indexer that scans Transfer events and matches
+        marketplace contracts in the same transaction. This doc walks through the
+        contracts, the math, the rarity engine, the verify pipeline, and what we're
+        not doing on purpose.
       </p>
     </div>
   );
@@ -626,17 +596,17 @@ function Abstract() {
 function TableOfContents() {
   const entries = [
     ['01', 'System Overview'],
-    ['02', 'Smart Contract Architecture'],
-    ['03', 'The Vault — State Machine'],
-    ['04', 'Yield Engine — Math & Settlement'],
-    ['05', 'Rarity System — Score & Rank'],
-    ['06', 'Identity & Verification'],
-    ['07', 'Holder Tier Ladder'],
-    ['08', 'On-Chain Reads'],
+    ['02', 'The Contracts'],
+    ['03', 'The Vault, How It Works'],
+    ['04', 'Yield Math'],
+    ['05', 'Rarity, Score, and Rank'],
+    ['06', 'Holder Verification'],
+    ['07', 'The Tier Ladder'],
+    ['08', 'How the Site Reads the Chain'],
     ['09', 'Sales Watcher'],
-    ['10', '$BUSTS — The Token Layer'],
+    ['10', 'The $BUSTS Layer'],
     ['11', 'Security Properties'],
-    ['12', 'Roadmap & Doctrine'],
+    ['12', 'Roadmap'],
   ];
   return (
     <div style={{ marginBottom: 56 }}>
@@ -665,7 +635,7 @@ function TableOfContents() {
 function TOCSticky({ activeSection }) {
   const entries = [
     ['01', 'Overview'], ['02', 'Contracts'], ['03', 'Vault'],
-    ['04', 'Yield'], ['05', 'Rarity'], ['06', 'Identity'],
+    ['04', 'Yield'], ['05', 'Rarity'], ['06', 'Verify'],
     ['07', 'Tiers'], ['08', 'Reads'], ['09', 'Sales'],
     ['10', '$BUSTS'], ['11', 'Security'], ['12', 'Roadmap'],
   ];
@@ -747,19 +717,6 @@ function Pull({ children, big, lime }) {
   );
 }
 
-function DropCap({ letter, children }) {
-  return (
-    <span>
-      <span style={{
-        float: 'left', fontFamily: 'var(--font-display)', fontStyle: 'italic',
-        fontSize: 64, lineHeight: 0.9, marginRight: 8, marginTop: 4,
-        color: 'var(--ink)',
-      }}>{letter}</span>
-      {children}
-    </span>
-  );
-}
-
 function CodeBlock({ title, children }) {
   return (
     <div style={{ margin: '24px 0' }}>
@@ -817,8 +774,8 @@ function Footer() {
       fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.06em',
       color: 'var(--text-3)', lineHeight: 1.7,
     }}>
-      <div style={{ marginBottom: 6 }}>THE 1969 · litepaper v1.0 · post-mint edition</div>
-      <div>compiled by the project team · subject to revision · superseded versions preserved</div>
+      <div style={{ marginBottom: 6 }}>THE 1969 · litepaper v1.0 · post mint edition</div>
+      <div>compiled by the team. subject to revision. older versions kept.</div>
       <div style={{ marginTop: 18, color: 'var(--text-4)', fontStyle: 'italic' }}>
         ⌬ the vault must not burn again.
       </div>
@@ -827,13 +784,13 @@ function Footer() {
 }
 
 // ───────────────────────────────────────────────────────────────
-// TABLES & DATA COMPONENTS
+// TABLES
 // ───────────────────────────────────────────────────────────────
 
 function ContractTable() {
   const rows = [
-    ['1969 NFT', 'ERC-721', NFT_CONTRACT, '1,969 portraits · sequential mint · IPFS metadata'],
-    ['Vault1969', 'Custodial holder', VAULT_CONTRACT, 'Stake-and-earn · no admin · no upgrade'],
+    ['1969 NFT', 'ERC-721', NFT_CONTRACT, '1,969 portraits. Sequential mint. IPFS metadata.'],
+    ['Vault1969', 'Custodial holder', VAULT_CONTRACT, 'Stake and earn. No admin. No upgrade.'],
   ];
   return (
     <div style={{ margin: '24px 0', border: '1px solid var(--ink)' }}>
@@ -858,10 +815,10 @@ function ContractTable() {
 
 function RarityWeightTable() {
   const rows = [
-    ['Common',     '1×',  '~6%',   '#aaaaaa'],
-    ['Rare',       '3×',  '~18%',  '#F9F6F0'],
-    ['Legendary',  '8×',  '~48%',  '#FFD43A'],
-    ['Ultra Rare', '25×', '~150%', '#D7FF3A'],
+    ['Common',     '1x',  '~6%',   '#aaaaaa'],
+    ['Rare',       '3x',  '~18%',  '#F9F6F0'],
+    ['Legendary',  '8x',  '~48%',  '#FFD43A'],
+    ['Ultra Rare', '25x', '~150%', '#D7FF3A'],
   ];
   return (
     <div style={{
@@ -881,7 +838,7 @@ function RarityWeightTable() {
           <div style={{
             fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)',
             marginTop: 8,
-          }}>APY ≈ {r[2]} (snap)</div>
+          }}>APY ~{r[2]} (snap)</div>
         </div>
       ))}
     </div>
@@ -890,7 +847,7 @@ function RarityWeightTable() {
 
 function RarityDistributionTable() {
   const rows = [
-    ['Ultra Rare', 124,   'Any single ultra-rare trait'],
+    ['Ultra Rare', 124,   'Any single ultra rare trait'],
     ['Legendary',  544,   'Highest trait is Legendary'],
     ['Rare',       1106,  'Highest trait is Rare'],
     ['Common',     195,   'Every trait is Common'],
@@ -913,7 +870,7 @@ function RarityDistributionTable() {
       ))}
       <div style={{ padding: '14px 20px', background: 'var(--paper-2)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.06em', color: 'var(--text-3)', display: 'flex', justifyContent: 'space-between' }}>
         <span>TOTAL</span>
-        <span>{total} portraits · 100.0%</span>
+        <span>{total} portraits. 100.0%</span>
       </div>
     </div>
   );
@@ -947,11 +904,11 @@ function TierLadderTable() {
 function ReadPathTable() {
   const rows = [
     ['totalSupply()',     'JSON-RPC',     'Live token count from contract'],
-    ['ownerOf(id)',       'JSON-RPC',     'Per-token owner check (gallery, vault tile)'],
-    ['Transfer events',   'eth_getLogs',  'Full token enumeration (no Enumerable on contract)'],
-    ['Deposit events',    'Indexer',      'Mirrored to DB for fast user-stake queries'],
-    ['Token rarity',      'Cache',        'Computed once from on-chain metadata, persisted'],
-    ['Holder by token',   'Alchemy NFT',  'Bulk getOwnersForContract for the gallery'],
+    ['ownerOf(id)',       'JSON-RPC',     'Per token owner check (gallery, vault tile)'],
+    ['Transfer events',   'eth_getLogs',  'Full token enumeration (no Enumerable)'],
+    ['Deposit events',    'Indexer',      'Mirror to DB for fast user stake queries'],
+    ['Token rarity',      'Cache',        'Computed once from on chain metadata, stored'],
+    ['Holder by token',   'NFT data API', 'Bulk owner lookup for the gallery'],
   ];
   return (
     <div style={{ margin: '20px 0', border: '1px solid var(--ink)' }}>
@@ -973,12 +930,12 @@ function ReadPathTable() {
 
 function SecurityTable() {
   const rows = [
-    ['Vault has no admin keys',         'Cannot drain user NFTs · cannot pause · cannot upgrade'],
-    ['Vault is not a proxy',            'Bytecode is fixed forever · no implementation swap'],
-    ['Withdrawal is unconditional',     'Original depositor can always reclaim · no time-lock'],
-    ['Royalties via ERC-2981',          'Marketplace-honored at the standard layer · no on-chain enforcer'],
-    ['Reentrancy guarded',              'Both deposit and withdraw use single-status nonReentrant'],
-    ['Off-chain ledger is reproducible','Stake state derivable from on-chain Deposit/Withdraw events'],
+    ['Vault has no admin keys',         'Can\'t drain user NFTs. Can\'t pause. Can\'t upgrade.'],
+    ['Vault is not a proxy',            'Bytecode is fixed forever. No swap.'],
+    ['Withdraw is unconditional',       'Original depositor can always reclaim. No time lock.'],
+    ['Royalties via ERC-2981',          'Marketplaces honor it at the standard layer. No on chain enforcer.'],
+    ['Reentrancy guarded',              'Both deposit and withdraw use single status nonReentrant.'],
+    ['Off chain ledger is reproducible','Stake state derivable from on chain Deposit / Withdraw events.'],
   ];
   return (
     <div style={{ margin: '20px 0', border: '1px solid var(--ink)' }}>
@@ -1003,8 +960,7 @@ function SecurityTable() {
 function SystemDiagram() {
   return (
     <svg viewBox="0 0 720 320" style={{ width: '100%', height: 'auto', maxWidth: 720 }} fontFamily="JetBrains Mono, monospace">
-      {/* On-chain layer */}
-      <text x="0" y="14" fontSize="9" letterSpacing="2" fill="#888">ON-CHAIN · ETHEREUM MAINNET</text>
+      <text x="0" y="14" fontSize="9" letterSpacing="2" fill="#888">ON CHAIN · ETHEREUM MAINNET</text>
       <rect x="0" y="24" width="220" height="80" fill="none" stroke="#0E0E0E" strokeWidth="1" />
       <text x="110" y="50" textAnchor="middle" fontSize="11" fontWeight="700">1969 NFT Contract</text>
       <text x="110" y="68" textAnchor="middle" fontSize="9" fill="#666">ERC-721 · 1,969 supply</text>
@@ -1013,7 +969,7 @@ function SystemDiagram() {
       <rect x="240" y="24" width="220" height="80" fill="none" stroke="#0E0E0E" strokeWidth="1" />
       <text x="350" y="50" textAnchor="middle" fontSize="11" fontWeight="700">Vault Contract</text>
       <text x="350" y="68" textAnchor="middle" fontSize="9" fill="#666">Custodial · no admin</text>
-      <text x="350" y="84" textAnchor="middle" fontSize="9" fill="#666">Deposit/Withdraw events</text>
+      <text x="350" y="84" textAnchor="middle" fontSize="9" fill="#666">Deposit / Withdraw events</text>
 
       <rect x="480" y="24" width="220" height="80" fill="none" stroke="#0E0E0E" strokeWidth="1" />
       <text x="590" y="50" textAnchor="middle" fontSize="11" fontWeight="700">IPFS</text>
@@ -1025,7 +981,7 @@ function SystemDiagram() {
 
       <rect x="0" y="154" width="340" height="60" fill="#F2EEE6" stroke="#0E0E0E" strokeWidth="1" />
       <text x="170" y="178" textAnchor="middle" fontSize="11" fontWeight="700">Stake state mirror</text>
-      <text x="170" y="194" textAnchor="middle" fontSize="9" fill="#666">vault_deposits · pool_state · rarity_cache</text>
+      <text x="170" y="194" textAnchor="middle" fontSize="9" fill="#666">deposits · pool weight · rarity cache</text>
 
       <rect x="360" y="154" width="340" height="60" fill="#F2EEE6" stroke="#0E0E0E" strokeWidth="1" />
       <text x="530" y="178" textAnchor="middle" fontSize="11" fontWeight="700">Rewards ledger</text>
@@ -1056,7 +1012,6 @@ function SystemDiagram() {
 function VaultStateMachine() {
   return (
     <svg viewBox="0 0 700 220" style={{ width: '100%', height: 'auto', maxWidth: 700 }} fontFamily="JetBrains Mono, monospace">
-      {/* States */}
       <ellipse cx="100" cy="110" rx="80" ry="40" fill="#F2EEE6" stroke="#0E0E0E" strokeWidth="1.5" />
       <text x="100" y="105" textAnchor="middle" fontSize="13" fontWeight="700">UNSTAKED</text>
       <text x="100" y="122" textAnchor="middle" fontSize="9" fill="#666">in user wallet</text>
@@ -1069,7 +1024,6 @@ function VaultStateMachine() {
       <text x="600" y="105" textAnchor="middle" fontSize="13" fontWeight="700">RECLAIMED</text>
       <text x="600" y="122" textAnchor="middle" fontSize="9" fill="#666">back in wallet</text>
 
-      {/* Arrows */}
       <line x1="180" y1="98" x2="270" y2="98" stroke="#0E0E0E" strokeWidth="1" markerEnd="url(#arr)" />
       <text x="225" y="88" textAnchor="middle" fontSize="9" fill="#0E0E0E">deposit()</text>
 
@@ -1080,7 +1034,7 @@ function VaultStateMachine() {
       <text x="475" y="88" textAnchor="middle" fontSize="9" fill="#0E0E0E">withdraw()</text>
 
       <line x1="520" y1="125" x2="430" y2="125" stroke="#0E0E0E" strokeWidth="1" markerEnd="url(#arr)" />
-      <text x="475" y="142" textAnchor="middle" fontSize="9" fill="#0E0E0E">re-deposit()</text>
+      <text x="475" y="142" textAnchor="middle" fontSize="9" fill="#0E0E0E">re deposit()</text>
 
       <defs>
         <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="strokeWidth" markerWidth="6" markerHeight="6" orient="auto">
@@ -1088,7 +1042,6 @@ function VaultStateMachine() {
         </marker>
       </defs>
 
-      {/* Invariants */}
       <text x="0" y="200" fontSize="9" fill="#666">depositor[id] = address(0)</text>
       <text x="270" y="200" fontSize="9" fill="#666">depositor[id] = msg.sender · ownerOf(id) = vault</text>
       <text x="560" y="200" fontSize="9" fill="#666">depositor[id] = address(0)</text>
@@ -1099,7 +1052,6 @@ function VaultStateMachine() {
 function DepositSequenceDiagram() {
   return (
     <svg viewBox="0 0 720 280" style={{ width: '100%', height: 'auto', maxWidth: 720 }} fontFamily="JetBrains Mono, monospace">
-      {/* Lifelines */}
       {[
         ['User wallet',   60],
         ['NFT contract',  220],
@@ -1114,7 +1066,6 @@ function DepositSequenceDiagram() {
         </g>
       ))}
 
-      {/* Steps */}
       <g fontSize="10">
         <line x1="60" y1="60" x2="220" y2="60" stroke="#0E0E0E" markerEnd="url(#arr2)" />
         <text x="140" y="55" textAnchor="middle">setApprovalForAll(vault, true)</text>
@@ -1153,17 +1104,14 @@ function DepositSequenceDiagram() {
 function YieldFlowDiagram() {
   return (
     <svg viewBox="0 0 700 240" style={{ width: '100%', height: 'auto', maxWidth: 700 }} fontFamily="JetBrains Mono, monospace">
-      {/* Pool source */}
       <rect x="240" y="10" width="220" height="60" fill="#0E0E0E" />
       <text x="350" y="34" textAnchor="middle" fontSize="13" fill="#D7FF3A" fontWeight="700">EMISSION POOL</text>
-      <text x="350" y="52" textAnchor="middle" fontSize="10" fill="#aaa">≈ 0.6342 BUSTS / sec</text>
+      <text x="350" y="52" textAnchor="middle" fontSize="10" fill="#aaa">~ 0.6342 BUSTS / sec</text>
 
-      {/* Distribution lines */}
       <line x1="350" y1="70" x2="120" y2="120" stroke="#D7FF3A" strokeWidth="2" markerEnd="url(#arr4)" />
       <line x1="350" y1="70" x2="350" y2="120" stroke="#D7FF3A" strokeWidth="2" markerEnd="url(#arr4)" />
       <line x1="350" y1="70" x2="580" y2="120" stroke="#D7FF3A" strokeWidth="2" markerEnd="url(#arr4)" />
 
-      {/* Stakers */}
       <rect x="40" y="120" width="160" height="80" fill="none" stroke="#0E0E0E" />
       <text x="120" y="140" textAnchor="middle" fontSize="11" fontWeight="700">Staker A</text>
       <text x="120" y="158" textAnchor="middle" fontSize="9" fill="#666">weight 25 (ultra)</text>
@@ -1182,7 +1130,7 @@ function YieldFlowDiagram() {
       <text x="580" y="178" textAnchor="middle" fontSize="9" fill="#666">share = 1/W</text>
       <text x="580" y="194" textAnchor="middle" fontSize="11" fill="#0E0E0E" fontWeight="700">~10 / day</text>
 
-      <text x="350" y="225" textAnchor="middle" fontSize="9" fill="#666">W = sum of all active weights · changes on every deposit/withdraw</text>
+      <text x="350" y="225" textAnchor="middle" fontSize="9" fill="#666">W = sum of all active weights · changes on every deposit / withdraw</text>
 
       <defs>
         <marker id="arr4" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="strokeWidth" markerWidth="6" markerHeight="6" orient="auto">
@@ -1198,7 +1146,7 @@ function RarityPipelineDiagram() {
     <svg viewBox="0 0 720 200" style={{ width: '100%', height: 'auto', maxWidth: 720 }} fontFamily="JetBrains Mono, monospace">
       {[
         ['IPFS metadata',  60,  'attributes[]'],
-        ['Per-trait lookup', 220, 'tier per slot'],
+        ['Per trait lookup', 220, 'tier per slot'],
         ['Tier rollup',    380, 'max(tiers)'],
         ['Rarity score',   540, 'sum(weights)'],
         ['Rank',           680, 'sort + position'],
@@ -1212,8 +1160,8 @@ function RarityPipelineDiagram() {
           ) : null}
         </g>
       ))}
-      <text x="360" y="30" textAnchor="middle" fontSize="10" letterSpacing="2" fill="#888">RARITY DERIVATION PIPELINE</text>
-      <text x="360" y="180" textAnchor="middle" fontSize="9" fill="#666">All steps are deterministic from on-chain metadata · idempotent · cacheable forever</text>
+      <text x="360" y="30" textAnchor="middle" fontSize="10" letterSpacing="2" fill="#888">RARITY DERIVATION</text>
+      <text x="360" y="180" textAnchor="middle" fontSize="9" fill="#666">All steps come from on chain metadata. Same input, same output every time.</text>
 
       <defs>
         <marker id="arr5" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="strokeWidth" markerWidth="6" markerHeight="6" orient="auto">
@@ -1249,13 +1197,13 @@ function VerifySequenceDiagram() {
         <text x="300" y="89" textAnchor="middle">redirect to OAuth consent</text>
 
         <line x1="220" y1="124" x2="60" y2="124" stroke="#0E0E0E" markerEnd="url(#arr6)" />
-        <text x="140" y="119" textAnchor="middle">user authorises (identify scope)</text>
+        <text x="140" y="119" textAnchor="middle">user authorizes (identify scope)</text>
 
         <line x1="220" y1="154" x2="380" y2="154" stroke="#0E0E0E" markerEnd="url(#arr6)" />
-        <text x="300" y="149" textAnchor="middle">code → mint state token (15-min TTL)</text>
+        <text x="300" y="149" textAnchor="middle">{'code -> mint state token (15 min TTL)'}</text>
 
         <line x1="380" y1="184" x2="540" y2="184" stroke="#0E0E0E" markerEnd="url(#arr6)" />
-        <text x="460" y="179" textAnchor="middle">connect wallet (RainbowKit)</text>
+        <text x="460" y="179" textAnchor="middle">connect wallet</text>
 
         <line x1="540" y1="214" x2="380" y2="214" stroke="#0E0E0E" markerEnd="url(#arr6)" />
         <text x="460" y="209" textAnchor="middle">address exposed</text>
@@ -1286,7 +1234,7 @@ function SalesPipelineDiagram() {
         ['Cron tick',           50,  'every 60 sec'],
         ['eth_getLogs',         190, 'Transfer events'],
         ['Tx + receipt',        330, 'fetch detail'],
-        ['Marketplace match',   470, 'Seaport/Blur/...'],
+        ['Marketplace match',   470, 'Seaport / Blur / ...'],
         ['Discord embed',       620, 'rich post'],
       ].map(([label, x, sub], i, arr) => (
         <g key={label}>
@@ -1298,8 +1246,8 @@ function SalesPipelineDiagram() {
           ) : null}
         </g>
       ))}
-      <text x="360" y="30" textAnchor="middle" fontSize="10" letterSpacing="2" fill="#888">SALES DETECTION PIPELINE</text>
-      <text x="360" y="180" textAnchor="middle" fontSize="9" fill="#666">Every step verifiable from public chain data · marketplace-agnostic</text>
+      <text x="360" y="30" textAnchor="middle" fontSize="10" letterSpacing="2" fill="#888">SALES DETECTION</text>
+      <text x="360" y="180" textAnchor="middle" fontSize="9" fill="#666">Every step uses public chain data. Marketplace agnostic.</text>
 
       <defs>
         <marker id="arr8" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="strokeWidth" markerWidth="6" markerHeight="6" orient="auto">
@@ -1309,10 +1257,6 @@ function SalesPipelineDiagram() {
     </svg>
   );
 }
-
-// ───────────────────────────────────────────────────────────────
-// RESPONSIVE STYLES
-// ───────────────────────────────────────────────────────────────
 
 function ResponsiveStyles() {
   return (
