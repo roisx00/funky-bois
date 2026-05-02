@@ -16,6 +16,7 @@ import LorePage1969 from './pages/LorePage1969';
 import LitepaperPage from './pages/LitepaperPage';
 import VaultPage from './pages/VaultPage';
 import FacilityPage from './pages/FacilityPage';
+import RestrictedPage from './pages/RestrictedPage';
 import DiscordVerifyPage from './pages/DiscordVerifyPage';
 import { handleXCallback, startXLogin } from './utils/xAuth';
 import { useToast } from './components/Toast';
@@ -137,13 +138,14 @@ function BuilderGate({ navigate }) {
 // the Nav entry + route render below.
 // 'vault' is reachable by direct URL only during Phase 1 review; add to
 // Nav.jsx BASE_PAGES when ready to surface publicly.
-const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'collab', '1969', 'litepaper', 'vault', 'facility', 'discord-verify'];
+const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'collab', '1969', 'litepaper', 'vault', 'facility', 'restricted', 'discord-verify'];
 
 function pathToPage(pathname) {
   const clean = pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
   if (!clean) return 'home';
   if (clean === 'build') return 'builder';
   if (clean === 'discord/verify') return 'discord-verify';
+  if (clean === '451') return 'restricted';
   return VALID_PAGES.includes(clean) ? clean : 'home';
 }
 
@@ -151,6 +153,7 @@ function pageToPath(page) {
   if (!page || page === 'home') return '/';
   if (page === 'builder') return '/build';
   if (page === 'discord-verify') return '/discord/verify';
+  if (page === 'restricted') return '/451';
   return `/${page}`;
 }
 
@@ -245,6 +248,12 @@ function AppInner() {
         <LitepaperPage onNavigate={navigate} />
       </>
     );
+  }
+
+  // Restricted (HTTP 451) page — geo-blocked users land here. No Nav,
+  // no WalletBridge, no app chrome. Pure standalone notice page.
+  if (page === 'restricted') {
+    return <RestrictedPage />;
   }
 
   return (
