@@ -16,6 +16,33 @@ import ProphetInline from '../components/ProphetInline';
 // jumps from outside.
 const SECTION_IDS = ['overview', 'tasks', 'gift', 'history'];
 
+// ─── Tier ladder (mirrors api/_lib/discordConfig.js) ────────────────
+// Highest min first. Holdings = wallet-held + vault-staked (whatever
+// counts towards Discord tier role). The dashboard's identity hero
+// uses the same ladder so the user sees the same name everywhere.
+const DASH_TIER_LADDER = [
+  { name: 'The Soldier',  min: 100, accent: '#D7FF3A' },
+  { name: 'The Monk',     min: 50,  accent: '#FFD43A' },
+  { name: 'The Poet',     min: 20,  accent: 'var(--ink)' },
+  { name: 'The Rebel',    min: 10,  accent: 'var(--ink)' },
+  { name: 'The Nurse',    min: 5,   accent: 'var(--ink)' },
+  { name: 'The Queen',    min: 1,   accent: 'var(--ink)' },
+];
+
+function pickDashTier(holdings) {
+  if (!Number.isFinite(holdings) || holdings <= 0) return null;
+  for (const t of DASH_TIER_LADDER) if (holdings >= t.min) return t;
+  return null;
+}
+
+function pickNextDashTier(holdings) {
+  // Find the lowest tier where the user does NOT yet qualify.
+  for (let i = DASH_TIER_LADDER.length - 1; i >= 0; i--) {
+    if (holdings < DASH_TIER_LADDER[i].min) return DASH_TIER_LADDER[i];
+  }
+  return null; // they're already The Soldier
+}
+
 export default function CollectionPage({ onNavigate, initialTab = 'overview' }) {
   const {
     inventory, progressCount, hasAllTypes,
@@ -114,6 +141,18 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
           ) : null}
         </div>
       </div>
+
+      {/* ─── §00 Command Deck ───
+          Identity hero + Earnings + Tier progress. Answers
+          "who am I, what am I earning, where do I go next?" in
+          5 seconds. New top-of-dashboard hero that turns the page
+          from data dump into something that feels like yours. */}
+      <CommandDeck
+        walletAddress={serverWalletAddress}
+        bustsHistory={bustsHistory}
+        xUser={xUser}
+        onNavigate={onNavigate}
+      />
 
       {/* ─── Live metrics + Gift + NFT strip ─── */}
       {/* §02 Gift renders between metrics and the NFT strip — that's
@@ -267,6 +306,437 @@ export default function CollectionPage({ onNavigate, initialTab = 'overview' }) 
     </div>
   );
 }
+
+// ─── CommandDeck — top-of-dashboard hero answering "who am I, what
+// am I earning, where do I go next?" in 5 seconds. Three sub-sections:
+//   §00 Identity  — wallet, tier, holdings, daily rate
+//   §00.1 Earnings — today / week / lifetime + 7-day sparkline
+//   §00.2 Progress — meter to next tier
+function CommandDeck({ walletAddress, bustsHistory, xUser, onNavigate }) {
+  // Pull the user's vault state — pending, lifetime, active weight,
+  // APY (per-stack scale). Same endpoint the vault page uses.
+  const [vault, setVault] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    const url = walletAddress
+      ? `/api/vault-onchain?wallet=${walletAddress}`
+      : '/api/vault-onchain';
+    fetch(url, { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setVault(d); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [walletAddress]);
+
+  // Pull wallet-held NFTs (vault stakes are in vault.user.activeTokens).
+  const [walletHeld, setWalletHeld] = useState(0);
+  useEffect(() => {
+    if (!walletAddress) { setWalletHeld(0); return; }
+    let cancelled = false;
+    fetch(`/api/nfts-of-owner?wallet=${walletAddress}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setWalletHeld(Number(d.count || 0)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [walletAddress]);
+
+  const stakedCount = Number(vault?.user?.activeTokens || 0);
+  const totalHoldings = walletHeld + stakedCount;
+  const currentTier = pickDashTier(totalHoldings);
+  const nextTier    = pickNextDashTier(totalHoldings);
+
+  // Daily BUSTS rate from the vault APY math: annualBusts = apy * APY_REF / 100,
+  // dailyBusts = annualBusts / 365.
+  const apy = Number(vault?.user?.apy || 0);
+  const dailyRate = apy > 0 ? Math.round((apy * 100_000 / 100) / 365) : 0;
+
+  // Earnings aggregations from busts_ledger via context.
+  const { today, last7d, lifetime, sparkline } = useMemo(() => {
+    const history = Array.isArray(bustsHistory) ? bustsHistory : [];
+    const now = Date.now();
+    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+    const startOf7d    = startOfToday.getTime() - 6 * 24 * 60 * 60 * 1000;
+
+    let todayTotal = 0, last7dTotal = 0, lifetimeTotal = 0;
+    const buckets = new Array(7).fill(0);
+    for (const h of history) {
+      const amt = Number(h.amount || 0);
+      if (amt <= 0) continue;
+      const ts = Number(h.ts || 0);
+      if (ts >= startOfToday.getTime()) todayTotal += amt;
+      if (ts >= startOf7d) {
+        last7dTotal += amt;
+        const dayIdx = Math.floor((ts - startOf7d) / (24 * 60 * 60 * 1000));
+        if (dayIdx >= 0 && dayIdx < 7) buckets[dayIdx] += amt;
+      }
+      lifetimeTotal += amt;
+    }
+    return {
+      today: todayTotal,
+      last7d: last7dTotal,
+      lifetime: lifetimeTotal,
+      sparkline: buckets,
+    };
+  }, [bustsHistory]);
+
+  const userLabel = xUser?.username
+    ? `@${xUser.username}`
+    : walletAddress
+      ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`
+      : 'Holder';
+
+  // Progress fraction toward the next tier (0..1). When already at the
+  // top tier, the meter renders fully filled.
+  const progressFrac = nextTier
+    ? Math.min(1, totalHoldings / nextTier.min)
+    : 1;
+  const progressPct = Math.round(progressFrac * 100);
+
+  // Sparkline render — flat zero days don't deserve to draw a baseline,
+  // but we always show 7 buckets for visual consistency.
+  const maxBucket = Math.max(1, ...sparkline);
+
+  return (
+    <div className="cmd-deck">
+      <style>{COMMAND_DECK_CSS}</style>
+
+      {/* §00 — Identity hero */}
+      <div className="cmd-hero">
+        <div className="cmd-hero-kicker">
+          <span className="cmd-dot" />
+          {currentTier ? `YOU ARE ${currentTier.name.toUpperCase()}` : 'NO 1969 HELD YET'}
+        </div>
+        <h2 className="cmd-hero-name">
+          {currentTier ? (
+            <>You are <em style={{ color: currentTier.accent }}>{currentTier.name}.</em></>
+          ) : (
+            <>Buy a <em>1969</em> to start earning.</>
+          )}
+        </h2>
+        <div className="cmd-hero-sub">{userLabel}</div>
+
+        <div className="cmd-hero-stats">
+          <Stat label="Total" value={totalHoldings} unit="portraits" />
+          <Stat label="In wallet" value={walletHeld} unit="held" />
+          <Stat label="In vault" value={stakedCount} unit="staked · earning" />
+          <Stat label="Daily rate" value={dailyRate.toLocaleString()} unit="$BUSTS / day" highlight />
+        </div>
+      </div>
+
+      {/* §00.1 — Earnings */}
+      <div className="cmd-section">
+        <div className="cmd-section-kicker">EARNINGS · BUSTS</div>
+        <div className="cmd-earnings-row">
+          <BigStat label="Today" value={today} highlight />
+          <BigStat label="Last 7 days" value={last7d} />
+          <BigStat label="Lifetime" value={lifetime} />
+        </div>
+        <div className="cmd-spark">
+          {sparkline.map((v, i) => (
+            <div
+              key={i}
+              className="cmd-spark-bar"
+              style={{
+                height: `${Math.max(4, (v / maxBucket) * 100)}%`,
+                background: i === 6 ? 'var(--accent)' : 'var(--ink)',
+                opacity: v > 0 ? 1 : 0.15,
+              }}
+              title={`${v.toLocaleString()} BUSTS`}
+            />
+          ))}
+        </div>
+        <div className="cmd-spark-meta">
+          7-day window · today on the right · {dailyRate > 0 ? `accruing ${dailyRate.toLocaleString()} BUSTS/day at current weight` : 'stake your 1969 to start earning'}
+        </div>
+      </div>
+
+      {/* §00.2 — Tier progress */}
+      <div className="cmd-section">
+        <div className="cmd-section-kicker">PROGRESS · TIER LADDER</div>
+        {nextTier ? (
+          <>
+            <div className="cmd-progress-row">
+              <span className="cmd-progress-current">
+                {currentTier ? currentTier.name : 'No tier yet'}
+              </span>
+              <span className="cmd-progress-arrow">→</span>
+              <span className="cmd-progress-next">{nextTier.name}</span>
+              <span className="cmd-progress-pct">{progressPct}%</span>
+            </div>
+            <div className="cmd-progress-track">
+              <div
+                className="cmd-progress-fill"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <div className="cmd-progress-meta">
+              {totalHoldings} / {nextTier.min} held · {Math.max(0, nextTier.min - totalHoldings)} more to reach {nextTier.name}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="cmd-progress-row">
+              <span className="cmd-progress-current">
+                {currentTier?.name || '—'}
+              </span>
+              <span className="cmd-progress-meta" style={{ marginLeft: 12 }}>
+                Top tier reached. {totalHoldings} portraits held.
+              </span>
+            </div>
+            <div className="cmd-progress-track">
+              <div className="cmd-progress-fill" style={{ width: '100%' }} />
+            </div>
+          </>
+        )}
+        <div className="cmd-progress-actions">
+          <button
+            type="button"
+            onClick={() => onNavigate?.('vault')}
+            className="cmd-btn"
+          >MANAGE VAULT →</button>
+          <a
+            href="https://opensea.io/collection/the1969"
+            target="_blank"
+            rel="noreferrer"
+            className="cmd-btn cmd-btn-ghost"
+          >BUY MORE ON OPENSEA →</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, unit, highlight }) {
+  return (
+    <div className="cmd-stat">
+      <div className="cmd-stat-label">{label}</div>
+      <div className="cmd-stat-value" style={highlight ? { color: 'var(--accent)' } : undefined}>
+        {value}
+      </div>
+      <div className="cmd-stat-unit">{unit}</div>
+    </div>
+  );
+}
+
+function BigStat({ label, value, highlight }) {
+  return (
+    <div className="cmd-bigstat">
+      <div className="cmd-bigstat-label">{label}</div>
+      <div className="cmd-bigstat-value" style={highlight ? { color: 'var(--accent)' } : undefined}>
+        {Number(value || 0).toLocaleString()}
+      </div>
+    </div>
+  );
+}
+
+const COMMAND_DECK_CSS = `
+  .cmd-deck {
+    margin: 0 0 32px;
+    border: 1px solid var(--ink);
+    background: var(--paper-2);
+  }
+
+  /* §00 — Identity hero */
+  .cmd-hero {
+    padding: 32px 32px 28px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .cmd-hero-kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 0.22em;
+    color: var(--text-3); font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .cmd-dot {
+    display: inline-block; width: 8px; height: 8px;
+    background: var(--accent);
+    border: 1px solid var(--ink);
+    border-radius: 50%;
+  }
+  .cmd-hero-name {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(36px, 5vw, 56px);
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+  .cmd-hero-name em { font-style: italic; }
+  .cmd-hero-sub {
+    font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.16em;
+    color: var(--text-3);
+    margin-bottom: 24px;
+    text-transform: uppercase;
+  }
+  .cmd-hero-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--hairline);
+    border: 1px solid var(--hairline);
+  }
+  .cmd-stat {
+    background: var(--paper-2);
+    padding: 16px 18px;
+  }
+  .cmd-stat-label {
+    font-family: var(--font-mono);
+    font-size: 9px; letter-spacing: 0.2em;
+    color: var(--text-4);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .cmd-stat-value {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 32px;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .cmd-stat-unit {
+    font-family: var(--font-mono);
+    font-size: 9px; letter-spacing: 0.16em;
+    color: var(--text-4);
+    text-transform: uppercase;
+  }
+
+  /* §00.1 — Earnings + sparkline */
+  .cmd-section {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .cmd-section:last-child { border-bottom: none; }
+  .cmd-section-kicker {
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 0.22em;
+    color: var(--text-4);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .cmd-earnings-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-bottom: 20px;
+  }
+  .cmd-bigstat-label {
+    font-family: var(--font-mono);
+    font-size: 9px; letter-spacing: 0.18em;
+    color: var(--text-4);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .cmd-bigstat-value {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 40px;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  /* Sparkline */
+  .cmd-spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 60px;
+    margin-bottom: 8px;
+  }
+  .cmd-spark-bar {
+    flex: 1 1 0;
+    min-height: 4px;
+    border: 1px solid var(--ink);
+  }
+  .cmd-spark-meta {
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 0.14em;
+    color: var(--text-4);
+    text-transform: uppercase;
+  }
+
+  /* §00.2 — Tier progress */
+  .cmd-progress-row {
+    display: flex; align-items: baseline;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .cmd-progress-current, .cmd-progress-next {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 24px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .cmd-progress-arrow {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text-4);
+  }
+  .cmd-progress-pct {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 14px; letter-spacing: 0.16em; font-weight: 700;
+    color: var(--ink);
+  }
+  .cmd-progress-track {
+    height: 8px;
+    background: var(--paper-3);
+    border: 1px solid var(--ink);
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .cmd-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-right: 1px solid var(--ink);
+    transition: width 600ms ease-out;
+  }
+  .cmd-progress-meta {
+    font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.04em;
+    color: var(--text-3);
+    margin-bottom: 18px;
+  }
+  .cmd-progress-actions {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .cmd-btn {
+    display: inline-block;
+    padding: 12px 22px;
+    background: var(--ink);
+    color: var(--accent);
+    border: 1px solid var(--ink);
+    font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.22em;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: background 120ms, color 120ms;
+  }
+  .cmd-btn:hover { background: var(--accent); color: var(--ink); }
+  .cmd-btn-ghost {
+    background: transparent;
+    color: var(--ink);
+  }
+  .cmd-btn-ghost:hover { background: var(--ink); color: var(--accent); }
+
+  /* Responsive */
+  @media (max-width: 720px) {
+    .cmd-hero-stats { grid-template-columns: repeat(2, 1fr); }
+    .cmd-earnings-row { grid-template-columns: 1fr; gap: 18px; }
+    .cmd-bigstat-value { font-size: 32px; }
+    .cmd-progress-pct { margin-left: 0; }
+  }
+`;
 
 // ─── DashSectionHead — shared header for each unified dashboard section
 function DashSectionHead({ n, title, sub }) {
