@@ -15,6 +15,7 @@ import CollabPage from './pages/CollabPage';
 import LorePage1969 from './pages/LorePage1969';
 import LitepaperPage from './pages/LitepaperPage';
 import VaultPage from './pages/VaultPage';
+import FacilityPage from './pages/FacilityPage';
 import DiscordVerifyPage from './pages/DiscordVerifyPage';
 import { handleXCallback, startXLogin } from './utils/xAuth';
 import { useToast } from './components/Toast';
@@ -136,7 +137,7 @@ function BuilderGate({ navigate }) {
 // the Nav entry + route render below.
 // 'vault' is reachable by direct URL only during Phase 1 review; add to
 // Nav.jsx BASE_PAGES when ready to surface publicly.
-const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'collab', '1969', 'litepaper', 'vault', 'discord-verify'];
+const VALID_PAGES = ['home', 'drop', 'dashboard', 'gallery', 'builder', 'collection', 'admin', 'collab', '1969', 'litepaper', 'vault', 'facility', 'discord-verify'];
 
 function pathToPage(pathname) {
   const clean = pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -264,6 +265,7 @@ function AppInner() {
       {page === 'collab' && <CollabPage onNavigate={navigate} />}
       {page === '1969' && <LorePage1969 onNavigate={navigate} />}
       {page === 'vault' && <VaultPage onNavigate={navigate} />}
+      {page === 'facility' && <FacilityPage onNavigate={navigate} />}
       {page === 'admin' && <AdminPanel onNavigate={navigate} />}
     </>
   );

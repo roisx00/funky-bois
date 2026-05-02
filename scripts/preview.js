@@ -21,9 +21,24 @@ function getContentType(filePath) {
   return mimeTypes[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
 }
 
-function serveFile(filePath, res) {
+function serveFile(filePath, res, fallbackToIndex) {
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
+      // SPA fallback: any unknown non-asset path serves index.html so
+      // client-side routing (React Router) can resolve routes like
+      // /facility, /vault, /gallery without hitting 404 on hard refresh.
+      if (fallbackToIndex) {
+        const indexPath = path.join(distPath, 'index.html');
+        return fs.stat(indexPath, (errIdx, statsIdx) => {
+          if (errIdx || !statsIdx.isFile()) {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Not found');
+            return;
+          }
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          fs.createReadStream(indexPath).pipe(res);
+        });
+      }
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('Not found');
       return;
@@ -41,7 +56,11 @@ const server = http.createServer((req, res) => {
   }
 
   const filePath = path.join(distPath, requestPath.replace(/\.+/g, '.'));
-  serveFile(filePath, res);
+  // Only fall back to index.html for paths that don't have a file
+  // extension — assets (.js, .css, .svg, etc.) should still 404 if
+  // missing, so we don't mask broken asset references.
+  const hasExt = path.extname(requestPath) !== '';
+  serveFile(filePath, res, !hasExt);
 });
 
 server.listen(port, () => {

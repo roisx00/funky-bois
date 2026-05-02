@@ -13,6 +13,8 @@ const BASE_PAGES = [
   { id: 'gallery',  label: 'Gallery' },
   { id: '1969',     label: '1969' },
   { id: 'vault',    label: 'Vault' },
+  // 'facility' route is intentionally NOT in the public nav while
+  // STANDOFF is being tested. Direct URL the1969.io/facility still works.
   // 'drop' and 'leaderboard' removed from the public menu. Drop is
   // closed and the dashboard now shows a top-20 BUSTS strip inline,
   // so neither route needs a top-level entry. Direct URLs still work.
