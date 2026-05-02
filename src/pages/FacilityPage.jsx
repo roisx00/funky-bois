@@ -315,17 +315,23 @@ function StandoffView() {
             <button
               className="standoff-fight-btn"
               onClick={enterFight}
-              disabled={busy || !canFight || (bustsBalance || 0) < 100}
+              disabled={busy || !canFight || (bustsBalance || 0) < 100 || !inv}
               type="button"
             >
               {busy ? 'WORKING...' : 'ENTER THE FIELD →'}
             </button>
           </div>
-          {!canFight && (
+          {!inv ? (
+            <div className="standoff-fight-warn neutral">Loading your loadout inventory...</div>
+          ) : !canFight ? (
             <div className="standoff-fight-warn">
               Loadout uses bullets you don't have. Open the shop or pick Lead.
             </div>
-          )}
+          ) : (bustsBalance || 0) < 100 ? (
+            <div className="standoff-fight-warn">
+              You need at least 100 BUSTS to enter. You have {(bustsBalance || 0).toLocaleString()}.
+            </div>
+          ) : null}
 
           {shopOpen && <BulletShop inv={inv} busy={busy} buy={buyBullet} balance={bustsBalance} />}
         </section>
@@ -590,8 +596,12 @@ function FacilityStyles() {
 
       /* ── STANDOFF body ── */
       .standoff { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+      /* Profile strip is a fixed contrast band — always dark with cream
+         text + lime accents — regardless of theme. Using var(--ink) as
+         background flips in dark mode (var(--ink) = cream there), which
+         broke the design. Hardcoded fixed colors here on purpose. */
       .standoff-profile {
-        background: var(--ink); color: var(--paper-1);
+        background: #0E0E0E; color: #F9F6F0;
         margin: 0 -24px 32px;
         padding: 24px;
       }
@@ -606,13 +616,13 @@ function FacilityStyles() {
       }
       .fac-stat-val {
         font-family: var(--font-display); font-style: italic; font-size: 32px;
-        line-height: 1; letter-spacing: -0.02em; color: var(--paper-1);
+        line-height: 1; letter-spacing: -0.02em; color: #F9F6F0;
       }
       .fac-stat-hint {
         font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
         color: rgba(249,246,240,0.4);
       }
-      .fac-stat.hero .fac-stat-val { color: var(--accent); font-size: 36px; }
+      .fac-stat.hero .fac-stat-val { color: #D7FF3A; font-size: 36px; }
 
       .standoff-section-kicker {
         font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.26em;
@@ -633,7 +643,7 @@ function FacilityStyles() {
         font-weight: 700; padding: 8px 14px; cursor: pointer;
         transition: background 120ms, color 120ms;
       }
-      .standoff-shop-toggle:hover { background: var(--accent); }
+      .standoff-shop-toggle:hover { background: var(--accent); color: #0E0E0E; }
 
       .standoff-slots {
         display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
@@ -667,20 +677,23 @@ function FacilityStyles() {
         font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
         font-size: 17px; color: var(--text-2);
       }
+      /* Fixed-dark button to match the profile strip and avoid the
+         var(--ink) flip in dark mode. */
       .standoff-fight-btn {
-        padding: 14px 28px; background: var(--ink); color: var(--accent);
-        border: 1px solid var(--ink); cursor: pointer;
+        padding: 14px 28px; background: #0E0E0E; color: #D7FF3A;
+        border: 1px solid #0E0E0E; cursor: pointer;
         font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.22em;
         font-weight: 700; transition: background 120ms, color 120ms;
       }
       .standoff-fight-btn:hover:not(:disabled) {
-        background: var(--accent); color: var(--ink);
+        background: #D7FF3A; color: #0E0E0E;
       }
       .standoff-fight-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       .standoff-fight-warn {
         margin-top: 12px; font-family: var(--font-mono); font-size: 11px;
         color: #c4352b; letter-spacing: 0.06em;
       }
+      .standoff-fight-warn.neutral { color: var(--text-3); }
 
       .bullet-shop {
         margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--hairline);
@@ -711,12 +724,12 @@ function FacilityStyles() {
         color: var(--text-3);
       }
       .bullet-shop-buy {
-        background: var(--ink); color: var(--accent); border: 1px solid var(--ink);
+        background: #0E0E0E; color: #D7FF3A; border: 1px solid #0E0E0E;
         padding: 8px 14px; cursor: pointer; font-family: var(--font-mono);
         font-size: 10px; letter-spacing: 0.18em; font-weight: 700;
         transition: background 120ms, color 120ms;
       }
-      .bullet-shop-buy:hover:not(:disabled) { background: var(--accent); color: var(--ink); }
+      .bullet-shop-buy:hover:not(:disabled) { background: #D7FF3A; color: #0E0E0E; }
       .bullet-shop-buy:disabled { opacity: 0.4; cursor: not-allowed; }
 
       /* ── Waiting state ── */
@@ -762,7 +775,7 @@ function FacilityStyles() {
         margin-bottom: 20px;
       }
       .match-replay-close {
-        background: var(--ink); color: var(--accent); border: 1px solid var(--ink);
+        background: #0E0E0E; color: #D7FF3A; border: 1px solid #0E0E0E;
         padding: 10px 20px; font-family: var(--font-mono); font-size: 11px;
         letter-spacing: 0.22em; font-weight: 700; cursor: pointer;
       }
